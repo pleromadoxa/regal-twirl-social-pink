@@ -172,6 +172,43 @@ export const usePosts = () => {
     }
   };
 
+  const deletePost = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', user.id); // Ensure users can only delete their own posts
+
+      if (error) {
+        console.error('Error deleting post:', error);
+        toast({
+          title: "Error deleting post",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Post deleted",
+        description: "Your post has been deleted successfully."
+      });
+
+      // Remove post from local state
+      setPosts(posts.filter(p => p.id !== postId));
+    } catch (error) {
+      console.error('Error in deletePost:', error);
+      toast({
+        title: "Something went wrong",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const toggleLike = async (postId: string) => {
     if (!user) return;
 
@@ -252,6 +289,7 @@ export const usePosts = () => {
     posts,
     loading,
     createPost,
+    deletePost,
     toggleLike,
     toggleRetweet,
     refetch: fetchPosts
