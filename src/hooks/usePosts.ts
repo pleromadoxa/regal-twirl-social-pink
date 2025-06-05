@@ -33,15 +33,19 @@ export const usePosts = () => {
     try {
       setLoading(true);
       
-      let query = supabase
+      // Query posts and join with profiles table
+      const { data: postsData, error } = await supabase
         .from('posts')
         .select(`
           *,
-          profiles:user_id (username, display_name, avatar_url, is_verified)
+          profiles!posts_user_id_fkey (
+            username,
+            display_name,
+            avatar_url,
+            is_verified
+          )
         `)
         .order('created_at', { ascending: false });
-
-      const { data: postsData, error } = await query;
 
       if (error) {
         console.error('Error fetching posts:', error);
@@ -75,6 +79,12 @@ export const usePosts = () => {
           likes_count: post.likes_count || 0,
           retweets_count: post.retweets_count || 0,
           replies_count: post.replies_count || 0,
+          profiles: post.profiles || {
+            username: 'unknown',
+            display_name: 'Unknown User',
+            avatar_url: '',
+            is_verified: false
+          }
         })) || [];
 
         setPosts(enrichedPosts);
@@ -84,6 +94,12 @@ export const usePosts = () => {
           likes_count: post.likes_count || 0,
           retweets_count: post.retweets_count || 0,
           replies_count: post.replies_count || 0,
+          profiles: post.profiles || {
+            username: 'unknown',
+            display_name: 'Unknown User',
+            avatar_url: '',
+            is_verified: false
+          }
         })) || [];
         
         setPosts(enrichedPosts);
