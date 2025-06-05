@@ -8,6 +8,13 @@ import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import { useAuth } from "@/contexts/AuthContext";
 
+const getTimelyGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+};
+
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -30,6 +37,9 @@ const Index = () => {
     return null; // Will redirect to auth
   }
 
+  const greeting = getTimelyGreeting();
+  const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto flex gap-6">
@@ -43,6 +53,9 @@ const Index = () => {
             <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
               Home
             </h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              {greeting}, {username}!
+            </p>
           </div>
 
           {/* Enhanced Tweet Composer */}
