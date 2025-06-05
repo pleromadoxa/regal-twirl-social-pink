@@ -1,5 +1,5 @@
 
-import { Home, Search, Bell, Mail, Pin, User, MoreHorizontal, LogOut } from "lucide-react";
+import { Home, Search, Bell, MessageCircle, Pin, User, MoreHorizontal, LogOut, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -14,8 +14,7 @@ const SidebarNav = () => {
   const navItems = [
     { icon: Home, label: "Home", path: "/", active: location.pathname === "/" },
     { icon: Search, label: "Explore", path: "/explore", active: location.pathname === "/explore" },
-    { icon: Bell, label: "Notifications", path: "/notifications", active: location.pathname === "/notifications" },
-    { icon: Mail, label: "Messages", path: "/messages", active: location.pathname === "/messages" },
+    { icon: MessageCircle, label: "Conversations", path: "/messages", active: location.pathname === "/messages" },
     { icon: Pin, label: "Pinned", path: "/pinned", active: location.pathname === "/pinned" },
     { icon: User, label: "Profile", path: `/profile/${user?.id}`, active: location.pathname.startsWith("/profile") },
     { icon: MoreHorizontal, label: "More", path: "/more", active: location.pathname === "/more" },
@@ -42,8 +41,16 @@ const SidebarNav = () => {
           Regal
         </h1>
         <div className="flex items-center gap-2">
-          {user && <NotificationDropdown />}
           <ThemeToggle />
+          {user && <NotificationDropdown />}
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/notifications')}
+            className="relative"
+          >
+            <Bell className="w-5 h-5" />
+          </Button>
         </div>
       </div>
 
