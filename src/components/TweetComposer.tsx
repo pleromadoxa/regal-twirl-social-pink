@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -53,14 +54,14 @@ const TweetComposer = () => {
     const length = text.length;
     if (length > maxLength) return 'text-red-500';
     if (length > maxLength * 0.8) return 'text-amber-500';
-    return 'text-slate-500';
+    return 'text-purple-500';
   };
 
   const getProgressColor = (text: string) => {
     const length = text.length;
     if (length > maxLength) return 'text-red-500';
     if (length > maxLength * 0.8) return 'text-amber-500';
-    return 'text-indigo-500';
+    return 'text-purple-500';
   };
 
   const renderTweetInput = (text: string, onChange: (text: string) => void, index?: number) => (
@@ -69,8 +70,8 @@ const TweetComposer = () => {
         value={text}
         onChange={(e) => onChange(e.target.value)}
         placeholder={index === 0 || !isThreadMode ? "What's happening?" : "Continue your thread..."}
-        className="w-full text-xl placeholder:text-slate-500 dark:placeholder:text-slate-400 border-0 resize-none outline-none bg-transparent min-h-[80px] transition-all duration-200 focus:bg-slate-50/50 dark:focus:bg-slate-800/50 rounded-lg p-2"
-        maxLength={maxLength + 50} // Allow some overflow for visual feedback
+        className="w-full text-xl placeholder:text-purple-500 dark:placeholder:text-purple-400 border-0 resize-none outline-none bg-transparent min-h-[80px] transition-all duration-300 focus:bg-purple-50/50 dark:focus:bg-purple-800/50 rounded-lg p-2 hover:shadow-lg"
+        maxLength={maxLength + 50}
       />
       
       {isThreadMode && index !== undefined && index > 0 && (
@@ -78,7 +79,7 @@ const TweetComposer = () => {
           variant="ghost"
           size="sm"
           onClick={() => removeThreadTweet(index)}
-          className="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors"
+          className="absolute top-2 right-2 text-purple-400 hover:text-red-500 transition-all duration-300 hover:scale-125 hover:rotate-180"
         >
           ×
         </Button>
@@ -89,9 +90,9 @@ const TweetComposer = () => {
   return (
     <div className="p-6 space-y-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
       <div className="flex space-x-4">
-        <Avatar className="ring-2 ring-slate-300 dark:ring-indigo-500 transition-all duration-300 hover:ring-indigo-400 dark:hover:ring-indigo-400 shadow-md">
+        <Avatar className="ring-2 ring-purple-300 dark:ring-purple-500 transition-all duration-500 hover:ring-pink-400 dark:hover:ring-pink-400 shadow-lg hover:scale-110 hover:shadow-2xl">
           <AvatarImage src="/placeholder.svg" />
-          <AvatarFallback className="bg-gradient-to-br from-indigo-500 via-emerald-500 to-slate-500 text-white font-semibold">
+          <AvatarFallback className="bg-gradient-to-br from-purple-500 via-blue-500 to-pink-500 text-white font-semibold animate-pulse">
             You
           </AvatarFallback>
         </Avatar>
@@ -103,12 +104,12 @@ const TweetComposer = () => {
               {threadTweets.map((tweet, index) => (
                 <div key={index} className="relative">
                   {index > 0 && (
-                    <div className="absolute -left-8 top-0 w-0.5 h-full bg-gradient-to-b from-indigo-400 to-emerald-400 dark:from-indigo-500 dark:to-emerald-500"></div>
+                    <div className="absolute -left-8 top-0 w-0.5 h-full bg-gradient-to-b from-purple-400 to-pink-400 dark:from-purple-500 dark:to-pink-500 animate-pulse"></div>
                   )}
-                  <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-all duration-300">
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl border border-purple-200 dark:border-purple-700 p-4 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105">
                     {renderTweetInput(tweet, (text) => updateThreadTweet(index, text), index)}
                     <div className="flex justify-between items-center mt-3">
-                      <span className="text-xs text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full">Post {index + 1}</span>
+                      <span className="text-xs text-purple-400 dark:text-purple-500 bg-purple-100 dark:bg-purple-700 px-2 py-1 rounded-full animate-pulse">Post {index + 1}</span>
                       <div className="flex items-center space-x-3">
                         <span className={`text-xs font-medium ${getCharacterCountColor(tweet)}`}>
                           {tweet.length}/{maxLength}
@@ -122,7 +123,7 @@ const TweetComposer = () => {
                               fill="none"
                               stroke="currentColor"
                               strokeWidth="3"
-                              className="text-slate-200 dark:text-slate-600"
+                              className="text-purple-200 dark:text-purple-600"
                             />
                             <circle
                               cx="12"
@@ -146,7 +147,7 @@ const TweetComposer = () => {
                 variant="outline"
                 size="sm"
                 onClick={addThreadTweet}
-                className="border-indigo-300 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-200 rounded-full"
+                className="border-purple-300 dark:border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-300 rounded-full hover:scale-110"
               >
                 + Add to thread
               </Button>
@@ -157,21 +158,21 @@ const TweetComposer = () => {
                 value={tweetText}
                 onChange={(e) => setTweetText(e.target.value)}
                 placeholder="What's happening?"
-                className="w-full text-xl placeholder:text-slate-500 dark:placeholder:text-slate-400 border-0 resize-none outline-none bg-transparent dark:text-slate-100 min-h-[100px] transition-all duration-200 focus:bg-slate-50/50 dark:focus:bg-slate-800/50 rounded-xl p-3"
+                className="w-full text-xl placeholder:text-purple-500 dark:placeholder:text-purple-400 border-0 resize-none outline-none bg-transparent dark:text-slate-100 min-h-[100px] transition-all duration-300 focus:bg-purple-50/50 dark:focus:bg-purple-800/50 rounded-xl p-3 hover:shadow-lg"
                 maxLength={maxLength + 50}
               />
             </div>
           )}
           
           {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between pt-4 border-t border-purple-200 dark:border-purple-700">
             <div className="flex items-center space-x-2">
               {[Image, Smile, Calendar, MapPin, Hash, AtSign].map((Icon, idx) => (
                 <Button 
                   key={idx}
                   variant="ghost" 
                   size="sm" 
-                  className="text-indigo-500 dark:text-emerald-400 hover:bg-indigo-50 dark:hover:bg-emerald-900/20 p-2 transition-all duration-200 hover:scale-110 rounded-full"
+                  className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
                 >
                   <Icon className="w-5 h-5" />
                 </Button>
@@ -183,7 +184,7 @@ const TweetComposer = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setIsThreadMode(!isThreadMode)}
-                className={`border-emerald-300 dark:border-emerald-500 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all duration-200 rounded-full ${isThreadMode ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
+                className={`border-blue-300 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 rounded-full hover:scale-110 ${isThreadMode ? 'bg-blue-50 dark:bg-blue-900/20 scale-105' : ''}`}
               >
                 {isThreadMode ? 'Single Post' : 'Thread'}
               </Button>
@@ -202,7 +203,7 @@ const TweetComposer = () => {
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="3"
-                        className="text-slate-200 dark:text-slate-600"
+                        className="text-purple-200 dark:text-purple-600"
                       />
                       <circle
                         cx="12"
@@ -222,7 +223,7 @@ const TweetComposer = () => {
               <Button
                 disabled={isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() || tweetText.length > maxLength)}
                 onClick={handleTweetSubmit}
-                className="bg-gradient-to-r from-indigo-600 via-emerald-500 to-slate-600 hover:from-indigo-700 hover:via-emerald-600 hover:to-slate-700 text-white rounded-full px-8 py-2 disabled:opacity-50 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl font-medium"
+                className="bg-gradient-to-r from-purple-600 via-blue-500 to-pink-600 hover:from-purple-700 hover:via-blue-600 hover:to-pink-700 text-white rounded-full px-8 py-2 disabled:opacity-50 transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-2xl font-medium"
               >
                 {isThreadMode ? 'Post Thread' : 'Post'}
               </Button>
