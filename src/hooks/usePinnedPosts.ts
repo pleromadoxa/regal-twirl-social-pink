@@ -33,15 +33,10 @@ export const usePinnedPosts = () => {
     try {
       setLoading(true);
       
+      // Get pinned posts
       const { data: pinnedData, error } = await supabase
         .from('pinned_posts')
-        .select(`
-          *,
-          posts (
-            *,
-            profiles (username, display_name, avatar_url, is_verified)
-          )
-        `)
+        .select('post_id')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -50,17 +45,55 @@ export const usePinnedPosts = () => {
         return;
       }
 
+      if (!pinnedData || pinnedData.length === 0) {
+        setPinnedPosts([]);
+        return;
+      }
+
+      // Get the actual posts
+      const postIds = pinnedData.map(p => p.post_id);
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .in('id', postIds);
+
+      if (postsError) {
+        console.error('Error fetching posts:', postsError);
+        return;
+      }
+
+      if (!postsData || postsData.length === 0) {
+        setPinnedPosts([]);
+        return;
+      }
+
+      // Get user profiles
+      const userIds = [...new Set(postsData.map(post => post.user_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, is_verified')
+        .in('id', userIds);
+
+      const profilesMap = new Map(
+        (profilesData || []).map(profile => [profile.id, profile])
+      );
+
       // Transform data to match Post interface
-      const enrichedPosts: Post[] = (pinnedData || []).map(item => ({
-        id: item.posts.id,
-        content: item.posts.content,
-        user_id: item.posts.user_id,
-        created_at: item.posts.created_at,
-        updated_at: item.posts.updated_at,
-        likes_count: item.posts.likes_count || 0,
-        retweets_count: item.posts.retweets_count || 0,
-        replies_count: item.posts.replies_count || 0,
-        profiles: item.posts.profiles
+      const enrichedPosts: Post[] = postsData.map(post => ({
+        id: post.id,
+        content: post.content,
+        user_id: post.user_id,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        likes_count: post.likes_count || 0,
+        retweets_count: post.retweets_count || 0,
+        replies_count: post.replies_count || 0,
+        profiles: profilesMap.get(post.user_id) || {
+          username: 'unknown',
+          display_name: 'Unknown User',
+          avatar_url: '',
+          is_verified: false
+        }
       }));
 
       setPinnedPosts(enrichedPosts);

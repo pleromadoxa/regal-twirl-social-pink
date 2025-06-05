@@ -33,16 +33,10 @@ export const useNotifications = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      // First get notifications
+      const { data: notificationsData, error } = await supabase
         .from('notifications')
-        .select(`
-          *,
-          actor_profile:profiles!notifications_actor_id_fkey (
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -52,20 +46,46 @@ export const useNotifications = () => {
         return;
       }
 
-      const typedNotifications: Notification[] = (data || []).map(item => ({
-        id: item.id,
-        user_id: item.user_id,
-        type: item.type as Notification['type'],
-        actor_id: item.actor_id,
-        post_id: item.post_id,
-        message: item.message,
-        read: item.read,
-        created_at: item.created_at,
-        actor_profile: item.actor_profile
+      if (!notificationsData || notificationsData.length === 0) {
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
+
+      // Get unique actor IDs to fetch profiles
+      const actorIds = [...new Set(notificationsData
+        .map(n => n.actor_id)
+        .filter(id => id !== null))] as string[];
+
+      let profilesMap = new Map();
+      
+      if (actorIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', actorIds);
+
+        if (profilesData) {
+          profilesMap = new Map(
+            profilesData.map(profile => [profile.id, profile])
+          );
+        }
+      }
+
+      const enrichedNotifications: Notification[] = notificationsData.map(notification => ({
+        id: notification.id,
+        user_id: notification.user_id,
+        type: notification.type as Notification['type'],
+        actor_id: notification.actor_id,
+        post_id: notification.post_id,
+        message: notification.message,
+        read: notification.read,
+        created_at: notification.created_at,
+        actor_profile: notification.actor_id ? profilesMap.get(notification.actor_id) || null : null
       }));
 
-      setNotifications(typedNotifications);
-      setUnreadCount(typedNotifications.filter(n => !n.read).length);
+      setNotifications(enrichedNotifications);
+      setUnreadCount(enrichedNotifications.filter(n => !n.read).length);
     } catch (error) {
       console.error('Error in fetchNotifications:', error);
     } finally {
