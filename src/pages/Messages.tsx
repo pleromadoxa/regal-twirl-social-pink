@@ -5,15 +5,26 @@ import { Send, ArrowLeft, PlusCircle, Users, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMessages } from "@/hooks/useMessages";
+import { useEnhancedMessages } from "@/hooks/useEnhancedMessages";
 import SidebarNav from "@/components/SidebarNav";
+import EmojiPicker from "@/components/EmojiPicker";
+import GroupCreationDialog from "@/components/GroupCreationDialog";
 import { format } from "date-fns";
 
 const Messages = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { conversations, messages, loading, selectedConversation, setSelectedConversation, sendMessage } = useMessages();
+  const { 
+    conversations, 
+    messages, 
+    loading, 
+    selectedConversation, 
+    setSelectedConversation, 
+    sendMessage,
+    createGroupConversation,
+    startDirectConversation
+  } = useEnhancedMessages();
   
   const [newMessage, setNewMessage] = useState("");
   const [newConversationUserId, setNewConversationUserId] = useState("");
@@ -52,21 +63,32 @@ const Messages = () => {
     if (!newMessage.trim()) return;
 
     if (selectedConversation) {
-      const conversation = conversations.find(c => c.id === selectedConversation);
-      if (conversation?.other_user) {
-        await sendMessage(conversation.other_user.id, newMessage);
-        setNewMessage("");
-      }
-    } else if (newConversationUserId) {
-      await sendMessage(newConversationUserId, newMessage);
+      await sendMessage(selectedConversation, newMessage);
       setNewMessage("");
+    } else if (newConversationUserId) {
+      const conversationId = await startDirectConversation(newConversationUserId);
+      if (conversationId) {
+        await sendMessage(conversationId, newMessage);
+        setNewMessage("");
+        setNewConversationUserId("");
+        setShowNewChat(false);
+      }
+    }
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+  };
+
+  const handleStartDirectChat = async () => {
+    if (newConversationUserId.trim()) {
+      await startDirectConversation(newConversationUserId.trim());
       setNewConversationUserId("");
       setShowNewChat(false);
     }
   };
 
   const selectedConversationData = conversations.find(c => c.id === selectedConversation);
-  const conversationMessages = selectedConversation ? messages : [];
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
@@ -88,20 +110,32 @@ const Messages = () => {
                 >
                   <PlusCircle className="w-5 h-5" />
                 </Button>
-                <Button variant="ghost" size="sm" className="rounded-full">
-                  <Users className="w-5 h-5" />
-                </Button>
+                <GroupCreationDialog 
+                  onCreateGroup={createGroupConversation}
+                  trigger={
+                    <Button variant="ghost" size="sm" className="rounded-full">
+                      <Users className="w-5 h-5" />
+                    </Button>
+                  }
+                />
               </div>
             </div>
             
             {showNewChat && (
-              <div className="mt-4">
+              <div className="mt-4 space-y-3">
                 <Input
                   placeholder="Enter user ID to start conversation..."
                   value={newConversationUserId}
                   onChange={(e) => setNewConversationUserId(e.target.value)}
                   className="rounded-2xl"
                 />
+                <Button
+                  onClick={handleStartDirectChat}
+                  disabled={!newConversationUserId.trim()}
+                  className="w-full rounded-2xl bg-purple-600 hover:bg-purple-700"
+                >
+                  Start Conversation
+                </Button>
               </div>
             )}
           </div>
@@ -122,8 +156,18 @@ const Messages = () => {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center overflow-hidden">
-                      {conversation.other_user?.avatar_url ? (
+                    <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center overflow-hidden relative">
+                      {conversation.is_group ? (
+                        conversation.group_avatar_url ? (
+                          <img
+                            src={conversation.group_avatar_url}
+                            alt={conversation.group_name || 'Group'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Users className="w-6 h-6 text-slate-500" />
+                        )
+                      ) : conversation.other_user?.avatar_url ? (
                         <img
                           src={conversation.other_user.avatar_url}
                           alt={conversation.other_user.display_name || conversation.other_user.username}
@@ -137,8 +181,16 @@ const Messages = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                        {conversation.other_user?.display_name || conversation.other_user?.username || 'Unknown User'}
+                        {conversation.is_group 
+                          ? conversation.group_name || 'Unnamed Group'
+                          : conversation.other_user?.display_name || conversation.other_user?.username || 'Unknown User'
+                        }
                       </p>
+                      {conversation.is_group && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {conversation.participants?.length || 0} members
+                        </p>
+                      )}
                       <p className="text-sm text-slate-600 dark:text-slate-400">
                         {format(new Date(conversation.last_message_at), 'MMM d')}
                       </p>
@@ -175,7 +227,17 @@ const Messages = () => {
                   <ArrowLeft className="w-4 h-4" />
                 </Button>
                 <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center overflow-hidden">
-                  {selectedConversationData?.other_user?.avatar_url ? (
+                  {selectedConversationData?.is_group ? (
+                    selectedConversationData.group_avatar_url ? (
+                      <img
+                        src={selectedConversationData.group_avatar_url}
+                        alt={selectedConversationData.group_name || 'Group'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Users className="w-5 h-5 text-slate-500" />
+                    )
+                  ) : selectedConversationData?.other_user?.avatar_url ? (
                     <img
                       src={selectedConversationData.other_user.avatar_url}
                       alt={selectedConversationData.other_user.display_name || selectedConversationData.other_user.username}
@@ -189,9 +251,16 @@ const Messages = () => {
                 </div>
                 <div>
                   <p className="font-semibold text-slate-900 dark:text-slate-100">
-                    {selectedConversationData?.other_user?.display_name || selectedConversationData?.other_user?.username || 'New Conversation'}
+                    {selectedConversationData?.is_group
+                      ? selectedConversationData.group_name || 'Unnamed Group'
+                      : selectedConversationData?.other_user?.display_name || selectedConversationData?.other_user?.username || 'New Conversation'
+                    }
                   </p>
-                  {selectedConversationData?.other_user?.username && (
+                  {selectedConversationData?.is_group ? (
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {selectedConversationData.participants?.length || 0} members
+                    </p>
+                  ) : selectedConversationData?.other_user?.username && (
                     <p className="text-sm text-slate-600 dark:text-slate-400">
                       @{selectedConversationData.other_user.username}
                     </p>
@@ -201,24 +270,33 @@ const Messages = () => {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-25 dark:bg-slate-900">
-                {conversationMessages.length === 0 ? (
+                {messages.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-slate-500 dark:text-slate-400">No messages yet. Start the conversation!</p>
                   </div>
                 ) : (
-                  conversationMessages.map((message) => (
+                  messages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex ${message.sender_id === user.id ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm ${
+                        className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm animate-fade-in ${
                           message.sender_id === user.id
                             ? 'bg-purple-600 text-white'
                             : 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600'
                         }`}
                       >
-                        <p className="text-sm">{message.content}</p>
+                        {selectedConversationData?.is_group && message.sender_id !== user.id && (
+                          <p className={`text-xs mb-1 font-medium ${
+                            message.sender_id === user.id
+                              ? 'text-purple-200'
+                              : 'text-purple-600 dark:text-purple-400'
+                          }`}>
+                            {message.sender_profile?.display_name || message.sender_profile?.username || 'Unknown'}
+                          </p>
+                        )}
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                         <p className={`text-xs mt-2 ${
                           message.sender_id === user.id
                             ? 'text-purple-200'
@@ -234,13 +312,20 @@ const Messages = () => {
 
               {/* Message Input */}
               <form onSubmit={handleSendMessage} className="border-t border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
-                <div className="flex gap-3">
+                <div className="flex gap-3 items-end">
                   <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type a message..."
-                    className="flex-1 rounded-2xl border-slate-300 dark:border-slate-600"
+                    className="flex-1 rounded-2xl border-slate-300 dark:border-slate-600 resize-none"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage(e);
+                      }
+                    }}
                   />
+                  <EmojiPicker onEmojiSelect={handleEmojiSelect} />
                   <Button 
                     type="submit" 
                     size="sm" 
@@ -262,13 +347,24 @@ const Messages = () => {
                 <p className="text-slate-600 dark:text-slate-400 mb-4">
                   Select a conversation to start messaging
                 </p>
-                <Button 
-                  onClick={() => setShowNewChat(true)}
-                  className="bg-purple-600 hover:bg-purple-700 rounded-2xl"
-                >
-                  <PlusCircle className="w-4 h-4 mr-2" />
-                  Start New Conversation
-                </Button>
+                <div className="flex gap-3 justify-center">
+                  <Button 
+                    onClick={() => setShowNewChat(true)}
+                    className="bg-purple-600 hover:bg-purple-700 rounded-2xl"
+                  >
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Start Chat
+                  </Button>
+                  <GroupCreationDialog 
+                    onCreateGroup={createGroupConversation}
+                    trigger={
+                      <Button variant="outline" className="rounded-2xl">
+                        <Users className="w-4 h-4 mr-2" />
+                        Create Group
+                      </Button>
+                    }
+                  />
+                </div>
               </div>
             </div>
           )}

@@ -1,10 +1,9 @@
 
-import { Home, Search, Bell, MessageCircle, Pin, User, MoreHorizontal, LogOut, PlusCircle } from "lucide-react";
+import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
-import NotificationDropdown from "./NotificationDropdown";
 
 const SidebarNav = () => {
   const { user, signOut } = useAuth();
@@ -40,18 +39,7 @@ const SidebarNav = () => {
         <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400">
           Regal
         </h1>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          {user && <NotificationDropdown />}
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate('/notifications')}
-            className="relative"
-          >
-            <Bell className="w-5 h-5" />
-          </Button>
-        </div>
+        <ThemeToggle />
       </div>
 
       {/* Navigation */}
