@@ -1,9 +1,10 @@
 
-import { Home, Search, Bell, Mail, Bookmark, User, MoreHorizontal, LogOut } from "lucide-react";
+import { Home, Search, Bell, Mail, Pin, User, MoreHorizontal, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
+import NotificationDropdown from "./NotificationDropdown";
 
 const SidebarNav = () => {
   const { user, signOut } = useAuth();
@@ -15,7 +16,7 @@ const SidebarNav = () => {
     { icon: Search, label: "Explore", path: "/explore", active: location.pathname === "/explore" },
     { icon: Bell, label: "Notifications", path: "/notifications", active: location.pathname === "/notifications" },
     { icon: Mail, label: "Messages", path: "/messages", active: location.pathname === "/messages" },
-    { icon: Bookmark, label: "Bookmarks", path: "/bookmarks", active: location.pathname === "/bookmarks" },
+    { icon: Pin, label: "Pinned", path: "/pinned", active: location.pathname === "/pinned" },
     { icon: User, label: "Profile", path: `/profile/${user?.id}`, active: location.pathname.startsWith("/profile") },
     { icon: MoreHorizontal, label: "More", path: "/more", active: location.pathname === "/more" },
   ];
@@ -26,7 +27,7 @@ const SidebarNav = () => {
   };
 
   const handleNavigation = (path: string) => {
-    if (path === "/explore" || path === "/notifications" || path === "/bookmarks" || path === "/more") {
+    if (path === "/explore" || path === "/more") {
       // These pages don't exist yet, so we'll just return for now
       return;
     }
@@ -40,7 +41,10 @@ const SidebarNav = () => {
         <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400">
           Regal
         </h1>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          {user && <NotificationDropdown />}
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Navigation */}

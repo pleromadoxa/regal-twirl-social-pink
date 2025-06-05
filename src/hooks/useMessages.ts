@@ -95,11 +95,7 @@ export const useMessages = () => {
     try {
       const { data: messagesData, error } = await supabase
         .from('messages')
-        .select(`
-          *,
-          sender_profile:profiles!messages_sender_id_fkey(username, display_name, avatar_url),
-          recipient_profile:profiles!messages_recipient_id_fkey(username, display_name, avatar_url)
-        `)
+        .select('*')
         .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
         .order('created_at', { ascending: true });
 
