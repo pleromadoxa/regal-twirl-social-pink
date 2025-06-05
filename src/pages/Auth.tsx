@@ -67,10 +67,10 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 dark:from-purple-950 dark:via-blue-950 dark:to-pink-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">
+          <CardTitle className="text-2xl font-bold text-purple-600 dark:text-purple-400">
             Welcome to Regal
           </CardTitle>
           <CardDescription>
@@ -127,7 +127,7 @@ const Auth = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-purple-600 via-blue-500 to-pink-600 hover:from-purple-700 hover:via-blue-600 hover:to-pink-700"
+              className="w-full bg-purple-600 hover:bg-purple-700"
               disabled={loading}
             >
               {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Sign Up')}

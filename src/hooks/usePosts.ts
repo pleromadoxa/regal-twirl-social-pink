@@ -6,20 +6,21 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface Post {
   id: string;
+  user_id: string;
   content: string;
   created_at: string;
+  updated_at: string;
   likes_count: number;
   retweets_count: number;
   replies_count: number;
-  user_id: string;
+  user_liked?: boolean;
+  user_retweeted?: boolean;
   profiles: {
     username: string;
     display_name: string;
-    avatar_url: string | null;
+    avatar_url: string;
     is_verified: boolean;
   };
-  user_liked?: boolean;
-  user_retweeted?: boolean;
 }
 
 export const usePosts = () => {
@@ -30,87 +31,112 @@ export const usePosts = () => {
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      
+      let query = supabase
         .from('posts')
         .select(`
           *,
-          profiles:user_id (
-            username,
-            display_name,
-            avatar_url,
-            is_verified
-          )
+          profiles:user_id (username, display_name, avatar_url, is_verified)
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      const { data: postsData, error } = await query;
 
-      // Check if user has liked or retweeted each post
-      if (user && data) {
-        const postsWithUserActions = await Promise.all(
-          data.map(async (post) => {
-            const [likesResult, retweetsResult] = await Promise.all([
-              supabase
-                .from('likes')
-                .select('id')
-                .eq('post_id', post.id)
-                .eq('user_id', user.id)
-                .single(),
-              supabase
-                .from('retweets')
-                .select('id')
-                .eq('post_id', post.id)
-                .eq('user_id', user.id)
-                .single()
-            ]);
+      if (error) {
+        console.error('Error fetching posts:', error);
+        return;
+      }
 
-            return {
-              ...post,
-              user_liked: !likesResult.error,
-              user_retweeted: !retweetsResult.error
-            };
-          })
-        );
-        setPosts(postsWithUserActions);
+      if (user) {
+        // Get user likes and retweets
+        const postIds = postsData?.map(post => post.id) || [];
+        
+        const [likesData, retweetsData] = await Promise.all([
+          supabase
+            .from('likes')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds),
+          supabase
+            .from('retweets')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds)
+        ]);
+
+        const userLikedPosts = new Set(likesData.data?.map(like => like.post_id) || []);
+        const userRetweetedPosts = new Set(retweetsData.data?.map(retweet => retweet.post_id) || []);
+
+        const enrichedPosts = postsData?.map(post => ({
+          ...post,
+          user_liked: userLikedPosts.has(post.id),
+          user_retweeted: userRetweetedPosts.has(post.id),
+          likes_count: post.likes_count || 0,
+          retweets_count: post.retweets_count || 0,
+          replies_count: post.replies_count || 0,
+        })) || [];
+
+        setPosts(enrichedPosts);
       } else {
-        setPosts(data || []);
+        const enrichedPosts = postsData?.map(post => ({
+          ...post,
+          likes_count: post.likes_count || 0,
+          retweets_count: post.retweets_count || 0,
+          replies_count: post.replies_count || 0,
+        })) || [];
+        
+        setPosts(enrichedPosts);
       }
     } catch (error) {
-      console.error('Error fetching posts:', error);
-      toast({
-        title: "Error loading posts",
-        description: "Please try refreshing the page.",
-        variant: "destructive"
-      });
+      console.error('Error in fetchPosts:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const createPost = async (content: string) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to create a post",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
       const { error } = await supabase
         .from('posts')
-        .insert({
-          content,
-          user_id: user.id
-        });
+        .insert([
+          {
+            user_id: user.id,
+            content: content.trim(),
+          }
+        ]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating post:', error);
+        toast({
+          title: "Error creating post",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
 
       toast({
         title: "Post created!",
-        description: "Your post has been published."
+        description: "Your post has been published successfully."
       });
 
-      fetchPosts(); // Refresh posts
+      // Refresh posts
+      fetchPosts();
     } catch (error) {
-      console.error('Error creating post:', error);
+      console.error('Error in createPost:', error);
       toast({
-        title: "Error creating post",
-        description: "Please try again.",
+        title: "Something went wrong",
+        description: "Please try again later.",
         variant: "destructive"
       });
     }
@@ -119,66 +145,72 @@ export const usePosts = () => {
   const toggleLike = async (postId: string) => {
     if (!user) return;
 
-    try {
-      const post = posts.find(p => p.id === postId);
-      if (!post) return;
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
 
+    try {
       if (post.user_liked) {
+        // Unlike
         await supabase
           .from('likes')
           .delete()
-          .eq('post_id', postId)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .eq('post_id', postId);
       } else {
+        // Like
         await supabase
           .from('likes')
-          .insert({
-            post_id: postId,
-            user_id: user.id
-          });
+          .insert([{ user_id: user.id, post_id: postId }]);
       }
 
-      fetchPosts(); // Refresh posts
+      // Update local state
+      setPosts(posts.map(p => 
+        p.id === postId 
+          ? { 
+              ...p, 
+              user_liked: !p.user_liked,
+              likes_count: p.user_liked ? p.likes_count - 1 : p.likes_count + 1
+            }
+          : p
+      ));
     } catch (error) {
       console.error('Error toggling like:', error);
-      toast({
-        title: "Error updating like",
-        description: "Please try again.",
-        variant: "destructive"
-      });
     }
   };
 
   const toggleRetweet = async (postId: string) => {
     if (!user) return;
 
-    try {
-      const post = posts.find(p => p.id === postId);
-      if (!post) return;
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
 
+    try {
       if (post.user_retweeted) {
+        // Un-retweet
         await supabase
           .from('retweets')
           .delete()
-          .eq('post_id', postId)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .eq('post_id', postId);
       } else {
+        // Retweet
         await supabase
           .from('retweets')
-          .insert({
-            post_id: postId,
-            user_id: user.id
-          });
+          .insert([{ user_id: user.id, post_id: postId }]);
       }
 
-      fetchPosts(); // Refresh posts
+      // Update local state
+      setPosts(posts.map(p => 
+        p.id === postId 
+          ? { 
+              ...p, 
+              user_retweeted: !p.user_retweeted,
+              retweets_count: p.user_retweeted ? p.retweets_count - 1 : p.retweets_count + 1
+            }
+          : p
+      ));
     } catch (error) {
       console.error('Error toggling retweet:', error);
-      toast({
-        title: "Error updating retweet",
-        description: "Please try again.",
-        variant: "destructive"
-      });
     }
   };
 
