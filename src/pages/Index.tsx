@@ -11,7 +11,7 @@ import { usePosts } from "@/hooks/usePosts";
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { posts, loading: postsLoading, likePost, retweetPost, pinPost, deletePost, refetch } = usePosts();
+  const { posts, loading: postsLoading, toggleLike, toggleRetweet, togglePin, deletePost, refetch } = usePosts();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -40,7 +40,7 @@ const Index = () => {
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Home</h1>
         </div>
         
-        <PostComposer onPostCreated={refetch} />
+        <PostComposer />
         
         <div className="border-t border-slate-200 dark:border-slate-700">
           {postsLoading ? (
@@ -51,9 +51,9 @@ const Index = () => {
           ) : (
             <PostsList 
               posts={posts}
-              onLike={likePost}
-              onRetweet={retweetPost}
-              onPin={pinPost}
+              onLike={toggleLike}
+              onRetweet={toggleRetweet}
+              onPin={togglePin}
               onDelete={deletePost}
             />
           )}
