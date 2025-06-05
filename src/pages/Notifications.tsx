@@ -1,154 +1,153 @@
 
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Heart, Repeat, UserCheck, User } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNotifications } from "@/hooks/useNotifications";
-import SidebarNav from "@/components/SidebarNav";
-import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from 'date-fns';
+import { Bell, User, Heart, Repeat, MessageCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Notifications = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { notifications, loading, markAsRead, markAllAsRead } = useNotifications();
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>
-    );
-  }
-
   if (!user) {
+    navigate('/auth');
     return null;
   }
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'like':
-        return <Heart className="w-6 h-6 text-red-500 fill-current" />;
+        return <Heart className="w-4 h-4 text-red-500" />;
       case 'retweet':
-        return <Repeat className="w-6 h-6 text-green-500" />;
+        return <Repeat className="w-4 h-4 text-green-500" />;
       case 'follow':
-        return <UserCheck className="w-6 h-6 text-blue-500" />;
+        return <User className="w-4 h-4 text-blue-500" />;
+      case 'mention':
+      case 'reply':
+        return <MessageCircle className="w-4 h-4 text-purple-500" />;
       default:
-        return <User className="w-6 h-6 text-gray-500" />;
+        return <Bell className="w-4 h-4" />;
     }
   };
 
-  const handleNotificationClick = (notification: any) => {
-    if (!notification.read) {
-      markAsRead(notification.id);
-    }
+  const getNotificationMessage = (notification: any) => {
+    const actorName = notification.actor_profile?.display_name || 'Someone';
     
-    // Navigate to relevant page based on notification type
-    if (notification.post_id) {
-      // For now, just navigate to home since we don't have individual post pages
-      navigate('/');
-    } else if (notification.type === 'follow' && notification.actor_id) {
-      navigate(`/profile/${notification.actor_id}`);
+    switch (notification.type) {
+      case 'like':
+        return `${actorName} liked your post`;
+      case 'retweet':
+        return `${actorName} retweeted your post`;
+      case 'follow':
+        return `${actorName} started following you`;
+      case 'mention':
+        return `${actorName} mentioned you in a post`;
+      case 'reply':
+        return `${actorName} replied to your post`;
+      default:
+        return notification.message || 'New notification';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="animate-pulse space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-20 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <div className="max-w-7xl mx-auto flex gap-6">
-        <SidebarNav />
-        
-        <main className="flex-1 border-x border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-          {/* Header */}
-          <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700 p-5 z-10">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                Notifications
-              </h1>
-              {notifications.some(n => !n.read) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={markAllAsRead}
-                >
-                  Mark all as read
-                </Button>
-              )}
-            </div>
-          </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-2xl font-bold text-purple-600 dark:text-purple-400">
+              <Bell className="w-6 h-6" />
+              Notifications
+            </CardTitle>
+            {notifications.filter(n => !n.read).length > 0 && (
+              <Button 
+                onClick={markAllAsRead}
+                variant="outline"
+                size="sm"
+              >
+                Mark all as read
+              </Button>
+            )}
+          </CardHeader>
+        </Card>
 
-          {/* Notifications List */}
-          <div className="divide-y divide-slate-200 dark:divide-slate-700">
-            {loading ? (
-              <div className="flex justify-center p-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-              </div>
-            ) : notifications.length > 0 ? (
-              notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`p-6 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${
-                    !notification.read ? 'bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-500' : ''
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 mt-1">
+        {notifications.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Bell className="w-12 h-12 mx-auto text-slate-400 mb-4" />
+              <h3 className="text-lg font-medium text-slate-600 dark:text-slate-300 mb-2">
+                No notifications yet
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400">
+                When someone interacts with your posts, you'll see it here.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {notifications.map((notification) => (
+              <Card 
+                key={notification.id} 
+                className={`cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                  !notification.read ? 'border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20' : ''
+                }`}
+                onClick={() => !notification.read && markAsRead(notification.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
                       {getNotificationIcon(notification.type)}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        {notification.actor_profile?.avatar_url ? (
-                          <img
-                            src={notification.actor_profile.avatar_url}
-                            alt={notification.actor_profile.display_name}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center">
-                            <User className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-                          </div>
+                    
+                    <div className="flex-grow min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {getNotificationMessage(notification)}
+                        </p>
+                        {!notification.read && (
+                          <Badge variant="secondary" className="text-xs">
+                            New
+                          </Badge>
                         )}
-                        <div className="flex-1">
-                          <p className="font-semibold text-slate-900 dark:text-slate-100">
-                            {notification.actor_profile?.display_name || 'Unknown User'}
-                          </p>
-                          <p className="text-sm text-slate-600 dark:text-slate-400">
-                            @{notification.actor_profile?.username || 'unknown'}
-                          </p>
-                        </div>
                       </div>
-                      <p className="text-slate-700 dark:text-slate-300 mb-2">
-                        {notification.message}
-                      </p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                      
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                       </p>
                     </div>
-                    {!notification.read && (
-                      <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
+
+                    {notification.actor_profile?.avatar_url && (
+                      <div className="flex-shrink-0">
+                        <img 
+                          src={notification.actor_profile.avatar_url} 
+                          alt={notification.actor_profile.display_name}
+                          className="w-8 h-8 rounded-full"
+                        />
+                      </div>
                     )}
                   </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-16">
-                <Bell className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                  No notifications yet
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400">
-                  When someone likes your posts or follows you, you'll see it here.
-                </p>
-              </div>
-            )}
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </main>
+        )}
       </div>
     </div>
   );

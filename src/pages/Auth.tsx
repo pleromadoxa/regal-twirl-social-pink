@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -67,84 +68,161 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-            Welcome to Regal
-          </CardTitle>
-          <CardDescription>
-            {isLogin ? 'Sign in to your account' : 'Create a new account'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-black">
+      {/* Animated Globe Background */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-10">
+        <div className="relative">
+          <Globe className="w-96 h-96 text-white animate-spin" style={{ animationDuration: '30s' }} />
+          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-transparent rounded-full" />
+        </div>
+      </div>
+
+      {/* Grid Pattern Overlay */}
+      <div 
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px'
+        }}
+      />
+
+      <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
+        <div className="w-full max-w-5xl grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left Side - Brand Information */}
+          <div className="text-center lg:text-left space-y-8">
+            <div className="space-y-4">
+              <h1 className="text-5xl lg:text-7xl font-bold text-white tracking-tight">
+                <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Regal
+                </span>
+                <br />
+                <span className="text-white">Network</span>
+              </h1>
+              <p className="text-xl lg:text-2xl text-slate-300 font-medium">
+                The Royal Social Media Experience
+              </p>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+
+            <div className="space-y-6 text-slate-200">
+              <div className="flex items-start gap-4">
+                <div className="w-2 h-2 bg-purple-400 rounded-full mt-3 flex-shrink-0" />
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-1">Connect Globally</h3>
+                  <p className="text-slate-300">Join millions of users sharing their thoughts and experiences worldwide</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="w-2 h-2 bg-pink-400 rounded-full mt-3 flex-shrink-0" />
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-1">Express Yourself</h3>
+                  <p className="text-slate-300">Share your voice with powerful tools for content creation and interaction</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="w-2 h-2 bg-blue-400 rounded-full mt-3 flex-shrink-0" />
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-1">Stay Informed</h3>
+                  <p className="text-slate-300">Keep up with trends, news, and conversations that matter to you</p>
+                </div>
+              </div>
             </div>
-
-            {!isLogin && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name</Label>
-                  <Input
-                    id="displayName"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    required
-                  />
-                </div>
-              </>
-            )}
-
-            <Button 
-              type="submit" 
-              className="w-full bg-purple-600 hover:bg-purple-700"
-              disabled={loading}
-            >
-              {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Sign Up')}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <Button
-              variant="link"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-purple-600"
-            >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-            </Button>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Right Side - Auth Form */}
+          <div className="flex justify-center lg:justify-end">
+            <Card className="w-full max-w-md bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl font-bold text-white">
+                  {isLogin ? 'Welcome Back' : 'Join Regal Network'}
+                </CardTitle>
+                <CardDescription className="text-slate-300">
+                  {isLogin ? 'Sign in to your account' : 'Create your royal account'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-white">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-white">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                      placeholder="Enter your password"
+                    />
+                  </div>
+
+                  {!isLogin && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="username" className="text-white">Username</Label>
+                        <Input
+                          id="username"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          required
+                          className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                          placeholder="Choose a username"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="displayName" className="text-white">Display Name</Label>
+                        <Input
+                          id="displayName"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          required
+                          className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                          placeholder="Your display name"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 transition-all duration-200 transform hover:scale-105"
+                    disabled={loading}
+                  >
+                    {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+                  </Button>
+                </form>
+
+                <div className="mt-6 text-center">
+                  <Button
+                    variant="link"
+                    onClick={() => setIsLogin(!isLogin)}
+                    className="text-purple-300 hover:text-purple-200"
+                  >
+                    {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

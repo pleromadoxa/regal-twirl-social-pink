@@ -3,7 +3,23 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Post } from './usePosts';
+
+export interface Post {
+  id: string;
+  content: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  likes_count: number;
+  retweets_count: number;
+  replies_count: number;
+  profiles: {
+    username: string;
+    display_name: string;
+    avatar_url: string;
+    is_verified: boolean;
+  };
+}
 
 export const usePinnedPosts = () => {
   const [pinnedPosts, setPinnedPosts] = useState<Post[]>([]);
@@ -35,8 +51,12 @@ export const usePinnedPosts = () => {
       }
 
       // Transform data to match Post interface
-      const enrichedPosts: Post[] = pinnedData.map(item => ({
-        ...item.posts,
+      const enrichedPosts: Post[] = (pinnedData || []).map(item => ({
+        id: item.posts.id,
+        content: item.posts.content,
+        user_id: item.posts.user_id,
+        created_at: item.posts.created_at,
+        updated_at: item.posts.updated_at,
         likes_count: item.posts.likes_count || 0,
         retweets_count: item.posts.retweets_count || 0,
         replies_count: item.posts.replies_count || 0,

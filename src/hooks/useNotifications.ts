@@ -17,13 +17,13 @@ export interface Notification {
     username: string;
     display_name: string;
     avatar_url: string;
-  };
+  } | null;
 }
 
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -33,38 +33,39 @@ export const useNotifications = () => {
     try {
       setLoading(true);
       
-      const { data: notificationsData, error } = await supabase
+      const { data, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select(`
+          *,
+          actor_profile:profiles!notifications_actor_id_fkey (
+            username,
+            display_name,
+            avatar_url
+          )
+        `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) {
         console.error('Error fetching notifications:', error);
         return;
       }
 
-      // Get actor profiles for notifications
-      const enrichedNotifications = await Promise.all(
-        notificationsData.map(async (notification) => {
-          if (notification.actor_id) {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('username, display_name, avatar_url')
-              .eq('id', notification.actor_id)
-              .single();
+      const typedNotifications: Notification[] = (data || []).map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        type: item.type as Notification['type'],
+        actor_id: item.actor_id,
+        post_id: item.post_id,
+        message: item.message,
+        read: item.read,
+        created_at: item.created_at,
+        actor_profile: item.actor_profile
+      }));
 
-            return {
-              ...notification,
-              actor_profile: profileData
-            };
-          }
-          return notification;
-        })
-      );
-
-      setNotifications(enrichedNotifications);
-      setUnreadCount(enrichedNotifications.filter(n => !n.read).length);
+      setNotifications(typedNotifications);
+      setUnreadCount(typedNotifications.filter(n => !n.read).length);
     } catch (error) {
       console.error('Error in fetchNotifications:', error);
     } finally {
@@ -79,17 +80,19 @@ export const useNotifications = () => {
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
-        .eq('id', notificationId);
+        .eq('id', notificationId)
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error marking notification as read:', error);
         return;
       }
 
-      // Update local state
-      setNotifications(notifications.map(n => 
-        n.id === notificationId ? { ...n, read: true } : n
-      ));
+      setNotifications(prev => 
+        prev.map(n => 
+          n.id === notificationId ? { ...n, read: true } : n
+        )
+      );
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error in markAsRead:', error);
@@ -111,9 +114,15 @@ export const useNotifications = () => {
         return;
       }
 
-      // Update local state
-      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, read: true }))
+      );
       setUnreadCount(0);
+
+      toast({
+        title: "All notifications marked as read",
+        description: "You're all caught up!"
+      });
     } catch (error) {
       console.error('Error in markAllAsRead:', error);
     }
@@ -122,41 +131,30 @@ export const useNotifications = () => {
   useEffect(() => {
     fetchNotifications();
 
-    // Set up real-time subscription for new notifications
+    // Set up real-time subscription
     if (user) {
-      const channel = supabase
-        .channel('notifications-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('New notification:', payload);
-            fetchNotifications();
-            
-            // Show toast for new notification
-            toast({
-              title: "New notification",
-              description: "You have a new notification"
-            });
-          }
-        )
+      const subscription = supabase
+        .channel('notifications')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        }, () => {
+          fetchNotifications();
+        })
         .subscribe();
 
       return () => {
-        supabase.removeChannel(channel);
+        subscription.unsubscribe();
       };
     }
   }, [user]);
 
   return {
     notifications,
-    unreadCount,
     loading,
+    unreadCount,
     markAsRead,
     markAllAsRead,
     refetch: fetchNotifications
