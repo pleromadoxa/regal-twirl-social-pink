@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,28 +32,43 @@ export const usePosts = () => {
     try {
       setLoading(true);
       
-      // Query posts and join with profiles table
-      const { data: postsData, error } = await supabase
+      // First, get all posts
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles!posts_user_id_fkey (
-            username,
-            display_name,
-            avatar_url,
-            is_verified
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching posts:', error);
+      if (postsError) {
+        console.error('Error fetching posts:', postsError);
         return;
       }
 
+      if (!postsData || postsData.length === 0) {
+        setPosts([]);
+        return;
+      }
+
+      // Get all unique user IDs from posts
+      const userIds = [...new Set(postsData.map(post => post.user_id))];
+
+      // Fetch profiles for all users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, is_verified')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      // Create a map of user_id to profile for easy lookup
+      const profilesMap = new Map(
+        (profilesData || []).map(profile => [profile.id, profile])
+      );
+
       if (user) {
         // Get user likes and retweets
-        const postIds = postsData?.map(post => post.id) || [];
+        const postIds = postsData.map(post => post.id);
         
         const [likesData, retweetsData] = await Promise.all([
           supabase
@@ -72,35 +86,35 @@ export const usePosts = () => {
         const userLikedPosts = new Set(likesData.data?.map(like => like.post_id) || []);
         const userRetweetedPosts = new Set(retweetsData.data?.map(retweet => retweet.post_id) || []);
 
-        const enrichedPosts = postsData?.map(post => ({
+        const enrichedPosts: Post[] = postsData.map(post => ({
           ...post,
           user_liked: userLikedPosts.has(post.id),
           user_retweeted: userRetweetedPosts.has(post.id),
           likes_count: post.likes_count || 0,
           retweets_count: post.retweets_count || 0,
           replies_count: post.replies_count || 0,
-          profiles: post.profiles || {
+          profiles: profilesMap.get(post.user_id) || {
             username: 'unknown',
             display_name: 'Unknown User',
             avatar_url: '',
             is_verified: false
           }
-        })) || [];
+        }));
 
         setPosts(enrichedPosts);
       } else {
-        const enrichedPosts = postsData?.map(post => ({
+        const enrichedPosts: Post[] = postsData.map(post => ({
           ...post,
           likes_count: post.likes_count || 0,
           retweets_count: post.retweets_count || 0,
           replies_count: post.replies_count || 0,
-          profiles: post.profiles || {
+          profiles: profilesMap.get(post.user_id) || {
             username: 'unknown',
             display_name: 'Unknown User',
             avatar_url: '',
             is_verified: false
           }
-        })) || [];
+        }));
         
         setPosts(enrichedPosts);
       }
