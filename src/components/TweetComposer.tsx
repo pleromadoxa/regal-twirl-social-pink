@@ -17,7 +17,7 @@ const TweetComposer = () => {
       const validTweets = threadTweets.filter(tweet => tweet.trim().length > 0);
       if (validTweets.length > 0) {
         toast({
-          description: `Thread with ${validTweets.length} tweets posted!`,
+          description: `Thread with ${validTweets.length} posts posted!`,
           duration: 3000,
         });
         setThreadTweets([""]);
@@ -26,7 +26,7 @@ const TweetComposer = () => {
     } else {
       if (tweetText.trim()) {
         toast({
-          description: "Tweet posted successfully!",
+          description: "Post published successfully!",
           duration: 3000,
         });
         setTweetText("");
@@ -109,7 +109,7 @@ const TweetComposer = () => {
                   <div className="bg-white rounded-lg border border-pink-100 p-3">
                     {renderTweetInput(tweet, (text) => updateThreadTweet(index, text), index)}
                     <div className="flex justify-between items-center mt-2">
-                      <span className="text-xs text-gray-400">Tweet {index + 1}</span>
+                      <span className="text-xs text-gray-400">Post {index + 1}</span>
                       <div className="flex items-center space-x-2">
                         <span className={`text-xs ${getCharacterCountColor(tweet)}`}>
                           {tweet.length}/{maxLength}
@@ -186,7 +186,7 @@ const TweetComposer = () => {
                 onClick={() => setIsThreadMode(!isThreadMode)}
                 className={`border-purple-300 text-purple-600 hover:bg-purple-50 transition-all duration-200 ${isThreadMode ? 'bg-purple-50' : ''}`}
               >
-                {isThreadMode ? 'Single Tweet' : 'Thread'}
+                {isThreadMode ? 'Single Post' : 'Thread'}
               </Button>
               
               {!isThreadMode && (
@@ -225,7 +225,7 @@ const TweetComposer = () => {
                 onClick={handleTweetSubmit}
                 className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-full px-6 disabled:opacity-50 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
               >
-                {isThreadMode ? 'Tweet Thread' : 'Tweet'}
+                {isThreadMode ? 'Post Thread' : 'Post'}
               </Button>
             </div>
           </div>

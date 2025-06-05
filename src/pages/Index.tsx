@@ -108,7 +108,7 @@ const Index = () => {
     }));
 
     toast({
-      description: tweets.find(t => t.id === tweetId)?.isRetweeted ? "Retweet removed" : "Retweeted!",
+      description: tweets.find(t => t.id === tweetId)?.isRetweeted ? "Repost removed" : "Reposted!",
       duration: 2000,
     });
   };
@@ -116,7 +116,7 @@ const Index = () => {
   const handleShare = (tweet: any) => {
     navigator.clipboard.writeText(`"${tweet.content}" - ${tweet.author} (${tweet.handle})`);
     toast({
-      description: "Tweet copied to clipboard!",
+      description: "Post copied to clipboard!",
       duration: 2000,
     });
   };
@@ -161,7 +161,7 @@ const Index = () => {
             </h1>
           </div>
 
-          {/* Tweet Composer */}
+          {/* Post Composer */}
           <div className="border-b border-pink-100">
             <TweetComposer />
           </div>

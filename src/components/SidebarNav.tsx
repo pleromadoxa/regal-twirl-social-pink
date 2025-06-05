@@ -38,10 +38,10 @@ const SidebarNav = () => {
         ))}
       </nav>
 
-      {/* Tweet Button */}
+      {/* Post Button */}
       <div className="pt-4">
         <Button className="w-full py-3 text-lg font-semibold bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all">
-          Tweet
+          Post
         </Button>
       </div>
     </aside>

@@ -86,7 +86,7 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
                   <p className="font-semibold text-gray-900 group-hover:text-pink-700 transition-colors">
                     {trend.topic}
                   </p>
-                  <p className="text-sm text-gray-600">{trend.tweets} Tweets</p>
+                  <p className="text-sm text-gray-600">{trend.tweets} Posts</p>
                 </div>
                 <div className="text-right opacity-0 group-hover:opacity-100 transition-opacity">
                   <TrendingUp className="w-4 h-4 text-pink-500" />
