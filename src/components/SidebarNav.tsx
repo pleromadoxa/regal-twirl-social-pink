@@ -1,9 +1,14 @@
 
-import { Home, Search, Bell, Mail, Bookmark, User, MoreHorizontal } from "lucide-react";
+import { Home, Search, Bell, Mail, Bookmark, User, MoreHorizontal, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 
 const SidebarNav = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
   const navItems = [
     { icon: Home, label: "Home", active: true },
     { icon: Search, label: "Explore" },
@@ -13,6 +18,11 @@ const SidebarNav = () => {
     { icon: User, label: "Profile" },
     { icon: MoreHorizontal, label: "More" },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <aside className="w-64 p-4 space-y-2 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-r border-slate-200 dark:border-slate-700 shadow-sm">
@@ -45,12 +55,31 @@ const SidebarNav = () => {
         ))}
       </nav>
 
-      {/* Post Button */}
-      <div className="pt-4">
-        <Button className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-purple-600 via-blue-500 to-pink-600 hover:from-purple-700 hover:via-blue-600 hover:to-pink-700 text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-110 hover:-translate-y-2 relative overflow-hidden group">
-          <span className="relative z-10 transition-transform duration-300 group-hover:scale-110">Post</span>
-          <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 transform group-hover:translate-x-full"></div>
-        </Button>
+      {/* Post Button or Auth Button */}
+      <div className="pt-4 space-y-2">
+        {user ? (
+          <>
+            <Button className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-purple-600 via-blue-500 to-pink-600 hover:from-purple-700 hover:via-blue-600 hover:to-pink-700 text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-110 hover:-translate-y-2 relative overflow-hidden group">
+              <span className="relative z-10 transition-transform duration-300 group-hover:scale-110">Post</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 transform group-hover:translate-x-full"></div>
+            </Button>
+            <Button 
+              onClick={handleSignOut}
+              variant="outline"
+              className="w-full py-3 text-sm font-medium border-purple-200 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-300"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </>
+        ) : (
+          <Button 
+            onClick={() => navigate('/auth')}
+            className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-purple-600 via-blue-500 to-pink-600 hover:from-purple-700 hover:via-blue-600 hover:to-pink-700 text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-110 hover:-translate-y-2"
+          >
+            Sign In
+          </Button>
+        )}
       </div>
     </aside>
   );
