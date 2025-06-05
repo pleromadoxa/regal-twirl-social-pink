@@ -7,6 +7,7 @@ import TrendingWidget from "@/components/TrendingWidget";
 import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePosts } from "@/hooks/usePosts";
 
 const getTimelyGreeting = () => {
   const hour = new Date().getHours();
@@ -18,6 +19,7 @@ const getTimelyGreeting = () => {
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { posts, loading: postsLoading, toggleLike, toggleRetweet, togglePin, deletePost } = usePosts();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -64,7 +66,19 @@ const Index = () => {
           </div>
 
           {/* Timeline */}
-          <PostsList />
+          {postsLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            </div>
+          ) : (
+            <PostsList 
+              posts={posts}
+              onLike={toggleLike}
+              onRetweet={toggleRetweet}
+              onPin={togglePin}
+              onDelete={deletePost}
+            />
+          )}
         </main>
 
         {/* Right Sidebar */}
