@@ -2,26 +2,35 @@
 import { Home, Search, Bell, Mail, Bookmark, User, MoreHorizontal, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 
 const SidebarNav = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const navItems = [
-    { icon: Home, label: "Home", active: true },
-    { icon: Search, label: "Explore" },
-    { icon: Bell, label: "Notifications" },
-    { icon: Mail, label: "Messages" },
-    { icon: Bookmark, label: "Bookmarks" },
-    { icon: User, label: "Profile" },
-    { icon: MoreHorizontal, label: "More" },
+    { icon: Home, label: "Home", path: "/", active: location.pathname === "/" },
+    { icon: Search, label: "Explore", path: "/explore", active: location.pathname === "/explore" },
+    { icon: Bell, label: "Notifications", path: "/notifications", active: location.pathname === "/notifications" },
+    { icon: Mail, label: "Messages", path: "/messages", active: location.pathname === "/messages" },
+    { icon: Bookmark, label: "Bookmarks", path: "/bookmarks", active: location.pathname === "/bookmarks" },
+    { icon: User, label: "Profile", path: `/profile/${user?.id}`, active: location.pathname.startsWith("/profile") },
+    { icon: MoreHorizontal, label: "More", path: "/more", active: location.pathname === "/more" },
   ];
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
+  };
+
+  const handleNavigation = (path: string) => {
+    if (path === "/explore" || path === "/notifications" || path === "/bookmarks" || path === "/more") {
+      // These pages don't exist yet, so we'll just return for now
+      return;
+    }
+    navigate(path);
   };
 
   return (
@@ -40,6 +49,7 @@ const SidebarNav = () => {
           <Button
             key={item.label}
             variant="ghost"
+            onClick={() => handleNavigation(item.path)}
             className={`w-full justify-start px-4 py-6 text-lg hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl ${
               item.active 
                 ? 'bg-slate-100 dark:bg-slate-700 text-purple-600 dark:text-purple-400 font-semibold' 
