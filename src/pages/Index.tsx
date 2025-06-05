@@ -1,25 +1,17 @@
 
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
-import SidebarNav from "@/components/SidebarNav";
-import TrendingWidget from "@/components/TrendingWidget";
-import TweetComposer from "@/components/TweetComposer";
-import PostsList from "@/components/PostsList";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import SidebarNav from "@/components/SidebarNav";
+import RightSidebar from "@/components/RightSidebar";
+import PostComposer from "@/components/PostComposer";
+import PostsList from "@/components/PostsList";
 import { usePosts } from "@/hooks/usePosts";
-
-const getTimelyGreeting = () => {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-};
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { posts, loading: postsLoading, toggleLike, toggleRetweet, togglePin, deletePost } = usePosts();
+  const { posts, loading: postsLoading, likePost, retweetPost, pinPost, deletePost, refetch } = usePosts();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -30,72 +22,45 @@ const Index = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
       </div>
     );
   }
 
   if (!user) {
-    return null; // Will redirect to auth
+    return null;
   }
 
-  const greeting = getTimelyGreeting();
-  const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <div className="max-w-7xl mx-auto flex gap-6">
-        {/* Sidebar */}
-        <SidebarNav />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
+      <SidebarNav />
+      
+      <main className="flex-1 max-w-2xl mx-auto border-x border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        <div className="sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 p-4">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Home</h1>
+        </div>
         
-        {/* Main Content */}
-        <main className="flex-1 border-x border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-          {/* Header */}
-          <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700 p-5 z-10">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-              Home
-            </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              {greeting}, {username}!
-            </p>
-          </div>
-
-          {/* Enhanced Tweet Composer */}
-          <div className="border-b border-slate-200 dark:border-slate-700">
-            <TweetComposer />
-          </div>
-
-          {/* Timeline */}
+        <PostComposer onPostCreated={refetch} />
+        
+        <div className="border-t border-slate-200 dark:border-slate-700">
           {postsLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+              <p className="mt-4 text-slate-500">Loading posts...</p>
             </div>
           ) : (
             <PostsList 
               posts={posts}
-              onLike={toggleLike}
-              onRetweet={toggleRetweet}
-              onPin={togglePin}
+              onLike={likePost}
+              onRetweet={retweetPost}
+              onPin={pinPost}
               onDelete={deletePost}
             />
           )}
-        </main>
+        </div>
+      </main>
 
-        {/* Right Sidebar */}
-        <aside className="w-80 p-4 space-y-6">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-4 top-4 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search Regal"
-              className="w-full pl-12 pr-4 py-4 bg-slate-100 dark:bg-slate-700 rounded-2xl border-0 focus:ring-2 focus:ring-purple-500 transition-all duration-300 placeholder:text-slate-500 text-slate-900 dark:text-slate-100"
-            />
-          </div>
-
-          <TrendingWidget onHashtagClick={() => {}} />
-        </aside>
-      </div>
+      <RightSidebar />
     </div>
   );
 };

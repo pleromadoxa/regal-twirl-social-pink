@@ -25,8 +25,8 @@ const SidebarNav = () => {
   };
 
   const handleNavigation = (path: string) => {
-    if (path === "/explore" || path === "/more") {
-      // These pages don't exist yet, so we'll just return for now
+    if (path === "/more") {
+      // This page doesn't exist yet, so we'll just return for now
       return;
     }
     navigate(path);
