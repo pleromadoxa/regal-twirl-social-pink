@@ -59,7 +59,7 @@ const EmojiPicker = ({ onEmojiSelect, className = "" }: EmojiPickerProps) => {
                   onEmojiSelect(emoji);
                   setIsOpen(false);
                 }}
-                className="text-xl hover:bg-slate-100 dark:hover:bg-slate-700 rounded p-1 transition-colors"
+                className="text-xl hover:bg-slate-100 dark:hover:bg-slate-700 rounded p-1 transition-colors animate-pulse"
               >
                 {emoji}
               </button>

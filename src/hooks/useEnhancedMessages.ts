@@ -22,10 +22,6 @@ export interface EnhancedConversation {
   id: string;
   participant_1: string;
   participant_2: string;
-  is_group: boolean;
-  group_name: string | null;
-  group_avatar_url: string | null;
-  created_by: string | null;
   last_message_at: string;
   created_at: string;
   other_user?: {
@@ -34,13 +30,6 @@ export interface EnhancedConversation {
     display_name: string;
     avatar_url: string;
   };
-  participants?: Array<{
-    id: string;
-    username: string;
-    display_name: string;
-    avatar_url: string;
-    is_admin: boolean;
-  }>;
   last_message?: EnhancedMessage;
 }
 
@@ -72,47 +61,19 @@ export const useEnhancedMessages = () => {
       // Get enriched conversations with participant info
       const enrichedConversations = await Promise.all(
         conversationsData.map(async (conv) => {
-          if (conv.is_group) {
-            // Get group participants
-            const { data: participantsData } = await supabase
-              .from('conversation_participants')
-              .select(`
-                user_id,
-                is_admin,
-                profiles:user_id (
-                  id,
-                  username,
-                  display_name,
-                  avatar_url
-                )
-              `)
-              .eq('conversation_id', conv.id);
+          // Get other user for one-on-one conversation
+          const otherUserId = conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1;
+          
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url')
+            .eq('id', otherUserId)
+            .single();
 
-            return {
-              ...conv,
-              participants: participantsData?.map(p => ({
-                id: p.profiles.id,
-                username: p.profiles.username,
-                display_name: p.profiles.display_name,
-                avatar_url: p.profiles.avatar_url,
-                is_admin: p.is_admin
-              })) || []
-            };
-          } else {
-            // Get other user for one-on-one conversation
-            const otherUserId = conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1;
-            
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('id, username, display_name, avatar_url')
-              .eq('id', otherUserId)
-              .single();
-
-            return {
-              ...conv,
-              other_user: profileData
-            };
-          }
+          return {
+            ...conv,
+            other_user: profileData
+          };
         })
       );
 
@@ -128,15 +89,40 @@ export const useEnhancedMessages = () => {
     if (!user) return;
 
     try {
+      // Get conversation details
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('id', conversationId)
+        .single();
+
+      if (!conversation) return;
+
+      // Get messages between the participants
       const { data: messagesData, error } = await supabase
-        .rpc('get_conversation_messages', { conv_id: conversationId });
+        .from('messages')
+        .select(`
+          *,
+          sender_profile:profiles!messages_sender_id_fkey(
+            username,
+            display_name,
+            avatar_url
+          )
+        `)
+        .or(`and(sender_id.eq.${conversation.participant_1},recipient_id.eq.${conversation.participant_2}),and(sender_id.eq.${conversation.participant_2},recipient_id.eq.${conversation.participant_1})`)
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching messages:', error);
         return;
       }
 
-      setMessages(messagesData || []);
+      const formattedMessages = messagesData?.map(msg => ({
+        ...msg,
+        sender_profile: Array.isArray(msg.sender_profile) ? msg.sender_profile[0] : msg.sender_profile
+      })) || [];
+
+      setMessages(formattedMessages);
     } catch (error) {
       console.error('Error in fetchMessages:', error);
     }
@@ -156,17 +142,9 @@ export const useEnhancedMessages = () => {
       const conversation = conversations.find(c => c.id === conversationId);
       if (!conversation) return;
 
-      let recipientId: string;
-      
-      if (conversation.is_group) {
-        // For group messages, we'll use the conversation creator as recipient
-        // This is a simplified approach - in a real app you might want different logic
-        recipientId = conversation.created_by || conversation.participant_1;
-      } else {
-        recipientId = conversation.participant_1 === user.id 
-          ? conversation.participant_2 
-          : conversation.participant_1;
-      }
+      const recipientId = conversation.participant_1 === user.id 
+        ? conversation.participant_2 
+        : conversation.participant_1;
 
       const { error } = await supabase
         .from('messages')
@@ -213,42 +191,39 @@ export const useEnhancedMessages = () => {
     if (!user) return;
 
     try {
-      // Create the conversation
-      const { data: newConv, error: convError } = await supabase
+      // For now, create a simple conversation with the first participant
+      // This is a simplified implementation until we have proper group support
+      if (participantIds.length === 0) {
+        toast({
+          title: "Error creating group",
+          description: "Please add at least one participant",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data: newConv, error } = await supabase
         .from('conversations')
         .insert({
           participant_1: user.id,
-          participant_2: participantIds[0] || user.id, // Fallback
-          is_group: true,
-          group_name: groupName,
-          created_by: user.id
+          participant_2: participantIds[0]
         })
         .select('id')
         .single();
 
-      if (convError) {
-        console.error('Error creating group conversation:', convError);
-        return;
-      }
-
-      // Add all participants
-      const participantsToInsert = [
-        { conversation_id: newConv.id, user_id: user.id, is_admin: true },
-        ...participantIds.map(id => ({ conversation_id: newConv.id, user_id: id, is_admin: false }))
-      ];
-
-      const { error: participantsError } = await supabase
-        .from('conversation_participants')
-        .insert(participantsToInsert);
-
-      if (participantsError) {
-        console.error('Error adding participants:', participantsError);
+      if (error) {
+        console.error('Error creating group conversation:', error);
+        toast({
+          title: "Error creating group",
+          description: error.message,
+          variant: "destructive"
+        });
         return;
       }
 
       toast({
-        title: "Group created",
-        description: `Group "${groupName}" has been created successfully.`
+        title: "Conversation created",
+        description: `Conversation started successfully.`
       });
 
       fetchConversations();
@@ -256,7 +231,7 @@ export const useEnhancedMessages = () => {
     } catch (error) {
       console.error('Error creating group:', error);
       toast({
-        title: "Error creating group",
+        title: "Error creating conversation",
         description: "Please try again later.",
         variant: "destructive"
       });
@@ -272,7 +247,6 @@ export const useEnhancedMessages = () => {
         .from('conversations')
         .select('id')
         .or(`and(participant_1.eq.${user.id},participant_2.eq.${recipientId}),and(participant_1.eq.${recipientId},participant_2.eq.${user.id})`)
-        .eq('is_group', false)
         .single();
 
       if (existingConv) {
@@ -285,8 +259,7 @@ export const useEnhancedMessages = () => {
         .from('conversations')
         .insert({
           participant_1: user.id,
-          participant_2: recipientId,
-          is_group: false
+          participant_2: recipientId
         })
         .select('id')
         .single();

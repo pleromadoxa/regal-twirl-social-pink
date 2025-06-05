@@ -157,17 +157,7 @@ const Messages = () => {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center overflow-hidden relative">
-                      {conversation.is_group ? (
-                        conversation.group_avatar_url ? (
-                          <img
-                            src={conversation.group_avatar_url}
-                            alt={conversation.group_name || 'Group'}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <Users className="w-6 h-6 text-slate-500" />
-                        )
-                      ) : conversation.other_user?.avatar_url ? (
+                      {conversation.other_user?.avatar_url ? (
                         <img
                           src={conversation.other_user.avatar_url}
                           alt={conversation.other_user.display_name || conversation.other_user.username}
@@ -181,16 +171,8 @@ const Messages = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                        {conversation.is_group 
-                          ? conversation.group_name || 'Unnamed Group'
-                          : conversation.other_user?.display_name || conversation.other_user?.username || 'Unknown User'
-                        }
+                        {conversation.other_user?.display_name || conversation.other_user?.username || 'Unknown User'}
                       </p>
-                      {conversation.is_group && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {conversation.participants?.length || 0} members
-                        </p>
-                      )}
                       <p className="text-sm text-slate-600 dark:text-slate-400">
                         {format(new Date(conversation.last_message_at), 'MMM d')}
                       </p>
@@ -227,17 +209,7 @@ const Messages = () => {
                   <ArrowLeft className="w-4 h-4" />
                 </Button>
                 <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center overflow-hidden">
-                  {selectedConversationData?.is_group ? (
-                    selectedConversationData.group_avatar_url ? (
-                      <img
-                        src={selectedConversationData.group_avatar_url}
-                        alt={selectedConversationData.group_name || 'Group'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Users className="w-5 h-5 text-slate-500" />
-                    )
-                  ) : selectedConversationData?.other_user?.avatar_url ? (
+                  {selectedConversationData?.other_user?.avatar_url ? (
                     <img
                       src={selectedConversationData.other_user.avatar_url}
                       alt={selectedConversationData.other_user.display_name || selectedConversationData.other_user.username}
@@ -251,16 +223,9 @@ const Messages = () => {
                 </div>
                 <div>
                   <p className="font-semibold text-slate-900 dark:text-slate-100">
-                    {selectedConversationData?.is_group
-                      ? selectedConversationData.group_name || 'Unnamed Group'
-                      : selectedConversationData?.other_user?.display_name || selectedConversationData?.other_user?.username || 'New Conversation'
-                    }
+                    {selectedConversationData?.other_user?.display_name || selectedConversationData?.other_user?.username || 'New Conversation'}
                   </p>
-                  {selectedConversationData?.is_group ? (
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      {selectedConversationData.participants?.length || 0} members
-                    </p>
-                  ) : selectedConversationData?.other_user?.username && (
+                  {selectedConversationData?.other_user?.username && (
                     <p className="text-sm text-slate-600 dark:text-slate-400">
                       @{selectedConversationData.other_user.username}
                     </p>
@@ -287,15 +252,6 @@ const Messages = () => {
                             : 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600'
                         }`}
                       >
-                        {selectedConversationData?.is_group && message.sender_id !== user.id && (
-                          <p className={`text-xs mb-1 font-medium ${
-                            message.sender_id === user.id
-                              ? 'text-purple-200'
-                              : 'text-purple-600 dark:text-purple-400'
-                          }`}>
-                            {message.sender_profile?.display_name || message.sender_profile?.username || 'Unknown'}
-                          </p>
-                        )}
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                         <p className={`text-xs mt-2 ${
                           message.sender_id === user.id
