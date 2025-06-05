@@ -2,10 +2,9 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import SidebarNav from "@/components/SidebarNav";
 import TrendingWidget from "@/components/TrendingWidget";
-import PostComposer from "@/components/PostComposer";
+import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -46,9 +45,9 @@ const Index = () => {
             </h1>
           </div>
 
-          {/* Post Composer */}
+          {/* Enhanced Tweet Composer */}
           <div className="border-b border-slate-200 dark:border-slate-700">
-            <PostComposer />
+            <TweetComposer />
           </div>
 
           {/* Timeline */}

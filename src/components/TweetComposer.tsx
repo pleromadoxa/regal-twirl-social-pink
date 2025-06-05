@@ -1,37 +1,69 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Image, Smile, Calendar, MapPin, Hash, AtSign } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Image, Video, MapPin, Hash, AtSign, Smile, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { usePosts } from "@/hooks/usePosts";
+import { useAuth } from "@/contexts/AuthContext";
 
 const TweetComposer = () => {
   const [tweetText, setTweetText] = useState("");
   const [isThreadMode, setIsThreadMode] = useState(false);
   const [threadTweets, setThreadTweets] = useState([""]);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
+  const [location, setLocation] = useState("");
+  const [showLocationInput, setShowLocationInput] = useState(false);
+  const [showHashtagInput, setShowHashtagInput] = useState(false);
+  const [showMentionInput, setShowMentionInput] = useState(false);
+  const [hashtagInput, setHashtagInput] = useState("");
+  const [mentionInput, setMentionInput] = useState("");
+  
   const { toast } = useToast();
+  const { createPost } = usePosts();
+  const { user } = useAuth();
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const maxLength = 280;
 
-  const handleTweetSubmit = () => {
+  const handleTweetSubmit = async () => {
     if (isThreadMode) {
       const validTweets = threadTweets.filter(tweet => tweet.trim().length > 0);
       if (validTweets.length > 0) {
-        toast({
-          description: `Thread with ${validTweets.length} posts posted!`,
-          duration: 3000,
-        });
+        // For now, we'll post the first tweet with all content
+        const combinedContent = validTweets.join("\n\n");
+        await createPost(combinedContent);
         setThreadTweets([""]);
         setIsThreadMode(false);
+        resetForm();
       }
     } else {
       if (tweetText.trim()) {
-        toast({
-          description: "Post published successfully!",
-          duration: 3000,
-        });
-        setTweetText("");
+        let finalContent = tweetText;
+        
+        // Add location if provided
+        if (location.trim()) {
+          finalContent += `\n📍 ${location}`;
+        }
+        
+        await createPost(finalContent);
+        resetForm();
       }
     }
+  };
+
+  const resetForm = () => {
+    setTweetText("");
+    setSelectedImages([]);
+    setSelectedVideos([]);
+    setLocation("");
+    setShowLocationInput(false);
+    setShowHashtagInput(false);
+    setShowMentionInput(false);
+    setHashtagInput("");
+    setMentionInput("");
   };
 
   const addThreadTweet = () => {
@@ -47,6 +79,78 @@ const TweetComposer = () => {
   const removeThreadTweet = (index: number) => {
     if (threadTweets.length > 1) {
       setThreadTweets(threadTweets.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setSelectedImages(prev => [...prev, ...files].slice(0, 4)); // Max 4 images
+  };
+
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setSelectedVideos(prev => [...prev, ...files].slice(0, 1)); // Max 1 video
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeVideo = (index: number) => {
+    setSelectedVideos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const insertHashtag = () => {
+    if (hashtagInput.trim()) {
+      const hashtag = hashtagInput.startsWith('#') ? hashtagInput : `#${hashtagInput}`;
+      if (isThreadMode) {
+        const lastIndex = threadTweets.length - 1;
+        updateThreadTweet(lastIndex, threadTweets[lastIndex] + ` ${hashtag}`);
+      } else {
+        setTweetText(prev => prev + ` ${hashtag}`);
+      }
+      setHashtagInput("");
+      setShowHashtagInput(false);
+    }
+  };
+
+  const insertMention = () => {
+    if (mentionInput.trim()) {
+      const mention = mentionInput.startsWith('@') ? mentionInput : `@${mentionInput}`;
+      if (isThreadMode) {
+        const lastIndex = threadTweets.length - 1;
+        updateThreadTweet(lastIndex, threadTweets[lastIndex] + ` ${mention}`);
+      } else {
+        setTweetText(prev => prev + ` ${mention}`);
+      }
+      setMentionInput("");
+      setShowMentionInput(false);
+    }
+  };
+
+  const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+          setShowLocationInput(true);
+          toast({
+            description: "Location added to your post!",
+            duration: 2000,
+          });
+        },
+        (error) => {
+          toast({
+            description: "Unable to get your location. Please enter manually.",
+            variant: "destructive",
+            duration: 3000,
+          });
+          setShowLocationInput(true);
+        }
+      );
+    } else {
+      setShowLocationInput(true);
     }
   };
 
@@ -87,13 +191,15 @@ const TweetComposer = () => {
     </div>
   );
 
+  if (!user) return null;
+
   return (
     <div className="p-6 space-y-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
       <div className="flex space-x-4">
         <Avatar className="ring-2 ring-purple-300 dark:ring-purple-500 transition-all duration-500 hover:ring-pink-400 dark:hover:ring-pink-400 shadow-lg hover:scale-110 hover:shadow-2xl">
           <AvatarImage src="/placeholder.svg" />
           <AvatarFallback className="bg-gradient-to-br from-purple-500 via-blue-500 to-pink-500 text-white font-semibold animate-pulse">
-            You
+            {user.email?.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         
@@ -164,19 +270,213 @@ const TweetComposer = () => {
             </div>
           )}
           
+          {/* Media previews */}
+          {selectedImages.length > 0 && (
+            <div className="grid grid-cols-2 gap-2">
+              {selectedImages.map((image, index) => (
+                <div key={index} className="relative">
+                  <img
+                    src={URL.createObjectURL(image)}
+                    alt={`Selected ${index + 1}`}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeImage(index)}
+                    className="absolute top-1 right-1 bg-black/50 text-white hover:bg-black/70 rounded-full p-1"
+                  >
+                    ×
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {selectedVideos.length > 0 && (
+            <div className="space-y-2">
+              {selectedVideos.map((video, index) => (
+                <div key={index} className="relative">
+                  <video
+                    src={URL.createObjectURL(video)}
+                    className="w-full h-48 object-cover rounded-lg"
+                    controls
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeVideo(index)}
+                    className="absolute top-1 right-1 bg-black/50 text-white hover:bg-black/70 rounded-full p-1"
+                  >
+                    ×
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Location input */}
+          {showLocationInput && (
+            <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              <MapPin className="w-4 h-4 text-purple-600" />
+              <Input
+                type="text"
+                placeholder="Add location..."
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="flex-1 border-0 bg-transparent focus-visible:ring-0"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLocationInput(false)}
+                className="text-purple-600"
+              >
+                ×
+              </Button>
+            </div>
+          )}
+          
+          {/* Hashtag input */}
+          {showHashtagInput && (
+            <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              <Hash className="w-4 h-4 text-purple-600" />
+              <Input
+                type="text"
+                placeholder="Add hashtag..."
+                value={hashtagInput}
+                onChange={(e) => setHashtagInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && insertHashtag()}
+                className="flex-1 border-0 bg-transparent focus-visible:ring-0"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={insertHashtag}
+                className="text-purple-600"
+              >
+                Add
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowHashtagInput(false)}
+                className="text-purple-600"
+              >
+                ×
+              </Button>
+            </div>
+          )}
+          
+          {/* Mention input */}
+          {showMentionInput && (
+            <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              <AtSign className="w-4 h-4 text-purple-600" />
+              <Input
+                type="text"
+                placeholder="Mention someone..."
+                value={mentionInput}
+                onChange={(e) => setMentionInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && insertMention()}
+                className="flex-1 border-0 bg-transparent focus-visible:ring-0"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={insertMention}
+                className="text-purple-600"
+              >
+                Add
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowMentionInput(false)}
+                className="text-purple-600"
+              >
+                ×
+              </Button>
+            </div>
+          )}
+          
           {/* Actions */}
           <div className="flex items-center justify-between pt-4 border-t border-purple-200 dark:border-purple-700">
             <div className="flex items-center space-x-2">
-              {[Image, Smile, Calendar, MapPin, Hash, AtSign].map((Icon, idx) => (
-                <Button 
-                  key={idx}
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
-                >
-                  <Icon className="w-5 h-5" />
-                </Button>
-              ))}
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleImageSelect}
+              />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => imageInputRef.current?.click()}
+                className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
+              >
+                <Image className="w-5 h-5" />
+              </Button>
+              
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={handleVideoSelect}
+              />
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => videoInputRef.current?.click()}
+                className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
+              >
+                <Video className="w-5 h-5" />
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={getCurrentLocation}
+                className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
+              >
+                <MapPin className="w-5 h-5" />
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowHashtagInput(true)}
+                className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
+              >
+                <Hash className="w-5 h-5" />
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowMentionInput(true)}
+                className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
+              >
+                <AtSign className="w-5 h-5" />
+              </Button>
+
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
+              >
+                <Smile className="w-5 h-5" />
+              </Button>
+
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
+              >
+                <Calendar className="w-5 h-5" />
+              </Button>
             </div>
             
             <div className="flex items-center space-x-4">
