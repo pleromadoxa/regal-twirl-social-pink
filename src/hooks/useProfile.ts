@@ -107,8 +107,28 @@ export const useProfile = (userId?: string) => {
           .eq('follower_id', user.id)
           .eq('following_id', userId);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error unfollowing:', error);
+          toast({
+            title: "Error",
+            description: "Failed to unfollow user",
+            variant: "destructive"
+          });
+          return;
+        }
+
         setIsFollowing(false);
+        if (profile) {
+          setProfile({
+            ...profile,
+            followers_count: Math.max(0, profile.followers_count - 1)
+          });
+        }
+
+        toast({
+          title: "Success",
+          description: "You have unfollowed this user"
+        });
       } else {
         const { error } = await supabase
           .from('follows')
@@ -117,12 +137,38 @@ export const useProfile = (userId?: string) => {
             following_id: userId
           });
 
-        if (error) throw error;
-        setIsFollowing(true);
-      }
+        if (error) {
+          if (error.code === '23505') { // Unique constraint violation
+            toast({
+              title: "Already following",
+              description: "You are already following this user",
+              variant: "destructive"
+            });
+            setIsFollowing(true);
+            return;
+          }
+          console.error('Error following:', error);
+          toast({
+            title: "Error",
+            description: "Failed to follow user",
+            variant: "destructive"
+          });
+          return;
+        }
 
-      // Refresh profile to get updated counts
-      fetchProfile();
+        setIsFollowing(true);
+        if (profile) {
+          setProfile({
+            ...profile,
+            followers_count: profile.followers_count + 1
+          });
+        }
+
+        toast({
+          title: "Success",
+          description: "You are now following this user"
+        });
+      }
     } catch (error) {
       console.error('Error toggling follow:', error);
       toast({

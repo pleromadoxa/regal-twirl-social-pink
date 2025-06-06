@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Plus, Building, User, Briefcase } from 'lucide-react';
+import { Plus, Building, User, Briefcase, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -32,7 +32,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     page_name: '',
-    page_type: '' as 'business' | 'professional' | '',
+    page_type: '' as 'business' | 'professional' | 'organization' | '',
     description: '',
     website: '',
     email: '',
@@ -127,6 +127,12 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                   <div className="flex items-center">
                     <User className="w-4 h-4 mr-2 text-purple-600" />
                     Professional Account
+                  </div>
+                </SelectItem>
+                <SelectItem value="organization">
+                  <div className="flex items-center">
+                    <Users className="w-4 h-4 mr-2 text-purple-600" />
+                    Organization Account
                   </div>
                 </SelectItem>
               </SelectContent>

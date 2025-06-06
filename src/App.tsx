@@ -13,6 +13,7 @@ import Messages from "./pages/Messages";
 import Notifications from "./pages/Notifications";
 import Pinned from "./pages/Pinned";
 import Explore from "./pages/Explore";
+import ProfessionalAccounts from "./pages/ProfessionalAccounts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/pinned" element={<Pinned />} />
               <Route path="/explore" element={<Explore />} />
+              <Route path="/professional-accounts" element={<ProfessionalAccounts />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

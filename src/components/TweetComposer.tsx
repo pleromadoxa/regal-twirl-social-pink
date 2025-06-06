@@ -1,19 +1,38 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Image, Video, MapPin, Hash, AtSign, Smile, Calendar } from "lucide-react";
+import { 
+  Image, 
+  Video, 
+  MapPin, 
+  Hash, 
+  AtSign, 
+  Smile, 
+  Calendar, 
+  Mic,
+  Music,
+  Upload,
+  Play,
+  Pause,
+  Waveform
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePosts } from "@/hooks/usePosts";
 import { useAuth } from "@/contexts/AuthContext";
+import AccountSwitcher from "@/components/AccountSwitcher";
 
 const TweetComposer = () => {
   const [tweetText, setTweetText] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState<'personal' | string>('personal');
   const [isThreadMode, setIsThreadMode] = useState(false);
   const [threadTweets, setThreadTweets] = useState([""]);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
+  const [selectedAudio, setSelectedAudio] = useState<File | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioURL, setAudioURL] = useState<string>("");
+  const [isPlaying, setIsPlaying] = useState(false);
   const [location, setLocation] = useState("");
   const [showLocationInput, setShowLocationInput] = useState(false);
   const [showHashtagInput, setShowHashtagInput] = useState(false);
@@ -26,6 +45,9 @@ const TweetComposer = () => {
   const { user } = useAuth();
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const maxLength = 280;
 
   const handleTweetSubmit = async () => {
@@ -58,12 +80,97 @@ const TweetComposer = () => {
     setTweetText("");
     setSelectedImages([]);
     setSelectedVideos([]);
+    setSelectedAudio(null);
+    setAudioURL("");
     setLocation("");
     setShowLocationInput(false);
     setShowHashtagInput(false);
     setShowMentionInput(false);
     setHashtagInput("");
     setMentionInput("");
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      
+      const chunks: BlobPart[] = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
+        const audioFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
+        setSelectedAudio(audioFile);
+        setAudioURL(URL.createObjectURL(audioBlob));
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      
+      toast({
+        title: "Recording started",
+        description: "Click the mic button again to stop recording"
+      });
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast({
+        title: "Recording failed",
+        description: "Could not access microphone",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      toast({
+        title: "Recording stopped",
+        description: "Audio recording saved"
+      });
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedAudio(file);
+      setAudioURL(URL.createObjectURL(file));
+    }
+  };
+
+  const toggleAudioPlayback = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const removeAudio = () => {
+    setSelectedAudio(null);
+    setAudioURL("");
+    setIsPlaying(false);
   };
 
   const addThreadTweet = () => {
@@ -84,12 +191,24 @@ const TweetComposer = () => {
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setSelectedImages(prev => [...prev, ...files].slice(0, 4)); // Max 4 images
+    if (files.length > 0) {
+      setSelectedImages(prev => [...prev, ...files].slice(0, 4));
+      toast({
+        title: "Images added",
+        description: `${files.length} image(s) added to your post`
+      });
+    }
   };
 
   const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setSelectedVideos(prev => [...prev, ...files].slice(0, 1)); // Max 1 video
+    if (files.length > 0) {
+      setSelectedVideos(prev => [...prev, ...files].slice(0, 1));
+      toast({
+        title: "Video added",
+        description: "Video added to your post"
+      });
+    }
   };
 
   const removeImage = (index: number) => {
@@ -111,6 +230,10 @@ const TweetComposer = () => {
       }
       setHashtagInput("");
       setShowHashtagInput(false);
+      toast({
+        title: "Hashtag added",
+        description: `Added ${hashtag} to your post`
+      });
     }
   };
 
@@ -125,6 +248,10 @@ const TweetComposer = () => {
       }
       setMentionInput("");
       setShowMentionInput(false);
+      toast({
+        title: "Mention added",
+        description: `Added ${mention} to your post`
+      });
     }
   };
 
@@ -196,14 +323,22 @@ const TweetComposer = () => {
   return (
     <div className="p-6 space-y-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
       <div className="flex space-x-4">
-        <Avatar className="ring-2 ring-purple-300 dark:ring-purple-500 transition-all duration-500 hover:ring-pink-400 dark:hover:ring-pink-400 shadow-lg hover:scale-110 hover:shadow-2xl">
-          <AvatarImage src="/placeholder.svg" />
-          <AvatarFallback className="bg-gradient-to-br from-purple-500 via-blue-500 to-pink-500 text-white font-semibold animate-pulse">
-            {user.email?.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <div className="w-12">
+          <Avatar className="ring-2 ring-purple-300 dark:ring-purple-500 transition-all duration-500 hover:ring-pink-400 dark:hover:ring-pink-400 shadow-lg hover:scale-110 hover:shadow-2xl">
+            <AvatarImage src="/placeholder.svg" />
+            <AvatarFallback className="bg-gradient-to-br from-purple-500 via-blue-500 to-pink-500 text-white font-semibold animate-pulse">
+              {user.email?.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </div>
         
         <div className="flex-1 space-y-4">
+          {/* Account Switcher */}
+          <AccountSwitcher 
+            selectedAccount={selectedAccount}
+            onAccountChange={setSelectedAccount}
+          />
+
           {/* Main post or thread */}
           {isThreadMode ? (
             <div className="space-y-4">
@@ -274,17 +409,17 @@ const TweetComposer = () => {
           {selectedImages.length > 0 && (
             <div className="grid grid-cols-2 gap-2">
               {selectedImages.map((image, index) => (
-                <div key={index} className="relative">
+                <div key={index} className="relative group">
                   <img
                     src={URL.createObjectURL(image)}
                     alt={`Selected ${index + 1}`}
-                    className="w-full h-32 object-cover rounded-lg"
+                    className="w-full h-32 object-cover rounded-lg transition-all duration-300 group-hover:scale-105"
                   />
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => removeImage(index)}
-                    className="absolute top-1 right-1 bg-black/50 text-white hover:bg-black/70 rounded-full p-1"
+                    className="absolute top-1 right-1 bg-black/50 text-white hover:bg-red-500/70 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-300"
                   >
                     ×
                   </Button>
@@ -296,22 +431,84 @@ const TweetComposer = () => {
           {selectedVideos.length > 0 && (
             <div className="space-y-2">
               {selectedVideos.map((video, index) => (
-                <div key={index} className="relative">
+                <div key={index} className="relative group">
                   <video
                     src={URL.createObjectURL(video)}
-                    className="w-full h-48 object-cover rounded-lg"
+                    className="w-full h-48 object-cover rounded-lg transition-all duration-300 group-hover:scale-105"
                     controls
                   />
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => removeVideo(index)}
-                    className="absolute top-1 right-1 bg-black/50 text-white hover:bg-black/70 rounded-full p-1"
+                    className="absolute top-1 right-1 bg-black/50 text-white hover:bg-red-500/70 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-300"
                   >
                     ×
                   </Button>
                 </div>
               ))}
+            </div>
+          )}
+          
+          {/* Audio preview with visualizer */}
+          {selectedAudio && (
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-700">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Music className="w-5 h-5 text-purple-600" />
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Audio Recording
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeAudio}
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full"
+                >
+                  ×
+                </Button>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleAudioPlayback}
+                  className="bg-purple-100 hover:bg-purple-200 dark:bg-purple-800 dark:hover:bg-purple-700 rounded-full p-2"
+                >
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                </Button>
+                
+                {/* Simple audio visualizer */}
+                <div className="flex-1 flex items-center justify-center h-12 bg-white dark:bg-slate-800 rounded-lg border">
+                  <div className="flex items-end gap-1 h-8">
+                    {[...Array(20)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-1 bg-gradient-to-t from-purple-400 to-pink-400 rounded-full transition-all duration-300 ${
+                          isPlaying ? 'animate-pulse' : ''
+                        }`}
+                        style={{
+                          height: `${Math.random() * 100 + 20}%`,
+                          animationDelay: `${i * 100}ms`
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {audioURL && (
+                <audio
+                  ref={audioRef}
+                  src={audioURL}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  onEnded={() => setIsPlaying(false)}
+                  className="hidden"
+                />
+              )}
             </div>
           )}
           
@@ -433,6 +630,35 @@ const TweetComposer = () => {
                 className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
               >
                 <Video className="w-5 h-5" />
+              </Button>
+
+              <input
+                ref={audioInputRef}
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={handleAudioUpload}
+              />
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => audioInputRef.current?.click()}
+                className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
+              >
+                <Upload className="w-5 h-5" />
+              </Button>
+
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleRecording}
+                className={`p-2 transition-all duration-300 hover:scale-125 rounded-full ${
+                  isRecording 
+                    ? 'text-red-500 bg-red-50 dark:bg-red-900/20 animate-pulse' 
+                    : 'text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20'
+                }`}
+              >
+                <Mic className="w-5 h-5" />
               </Button>
               
               <Button 

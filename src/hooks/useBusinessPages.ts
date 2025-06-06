@@ -8,7 +8,7 @@ export interface BusinessPage {
   id: string;
   owner_id: string;
   page_name: string;
-  page_type: 'business' | 'professional';
+  page_type: 'business' | 'professional' | 'organization';
   description: string | null;
   website: string | null;
   email: string | null;
@@ -26,6 +26,7 @@ export interface BusinessPage {
 export const useBusinessPages = () => {
   const [pages, setPages] = useState<BusinessPage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [myPages, setMyPages] = useState<BusinessPage[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -55,17 +56,21 @@ export const useBusinessPages = () => {
 
         const enrichedPages = pagesData?.map(page => ({
           ...page,
-          page_type: page.page_type as 'business' | 'professional',
+          page_type: page.page_type as 'business' | 'professional' | 'organization',
           user_following: followedPageIds.has(page.id),
           followers_count: page.followers_count || 0,
           is_verified: page.is_verified || false
         })) || [];
 
         setPages(enrichedPages);
+        
+        // Set user's own pages
+        const userPages = enrichedPages.filter(page => page.owner_id === user.id);
+        setMyPages(userPages);
       } else {
         const mappedPages = pagesData?.map(page => ({
           ...page,
-          page_type: page.page_type as 'business' | 'professional',
+          page_type: page.page_type as 'business' | 'professional' | 'organization',
           followers_count: page.followers_count || 0,
           is_verified: page.is_verified || false
         })) || [];
@@ -81,7 +86,7 @@ export const useBusinessPages = () => {
 
   const createPage = async (pageData: {
     page_name: string;
-    page_type: 'business' | 'professional';
+    page_type: 'business' | 'professional' | 'organization';
     description?: string;
     website?: string;
     email?: string;
@@ -173,15 +178,43 @@ export const useBusinessPages = () => {
     }
   };
 
+  const searchPages = async (query: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('business_pages')
+        .select('*')
+        .or(`page_name.ilike.%${query}%,description.ilike.%${query}%`)
+        .order('followers_count', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error searching pages:', error);
+        return [];
+      }
+
+      return data?.map(page => ({
+        ...page,
+        page_type: page.page_type as 'business' | 'professional' | 'organization',
+        followers_count: page.followers_count || 0,
+        is_verified: page.is_verified || false
+      })) || [];
+    } catch (error) {
+      console.error('Error in searchPages:', error);
+      return [];
+    }
+  };
+
   useEffect(() => {
     fetchPages();
   }, [user]);
 
   return {
     pages,
+    myPages,
     loading,
     createPage,
     toggleFollow,
+    searchPages,
     refetch: fetchPages
   };
 };
