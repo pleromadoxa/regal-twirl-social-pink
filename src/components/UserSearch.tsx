@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, UserPlus, UserCheck } from 'lucide-react';
+import { Search, UserPlus, UserCheck, MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,7 +20,12 @@ interface UserResult {
   bio: string;
 }
 
-const UserSearch = () => {
+interface UserSearchProps {
+  onStartConversation?: (userId: string) => void;
+  showMessageButton?: boolean;
+}
+
+const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSearchProps) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<UserResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,32 +38,44 @@ const UserSearch = () => {
 
   useEffect(() => {
     const searchUsers = async () => {
-      if (query.length < 2) {
+      if (query.length < 1) {
         setResults([]);
         setShowResults(false);
         return;
       }
 
       setLoading(true);
+      setShowResults(true);
+      
       try {
+        console.log('Searching for users with query:', query);
+        
         const { data, error } = await supabase
           .from('profiles')
           .select('id, username, display_name, avatar_url, is_verified, followers_count, bio')
           .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
           .neq('id', user?.id || '')
-          .limit(8);
+          .limit(10);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Search error:', error);
+          throw error;
+        }
 
+        console.log('Search results:', data);
         const users = data || [];
         setResults(users);
-        setShowResults(users.length > 0);
 
         // Check follow status for each user
-        if (user) {
+        if (user && users.length > 0) {
           const statusPromises = users.map(async (searchUser) => {
-            const isFollowing = await checkFollowStatus(searchUser.id);
-            return { userId: searchUser.id, isFollowing };
+            try {
+              const isFollowing = await checkFollowStatus(searchUser.id);
+              return { userId: searchUser.id, isFollowing };
+            } catch (error) {
+              console.error('Error checking follow status:', error);
+              return { userId: searchUser.id, isFollowing: false };
+            }
           });
 
           const statuses = await Promise.all(statusPromises);
@@ -71,13 +88,14 @@ const UserSearch = () => {
         }
       } catch (error) {
         console.error('Error searching users:', error);
+        setResults([]);
       } finally {
         setLoading(false);
       }
     };
 
-    const debounce = setTimeout(searchUsers, 300);
-    return () => clearTimeout(debounce);
+    // Immediate search without debounce for better UX
+    searchUsers();
   }, [query, user]);
 
   useEffect(() => {
@@ -113,6 +131,14 @@ const UserSearch = () => {
     setQuery('');
   };
 
+  const handleStartConversation = (userId: string) => {
+    if (onStartConversation) {
+      onStartConversation(userId);
+      setShowResults(false);
+      setQuery('');
+    }
+  };
+
   return (
     <div ref={searchRef} className="relative">
       <div className="relative">
@@ -122,7 +148,7 @@ const UserSearch = () => {
           placeholder="Search users..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setShowResults(results.length > 0)}
+          onFocus={() => setShowResults(results.length > 0 || query.length > 0)}
           className="pl-10 bg-slate-100 dark:bg-slate-800 border-0 rounded-full focus:ring-2 focus:ring-purple-500 transition-all"
         />
       </div>
@@ -131,7 +157,8 @@ const UserSearch = () => {
         <div className="absolute top-full mt-2 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 max-h-96 overflow-y-auto">
           {loading ? (
             <div className="p-4 text-center text-slate-500">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto mb-2"></div>
+              <p className="text-sm">Searching users...</p>
             </div>
           ) : results.length > 0 ? (
             <div className="p-2">
@@ -170,40 +197,56 @@ const UserSearch = () => {
                   </div>
                   
                   {user && user.id !== userResult.id && (
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleFollow(userResult.id);
-                      }}
-                      variant={followingStatus[userResult.id] ? "outline" : "default"}
-                      size="sm"
-                      className={
-                        followingStatus[userResult.id]
-                          ? "border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                          : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                      }
-                    >
-                      {followingStatus[userResult.id] ? (
-                        <>
-                          <UserCheck className="w-4 h-4 mr-1" />
-                          Following
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="w-4 h-4 mr-1" />
-                          Follow
-                        </>
+                    <div className="flex items-center gap-2">
+                      {showMessageButton && (
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartConversation(userResult.id);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
                       )}
-                    </Button>
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFollow(userResult.id);
+                        }}
+                        variant={followingStatus[userResult.id] ? "outline" : "default"}
+                        size="sm"
+                        className={
+                          followingStatus[userResult.id]
+                            ? "border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                            : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                        }
+                      >
+                        {followingStatus[userResult.id] ? (
+                          <>
+                            <UserCheck className="w-4 h-4 mr-1" />
+                            Following
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-4 h-4 mr-1" />
+                            Follow
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}
             </div>
-          ) : (
+          ) : query.length > 0 ? (
             <div className="p-4 text-center text-slate-500">
-              No users found
+              <Search className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+              <p>No users found for "{query}"</p>
             </div>
-          )}
+          ) : null}
         </div>
       )}
     </div>

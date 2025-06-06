@@ -1,23 +1,29 @@
-
-import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown } from "lucide-react";
+import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import BusinessPageDialog from "./BusinessPageDialog";
 import PremiumDialog from "./PremiumDialog";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const SidebarNav = () => {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
 
-  const navItems = [
+  const navigationItems = [
     { icon: Home, label: "Home", path: "/", active: location.pathname === "/" },
     { icon: Search, label: "Explore", path: "/explore", active: location.pathname === "/explore" },
     { icon: MessageCircle, label: "Messages", path: "/messages", active: location.pathname === "/messages" },
     { icon: Pin, label: "Pinned", path: "/pinned", active: location.pathname === "/pinned" },
     { icon: User, label: "Profile", path: `/profile/${user?.id}`, active: location.pathname.startsWith("/profile") },
+    {
+      name: "Settings",
+      href: "/settings",
+      icon: Settings,
+      count: 0
+    }
   ];
 
   const handleSignOut = async () => {
@@ -46,7 +52,7 @@ const SidebarNav = () => {
 
       {/* Navigation */}
       <nav className="space-y-2">
-        {navItems.map((item) => (
+        {navigationItems.map((item) => (
           <Button
             key={item.label}
             variant="ghost"
