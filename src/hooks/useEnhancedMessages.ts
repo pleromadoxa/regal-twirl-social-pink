@@ -71,31 +71,34 @@ export const useEnhancedMessages = () => {
             .eq('id', otherUserId)
             .single();
 
-          // Get last message for this conversation
+          // Get last message for this conversation with sender profile
           const { data: lastMessageData } = await supabase
             .from('messages')
-            .select(`
-              *,
-              profiles!messages_sender_id_fkey(
-                username,
-                display_name,
-                avatar_url
-              )
-            `)
+            .select('*')
             .or(`and(sender_id.eq.${conv.participant_1},recipient_id.eq.${conv.participant_2}),and(sender_id.eq.${conv.participant_2},recipient_id.eq.${conv.participant_1})`)
             .order('created_at', { ascending: false })
             .limit(1)
             .single();
 
+          let lastMessageWithProfile = undefined;
+          if (lastMessageData) {
+            // Get sender profile for last message
+            const { data: senderProfile } = await supabase
+              .from('profiles')
+              .select('username, display_name, avatar_url')
+              .eq('id', lastMessageData.sender_id)
+              .single();
+
+            lastMessageWithProfile = {
+              ...lastMessageData,
+              sender_profile: senderProfile
+            };
+          }
+
           return {
             ...conv,
             other_user: profileData,
-            last_message: lastMessageData ? {
-              ...lastMessageData,
-              sender_profile: Array.isArray(lastMessageData.profiles) 
-                ? lastMessageData.profiles[0] 
-                : lastMessageData.profiles
-            } : undefined
+            last_message: lastMessageWithProfile
           };
         })
       );
@@ -126,17 +129,10 @@ export const useEnhancedMessages = () => {
 
       console.log('Fetching messages for conversation:', conversation);
 
-      // Get messages between the participants using proper foreign key reference
+      // Get messages between the participants
       const { data: messagesData, error } = await supabase
         .from('messages')
-        .select(`
-          *,
-          profiles!messages_sender_id_fkey(
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .or(`and(sender_id.eq.${conversation.participant_1},recipient_id.eq.${conversation.participant_2}),and(sender_id.eq.${conversation.participant_2},recipient_id.eq.${conversation.participant_1})`)
         .order('created_at', { ascending: true });
 
@@ -145,13 +141,24 @@ export const useEnhancedMessages = () => {
         return;
       }
 
-      const formattedMessages = messagesData?.map(msg => ({
-        ...msg,
-        sender_profile: Array.isArray(msg.profiles) ? msg.profiles[0] : msg.profiles
-      })) || [];
+      // Get sender profiles for all messages
+      const messagesWithProfiles = await Promise.all(
+        (messagesData || []).map(async (msg) => {
+          const { data: senderProfile } = await supabase
+            .from('profiles')
+            .select('username, display_name, avatar_url')
+            .eq('id', msg.sender_id)
+            .single();
 
-      console.log('Fetched messages for conversation:', conversationId, formattedMessages);
-      setMessages(formattedMessages);
+          return {
+            ...msg,
+            sender_profile: senderProfile
+          };
+        })
+      );
+
+      console.log('Fetched messages for conversation:', conversationId, messagesWithProfiles);
+      setMessages(messagesWithProfiles);
     } catch (error) {
       console.error('Error in fetchMessages:', error);
     }
@@ -196,14 +203,7 @@ export const useEnhancedMessages = () => {
           recipient_id: recipientId,
           content: content.trim()
         })
-        .select(`
-          *,
-          profiles!messages_sender_id_fkey(
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {
@@ -228,12 +228,17 @@ export const useEnhancedMessages = () => {
         console.error('Error updating conversation:', updateError);
       }
 
+      // Get sender profile for the message
+      const { data: senderProfile } = await supabase
+        .from('profiles')
+        .select('username, display_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+
       // Immediately add the message to the local state for instant feedback
       const formattedMessage = {
         ...messageData,
-        sender_profile: Array.isArray(messageData.profiles) 
-          ? messageData.profiles[0] 
-          : messageData.profiles
+        sender_profile: senderProfile
       };
       
       setMessages(prev => [...prev, formattedMessage]);
