@@ -1,4 +1,3 @@
-
 import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
@@ -55,7 +54,6 @@ const SidebarNav = () => {
             key={item.label}
             onClick={() => handleNavigation(item.path)}
             text={item.label}
-            icon={<item.icon className="w-6 h-6" />}
             className={`w-full justify-start px-6 py-4 text-lg rounded-2xl transition-all duration-200 ${
               item.active 
                 ? 'shadow-lg bg-[rgba(170,202,255,0.2)]' 
