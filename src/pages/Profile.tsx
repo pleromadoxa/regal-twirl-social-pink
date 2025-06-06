@@ -76,9 +76,20 @@ export const Profile = () => {
         return;
       }
 
+      // Fetch posts with profile information to prevent the error
       const { data, error } = await supabase
         .from('posts')
-        .select('*')
+        .select(`
+          *,
+          profiles (
+            username,
+            display_name,
+            avatar_url,
+            is_verified,
+            premium_tier,
+            followers_count
+          )
+        `)
         .eq('user_id', profileId)
         .order('created_at', { ascending: false });
 

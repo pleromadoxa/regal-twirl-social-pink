@@ -43,21 +43,21 @@ export const PostsList = ({
   const onDelete = externalOnDelete || deletePost;
 
   // Pre-calculate verified status for all posts to avoid calling hooks in render loop
-  const getVerifiedStatus = (user: any) => {
-    if (!user) return false;
+  const getVerifiedStatus = (userProfile: any) => {
+    if (!userProfile) return false;
     
     // Special case for @pleromadoxa
-    if (user.username === 'pleromadoxa') {
+    if (userProfile.username === 'pleromadoxa') {
       return true;
     }
     
     // Check if manually verified
-    if (user.is_verified) {
+    if (userProfile.is_verified) {
       return true;
     }
     
     // Check if has 100+ followers
-    if (user.followers_count && user.followers_count >= 100) {
+    if (userProfile.followers_count && userProfile.followers_count >= 100) {
       return true;
     }
     
@@ -131,8 +131,17 @@ export const PostsList = ({
 
   return (
     <div className="space-y-4">
-      {posts.map((post, index) => {
-        const isVerified = getVerifiedStatus(post.profiles);
+      {posts?.map((post, index) => {
+        // Handle both cases: posts from usePosts hook (with profiles) and direct posts (without profiles)
+        const userProfile = post.profiles || {
+          username: 'unknown',
+          display_name: 'Unknown User',
+          avatar_url: '',
+          is_verified: false,
+          followers_count: 0
+        };
+        
+        const isVerified = getVerifiedStatus(userProfile);
         const threadInfo = parseThreadPost(post.content);
         const variant = getPostVariant(index, threadInfo.isThread);
         const styles = getPostStyles(variant, threadInfo.isThread, threadInfo);
@@ -155,16 +164,16 @@ export const PostsList = ({
               
               <div className="flex items-start space-x-3">
                 <Avatar className="w-12 h-12">
-                  <AvatarImage src={post.profiles.avatar_url} />
+                  <AvatarImage src={userProfile.avatar_url} />
                   <AvatarFallback>
-                    {post.profiles.display_name?.[0] || post.profiles.username?.[0] || 'U'}
+                    {userProfile.display_name?.[0] || userProfile.username?.[0] || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2 mb-1">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                        {post.profiles.display_name || post.profiles.username}
+                        {userProfile.display_name || userProfile.username}
                       </h3>
                       {isVerified && (
                         <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-1.5 py-0.5">
@@ -172,7 +181,7 @@ export const PostsList = ({
                         </Badge>
                       )}
                     </div>
-                    <span className="text-slate-500 dark:text-slate-400">@{post.profiles.username}</span>
+                    <span className="text-slate-500 dark:text-slate-400">@{userProfile.username}</span>
                     <span className="text-slate-400 dark:text-slate-500 text-sm">
                       {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                     </span>
@@ -216,9 +225,9 @@ export const PostsList = ({
                   <PostActions 
                     postId={post.id}
                     userId={post.user_id}
-                    likesCount={post.likes_count}
-                    retweetsCount={post.retweets_count}
-                    repliesCount={post.replies_count}
+                    likesCount={post.likes_count || 0}
+                    retweetsCount={post.retweets_count || 0}
+                    repliesCount={post.replies_count || 0}
                     userLiked={post.user_liked}
                     userRetweeted={post.user_retweeted}
                     userPinned={post.user_pinned}

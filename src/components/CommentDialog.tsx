@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { Send } from 'lucide-react';
 
-interface Comment {
+interface Reply {
   id: string;
   content: string;
   created_at: string;
@@ -29,8 +29,8 @@ interface CommentDialogProps {
 }
 
 export const CommentDialog = ({ isOpen, onClose, postId }: CommentDialogProps) => {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState('');
+  const [replies, setReplies] = useState<Reply[]>([]);
+  const [newReply, setNewReply] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
@@ -38,15 +38,15 @@ export const CommentDialog = ({ isOpen, onClose, postId }: CommentDialogProps) =
 
   useEffect(() => {
     if (isOpen && postId) {
-      fetchComments();
+      fetchReplies();
     }
   }, [isOpen, postId]);
 
-  const fetchComments = async () => {
+  const fetchReplies = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('comments')
+        .from('replies')
         .select(`
           id,
           content,
@@ -62,9 +62,9 @@ export const CommentDialog = ({ isOpen, onClose, postId }: CommentDialogProps) =
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setComments(data || []);
+      setReplies(data || []);
     } catch (error) {
-      console.error('Error fetching comments:', error);
+      console.error('Error fetching replies:', error);
       toast({
         title: "Error loading comments",
         description: "Please try again later",
@@ -75,19 +75,19 @@ export const CommentDialog = ({ isOpen, onClose, postId }: CommentDialogProps) =
     }
   };
 
-  const handleSubmitComment = async () => {
-    if (!user || !newComment.trim()) return;
+  const handleSubmitReply = async () => {
+    if (!user || !newReply.trim()) return;
 
     try {
       setIsSubmitting(true);
       
       const { data, error } = await supabase
-        .from('comments')
+        .from('replies')
         .insert([
           {
             post_id: postId,
             user_id: user.id,
-            content: newComment.trim()
+            content: newReply.trim()
           }
         ])
         .select(`
@@ -105,15 +105,15 @@ export const CommentDialog = ({ isOpen, onClose, postId }: CommentDialogProps) =
 
       if (error) throw error;
 
-      setComments(prev => [...prev, data]);
-      setNewComment('');
+      setReplies(prev => [...prev, data]);
+      setNewReply('');
       
       toast({
         title: "Comment posted!",
         description: "Your comment has been added successfully."
       });
     } catch (error) {
-      console.error('Error posting comment:', error);
+      console.error('Error posting reply:', error);
       toast({
         title: "Error posting comment",
         description: "Please try again later",
@@ -136,26 +136,26 @@ export const CommentDialog = ({ isOpen, onClose, postId }: CommentDialogProps) =
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
             </div>
-          ) : comments.length > 0 ? (
-            comments.map((comment) => (
-              <div key={comment.id} className="flex space-x-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50">
+          ) : replies.length > 0 ? (
+            replies.map((reply) => (
+              <div key={reply.id} className="flex space-x-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50">
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src={comment.profiles.avatar_url} />
+                  <AvatarImage src={reply.profiles?.avatar_url} />
                   <AvatarFallback>
-                    {comment.profiles.display_name?.[0] || comment.profiles.username?.[0] || 'U'}
+                    {reply.profiles?.display_name?.[0] || reply.profiles?.username?.[0] || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium text-sm">
-                      {comment.profiles.display_name || comment.profiles.username}
+                      {reply.profiles?.display_name || reply.profiles?.username || 'Unknown User'}
                     </span>
                     <span className="text-xs text-slate-500">
-                      {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
                     </span>
                   </div>
                   <p className="text-sm text-slate-700 dark:text-slate-300">
-                    {comment.content}
+                    {reply.content}
                   </p>
                 </div>
               </div>
@@ -178,14 +178,14 @@ export const CommentDialog = ({ isOpen, onClose, postId }: CommentDialogProps) =
             <div className="flex-1 flex space-x-2">
               <Textarea
                 placeholder="Write a comment..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
+                value={newReply}
+                onChange={(e) => setNewReply(e.target.value)}
                 className="flex-1 resize-none"
                 rows={2}
               />
               <Button
-                onClick={handleSubmitComment}
-                disabled={!newComment.trim() || isSubmitting}
+                onClick={handleSubmitReply}
+                disabled={!newReply.trim() || isSubmitting}
                 size="sm"
                 className="self-end"
               >
