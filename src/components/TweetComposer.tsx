@@ -15,7 +15,7 @@ import {
   Upload,
   Play,
   Pause,
-  Waveform
+  AudioWaveform
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePosts } from "@/hooks/usePosts";
