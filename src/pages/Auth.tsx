@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { WavyBackground } from '@/components/ui/wavy-background';
+import { AppleHelloEnglishEffect } from '@/components/ui/apple-hello-effect';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -78,102 +79,116 @@ const Auth = () => {
         waveOpacity={0.5}
         className="flex items-center justify-center"
       >
-        <div className="w-full max-w-lg">
-          {/* Centered Logo */}
-          <div className="flex justify-center mb-8">
-            <img 
-              src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
-              alt="Network Logo" 
-              className="h-20 w-auto"
+        <div className="w-full max-w-6xl flex items-center justify-center gap-12">
+          {/* Left Side - Apple Hello Effect */}
+          <div className="hidden lg:flex flex-col items-center justify-center flex-1">
+            <AppleHelloEnglishEffect 
+              className="h-32 w-auto text-white stroke-white" 
+              speed={1.2}
             />
+            <p className="text-white/80 text-lg mt-4 text-center">
+              Welcome to the Network
+            </p>
           </div>
 
-          {/* Centered Auth Form */}
-          <Card className="w-full bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-white">
-                {isLogin ? 'Welcome Back' : 'Join Network'}
-              </CardTitle>
-              <CardDescription className="text-slate-300">
-                {isLogin ? 'Sign in to your account' : 'Create your account'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
-                    placeholder="Enter your email"
-                  />
+          {/* Right Side - Auth Form */}
+          <div className="w-full max-w-2xl">
+            {/* Centered Logo */}
+            <div className="flex justify-center mb-8">
+              <img 
+                src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
+                alt="Network Logo" 
+                className="h-20 w-auto"
+              />
+            </div>
+
+            {/* Centered Auth Form */}
+            <Card className="w-full bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl font-bold text-white">
+                  {isLogin ? 'Welcome Back' : 'Join Network'}
+                </CardTitle>
+                <CardDescription className="text-slate-300">
+                  {isLogin ? 'Sign in to your account' : 'Create your account'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-white">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-white">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                      placeholder="Enter your password"
+                    />
+                  </div>
+
+                  {!isLogin && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="username" className="text-white">Username</Label>
+                        <Input
+                          id="username"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          required
+                          className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                          placeholder="Choose a username"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="displayName" className="text-white">Display Name</Label>
+                        <Input
+                          id="displayName"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          required
+                          className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                          placeholder="Your display name"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 transition-all duration-200 transform hover:scale-105"
+                    disabled={loading}
+                  >
+                    {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+                  </Button>
+                </form>
+
+                <div className="mt-6 text-center">
+                  <Button
+                    variant="link"
+                    onClick={() => setIsLogin(!isLogin)}
+                    className="text-purple-300 hover:text-purple-200"
+                  >
+                    {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                  </Button>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-white">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
-                    placeholder="Enter your password"
-                  />
-                </div>
-
-                {!isLogin && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="username" className="text-white">Username</Label>
-                      <Input
-                        id="username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                        className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
-                        placeholder="Choose a username"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName" className="text-white">Display Name</Label>
-                      <Input
-                        id="displayName"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        required
-                        className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
-                        placeholder="Your display name"
-                      />
-                    </div>
-                  </>
-                )}
-
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 transition-all duration-200 transform hover:scale-105"
-                  disabled={loading}
-                >
-                  {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
-                </Button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <Button
-                  variant="link"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-purple-300 hover:text-purple-200"
-                >
-                  {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </WavyBackground>
       
