@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +13,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useCallSounds } from '@/hooks/useCallSounds';
 import { useCallHistory } from '@/hooks/useCallHistory';
 
 interface VideoCallProps {
@@ -39,9 +39,170 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
   
   const { user } = useAuth();
   const { toast } = useToast();
+  const { playConnect, playEndCall, playRinging, stopRinging } = useCallSounds();
   const { addCallToHistory } = useCallHistory();
 
+  const rtcConfiguration = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+  };
+
+  const initializePeerConnection = () => {
+    const peerConnection = new RTCPeerConnection(rtcConfiguration);
+    
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate && signalingChannelRef.current) {
+        signalingChannelRef.current.send({
+          type: 'broadcast',
+          event: 'ice-candidate',
+          payload: {
+            candidate: event.candidate,
+            conversation_id: conversationId,
+            from: user?.id,
+            to: otherUserId
+          }
+        });
+      }
+    };
+
+    peerConnection.ontrack = (event) => {
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = event.streams[0];
+      }
+    };
+
+    peerConnection.onconnectionstatechange = () => {
+      const state = peerConnection.connectionState;
+      console.log('Video call connection state:', state);
+      
+      if (state === 'connected') {
+        setCallStatus('connected');
+        callStartTimeRef.current = Date.now();
+        stopRinging();
+        playConnect();
+      } else if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+        setCallStatus('ended');
+        handleEndCall();
+      }
+    };
+
+    return peerConnection;
+  };
+
+  const startLocalStream = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: isVideoEnabled,
+        audio: isAudioEnabled
+      });
+
+      localStreamRef.current = stream;
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      if (peerConnectionRef.current) {
+        stream.getTracks().forEach(track => {
+          peerConnectionRef.current?.addTrack(track, stream);
+        });
+      }
+
+      return stream;
+    } catch (error) {
+      console.error('Error accessing camera/microphone:', error);
+      toast({
+        title: "Media access error",
+        description: "Could not access camera or microphone",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const setupSignalingChannel = () => {
+    const channel = supabase.channel(`video-call-${conversationId}-${Date.now()}`);
+    
+    channel.on('broadcast', {
+      event: 'offer',
+      payload: {
+        conversation_id: conversationId,
+        from: user?.id,
+        to: otherUserId
+      }
+    }, async (payload) => {
+      const offer = payload.payload.offer;
+      await peerConnectionRef.current?.setRemoteDescription(offer);
+      
+      const answer = await peerConnectionRef.current?.createAnswer();
+      await peerConnectionRef.current?.setLocalDescription(answer);
+      
+      signalingChannelRef.current.send({
+        type: 'broadcast',
+        event: 'answer',
+        payload: {
+          answer,
+          conversation_id: conversationId,
+          from: user?.id,
+          to: otherUserId
+        }
+      });
+    });
+
+    channel.on('broadcast', {
+      event: 'ice-candidate',
+      payload: {
+        candidate: null,
+        conversation_id: conversationId,
+        from: user?.id,
+        to: otherUserId
+      }
+    }, (payload) => {
+      const candidate = payload.payload.candidate;
+      if (candidate) {
+        peerConnectionRef.current?.addIceCandidate(candidate);
+      }
+    });
+
+    channel.subscribe();
+    return channel;
+  };
+
+  const startCall = async () => {
+    try {
+      peerConnectionRef.current = initializePeerConnection();
+      signalingChannelRef.current = setupSignalingChannel();
+      
+      await startLocalStream();
+      
+      if (!isIncoming) {
+        playRinging();
+        const offer = await peerConnectionRef.current.createOffer();
+        await peerConnectionRef.current.setLocalDescription(offer);
+        
+        signalingChannelRef.current.send({
+          type: 'broadcast',
+          event: 'offer',
+          payload: {
+            offer,
+            conversation_id: conversationId,
+            from: user?.id,
+            to: otherUserId
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error starting video call:', error);
+      handleEndCall();
+    }
+  };
+
   const handleEndCall = async () => {
+    stopRinging();
+    playEndCall();
+    
     const endTime = new Date().toISOString();
     const duration = callStartTimeRef.current ? 
       Math.floor((Date.now() - callStartTimeRef.current) / 1000) : 0;
@@ -142,18 +303,26 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
     }
   };
 
-  // Simulate call connection for demo
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setCallStatus('connected');
-      callStartTimeRef.current = Date.now();
-    }, 2000);
-
-    return () => clearTimeout(timer);
+    startCall();
+    
+    return () => {
+      handleEndCall();
+    };
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-[9999] flex flex-col" style={{ zIndex: 9999 }}>
+    <div 
+      className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black flex flex-col"
+      style={{ 
+        zIndex: 999999,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+      }}
+    >
       {/* Remote video */}
       <div className="flex-1 relative overflow-hidden">
         <video
@@ -165,7 +334,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
         
         {/* Connecting overlay */}
         {callStatus === 'connecting' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-[10000]">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm" style={{ zIndex: 1000000 }}>
             <Card className="bg-black/60 border-white/20 text-white backdrop-blur-lg">
               <CardContent className="p-8 text-center">
                 <div className="relative mb-6">
@@ -180,7 +349,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       </div>
 
       {/* Local video */}
-      <div className="absolute top-6 right-6 w-40 h-30 bg-black/80 rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl z-[10000]">
+      <div className="absolute top-6 right-6 w-40 h-30 bg-black/80 rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl" style={{ zIndex: 1000000 }}>
         <video
           ref={localVideoRef}
           autoPlay
@@ -196,7 +365,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       </div>
 
       {/* Call controls */}
-      <Card className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/60 border-white/20 backdrop-blur-lg z-[10000]">
+      <Card className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/60 border-white/20 backdrop-blur-lg" style={{ zIndex: 1000000 }}>
         <CardContent className="p-4">
           <div className="flex items-center space-x-4">
             <Button
@@ -239,7 +408,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       </Card>
 
       {/* Call status */}
-      <div className="absolute top-6 left-6 text-white z-[10000]">
+      <div className="absolute top-6 left-6 text-white" style={{ zIndex: 1000000 }}>
         <div className="flex items-center space-x-3 bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
           <div className={`w-3 h-3 rounded-full ${
             callStatus === 'connected' ? 'bg-green-400 animate-pulse' :
