@@ -54,8 +54,6 @@ export const useEnhancedMessages = () => {
     setMessages([]);
     setConversations([]);
     setTypingUsers({});
-    localStorage.removeItem('cached_conversations');
-    localStorage.removeItem('cached_messages');
   };
 
   const calculateStreak = (messages: EnhancedMessage[]) => {
@@ -98,6 +96,8 @@ export const useEnhancedMessages = () => {
         clearCache();
       }
 
+      console.log('Fetching conversations for user:', user.id);
+
       const { data: conversationsData, error } = await supabase
         .from('conversations')
         .select('*')
@@ -109,9 +109,11 @@ export const useEnhancedMessages = () => {
         return;
       }
 
+      console.log('Raw conversations data:', conversationsData);
+
       // Get enriched conversations with participant info, last message, and streaks
       const enrichedConversations = await Promise.all(
-        conversationsData.map(async (conv) => {
+        (conversationsData || []).map(async (conv) => {
           const otherUserId = conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1;
           
           const { data: profileData } = await supabase
@@ -134,7 +136,7 @@ export const useEnhancedMessages = () => {
             .or(`and(sender_id.eq.${conv.participant_1},recipient_id.eq.${conv.participant_2}),and(sender_id.eq.${conv.participant_2},recipient_id.eq.${conv.participant_1})`)
             .order('created_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           let lastMessageWithProfile = undefined;
           if (lastMessageData) {
@@ -161,6 +163,7 @@ export const useEnhancedMessages = () => {
         })
       );
 
+      console.log('Enriched conversations:', enrichedConversations);
       setConversations(enrichedConversations);
     } catch (error) {
       console.error('Error in fetchConversations:', error);
@@ -173,10 +176,7 @@ export const useEnhancedMessages = () => {
     if (!user) return;
 
     try {
-      // Clear messages cache if force refresh
-      if (forceRefresh) {
-        setMessages([]);
-      }
+      console.log('Fetching messages for conversation:', conversationId);
 
       const { data: conversation } = await supabase
         .from('conversations')
@@ -189,6 +189,8 @@ export const useEnhancedMessages = () => {
         return;
       }
 
+      console.log('Found conversation:', conversation);
+
       const { data: messagesData, error } = await supabase
         .from('messages')
         .select('*')
@@ -199,6 +201,8 @@ export const useEnhancedMessages = () => {
         console.error('Error fetching messages:', error);
         return;
       }
+
+      console.log('Raw messages data:', messagesData);
 
       const messagesWithProfiles = await Promise.all(
         (messagesData || []).map(async (msg) => {
@@ -215,7 +219,7 @@ export const useEnhancedMessages = () => {
         })
       );
 
-      console.log('Fetched messages for conversation:', conversationId, messagesWithProfiles.length);
+      console.log('Messages with profiles:', messagesWithProfiles);
       setMessages(messagesWithProfiles);
     } catch (error) {
       console.error('Error in fetchMessages:', error);
@@ -420,7 +424,7 @@ export const useEnhancedMessages = () => {
         .from('conversations')
         .select('id')
         .or(`and(participant_1.eq.${user.id},participant_2.eq.${recipientId}),and(participant_1.eq.${recipientId},participant_2.eq.${user.id})`)
-        .single();
+        .maybeSingle();
 
       if (existingConv) {
         setSelectedConversation(existingConv.id);
@@ -470,7 +474,7 @@ export const useEnhancedMessages = () => {
     isSubscribedRef.current = false;
   };
 
-  // Set up realtime subscriptions with improved cache clearing
+  // Set up realtime subscriptions with improved error handling
   useEffect(() => {
     if (!user) {
       cleanupChannels();
@@ -576,6 +580,12 @@ export const useEnhancedMessages = () => {
               }, 5000);
             }
           }
+        })
+        .on('broadcast', { event: 'incoming-call' }, (payload) => {
+          console.log('Incoming call notification:', payload);
+        })
+        .on('broadcast', { event: 'group-call-invitation' }, (payload) => {
+          console.log('Group call invitation:', payload);
         });
 
       // Subscribe to channels
@@ -606,19 +616,19 @@ export const useEnhancedMessages = () => {
     };
   }, [user?.id, selectedConversation]);
 
-  // Handle selectedConversation changes separately with cache clearing
+  // Handle selectedConversation changes separately
   useEffect(() => {
     if (selectedConversation && user) {
       console.log('Fetching messages for conversation:', selectedConversation);
-      fetchMessages(selectedConversation, true); // Force refresh when switching conversations
+      fetchMessages(selectedConversation, true);
     }
   }, [selectedConversation, user]);
 
-  // Initial fetch with cache clearing
+  // Initial fetch
   useEffect(() => {
     if (user) {
       console.log('Initial fetch for user:', user.id);
-      fetchConversations(true); // Force refresh on initial load
+      fetchConversations(true);
     }
   }, [user]);
 

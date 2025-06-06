@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +11,7 @@ import {
   ContextMenuTrigger,
   ContextMenuSeparator
 } from '@/components/ui/context-menu';
-import { Send, Phone, Video, Info, Paperclip, Zap, Settings, Copy, Reply, Forward, Delete, Pin } from 'lucide-react';
+import { Send, Phone, Video, Info, Paperclip, Zap, Settings, Copy, Reply, Forward, Delete, Pin, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import MediaUpload from '@/components/MediaUpload';
 import EmojiPicker from '@/components/EmojiPicker';
@@ -20,6 +19,7 @@ import VideoCall from '@/components/VideoCall';
 import EnhancedAudioCall from '@/components/EnhancedAudioCall';
 import IncomingCallPopup from '@/components/IncomingCallPopup';
 import CallHistoryDialog from '@/components/CallHistoryDialog';
+import GroupCallDialog from '@/components/GroupCallDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -41,12 +41,14 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     callerName: string;
     callerAvatar?: string;
     callType: 'audio' | 'video';
+    roomId?: string;
   } | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const callChannelRef = useRef<any>(null);
   const { user } = useAuth();
-  const { messages, conversations, sendMessage, sendTypingIndicator, typingUsers, clearCache } = useEnhancedMessages();
+  const { messages, conversations, sendMessage, sendTypingIndicator, typingUsers } = useEnhancedMessages();
   const { toast } = useToast();
 
   const conversation = conversations.find(c => c.id === conversationId);
@@ -59,17 +61,19 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    clearCache();
-  }, [conversationId]);
-
-  // Set up incoming call listener
+  // Set up call notification listener
   useEffect(() => {
     if (!user || !conversation) return;
 
-    const channel = supabase.channel(`incoming-calls-${user.id}`);
+    // Clean up existing channel
+    if (callChannelRef.current) {
+      supabase.removeChannel(callChannelRef.current);
+    }
+
+    const channel = supabase.channel(`call-notifications-${user.id}-${conversationId}`);
     
     channel.on('broadcast', { event: 'incoming-call' }, (payload) => {
+      console.log('Received incoming call:', payload);
       const { caller_id, caller_name, caller_avatar, call_type, conversation_id } = payload.payload;
       
       if (conversation_id === conversationId && caller_id !== user.id) {
@@ -79,13 +83,49 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           callerAvatar: caller_avatar,
           callType: call_type
         });
+        
+        // Play notification sound (if available)
+        try {
+          const audio = new Audio('/notification-sound.mp3');
+          audio.play().catch(e => console.log('Could not play notification sound:', e));
+        } catch (e) {
+          console.log('Notification sound not available');
+        }
       }
     });
 
-    channel.subscribe();
+    channel.on('broadcast', { event: 'group-call-invitation' }, (payload) => {
+      console.log('Received group call invitation:', payload);
+      const { room_id, initiator_id, initiator_name, initiator_avatar, call_type, recipient_id } = payload.payload;
+      
+      if (recipient_id === user.id && initiator_id !== user.id) {
+        setIncomingCall({
+          callerId: initiator_id,
+          callerName: initiator_name,
+          callerAvatar: initiator_avatar,
+          callType: call_type,
+          roomId: room_id
+        });
+        
+        toast({
+          title: "Group call invitation",
+          description: `${initiator_name} invited you to a group ${call_type} call`
+        });
+      }
+    });
+
+    channel.subscribe((status) => {
+      console.log('Call notification channel status:', status);
+      if (status === 'SUBSCRIBED') {
+        callChannelRef.current = channel;
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      if (callChannelRef.current) {
+        supabase.removeChannel(callChannelRef.current);
+        callChannelRef.current = null;
+      }
     };
   }, [user, conversationId, conversation]);
 
@@ -142,6 +182,10 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     switch (action) {
       case 'copy':
         navigator.clipboard.writeText(messageContent);
+        toast({
+          title: "Copied to clipboard",
+          description: "Message copied to clipboard"
+        });
         break;
       case 'reply':
         setNewMessage(`@${conversation?.other_user?.username} `);
@@ -162,12 +206,15 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     if (!conversation?.other_user || !user) return;
 
     try {
-      // Notify the other user about incoming call
-      const channel = supabase.channel(`call-initiation-${Date.now()}`);
+      console.log('Initiating call:', { callType, conversationId, recipientId: conversation.other_user.id });
+
+      // Create a dedicated channel for this specific call
+      const callInitiationChannel = supabase.channel(`call-initiation-${conversationId}-${Date.now()}`);
       
-      await channel.subscribe();
+      await callInitiationChannel.subscribe();
       
-      channel.send({
+      // Send call notification to the recipient
+      callInitiationChannel.send({
         type: 'broadcast',
         event: 'incoming-call',
         payload: {
@@ -175,35 +222,43 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           caller_name: user.user_metadata?.display_name || user.email,
           caller_avatar: user.user_metadata?.avatar_url,
           call_type: callType,
-          conversation_id: conversationId
+          conversation_id: conversationId,
+          recipient_id: conversation.other_user.id
         }
       });
 
-      // Start the call
+      console.log('Call notification sent');
+
+      // Start the call immediately for the caller
       if (callType === 'video') {
         setIsVideoCallActive(true);
       } else {
         setIsAudioCallActive(true);
       }
 
-      // Create missed call notification if not answered
+      // Record the call attempt
       setTimeout(async () => {
-        if (!isVideoCallActive && !isAudioCallActive) {
-          await supabase.from('notifications').insert({
-            user_id: conversation.other_user!.id,
-            type: 'missed_call',
-            title: 'Missed Call',
-            content: `${user.user_metadata?.display_name || user.email} called you`,
-            data: {
-              caller_id: user.id,
-              call_type: callType,
-              conversation_id: conversationId
-            }
+        try {
+          await supabase.from('call_history').insert({
+            caller_id: user.id,
+            recipient_id: conversation.other_user!.id,
+            conversation_id: conversationId,
+            call_type: callType,
+            call_status: 'completed', // This would be updated based on actual call outcome
+            duration_seconds: 0,
+            started_at: new Date().toISOString(),
+            ended_at: new Date().toISOString()
           });
+        } catch (error) {
+          console.error('Error recording call:', error);
         }
-      }, 30000); // 30 seconds timeout
+      }, 1000);
 
-      supabase.removeChannel(channel);
+      // Clean up the initiation channel after some time
+      setTimeout(() => {
+        supabase.removeChannel(callInitiationChannel);
+      }, 30000);
+
     } catch (error) {
       console.error('Error initiating call:', error);
       toast({
@@ -295,7 +350,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const otherUserId = conversation.participant_1 === user?.id ? conversation.participant_2 : conversation.participant_1;
   const isOtherUserTyping = typingUsers[otherUserId];
 
-  // Fix: Filter messages correctly for this conversation
+  // Filter messages for this conversation
   const conversationMessages = messages.filter(msg => {
     const participant1 = conversation.participant_1;
     const participant2 = conversation.participant_2;
@@ -306,9 +361,10 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     );
   });
 
-  console.log('Conversation:', conversation);
-  console.log('All messages:', messages);
-  console.log('Filtered messages for conversation:', conversationMessages);
+  console.log('Rendering messages for conversation:', conversationId);
+  console.log('Conversation participants:', conversation.participant_1, conversation.participant_2);
+  console.log('All messages:', messages.length);
+  console.log('Filtered messages:', conversationMessages.length);
 
   return (
     <div className="flex flex-col h-full">
@@ -361,6 +417,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
             <Button variant="ghost" size="sm" className="rounded-full" onClick={handleVideoCall}>
               <Video className="w-4 h-4" />
             </Button>
+            <GroupCallDialog participants={[conversation.other_user!].filter(Boolean)} />
             <CallHistoryDialog />
             <ContextMenu>
               <ContextMenuTrigger asChild>

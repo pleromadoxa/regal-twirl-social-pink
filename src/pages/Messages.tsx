@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,11 +15,14 @@ import {
   Shield,
   Trash2,
   Download,
-  RefreshCw
+  RefreshCw,
+  Phone
 } from "lucide-react";
 import { useEnhancedMessages } from "@/hooks/useEnhancedMessages";
 import ConversationStarter from "@/components/ConversationStarter";
 import MessageThread from "@/components/MessageThread";
+import CallHistorySection from "@/components/CallHistorySection";
+import GroupCallDialog from "@/components/GroupCallDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,6 +88,14 @@ const Messages = () => {
     );
   });
 
+  // Get all conversation participants for group calls
+  const allParticipants = conversations.map(conv => conv.other_user).filter(Boolean) as Array<{
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_url: string;
+  }>;
+
   const handleSettingsAction = (action: string) => {
     switch (action) {
       case 'notifications':
@@ -116,6 +128,7 @@ const Messages = () => {
                 Messages
               </h1>
               <div className="flex items-center gap-2">
+                <GroupCallDialog participants={allParticipants} />
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -175,10 +188,11 @@ const Messages = () => {
 
           {/* Conversation Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-3 mx-4 mt-2">
+            <TabsList className="grid w-full grid-cols-4 mx-4 mt-2">
               <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+              <TabsTrigger value="calls" className="text-xs">Calls</TabsTrigger>
               <TabsTrigger value="unread" className="text-xs">Unread</TabsTrigger>
-              <TabsTrigger value="archived" className="text-xs">Archived</TabsTrigger>
+              <TabsTrigger value="archived" className="text-xs">Archive</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all" className="flex-1 overflow-hidden">
@@ -264,6 +278,10 @@ const Messages = () => {
                   </div>
                 )}
               </div>
+            </TabsContent>
+
+            <TabsContent value="calls" className="flex-1 p-4 overflow-y-auto">
+              <CallHistorySection />
             </TabsContent>
 
             <TabsContent value="unread" className="flex-1 p-4">
