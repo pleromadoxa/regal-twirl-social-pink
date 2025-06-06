@@ -54,11 +54,13 @@ export const useEnhancedMessages = () => {
 
     setLoading(true);
     try {
-      // Fetch conversations - simplified query without problematic joins
+      // Fetch conversations with user profiles
       const { data: conversationData, error: conversationError } = await supabase
         .from('conversations')
         .select(`
-          *
+          *,
+          participant_1_profile:participant_1(id, username, display_name, avatar_url),
+          participant_2_profile:participant_2(id, username, display_name, avatar_url)
         `)
         .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
         .order('last_message_at', { ascending: false, nullsFirst: false });
@@ -69,40 +71,47 @@ export const useEnhancedMessages = () => {
       }
 
       if (conversationData) {
-        // Process conversations to add basic structure
-        const processedConversations: Conversation[] = conversationData.map(conv => ({
-          ...conv,
-          participant_1_profile: null,
-          participant_2_profile: null,
-          other_user: null,
-          last_message: null,
-          streak_count: 0
-        }));
+        const processedConversations: Conversation[] = conversationData.map(conv => {
+          const otherUser = conv.participant_1 === user.id 
+            ? conv.participant_2_profile 
+            : conv.participant_1_profile;
+          
+          return {
+            ...conv,
+            other_user: otherUser,
+            last_message: null,
+            streak_count: 0
+          };
+        });
 
         setConversations(processedConversations);
       }
 
       // Fetch messages for selected conversation if any
       if (selectedConversation) {
-        const { data: messageData, error: messageError } = await supabase
-          .from('messages')
-          .select(`
-            *
-          `)
-          .or(`and(sender_id.eq.${user.id},recipient_id.eq.${selectedConversation}),and(sender_id.eq.${selectedConversation},recipient_id.eq.${user.id})`)
-          .order('created_at', { ascending: true });
+        const conversation = conversationData?.find(c => c.id === selectedConversation);
+        if (conversation) {
+          const otherUserId = conversation.participant_1 === user.id 
+            ? conversation.participant_2 
+            : conversation.participant_1;
 
-        if (messageError) {
-          console.error("Error fetching messages:", messageError);
-          return;
-        }
+          const { data: messageData, error: messageError } = await supabase
+            .from('messages')
+            .select(`
+              *,
+              sender_profile:sender_id(id, username, display_name, avatar_url)
+            `)
+            .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id})`)
+            .order('created_at', { ascending: true });
 
-        if (messageData) {
-          const processedMessages: Message[] = messageData.map(msg => ({
-            ...msg,
-            sender_profile: null
-          }));
-          setMessages(processedMessages);
+          if (messageError) {
+            console.error("Error fetching messages:", messageError);
+            return;
+          }
+
+          if (messageData) {
+            setMessages(messageData);
+          }
         }
       }
     } finally {
@@ -118,14 +127,25 @@ export const useEnhancedMessages = () => {
     if (!user || !selectedConversation) return;
 
     try {
+      // Get conversation details
+      const conversation = conversations.find(c => c.id === selectedConversation);
+      if (!conversation) return;
+
+      const recipientId = conversation.participant_1 === user.id 
+        ? conversation.participant_2 
+        : conversation.participant_1;
+
       const { data: newMessage, error } = await supabase
         .from('messages')
         .insert({
           sender_id: user.id,
-          recipient_id: selectedConversation,
+          recipient_id: recipientId,
           content: content
         })
-        .select()
+        .select(`
+          *,
+          sender_profile:sender_id(id, username, display_name, avatar_url)
+        `)
         .single();
 
       if (error) {
@@ -134,11 +154,13 @@ export const useEnhancedMessages = () => {
       }
 
       if (newMessage) {
-        const processedMessage: Message = {
-          ...newMessage,
-          sender_profile: null
-        };
-        setMessages((prevMessages) => [...prevMessages, processedMessage]);
+        setMessages((prevMessages) => [...prevMessages, newMessage]);
+        
+        // Update conversation's last_message_at
+        await supabase
+          .from('conversations')
+          .update({ last_message_at: new Date().toISOString() })
+          .eq('id', selectedConversation);
       }
     } catch (error) {
       console.error("Error sending message:", error);

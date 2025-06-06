@@ -51,7 +51,6 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const handleTyping = () => {
     if (!isTyping) {
       setIsTyping(true);
-      // Remove the sendTypingIndicator call as it doesn't exist
       setTimeout(() => setIsTyping(false), 3000);
     }
   };
@@ -119,7 +118,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message) => {
-            const isOwn = message.sender_id === selectedConversation;
+            const isOwn = message.sender_id !== otherUser?.id;
             const sender = message.sender_profile;
             
             return (
