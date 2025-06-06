@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,7 +44,6 @@ const AudioCall = ({
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // WebRTC configuration
   const rtcConfiguration = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
@@ -108,7 +106,6 @@ const AudioCall = ({
 
       localStreamRef.current = stream;
 
-      // Add tracks to peer connection
       if (peerConnectionRef.current) {
         stream.getTracks().forEach(track => {
           peerConnectionRef.current?.addTrack(track, stream);
@@ -183,7 +180,6 @@ const AudioCall = ({
       await startLocalStream();
       
       if (!isIncoming) {
-        // Create offer for outgoing call
         const offer = await peerConnectionRef.current.createOffer();
         await peerConnectionRef.current.setLocalDescription(offer);
         
@@ -205,17 +201,14 @@ const AudioCall = ({
   };
 
   const handleEndCall = () => {
-    // Stop local stream
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
     }
 
-    // Close peer connection
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
     }
 
-    // Notify other user
     if (signalingChannelRef.current) {
       signalingChannelRef.current.send({
         type: 'broadcast',
@@ -246,11 +239,8 @@ const AudioCall = ({
 
   const toggleSpeaker = () => {
     setIsSpeakerEnabled(!isSpeakerEnabled);
-    // Note: Speaker toggle is more for UI feedback, actual implementation
-    // would require more complex audio routing
   };
 
-  // Call duration timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
@@ -275,87 +265,92 @@ const AudioCall = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-50 flex flex-col items-center justify-center">
-      {/* Remote audio element */}
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <audio ref={remoteAudioRef} autoPlay />
       
-      {/* Call interface */}
-      <div className="text-center text-white space-y-8">
-        {/* User avatar */}
-        <div className="relative">
-          <Avatar className="w-32 h-32 mx-auto border-4 border-white/20">
-            <AvatarImage src={otherUserAvatar} />
-            <AvatarFallback className="text-4xl bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-              {otherUserName[0]?.toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          
-          {/* Pulse animation when connecting */}
-          {callStatus === 'connecting' && (
-            <div className="absolute inset-0 rounded-full border-4 border-white/40 animate-ping"></div>
-          )}
-        </div>
+      <Card className="w-full max-w-md bg-gradient-to-br from-purple-900 via-blue-900 to-black border-white/20 text-white">
+        <CardContent className="p-8 text-center">
+          {/* Caller avatar with pulse animation */}
+          <div className="relative mb-6">
+            <Avatar className="w-24 h-24 mx-auto border-4 border-white/20">
+              <AvatarImage src={otherUserAvatar} />
+              <AvatarFallback className="text-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                {otherUserName[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            
+            {/* Pulse rings when connected */}
+            {callStatus === 'connected' && (
+              <>
+                <div className="absolute inset-0 rounded-full border-4 border-green-400/40 animate-ping"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-green-400/20 animate-ping animation-delay-200"></div>
+              </>
+            )}
+            
+            {/* Pulse rings when connecting */}
+            {callStatus === 'connecting' && (
+              <>
+                <div className="absolute inset-0 rounded-full border-4 border-yellow-400/40 animate-ping"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-yellow-400/20 animate-ping animation-delay-200"></div>
+              </>
+            )}
+          </div>
 
-        {/* User name */}
-        <div>
-          <h2 className="text-2xl font-bold">{otherUserName}</h2>
-          <p className="text-lg opacity-75 mt-2">
-            {callStatus === 'connecting' && 'Connecting...'}
-            {callStatus === 'connected' && formatCallDuration(callDuration)}
-            {callStatus === 'ended' && 'Call ended'}
-          </p>
-        </div>
+          {/* Call info */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-2">{otherUserName}</h2>
+            <p className="text-lg opacity-75">
+              {callStatus === 'connecting' && 'Connecting...'}
+              {callStatus === 'connected' && formatCallDuration(callDuration)}
+              {callStatus === 'ended' && 'Call ended'}
+            </p>
+          </div>
 
-        {/* Call controls */}
-        <Card className="bg-black/40 border-white/20 backdrop-blur-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center space-x-6">
-              <Button
-                variant={isAudioEnabled ? "default" : "destructive"}
-                size="lg"
-                onClick={toggleAudio}
-                className="rounded-full w-14 h-14 p-0"
-              >
-                {isAudioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
-              </Button>
-              
-              <Button
-                variant={isSpeakerEnabled ? "secondary" : "outline"}
-                size="lg"
-                onClick={toggleSpeaker}
-                className="rounded-full w-14 h-14 p-0"
-              >
-                {isSpeakerEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-              </Button>
-              
-              <Button
-                variant="destructive"
-                size="lg"
-                onClick={handleEndCall}
-                className="rounded-full w-14 h-14 p-0"
-              >
-                <PhoneOff className="w-6 h-6" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Call actions */}
+          <div className="flex items-center justify-center space-x-6">
+            <Button
+              variant={isAudioEnabled ? "default" : "destructive"}
+              size="lg"
+              onClick={toggleAudio}
+              className="rounded-full w-14 h-14 p-0"
+            >
+              {isAudioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+            </Button>
+            
+            <Button
+              variant={isSpeakerEnabled ? "secondary" : "outline"}
+              size="lg"
+              onClick={toggleSpeaker}
+              className="rounded-full w-14 h-14 p-0"
+            >
+              {isSpeakerEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
+            </Button>
+            
+            <Button
+              variant="destructive"
+              size="lg"
+              onClick={handleEndCall}
+              className="rounded-full w-14 h-14 p-0 bg-red-500 hover:bg-red-600"
+            >
+              <PhoneOff className="w-6 h-6" />
+            </Button>
+          </div>
 
-      {/* Call status indicator */}
-      <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
-        <div className="flex items-center space-x-2 text-white/75">
-          <div className={`w-2 h-2 rounded-full ${
-            callStatus === 'connected' ? 'bg-green-400' :
-            callStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
-            'bg-red-400'
-          }`}></div>
-          <span className="text-sm">
-            {callStatus === 'connected' ? 'Connected' :
-             callStatus === 'connecting' ? 'Connecting' :
-             'Disconnected'}
-          </span>
-        </div>
-      </div>
+          {/* Status indicator */}
+          <div className="flex items-center justify-center mt-6">
+            <div className={`w-2 h-2 rounded-full mr-2 ${
+              callStatus === 'connected' ? 'bg-green-400' :
+              callStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
+              'bg-red-400'
+            }`}></div>
+            <span className="text-sm opacity-75">
+              {callStatus === 'connected' ? 'Connected' :
+               callStatus === 'connecting' ? 'Connecting' :
+               'Disconnected'}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

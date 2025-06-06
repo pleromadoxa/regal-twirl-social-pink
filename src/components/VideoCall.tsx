@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,7 +37,6 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // WebRTC configuration
   const rtcConfiguration = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
@@ -98,7 +96,6 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
         localVideoRef.current.srcObject = stream;
       }
 
-      // Add tracks to peer connection
       if (peerConnectionRef.current) {
         stream.getTracks().forEach(track => {
           peerConnectionRef.current?.addTrack(track, stream);
@@ -173,7 +170,6 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       await startLocalStream();
       
       if (!isIncoming) {
-        // Create offer for outgoing call
         const offer = await peerConnectionRef.current.createOffer();
         await peerConnectionRef.current.setLocalDescription(offer);
         
@@ -195,17 +191,14 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
   };
 
   const handleEndCall = () => {
-    // Stop local stream
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
     }
 
-    // Close peer connection
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
     }
 
-    // Notify other user
     if (signalingChannelRef.current) {
       signalingChannelRef.current.send({
         type: 'broadcast',
@@ -252,7 +245,6 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
           audio: true
         });
         
-        // Replace video track
         if (peerConnectionRef.current && localStreamRef.current) {
           const sender = peerConnectionRef.current.getSenders().find(s => 
             s.track && s.track.kind === 'video'
@@ -265,14 +257,11 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
         
         setIsScreenSharing(true);
         
-        // Handle screen share end
         screenStream.getVideoTracks()[0].addEventListener('ended', () => {
           setIsScreenSharing(false);
-          // Switch back to camera
           startLocalStream();
         });
       } else {
-        // Switch back to camera
         await startLocalStream();
         setIsScreenSharing(false);
       }
@@ -295,7 +284,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex flex-col">
       {/* Remote video */}
       <div className="flex-1 relative">
         <video
@@ -307,16 +296,18 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
         
         {callStatus === 'connecting' && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <div className="text-white text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-              <p className="text-lg">Connecting...</p>
-            </div>
+            <Card className="bg-gradient-to-br from-purple-900 via-blue-900 to-black border-white/20 text-white">
+              <CardContent className="p-8 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                <p className="text-lg">Connecting...</p>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
 
       {/* Local video */}
-      <div className="absolute top-4 right-4 w-32 h-24 bg-gray-800 rounded-lg overflow-hidden">
+      <div className="absolute top-4 right-4 w-32 h-24 bg-gray-800 rounded-lg overflow-hidden border-2 border-white/20">
         <video
           ref={localVideoRef}
           autoPlay
@@ -361,7 +352,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
               variant="destructive"
               size="lg"
               onClick={handleEndCall}
-              className="rounded-full w-12 h-12 p-0"
+              className="rounded-full w-12 h-12 p-0 bg-red-500 hover:bg-red-600"
             >
               <PhoneOff className="w-6 h-6" />
             </Button>
@@ -371,11 +362,18 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
 
       {/* Call status */}
       <div className="absolute top-4 left-4 text-white">
-        <p className="text-sm opacity-75">
-          {callStatus === 'connecting' && 'Connecting...'}
-          {callStatus === 'connected' && 'Connected'}
-          {callStatus === 'ended' && 'Call ended'}
-        </p>
+        <div className="flex items-center space-x-2 bg-black/50 px-3 py-2 rounded-full">
+          <div className={`w-2 h-2 rounded-full ${
+            callStatus === 'connected' ? 'bg-green-400' :
+            callStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
+            'bg-red-400'
+          }`}></div>
+          <span className="text-sm">
+            {callStatus === 'connecting' && 'Connecting...'}
+            {callStatus === 'connected' && 'Connected'}
+            {callStatus === 'ended' && 'Call ended'}
+          </span>
+        </div>
       </div>
     </div>
   );
