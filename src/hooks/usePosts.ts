@@ -35,7 +35,7 @@ export const usePosts = () => {
     try {
       setLoading(true);
       
-      // First, get all posts
+      // First, get all posts including the new image_urls column
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*')

@@ -465,6 +465,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          image_urls: string[] | null
           likes_count: number | null
           replies_count: number | null
           retweets_count: number | null
@@ -475,6 +476,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          image_urls?: string[] | null
           likes_count?: number | null
           replies_count?: number | null
           retweets_count?: number | null
@@ -485,6 +487,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          image_urls?: string[] | null
           likes_count?: number | null
           replies_count?: number | null
           retweets_count?: number | null
