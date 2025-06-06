@@ -2,18 +2,9 @@
 import { useNavigate } from 'react-router-dom';
 import { BackgroundGradientAnimation } from '@/components/ui/background-gradient-animation';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
-import { supabase } from '@/integrations/supabase/client';
 
 const Landing = () => {
   const navigate = useNavigate();
-
-  // Get logo URL from Supabase storage
-  const getLogoUrl = () => {
-    const { data } = supabase.storage
-      .from('logos')
-      .getPublicUrl('regal-network-light.png');
-    return data.publicUrl;
-  };
 
   const handleEnterClick = () => {
     navigate('/auth');
@@ -34,18 +25,9 @@ const Landing = () => {
         {/* Logo */}
         <div className="mb-8 pointer-events-auto">
           <img 
-            src={getLogoUrl()}
-            alt="Regal Network Logo" 
+            src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
+            alt="Network Logo" 
             className="h-24 w-auto mx-auto mb-4"
-            onError={(e) => {
-              // Fallback to text if image fails to load
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const fallback = document.createElement('div');
-              fallback.className = 'h-24 flex items-center justify-center text-white text-4xl font-bold';
-              fallback.textContent = 'Regal Network';
-              target.parentNode?.appendChild(fallback);
-            }}
           />
         </div>
 
