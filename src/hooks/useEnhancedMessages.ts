@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,10 +42,12 @@ export const useEnhancedMessages = () => {
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
   const { user } = useAuth();
   const { toast } = useToast();
-  const conversationsChannelRef = useRef<any>(null);
+  
+  // Use refs to track channel subscription status
   const messagesChannelRef = useRef<any>(null);
   const typingChannelRef = useRef<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const isSubscribedRef = useRef<boolean>(false);
 
   const calculateStreak = (messages: EnhancedMessage[]) => {
     if (!messages || messages.length === 0) return 0;
@@ -307,7 +310,21 @@ export const useEnhancedMessages = () => {
 
       // Auto-stop typing after 3 seconds
       typingTimeoutRef.current = setTimeout(() => {
-        typingChannelRef.current?.send({
+        if (typingChannelRef.current) {
+          typingChannelRef.current.send({
+            type: 'broadcast',
+            event: 'typing',
+            payload: {
+              user_id: user.id,
+              conversation_id: conversationId,
+              is_typing: false
+            }
+          });
+        }
+      }, 3000);
+    } else {
+      if (typingChannelRef.current) {
+        typingChannelRef.current.send({
           type: 'broadcast',
           event: 'typing',
           payload: {
@@ -316,17 +333,7 @@ export const useEnhancedMessages = () => {
             is_typing: false
           }
         });
-      }, 3000);
-    } else {
-      typingChannelRef.current.send({
-        type: 'broadcast',
-        event: 'typing',
-        payload: {
-          user_id: user.id,
-          conversation_id: conversationId,
-          is_typing: false
-        }
-      });
+      }
     }
   };
 
@@ -417,10 +424,7 @@ export const useEnhancedMessages = () => {
   };
 
   const cleanupChannels = () => {
-    if (conversationsChannelRef.current) {
-      supabase.removeChannel(conversationsChannelRef.current);
-      conversationsChannelRef.current = null;
-    }
+    console.log('Cleaning up channels...');
     
     if (messagesChannelRef.current) {
       supabase.removeChannel(messagesChannelRef.current);
@@ -434,7 +438,10 @@ export const useEnhancedMessages = () => {
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = undefined;
     }
+
+    isSubscribedRef.current = false;
   };
 
   // Set up realtime subscriptions
@@ -444,97 +451,123 @@ export const useEnhancedMessages = () => {
       return;
     }
 
+    // Prevent multiple subscriptions
+    if (isSubscribedRef.current) {
+      return;
+    }
+
+    console.log('Setting up realtime subscriptions for user:', user.id);
     cleanupChannels();
 
-    // Messages channel with proper filtering
-    const messagesChannel = supabase
-      .channel(`messages-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `recipient_id=eq.${user.id}`
-        },
-        async (payload) => {
-          console.log('New message for current user:', payload);
-          
-          if (payload.new) {
-            const newMessage = payload.new as any;
+    try {
+      // Messages channel with proper filtering
+      const messagesChannel = supabase
+        .channel(`messages-${user.id}-${Date.now()}`) // Add timestamp to ensure unique channel name
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `recipient_id=eq.${user.id}`
+          },
+          async (payload) => {
+            console.log('New message for current user:', payload);
             
-            // Get sender profile for toast
-            const { data: senderProfile } = await supabase
-              .from('profiles')
-              .select('display_name, username')
-              .eq('id', newMessage.sender_id)
-              .single();
-            
-            const senderName = senderProfile?.display_name || senderProfile?.username || 'Someone';
-            
-            // Show toast notification
-            toast({
-              title: "New message",
-              description: `${senderName} sent you a message`
-            });
+            if (payload.new) {
+              const newMessage = payload.new as any;
+              
+              // Get sender profile for toast
+              const { data: senderProfile } = await supabase
+                .from('profiles')
+                .select('display_name, username')
+                .eq('id', newMessage.sender_id)
+                .single();
+              
+              const senderName = senderProfile?.display_name || senderProfile?.username || 'Someone';
+              
+              // Show toast notification
+              toast({
+                title: "New message",
+                description: `${senderName} sent you a message`
+              });
 
-            // Refresh conversations and messages if viewing the conversation
-            await fetchConversations();
-            if (selectedConversation) {
-              await fetchMessages(selectedConversation);
+              // Refresh conversations and messages if viewing the conversation
+              await fetchConversations();
+              if (selectedConversation) {
+                await fetchMessages(selectedConversation);
+              }
             }
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `sender_id=eq.${user.id}`
-        },
-        async (payload) => {
-          console.log('Message sent by current user:', payload);
-          // Refresh to update conversation list
-          await fetchConversations();
-        }
-      )
-      .subscribe();
-
-    messagesChannelRef.current = messagesChannel;
-
-    // Typing indicators channel
-    const typingChannel = supabase
-      .channel('typing-indicators')
-      .on('broadcast', { event: 'typing' }, (payload) => {
-        const { user_id, conversation_id, is_typing } = payload.payload;
-        
-        if (user_id !== user.id && conversation_id === selectedConversation) {
-          setTypingUsers(prev => ({
-            ...prev,
-            [user_id]: is_typing
-          }));
-
-          // Auto-clear typing indicator after 5 seconds
-          if (is_typing) {
-            setTimeout(() => {
-              setTypingUsers(prev => ({
-                ...prev,
-                [user_id]: false
-              }));
-            }, 5000);
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `sender_id=eq.${user.id}`
+          },
+          async (payload) => {
+            console.log('Message sent by current user:', payload);
+            // Refresh to update conversation list
+            await fetchConversations();
           }
+        );
+
+      // Typing indicators channel
+      const typingChannel = supabase
+        .channel(`typing-indicators-${user.id}-${Date.now()}`) // Add timestamp to ensure unique channel name
+        .on('broadcast', { event: 'typing' }, (payload) => {
+          const { user_id, conversation_id, is_typing } = payload.payload;
+          
+          if (user_id !== user.id && conversation_id === selectedConversation) {
+            setTypingUsers(prev => ({
+              ...prev,
+              [user_id]: is_typing
+            }));
+
+            // Auto-clear typing indicator after 5 seconds
+            if (is_typing) {
+              setTimeout(() => {
+                setTypingUsers(prev => ({
+                  ...prev,
+                  [user_id]: false
+                }));
+              }, 5000);
+            }
+          }
+        });
+
+      // Subscribe to channels
+      messagesChannel.subscribe((status) => {
+        console.log('Messages channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          messagesChannelRef.current = messagesChannel;
         }
-      })
-      .subscribe();
+      });
 
-    typingChannelRef.current = typingChannel;
+      typingChannel.subscribe((status) => {
+        console.log('Typing channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          typingChannelRef.current = typingChannel;
+        }
+      });
 
-    return cleanupChannels;
-  }, [user?.id, selectedConversation]);
+      isSubscribedRef.current = true;
 
-  // Handle selectedConversation changes
+    } catch (error) {
+      console.error('Error setting up channels:', error);
+      cleanupChannels();
+    }
+
+    return () => {
+      console.log('Cleaning up on unmount');
+      cleanupChannels();
+    };
+  }, [user?.id]); // Remove selectedConversation from dependencies to prevent re-subscription
+
+  // Handle selectedConversation changes separately
   useEffect(() => {
     if (selectedConversation && user) {
       console.log('Fetching messages for conversation:', selectedConversation);
