@@ -2,12 +2,15 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePinnedPosts } from "@/hooks/usePinnedPosts";
 import SidebarNav from "@/components/SidebarNav";
-import { Pin, Bookmark, Star } from "lucide-react";
+import PostsList from "@/components/PostsList";
+import { Pin, Bookmark } from "lucide-react";
 
 const Pinned = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { pinnedPosts, loading: pinnedLoading, togglePin } = usePinnedPosts();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -38,21 +41,38 @@ const Pinned = () => {
             <Pin className="w-8 h-8 text-purple-600" />
             Pinned Posts
           </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Your saved posts for quick access
+          </p>
         </div>
 
-        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-          <div className="text-center">
-            <div className="w-32 h-32 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Bookmark className="w-16 h-16 text-purple-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-4">
-              Save your favorites
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md">
-              Pin important posts to easily find them later. Your pinned posts will appear here for quick access.
-            </p>
+        {pinnedLoading ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <p className="ml-4 text-slate-500">Loading pinned posts...</p>
           </div>
-        </div>
+        ) : pinnedPosts.length > 0 ? (
+          <PostsList 
+            posts={pinnedPosts.map(post => ({ ...post, user_pinned: true }))}
+            onLike={() => {}} // Pinned posts don't need like functionality
+            onRetweet={() => {}} // Pinned posts don't need retweet functionality
+            onPin={togglePin}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="w-32 h-32 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Bookmark className="w-16 h-16 text-purple-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-4">
+                No pinned posts yet
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md">
+                Pin important posts to easily find them later. Your pinned posts will appear here for quick access.
+              </p>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

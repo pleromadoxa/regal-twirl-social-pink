@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -459,7 +458,6 @@ const TweetComposer = () => {
             </div>
           )}
           
-          {/* Media previews */}
           {selectedImages.length > 0 && (
             <div className="grid grid-cols-2 gap-2">
               {selectedImages.map((image, index) => (
@@ -504,7 +502,6 @@ const TweetComposer = () => {
             </div>
           )}
           
-          {/* Enhanced Audio preview with beautiful visualizer */}
           {selectedAudio && (
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-700 shadow-lg">
               <div className="flex items-center justify-between mb-4">
@@ -574,7 +571,6 @@ const TweetComposer = () => {
             </div>
           )}
           
-          {/* Location input */}
           {showLocationInput && (
             <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
               <MapPin className="w-4 h-4 text-purple-600" />
@@ -596,7 +592,6 @@ const TweetComposer = () => {
             </div>
           )}
           
-          {/* Hashtag input */}
           {showHashtagInput && (
             <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
               <Hash className="w-4 h-4 text-purple-600" />
@@ -627,7 +622,6 @@ const TweetComposer = () => {
             </div>
           )}
           
-          {/* Mention input */}
           {showMentionInput && (
             <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
               <AtSign className="w-4 h-4 text-purple-600" />
@@ -658,7 +652,6 @@ const TweetComposer = () => {
             </div>
           )}
           
-          {/* Actions */}
           <div className="flex items-center justify-between pt-4 border-t border-purple-200 dark:border-purple-700">
             <div className="flex items-center space-x-2">
               <input
@@ -670,9 +663,14 @@ const TweetComposer = () => {
                 onChange={handleImageSelect}
               />
               <Button 
+                type="button"
                 variant="ghost" 
                 size="sm" 
-                onClick={() => imageInputRef.current?.click()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  imageInputRef.current?.click();
+                }}
                 className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
               >
                 <Image className="w-5 h-5" />
@@ -686,9 +684,14 @@ const TweetComposer = () => {
                 onChange={handleVideoSelect}
               />
               <Button 
+                type="button"
                 variant="ghost" 
                 size="sm"
-                onClick={() => videoInputRef.current?.click()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  videoInputRef.current?.click();
+                }}
                 className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
               >
                 <Video className="w-5 h-5" />
@@ -702,18 +705,28 @@ const TweetComposer = () => {
                 onChange={handleAudioUpload}
               />
               <Button 
+                type="button"
                 variant="ghost" 
                 size="sm"
-                onClick={() => audioInputRef.current?.click()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  audioInputRef.current?.click();
+                }}
                 className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
               >
                 <Upload className="w-5 h-5" />
               </Button>
 
               <Button 
+                type="button"
                 variant="ghost" 
                 size="sm"
-                onClick={toggleRecording}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleRecording();
+                }}
                 className={`p-2 transition-all duration-300 hover:scale-125 rounded-full ${
                   isRecording 
                     ? 'text-red-500 bg-red-50 dark:bg-red-900/20 animate-pulse' 
@@ -724,33 +737,49 @@ const TweetComposer = () => {
               </Button>
               
               <Button 
+                type="button"
                 variant="ghost" 
                 size="sm"
-                onClick={getCurrentLocation}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  getCurrentLocation();
+                }}
                 className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
               >
                 <MapPin className="w-5 h-5" />
               </Button>
               
               <Button 
+                type="button"
                 variant="ghost" 
                 size="sm"
-                onClick={() => setShowHashtagInput(true)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowHashtagInput(true);
+                }}
                 className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
               >
                 <Hash className="w-5 h-5" />
               </Button>
               
               <Button 
+                type="button"
                 variant="ghost" 
                 size="sm"
-                onClick={() => setShowMentionInput(true)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowMentionInput(true);
+                }}
                 className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
               >
                 <AtSign className="w-5 h-5" />
               </Button>
 
               <Button 
+                type="button"
                 variant="ghost" 
                 size="sm" 
                 className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
@@ -759,6 +788,7 @@ const TweetComposer = () => {
               </Button>
 
               <Button 
+                type="button"
                 variant="ghost" 
                 size="sm" 
                 className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
@@ -769,6 +799,7 @@ const TweetComposer = () => {
             
             <div className="flex items-center space-x-4">
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => setIsThreadMode(!isThreadMode)}
@@ -809,6 +840,7 @@ const TweetComposer = () => {
               )}
               
               <Button
+                type="button"
                 disabled={isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() || tweetText.length > maxLength)}
                 onClick={handleTweetSubmit}
                 className="bg-gradient-to-r from-purple-600 via-blue-500 to-pink-600 hover:from-purple-700 hover:via-blue-600 hover:to-pink-700 text-white rounded-full px-8 py-2 disabled:opacity-50 transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-2xl font-medium"
