@@ -46,7 +46,7 @@ const Footer = () => {
         
         {/* Copyright */}
         <p className="text-sm text-slate-500 dark:text-slate-400 text-center">
-          © {new Date().getFullYear()} Regal Network. All rights reserved.
+          © {new Date().getFullYear()} Regal Network Technologies. All rights reserved. Powered by Lovetap Technologies. Built with ♥️ for the Kingdom.
         </p>
         
         {/* Links */}
