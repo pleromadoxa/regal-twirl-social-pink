@@ -63,7 +63,7 @@ const Notifications = () => {
       );
     }
     
-    return notification.message || notification.content || 'New notification';
+    return notification.message || 'New notification';
   };
 
   return (
@@ -146,12 +146,6 @@ const Notifications = () => {
                             {getNotificationContent(notification)}
                           </p>
                         </div>
-                        
-                        {notification.content && notification.content !== notification.message && (
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200 mt-1">
-                            {notification.content}
-                          </p>
-                        )}
                       </div>
                     </div>
                   </CardContent>
