@@ -11,6 +11,7 @@ import AudioVisualizer from "./AudioVisualizer";
 import ThreadComposer from "./ThreadComposer";
 import TweetActions from "./TweetActions";
 import CharacterCounter from "./CharacterCounter";
+import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 
 const TweetComposer = () => {
   const [tweetText, setTweetText] = useState("");
@@ -344,14 +345,13 @@ const TweetComposer = () => {
                 <CharacterCounter text={tweetText} maxLength={maxLength} />
               )}
               
-              <Button
+              <InteractiveHoverButton
                 type="button"
                 disabled={isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() || tweetText.length > maxLength)}
                 onClick={handleTweetSubmit}
-                className="bg-gradient-to-r from-purple-600 via-blue-500 to-pink-600 hover:from-purple-700 hover:via-blue-600 hover:to-pink-700 text-white rounded-full px-8 py-2 disabled:opacity-50 transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-2xl font-medium"
-              >
-                {isThreadMode ? 'Post Thread' : 'Post'}
-              </Button>
+                text={isThreadMode ? 'Post Thread' : 'Post'}
+                className="w-auto px-6"
+              />
             </div>
           </div>
         </div>

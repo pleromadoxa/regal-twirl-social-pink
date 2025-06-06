@@ -5,30 +5,32 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface UserProfile {
   id: string;
-  username: string;
-  display_name: string;
-  avatar_url: string;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
 }
 
 interface Message {
   id: string;
-  sender_id: string;
-  recipient_id: string;
   content: string;
   created_at: string;
-  sender_profile?: UserProfile;
+  sender_id: string;
+  recipient_id: string;
+  read_at: string | null;
+  sender_profile: UserProfile | null;
 }
 
 interface Conversation {
   id: string;
-  created_at: string;
   participant_1: string;
   participant_2: string;
-  last_message_at: string;
-  last_message: Message | null;
+  created_at: string;
+  last_message_at: string | null;
+  participant_1_profile: UserProfile | null;
+  participant_2_profile: UserProfile | null;
   other_user: UserProfile | null;
+  last_message: Message | null;
   streak_count: number;
-  group_name?: string | null;
 }
 
 export const useEnhancedMessages = () => {
@@ -37,6 +39,7 @@ export const useEnhancedMessages = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [activeCall, setActiveCall] = useState<any>(null);
   const [typingUsers, setTypingUsers] = useState<{ [key: string]: boolean }>({});
 
   const clearCache = useCallback(() => {
@@ -51,23 +54,11 @@ export const useEnhancedMessages = () => {
 
     setLoading(true);
     try {
-      // Fetch conversations with participants
+      // Fetch conversations - simplified query without problematic joins
       const { data: conversationData, error: conversationError } = await supabase
         .from('conversations')
         .select(`
-          *,
-          participant_1_profile:profiles!conversations_participant_1_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url
-          ),
-          participant_2_profile:profiles!conversations_participant_2_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url
-          )
+          *
         `)
         .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
         .order('last_message_at', { ascending: false, nullsFirst: false });
@@ -78,30 +69,25 @@ export const useEnhancedMessages = () => {
       }
 
       if (conversationData) {
-        // Process conversations to add other_user info
+        // Process conversations to add basic structure
         const processedConversations: Conversation[] = conversationData.map(conv => ({
           ...conv,
-          other_user: conv.participant_1 === user.id 
-            ? (conv.participant_2_profile as UserProfile) 
-            : (conv.participant_1_profile as UserProfile),
+          participant_1_profile: null,
+          participant_2_profile: null,
+          other_user: null,
           last_message: null,
           streak_count: 0
         }));
+
         setConversations(processedConversations);
       }
 
-      // Fetch messages for selected conversation
+      // Fetch messages for selected conversation if any
       if (selectedConversation) {
         const { data: messageData, error: messageError } = await supabase
           .from('messages')
           .select(`
-            *,
-            sender_profile:profiles!messages_sender_id_fkey(
-              id,
-              username,
-              display_name,
-              avatar_url
-            )
+            *
           `)
           .or(`and(sender_id.eq.${user.id},recipient_id.eq.${selectedConversation}),and(sender_id.eq.${selectedConversation},recipient_id.eq.${user.id})`)
           .order('created_at', { ascending: true });
@@ -112,7 +98,11 @@ export const useEnhancedMessages = () => {
         }
 
         if (messageData) {
-          setMessages(messageData as Message[]);
+          const processedMessages: Message[] = messageData.map(msg => ({
+            ...msg,
+            sender_profile: null
+          }));
+          setMessages(processedMessages);
         }
       }
     } finally {
@@ -124,51 +114,18 @@ export const useEnhancedMessages = () => {
     refetch();
   }, [refetch]);
 
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('public:messages')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'messages' },
-        (payload) => {
-          if (payload.new) {
-            // Add new message to current conversation
-            const newMessage = payload.new as Message;
-            if ((newMessage.sender_id === user.id || newMessage.recipient_id === user.id)) {
-              setMessages((prevMessages) => [...prevMessages, newMessage]);
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, selectedConversation, refetch]);
-
-  const sendMessage = async (recipientId: string, content: string, attachments?: any) => {
-    if (!user || !recipientId) return;
+  const sendMessage = async (content: string) => {
+    if (!user || !selectedConversation) return;
 
     try {
       const { data: newMessage, error } = await supabase
         .from('messages')
         .insert({
           sender_id: user.id,
-          recipient_id: recipientId,
-          content: content,
+          recipient_id: selectedConversation,
+          content: content
         })
-        .select(`
-          *,
-          sender_profile:profiles!messages_sender_id_fkey(
-            id,
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
+        .select()
         .single();
 
       if (error) {
@@ -177,7 +134,11 @@ export const useEnhancedMessages = () => {
       }
 
       if (newMessage) {
-        setMessages((prevMessages) => [...prevMessages, newMessage as Message]);
+        const processedMessage: Message = {
+          ...newMessage,
+          sender_profile: null
+        };
+        setMessages((prevMessages) => [...prevMessages, processedMessage]);
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -191,10 +152,13 @@ export const useEnhancedMessages = () => {
         .update({ read_at: new Date().toISOString() })
         .eq('id', messageId);
 
-      setMessages(prevMessages => {
-        return prevMessages.map(msg => {
+      setMessages((prevMessages) => {
+        return prevMessages.map((msg) => {
           if (msg.id === messageId) {
-            return { ...msg, read_at: new Date().toISOString() };
+            return {
+              ...msg,
+              read_at: new Date().toISOString()
+            };
           }
           return msg;
         });
@@ -213,10 +177,10 @@ export const useEnhancedMessages = () => {
         .from('conversations')
         .select('*')
         .or(`and(participant_1.eq.${user?.id},participant_2.eq.${userId}),and(participant_1.eq.${userId},participant_2.eq.${user?.id})`)
-        .single();
+        .maybeSingle();
 
       if (existingConversation) {
-        setSelectedConversation(userId);
+        setSelectedConversation(existingConversation.id);
         return existingConversation;
       }
 
@@ -225,14 +189,14 @@ export const useEnhancedMessages = () => {
         .from('conversations')
         .insert({
           participant_1: user?.id,
-          participant_2: userId,
+          participant_2: userId
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      setSelectedConversation(userId);
+      setSelectedConversation(newConversation.id);
       await refetch();
       return newConversation;
     } catch (error) {
@@ -245,7 +209,7 @@ export const useEnhancedMessages = () => {
     try {
       console.log('Creating group conversation with participants:', participantIds);
       
-      // For now, create a simple conversation with the first participant
+      // For now, just create a simple conversation with the first participant
       if (participantIds.length > 0) {
         return await startDirectConversation(participantIds[0]);
       }
@@ -255,14 +219,6 @@ export const useEnhancedMessages = () => {
       console.error('Error creating group conversation:', error);
       throw error;
     }
-  };
-
-  const sendTypingIndicator = async (recipientId: string, isTyping: boolean) => {
-    // Implement typing indicator logic
-    setTypingUsers(prev => ({
-      ...prev,
-      [recipientId]: isTyping
-    }));
   };
 
   return {
@@ -277,7 +233,9 @@ export const useEnhancedMessages = () => {
     clearCache,
     startDirectConversation,
     createGroupConversation,
-    sendTypingIndicator,
-    typingUsers
+    activeCall,
+    setActiveCall,
+    typingUsers,
+    setTypingUsers
   };
 };

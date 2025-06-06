@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePosts } from "@/hooks/usePosts";
 import { useAI } from "@/hooks/useAI";
 import { useToast } from "@/hooks/use-toast";
+import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 
 const AIPostComposer = () => {
   const [content, setContent] = useState('');
@@ -354,26 +354,15 @@ const AIPostComposer = () => {
                 </Button>
               </div>
               
-              <Button
+              <InteractiveHoverButton
                 type="submit"
                 disabled={
                   isPosting || 
                   (isThreadMode ? threadPosts.every(post => !post.trim()) : !content.trim())
                 }
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full px-8 py-2 font-semibold transition-all duration-300"
-              >
-                {isPosting ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Posting...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Send className="w-4 h-4" />
-                    {isThreadMode ? 'Post Thread' : 'Post'}
-                  </div>
-                )}
-              </Button>
+                text={isPosting ? "Posting..." : isThreadMode ? "Post Thread" : "Post"}
+                className="w-auto px-6"
+              />
             </div>
           </form>
         </div>
