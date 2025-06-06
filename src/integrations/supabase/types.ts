@@ -247,6 +247,48 @@ export type Database = {
         }
         Relationships: []
       }
+      gallery_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number | null
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          span_config: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          span_config?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          span_config?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       likes: {
         Row: {
           created_at: string | null

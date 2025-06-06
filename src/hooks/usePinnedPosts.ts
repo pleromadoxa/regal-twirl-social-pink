@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +17,7 @@ export interface Post {
     display_name: string;
     avatar_url: string;
     is_verified: boolean;
+    premium_tier: string;
   };
 }
 
@@ -71,7 +71,7 @@ export const usePinnedPosts = () => {
       const userIds = [...new Set(postsData.map(post => post.user_id))];
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, is_verified')
+        .select('id, username, display_name, avatar_url, is_verified, premium_tier')
         .in('id', userIds);
 
       const profilesMap = new Map(
@@ -92,7 +92,8 @@ export const usePinnedPosts = () => {
           username: 'unknown',
           display_name: 'Unknown User',
           avatar_url: '',
-          is_verified: false
+          is_verified: false,
+          premium_tier: 'free'
         }
       }));
 

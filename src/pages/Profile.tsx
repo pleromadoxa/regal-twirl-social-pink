@@ -1,17 +1,20 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Calendar, MapPin, Link as LinkIcon, Edit, MessageCircle, Save, X, Crown, Star, TrendingUp, Users, Building } from "lucide-react";
+import { Calendar, MapPin, Link as LinkIcon, Edit, MessageCircle, Save, X, Crown, Star, TrendingUp, Users, Building, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { usePosts } from "@/hooks/usePosts";
+import { useGallery } from "@/hooks/useGallery";
 import SidebarNav from "@/components/SidebarNav";
 import TrendingWidget from "@/components/TrendingWidget";
 import ImageUpload from "@/components/ImageUpload";
+import GalleryUpload from "@/components/GalleryUpload";
+import InteractiveBentoGallery from "@/components/ui/interactive-bento-gallery";
 import { format } from "date-fns";
 
 const Profile = () => {
@@ -20,6 +23,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { profile, loading: profileLoading, isFollowing, toggleFollow, updateProfile } = useProfile(userId);
   const { posts, loading: postsLoading } = usePosts();
+  const { galleryItems, loading: galleryLoading, transformToMediaItems } = useGallery(userId);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -84,6 +88,8 @@ const Profile = () => {
   const handleBannerUpload = (url: string) => {
     setEditData(prev => ({ ...prev, banner_url: url }));
   };
+
+  const mediaItems = transformToMediaItems(galleryItems);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -391,50 +397,98 @@ const Profile = () => {
             )}
           </div>
 
-          {/* Enhanced Posts Section */}
+          {/* Enhanced Content Tabs */}
           <div className="border-t border-purple-200 dark:border-purple-800">
-            <div className="p-6 border-b border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10">
-              <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Posts & Activity
-              </h3>
-            </div>
-            {postsLoading ? (
-              <div className="flex justify-center p-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-              </div>
-            ) : userPosts.length > 0 ? (
-              <div>
-                {userPosts.map((post) => (
-                  <div key={post.id} className="border-b border-purple-200 dark:border-purple-800 p-6 hover:bg-purple-50/30 dark:hover:bg-purple-900/10 transition-colors">
-                    <p className="text-slate-900 dark:text-slate-100 text-lg leading-relaxed mb-3">{post.content}</p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        {format(new Date(post.created_at), 'MMM d, yyyy • h:mm a')}
-                      </p>
-                      <div className="flex items-center gap-4 text-sm text-slate-500">
-                        <span className="flex items-center gap-1">
-                          ❤️ {post.likes_count}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          🔄 {post.retweets_count}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          💬 {post.replies_count}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <div className="w-24 h-24 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-12 h-12 text-purple-400" />
+            <Tabs defaultValue="posts" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10">
+                <TabsTrigger value="posts" className="flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4" />
+                  Posts & Activity
+                </TabsTrigger>
+                <TabsTrigger value="gallery" className="flex items-center gap-2">
+                  <Images className="w-4 h-4" />
+                  Gallery ({galleryItems.length})
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="posts">
+                <div className="p-6 border-b border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10">
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    Posts & Activity
+                  </h3>
                 </div>
-                <p className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">No posts yet</p>
-                <p className="text-slate-500 dark:text-slate-400">Start sharing your thoughts with the world!</p>
-              </div>
-            )}
+                {postsLoading ? (
+                  <div className="flex justify-center p-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                  </div>
+                ) : userPosts.length > 0 ? (
+                  <div>
+                    {userPosts.map((post) => (
+                      <div key={post.id} className="border-b border-purple-200 dark:border-purple-800 p-6 hover:bg-purple-50/30 dark:hover:bg-purple-900/10 transition-colors">
+                        <p className="text-slate-900 dark:text-slate-100 text-lg leading-relaxed mb-3">{post.content}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-slate-600 dark:text-slate-400">
+                            {format(new Date(post.created_at), 'MMM d, yyyy • h:mm a')}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm text-slate-500">
+                            <span className="flex items-center gap-1">
+                              ❤️ {post.likes_count}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              🔄 {post.retweets_count}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              💬 {post.replies_count}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-16">
+                    <div className="w-24 h-24 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Users className="w-12 h-12 text-purple-400" />
+                    </div>
+                    <p className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">No posts yet</p>
+                    <p className="text-slate-500 dark:text-slate-400">Start sharing your thoughts with the world!</p>
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="gallery">
+                <div className="p-6 border-b border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10 flex items-center justify-between">
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    Gallery Collection
+                  </h3>
+                  {isOwnProfile && <GalleryUpload />}
+                </div>
+                {galleryLoading ? (
+                  <div className="flex justify-center p-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                  </div>
+                ) : galleryItems.length > 0 ? (
+                  <InteractiveBentoGallery
+                    mediaItems={mediaItems}
+                    title=""
+                    description=""
+                  />
+                ) : (
+                  <div className="text-center py-16">
+                    <div className="w-24 h-24 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Images className="w-12 h-12 text-purple-400" />
+                    </div>
+                    <p className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">No gallery items yet</p>
+                    <p className="text-slate-500 dark:text-slate-400">Upload images and videos to showcase your work!</p>
+                    {isOwnProfile && (
+                      <div className="mt-6">
+                        <GalleryUpload />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         </main>
 

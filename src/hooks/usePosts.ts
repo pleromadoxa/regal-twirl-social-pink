@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +20,7 @@ export interface Post {
     display_name: string;
     avatar_url: string;
     is_verified: boolean;
+    premium_tier: string;
   };
 }
 
@@ -56,7 +56,7 @@ export const usePosts = () => {
       // Fetch profiles for all users
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, is_verified')
+        .select('id, username, display_name, avatar_url, is_verified, premium_tier')
         .in('id', userIds);
 
       if (profilesError) {
@@ -106,7 +106,8 @@ export const usePosts = () => {
             username: 'unknown',
             display_name: 'Unknown User',
             avatar_url: '',
-            is_verified: false
+            is_verified: false,
+            premium_tier: 'free'
           }
         }));
 
@@ -121,7 +122,8 @@ export const usePosts = () => {
             username: 'unknown',
             display_name: 'Unknown User',
             avatar_url: '',
-            is_verified: false
+            is_verified: false,
+            premium_tier: 'free'
           }
         }));
         
