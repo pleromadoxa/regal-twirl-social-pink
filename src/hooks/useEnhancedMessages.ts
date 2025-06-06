@@ -60,7 +60,7 @@ export const useEnhancedMessages = () => {
         return;
       }
 
-      // Get enriched conversations with participant info
+      // Get enriched conversations with participant info and last message
       const enrichedConversations = await Promise.all(
         conversationsData.map(async (conv) => {
           // Get other user for one-on-one conversation
@@ -72,9 +72,31 @@ export const useEnhancedMessages = () => {
             .eq('id', otherUserId)
             .single();
 
+          // Get last message for this conversation
+          const { data: lastMessageData } = await supabase
+            .from('messages')
+            .select(`
+              *,
+              sender_profile:profiles!messages_sender_id_fkey(
+                username,
+                display_name,
+                avatar_url
+              )
+            `)
+            .or(`and(sender_id.eq.${conv.participant_1},recipient_id.eq.${conv.participant_2}),and(sender_id.eq.${conv.participant_2},recipient_id.eq.${conv.participant_1})`)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
           return {
             ...conv,
-            other_user: profileData
+            other_user: profileData,
+            last_message: lastMessageData ? {
+              ...lastMessageData,
+              sender_profile: Array.isArray(lastMessageData.sender_profile) 
+                ? lastMessageData.sender_profile[0] 
+                : lastMessageData.sender_profile
+            } : undefined
           };
         })
       );
@@ -124,6 +146,7 @@ export const useEnhancedMessages = () => {
         sender_profile: Array.isArray(msg.sender_profile) ? msg.sender_profile[0] : msg.sender_profile
       })) || [];
 
+      console.log('Fetched messages for conversation:', conversationId, formattedMessages);
       setMessages(formattedMessages);
     } catch (error) {
       console.error('Error in fetchMessages:', error);
@@ -140,21 +163,37 @@ export const useEnhancedMessages = () => {
       return;
     }
 
+    if (!content.trim()) {
+      toast({
+        title: "Message cannot be empty",
+        description: "Please enter a message before sending",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const conversation = conversations.find(c => c.id === conversationId);
-      if (!conversation) return;
+      if (!conversation) {
+        console.error('Conversation not found:', conversationId);
+        return;
+      }
 
       const recipientId = conversation.participant_1 === user.id 
         ? conversation.participant_2 
         : conversation.participant_1;
 
-      const { error } = await supabase
+      console.log('Sending message:', { conversationId, recipientId, content: content.trim() });
+
+      const { data: messageData, error } = await supabase
         .from('messages')
         .insert({
           sender_id: user.id,
           recipient_id: recipientId,
           content: content.trim()
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Error sending message:', error);
@@ -166,19 +205,26 @@ export const useEnhancedMessages = () => {
         return;
       }
 
+      console.log('Message sent successfully:', messageData);
+
       // Update conversation last_message_at
-      await supabase
+      const { error: updateError } = await supabase
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', conversationId);
+
+      if (updateError) {
+        console.error('Error updating conversation:', updateError);
+      }
 
       toast({
         title: "Message sent",
         description: "Your message has been sent successfully."
       });
 
-      // Refresh messages
-      fetchMessages(conversationId);
+      // Refresh messages and conversations
+      await fetchMessages(conversationId);
+      await fetchConversations();
     } catch (error) {
       console.error('Error in sendMessage:', error);
       toast({
@@ -336,7 +382,7 @@ export const useEnhancedMessages = () => {
     }
 
     return cleanupChannels;
-  }, [user?.id]); // Only depend on user.id
+  }, [user?.id]);
 
   // Set up realtime subscriptions for messages
   useEffect(() => {
@@ -365,16 +411,21 @@ export const useEnhancedMessages = () => {
         .on(
           'postgres_changes',
           {
-            event: 'INSERT',
+            event: '*',
             schema: 'public',
             table: 'messages'
           },
           (payload) => {
-            console.log('New message detected:', payload);
-            if (selectedConversation) {
-              fetchMessages(selectedConversation);
+            console.log('Message change detected:', payload);
+            
+            // Check if this message is for the current user
+            const newMessage = payload.new;
+            if (newMessage && (newMessage.sender_id === user.id || newMessage.recipient_id === user.id)) {
+              if (selectedConversation) {
+                fetchMessages(selectedConversation);
+              }
+              fetchConversations(); // Refresh to update last message
             }
-            fetchConversations(); // Refresh to update last message
           }
         )
         .subscribe((status) => {
@@ -392,7 +443,7 @@ export const useEnhancedMessages = () => {
         messagesChannelRef.current = null;
       }
     };
-  }, [user?.id]); // Only depend on user.id
+  }, [user?.id, selectedConversation]);
 
   // Handle selectedConversation changes
   useEffect(() => {

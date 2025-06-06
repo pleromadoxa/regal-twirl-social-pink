@@ -15,6 +15,7 @@ interface MessageThreadProps {
 const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { messages, conversations, sendMessage } = useEnhancedMessages();
@@ -30,14 +31,17 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !conversation) return;
+    if (!newMessage.trim() || !conversation || isSending) return;
 
-    const recipientId = conversation.participant_1 === user?.id 
-      ? conversation.participant_2 
-      : conversation.participant_1;
-
-    await sendMessage(conversationId, newMessage);
-    setNewMessage('');
+    setIsSending(true);
+    try {
+      await sendMessage(conversationId, newMessage);
+      setNewMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -47,9 +51,33 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    
+    // Simulate typing indicator
+    if (!isTyping) {
+      setIsTyping(true);
+      setTimeout(() => setIsTyping(false), 1000);
+    }
+  };
+
   if (!conversation) {
-    return <div>Conversation not found</div>;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            Conversation not found
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Please select a conversation from the sidebar
+          </p>
+        </div>
+      </div>
+    );
   }
+
+  console.log('Current conversation:', conversation);
+  console.log('Messages for conversation:', messages);
 
   return (
     <div className="flex flex-col h-full">
@@ -159,9 +187,10 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           <div className="flex-1 relative">
             <Input
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Type a message..."
+              disabled={isSending}
               className="pr-12 rounded-full border-purple-200 dark:border-purple-700 focus:ring-purple-500"
             />
             <Button
@@ -174,7 +203,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           </div>
           <Button
             onClick={handleSendMessage}
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || isSending}
             className="rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 w-10 h-10 p-0"
           >
             <Send className="w-4 h-4" />
