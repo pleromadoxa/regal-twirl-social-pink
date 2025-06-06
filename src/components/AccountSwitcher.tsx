@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { ChevronDown, User, Building, Users, Crown } from 'lucide-react';
+import { ChevronDown, User, Building, Users, Crown, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
+import { useNavigate } from 'react-router-dom';
 
 interface AccountSwitcherProps {
   selectedAccount: 'personal' | string;
@@ -22,6 +23,7 @@ interface AccountSwitcherProps {
 const AccountSwitcher = ({ selectedAccount, onAccountChange }: AccountSwitcherProps) => {
   const { user } = useAuth();
   const { myPages } = useBusinessPages();
+  const navigate = useNavigate();
 
   const getAccountIcon = (type: string) => {
     switch (type) {
@@ -157,6 +159,26 @@ const AccountSwitcher = ({ selectedAccount, onAccountChange }: AccountSwitcherPr
             ))}
           </>
         )}
+        
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => navigate('/professional')}
+          className="cursor-pointer rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30"
+        >
+          <div className="flex items-center gap-3 w-full">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center">
+              <Settings className="w-4 h-4 text-purple-600" />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                Manage Professional Accounts
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Create and manage business accounts
+              </span>
+            </div>
+          </div>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
