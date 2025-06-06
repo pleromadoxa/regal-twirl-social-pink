@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -68,14 +67,6 @@ const Auth = () => {
     }
   };
 
-  // Get logo URL from Supabase storage
-  const getLogoUrl = () => {
-    const { data } = supabase.storage
-      .from('logos')
-      .getPublicUrl('regal-network-light.png');
-    return data.publicUrl;
-  };
-
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-black">
       {/* Animated Globe Background */}
@@ -103,17 +94,9 @@ const Auth = () => {
           {/* Centered Logo */}
           <div className="flex justify-center mb-8">
             <img 
-              src={getLogoUrl()}
-              alt="Regal Network Logo" 
+              src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
+              alt="Network Logo" 
               className="h-20 w-auto"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const fallback = document.createElement('div');
-                fallback.className = 'h-20 flex items-center justify-center text-white text-2xl font-bold';
-                fallback.textContent = 'Regal Network';
-                target.parentNode?.appendChild(fallback);
-              }}
             />
           </div>
 
@@ -121,10 +104,10 @@ const Auth = () => {
           <Card className="w-full bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold text-white">
-                {isLogin ? 'Welcome Back' : 'Join Regal Network'}
+                {isLogin ? 'Welcome Back' : 'Join Network'}
               </CardTitle>
               <CardDescription className="text-slate-300">
-                {isLogin ? 'Sign in to your account' : 'Create your royal account'}
+                {isLogin ? 'Sign in to your account' : 'Create your account'}
               </CardDescription>
             </CardHeader>
             <CardContent>
