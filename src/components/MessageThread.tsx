@@ -28,12 +28,16 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
 
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setSelectedConversation(conversationId);
-  }, [conversationId, setSelectedConversation]);
+    if (conversationId && selectedConversation !== conversationId) {
+      console.log('Setting selected conversation to:', conversationId);
+      setSelectedConversation(conversationId);
+    }
+  }, [conversationId, selectedConversation, setSelectedConversation]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -41,11 +45,19 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || sendingMessage) return;
 
-    await sendMessage(newMessage.trim());
-    setNewMessage('');
-    inputRef.current?.focus();
+    setSendingMessage(true);
+    try {
+      console.log('Sending message from MessageThread:', newMessage.trim());
+      await sendMessage(newMessage.trim());
+      setNewMessage('');
+      inputRef.current?.focus();
+    } catch (error) {
+      console.error('Error in handleSendMessage:', error);
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   const handleTyping = () => {
@@ -174,11 +186,12 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
               handleTyping();
             }}
             placeholder="Type a message..."
+            disabled={sendingMessage}
             className="flex-1 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus:border-purple-500 dark:focus:border-purple-400"
           />
           <Button
             type="submit"
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || sendingMessage}
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6"
           >
             <Send className="w-4 h-4" />

@@ -7,7 +7,7 @@ export const fetchMessages = async (userId: string, otherUserId: string): Promis
     .from('messages')
     .select(`
       *,
-      sender_profile:profiles!messages_sender_id_fkey(id, username, display_name, avatar_url)
+      sender_profile:profiles!sender_id(id, username, display_name, avatar_url)
     `)
     .or(`and(sender_id.eq.${userId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${userId})`)
     .order('created_at', { ascending: true });
@@ -30,7 +30,7 @@ export const sendMessage = async (senderId: string, recipientId: string, content
     })
     .select(`
       *,
-      sender_profile:profiles!messages_sender_id_fkey(id, username, display_name, avatar_url)
+      sender_profile:profiles!sender_id(id, username, display_name, avatar_url)
     `)
     .single();
 

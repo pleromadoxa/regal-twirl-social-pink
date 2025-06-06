@@ -64,16 +64,24 @@ export const useEnhancedMessages = () => {
   }, [refetch]);
 
   const sendMessage = async (content: string) => {
-    if (!user || !selectedConversation) return;
+    if (!user || !selectedConversation) {
+      console.error('No user or selected conversation');
+      return;
+    }
 
     try {
       // Get conversation details
       const conversation = conversations.find(c => c.id === selectedConversation);
-      if (!conversation) return;
+      if (!conversation) {
+        console.error('Conversation not found');
+        return;
+      }
 
       const recipientId = conversation.participant_1 === user.id 
         ? conversation.participant_2 
         : conversation.participant_1;
+
+      console.log('Sending message:', { senderId: user.id, recipientId, content });
 
       const newMessage = await sendMessageService(user.id, recipientId, content);
       setMessages((prevMessages) => [...prevMessages, newMessage]);
@@ -106,19 +114,27 @@ export const useEnhancedMessages = () => {
   };
 
   const startDirectConversation = async (userId: string) => {
+    if (!user) {
+      console.error('No authenticated user');
+      return;
+    }
+
     try {
       console.log('Starting direct conversation with user:', userId);
       
       // Check if conversation already exists
-      const existingConversation = await findExistingConversation(user?.id!, userId);
+      const existingConversation = await findExistingConversation(user.id, userId);
 
       if (existingConversation) {
+        console.log('Found existing conversation:', existingConversation.id);
         setSelectedConversation(existingConversation.id);
         return existingConversation;
       }
 
       // Create new conversation
-      const newConversation = await createConversation(user?.id!, userId);
+      console.log('Creating new conversation');
+      const newConversation = await createConversation(user.id, userId);
+      console.log('Created new conversation:', newConversation.id);
       setSelectedConversation(newConversation.id);
       await refetch();
       return newConversation;

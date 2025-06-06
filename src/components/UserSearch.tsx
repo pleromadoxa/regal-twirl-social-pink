@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Search, UserPlus, UserCheck, MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useFollow } from '@/hooks/useFollow';
 import { useNavigate } from 'react-router-dom';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
+import { useToast } from '@/hooks/use-toast';
 
 interface UserResult {
   id: string;
@@ -33,8 +35,9 @@ const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSear
   const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
   const searchRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
-  const { followUser, unfollowUser, checkFollowStatus } = useFollow();
+  const { followUser, unfollowUser, checkFollowStatus, loading: followLoading } = useFollow();
   const { startDirectConversation } = useEnhancedMessages();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,6 +93,11 @@ const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSear
       } catch (error) {
         console.error('Error searching users:', error);
         setResults([]);
+        toast({
+          title: "Search error",
+          description: "Failed to search for users. Please try again.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -97,7 +105,7 @@ const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSear
 
     // Immediate search without debounce for better UX
     searchUsers();
-  }, [query, user]);
+  }, [query, user, checkFollowStatus, toast]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -111,18 +119,36 @@ const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSear
   }, []);
 
   const handleFollow = async (userId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to follow users",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const isCurrentlyFollowing = followingStatus[userId];
     
-    if (isCurrentlyFollowing) {
-      const success = await unfollowUser(userId);
-      if (success) {
-        setFollowingStatus(prev => ({ ...prev, [userId]: false }));
+    try {
+      if (isCurrentlyFollowing) {
+        const success = await unfollowUser(userId);
+        if (success) {
+          setFollowingStatus(prev => ({ ...prev, [userId]: false }));
+        }
+      } else {
+        const success = await followUser(userId);
+        if (success) {
+          setFollowingStatus(prev => ({ ...prev, [userId]: true }));
+        }
       }
-    } else {
-      const success = await followUser(userId);
-      if (success) {
-        setFollowingStatus(prev => ({ ...prev, [userId]: true }));
-      }
+    } catch (error) {
+      console.error('Error updating follow status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update follow status. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -133,7 +159,17 @@ const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSear
   };
 
   const handleStartConversation = async (userId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to start a conversation",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
+      console.log('Starting conversation with user:', userId);
       await startDirectConversation(userId);
       navigate('/messages');
       setShowResults(false);
@@ -142,8 +178,18 @@ const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSear
       if (onStartConversation) {
         onStartConversation(userId);
       }
+
+      toast({
+        title: "Conversation started",
+        description: "You can now start messaging this user.",
+      });
     } catch (error) {
       console.error('Error starting conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start conversation. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -226,6 +272,7 @@ const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSear
                         }}
                         variant={followingStatus[userResult.id] ? "outline" : "default"}
                         size="sm"
+                        disabled={followLoading}
                         className={
                           followingStatus[userResult.id]
                             ? "border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
