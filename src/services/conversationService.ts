@@ -5,11 +5,7 @@ import type { Conversation, UserProfile } from '@/types/messages';
 export const fetchConversations = async (userId: string): Promise<Conversation[]> => {
   const { data: conversationData, error: conversationError } = await supabase
     .from('conversations')
-    .select(`
-      *,
-      participant_1_profile:profiles!conversations_participant_1_fkey(id, username, display_name, avatar_url),
-      participant_2_profile:profiles!conversations_participant_2_fkey(id, username, display_name, avatar_url)
-    `)
+    .select('*')
     .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
     .order('last_message_at', { ascending: false, nullsFirst: false });
 
@@ -20,14 +16,37 @@ export const fetchConversations = async (userId: string): Promise<Conversation[]
 
   if (!conversationData) return [];
 
+  // Fetch profiles for all participants
+  const participantIds = new Set<string>();
+  conversationData.forEach(conv => {
+    participantIds.add(conv.participant_1);
+    participantIds.add(conv.participant_2);
+  });
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, username, display_name, avatar_url')
+    .in('id', Array.from(participantIds));
+
+  if (profilesError) {
+    console.error("Error fetching profiles:", profilesError);
+    throw profilesError;
+  }
+
+  const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
   return conversationData.map(conv => {
+    const participant1Profile = profilesMap.get(conv.participant_1);
+    const participant2Profile = profilesMap.get(conv.participant_2);
     const otherUser = conv.participant_1 === userId 
-      ? conv.participant_2_profile 
-      : conv.participant_1_profile;
+      ? participant2Profile 
+      : participant1Profile;
     
     return {
       ...conv,
-      other_user: otherUser,
+      participant_1_profile: participant1Profile || null,
+      participant_2_profile: participant2Profile || null,
+      other_user: otherUser || null,
       last_message: null,
       streak_count: 0
     };
