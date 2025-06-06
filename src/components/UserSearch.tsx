@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Search, UserPlus, UserCheck, MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -9,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFollow } from '@/hooks/useFollow';
 import { useNavigate } from 'react-router-dom';
+import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 
 interface UserResult {
   id: string;
@@ -34,6 +34,7 @@ const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSear
   const searchRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { followUser, unfollowUser, checkFollowStatus } = useFollow();
+  const { startDirectConversation } = useEnhancedMessages();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -131,11 +132,18 @@ const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSear
     setQuery('');
   };
 
-  const handleStartConversation = (userId: string) => {
-    if (onStartConversation) {
-      onStartConversation(userId);
+  const handleStartConversation = async (userId: string) => {
+    try {
+      await startDirectConversation(userId);
+      navigate('/messages');
       setShowResults(false);
       setQuery('');
+      
+      if (onStartConversation) {
+        onStartConversation(userId);
+      }
+    } catch (error) {
+      console.error('Error starting conversation:', error);
     }
   };
 

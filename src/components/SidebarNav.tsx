@@ -32,6 +32,17 @@ const SidebarNav = () => {
     navigate(path);
   };
 
+  const handleCreatePost = () => {
+    navigate('/');
+    // Focus on the post composer if on home page
+    setTimeout(() => {
+      const postComposer = document.querySelector('textarea[placeholder*="What\'s happening"]');
+      if (postComposer) {
+        (postComposer as HTMLTextAreaElement).focus();
+      }
+    }, 100);
+  };
+
   return (
     <aside className="w-72 p-6 space-y-4 bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900 border-r border-purple-200 dark:border-purple-800">
       {/* Logo */}
@@ -68,6 +79,7 @@ const SidebarNav = () => {
         {user ? (
           <>
             <InteractiveHoverButton 
+              onClick={handleCreatePost}
               text="Create Post"
               className="w-full py-4 text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200"
             />
