@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Flag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ReportPostDialogProps {
   postId: string;
@@ -54,10 +55,28 @@ const ReportPostDialog = ({ postId, trigger }: ReportPostDialogProps) => {
 
     setLoading(true);
     try {
-      // Temporarily show success message until database table is created
+      const { error } = await supabase
+        .from('post_reports')
+        .insert({
+          post_id: postId,
+          reporter_id: user.id,
+          reason: reason,
+          details: details.trim() || null
+        });
+
+      if (error) {
+        console.error('Error submitting report:', error);
+        toast({
+          title: "Error submitting report",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
       toast({
         title: "Report submitted",
-        description: "Thank you for helping keep our community safe. This feature will be fully functional once the database is set up."
+        description: "Thank you for helping keep our community safe. We'll review your report."
       });
 
       setOpen(false);
