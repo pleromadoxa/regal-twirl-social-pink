@@ -16,6 +16,7 @@ interface PostsListProps {
   onRetweet?: (postId: string) => void;
   onPin?: (postId: string) => void;
   onDelete?: (postId: string) => void;
+  userId?: string; // Add userId prop
 }
 
 export const PostsList = ({ 
@@ -23,13 +24,20 @@ export const PostsList = ({
   onLike: externalOnLike, 
   onRetweet: externalOnRetweet, 
   onPin: externalOnPin, 
-  onDelete: externalOnDelete 
+  onDelete: externalOnDelete,
+  userId: filterUserId
 }: PostsListProps = {}) => {
   const { posts: hookPosts, loading, toggleLike, toggleRetweet, togglePin, deletePost } = usePosts();
   const { user } = useAuth();
 
   // Use external posts if provided, otherwise use hook posts
-  const posts = externalPosts || hookPosts;
+  let posts = externalPosts || hookPosts;
+  
+  // Filter posts by userId if provided
+  if (filterUserId && posts) {
+    posts = posts.filter(post => post.user_id === filterUserId);
+  }
+
   const onLike = externalOnLike || toggleLike;
   const onRetweet = externalOnRetweet || toggleRetweet;
   const onPin = externalOnPin || togglePin;
