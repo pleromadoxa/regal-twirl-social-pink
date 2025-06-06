@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
 import PostsList from "@/components/PostsList";
+import TweetComposer from "@/components/TweetComposer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -245,7 +246,7 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Business Pages */}
+          {/* Professional Accounts */}
           {businessPages.length > 0 && (
             <div className="border-t border-purple-200 dark:border-purple-800 p-6">
               <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
@@ -289,6 +290,13 @@ const Profile = () => {
                   </Card>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Post Composer - Only show on own profile */}
+          {isOwnProfile && (
+            <div className="border-t border-purple-200 dark:border-purple-800">
+              <TweetComposer />
             </div>
           )}
           
