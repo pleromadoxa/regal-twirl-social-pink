@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +23,7 @@ import CallHistoryDialog from '@/components/CallHistoryDialog';
 import GroupCallDialog from '@/components/GroupCallDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCallSounds } from '@/hooks/useCallSounds';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -50,6 +52,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const { user } = useAuth();
   const { messages, conversations, sendMessage, sendTypingIndicator, typingUsers } = useEnhancedMessages();
   const { toast } = useToast();
+  const { playRinging, stopRinging, playEndCall, playConnect } = useCallSounds();
 
   const conversation = conversations.find(c => c.id === conversationId);
 
@@ -61,22 +64,26 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     scrollToBottom();
   }, [messages]);
 
-  // Set up call notification listener
+  // Enhanced call notification listener with better error handling
   useEffect(() => {
     if (!user || !conversation) return;
+
+    console.log('Setting up call notifications for conversation:', conversationId);
 
     // Clean up existing channel
     if (callChannelRef.current) {
       supabase.removeChannel(callChannelRef.current);
     }
 
-    const channel = supabase.channel(`call-notifications-${user.id}-${conversationId}`);
+    const channelName = `call-notifications-${conversationId}`;
+    const channel = supabase.channel(channelName);
     
     channel.on('broadcast', { event: 'incoming-call' }, (payload) => {
-      console.log('Received incoming call:', payload);
+      console.log('Received incoming call notification:', payload);
       const { caller_id, caller_name, caller_avatar, call_type, conversation_id } = payload.payload;
       
       if (conversation_id === conversationId && caller_id !== user.id) {
+        console.log('Processing incoming call from:', caller_name);
         setIncomingCall({
           callerId: caller_id,
           callerName: caller_name,
@@ -84,13 +91,13 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           callType: call_type
         });
         
-        // Play notification sound (if available)
-        try {
-          const audio = new Audio('/notification-sound.mp3');
-          audio.play().catch(e => console.log('Could not play notification sound:', e));
-        } catch (e) {
-          console.log('Notification sound not available');
-        }
+        // Play ringing sound
+        playRinging();
+        
+        toast({
+          title: "Incoming call",
+          description: `${caller_name} is calling you`
+        });
       }
     });
 
@@ -107,6 +114,8 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           roomId: room_id
         });
         
+        playRinging();
+        
         toast({
           title: "Group call invitation",
           description: `${initiator_name} invited you to a group ${call_type} call`
@@ -114,20 +123,34 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       }
     });
 
+    channel.on('broadcast', { event: 'call-ended' }, (payload) => {
+      console.log('Call ended notification:', payload);
+      setIncomingCall(null);
+      stopRinging();
+    });
+
     channel.subscribe((status) => {
       console.log('Call notification channel status:', status);
       if (status === 'SUBSCRIBED') {
         callChannelRef.current = channel;
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('Channel subscription error');
+        setTimeout(() => {
+          // Retry subscription
+          channel.subscribe();
+        }, 2000);
       }
     });
 
     return () => {
+      console.log('Cleaning up call notification channel');
       if (callChannelRef.current) {
         supabase.removeChannel(callChannelRef.current);
         callChannelRef.current = null;
       }
+      stopRinging();
     };
-  }, [user, conversationId, conversation]);
+  }, [user, conversationId, conversation, playRinging, stopRinging, toast]);
 
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && selectedImages.length === 0 && selectedVideos.length === 0 && selectedDocuments.length === 0) || !conversation || isSending) return;
@@ -208,33 +231,53 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     try {
       console.log('Initiating call:', { callType, conversationId, recipientId: conversation.other_user.id });
 
+      // Start ringing sound for caller
+      playRinging();
+
       // Create a dedicated channel for this specific call
       const callInitiationChannel = supabase.channel(`call-initiation-${conversationId}-${Date.now()}`);
       
       await callInitiationChannel.subscribe();
       
-      // Send call notification to the recipient
+      // Send call notification to the recipient with enhanced payload
+      const callPayload = {
+        caller_id: user.id,
+        caller_name: user.user_metadata?.display_name || user.email,
+        caller_avatar: user.user_metadata?.avatar_url,
+        call_type: callType,
+        conversation_id: conversationId,
+        recipient_id: conversation.other_user.id,
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('Sending call notification with payload:', callPayload);
+
       callInitiationChannel.send({
         type: 'broadcast',
         event: 'incoming-call',
-        payload: {
-          caller_id: user.id,
-          caller_name: user.user_metadata?.display_name || user.email,
-          caller_avatar: user.user_metadata?.avatar_url,
-          call_type: callType,
-          conversation_id: conversationId,
-          recipient_id: conversation.other_user.id
-        }
+        payload: callPayload
       });
+
+      // Also try sending on the main call channel
+      if (callChannelRef.current) {
+        callChannelRef.current.send({
+          type: 'broadcast',
+          event: 'incoming-call',
+          payload: callPayload
+        });
+      }
 
       console.log('Call notification sent');
 
       // Start the call immediately for the caller
-      if (callType === 'video') {
-        setIsVideoCallActive(true);
-      } else {
-        setIsAudioCallActive(true);
-      }
+      setTimeout(() => {
+        stopRinging();
+        if (callType === 'video') {
+          setIsVideoCallActive(true);
+        } else {
+          setIsAudioCallActive(true);
+        }
+      }, 2000); // Wait 2 seconds before stopping ringing
 
       // Record the call attempt
       setTimeout(async () => {
@@ -244,7 +287,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
             recipient_id: conversation.other_user!.id,
             conversation_id: conversationId,
             call_type: callType,
-            call_status: 'completed', // This would be updated based on actual call outcome
+            call_status: 'initiated',
             duration_seconds: 0,
             started_at: new Date().toISOString(),
             ended_at: new Date().toISOString()
@@ -261,6 +304,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
 
     } catch (error) {
       console.error('Error initiating call:', error);
+      stopRinging();
       toast({
         title: "Call failed",
         description: "Could not initiate the call",
@@ -273,11 +317,30 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const handleAudioCall = () => initiateCall('audio');
 
   const handleCallEnd = () => {
+    stopRinging();
+    playEndCall();
     setIsVideoCallActive(false);
     setIsAudioCallActive(false);
+    
+    // Notify other user that call ended
+    if (callChannelRef.current) {
+      callChannelRef.current.send({
+        type: 'broadcast',
+        event: 'call-ended',
+        payload: {
+          conversation_id: conversationId,
+          from: user?.id,
+          to: conversation?.other_user?.id
+        }
+      });
+    }
   };
 
   const handleAcceptIncomingCall = () => {
+    console.log('Accepting incoming call');
+    stopRinging();
+    playConnect();
+    
     if (incomingCall?.callType === 'video') {
       setIsVideoCallActive(true);
     } else {
@@ -287,6 +350,9 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   };
 
   const handleDeclineIncomingCall = async () => {
+    console.log('Declining incoming call');
+    stopRinging();
+    
     if (incomingCall && user) {
       // Record the declined call
       try {
@@ -302,6 +368,20 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
         });
       } catch (error) {
         console.error('Error recording declined call:', error);
+      }
+      
+      // Notify caller that call was declined
+      if (callChannelRef.current) {
+        callChannelRef.current.send({
+          type: 'broadcast',
+          event: 'call-ended',
+          payload: {
+            conversation_id: conversationId,
+            from: user.id,
+            to: incomingCall.callerId,
+            reason: 'declined'
+          }
+        });
       }
     }
     setIncomingCall(null);
@@ -350,21 +430,26 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const otherUserId = conversation.participant_1 === user?.id ? conversation.participant_2 : conversation.participant_1;
   const isOtherUserTyping = typingUsers[otherUserId];
 
-  // Filter messages for this conversation
+  // Filter messages for this conversation with better debugging
   const conversationMessages = messages.filter(msg => {
     const participant1 = conversation.participant_1;
     const participant2 = conversation.participant_2;
     
-    return (
+    const belongsToConversation = (
       (msg.sender_id === participant1 && msg.recipient_id === participant2) ||
       (msg.sender_id === participant2 && msg.recipient_id === participant1)
     );
+    
+    return belongsToConversation;
   });
 
-  console.log('Rendering messages for conversation:', conversationId);
-  console.log('Conversation participants:', conversation.participant_1, conversation.participant_2);
-  console.log('All messages:', messages.length);
-  console.log('Filtered messages:', conversationMessages.length);
+  console.log('MessageThread Debug Info:', {
+    conversationId,
+    participants: [conversation.participant_1, conversation.participant_2],
+    totalMessages: messages.length,
+    filteredMessages: conversationMessages.length,
+    messagesPreview: conversationMessages.slice(-3).map(m => ({ id: m.id, content: m.content.substring(0, 50) }))
+  });
 
   return (
     <div className="flex flex-col h-full">

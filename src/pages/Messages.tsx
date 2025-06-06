@@ -118,8 +118,8 @@ const Messages = () => {
       <SidebarNav />
       
       <div className="flex-1 flex">
-        {/* Conversations Sidebar */}
-        <div className="w-80 border-r border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl flex flex-col">
+        {/* Conversations Sidebar - Increased width from w-80 to w-96 */}
+        <div className="w-96 border-r border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl flex flex-col">
           {/* Header */}
           <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-4 z-10">
             <div className="flex items-center justify-between mb-4">

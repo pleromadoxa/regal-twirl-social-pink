@@ -202,7 +202,7 @@ export const useEnhancedMessages = () => {
         return;
       }
 
-      console.log('Raw messages data:', messagesData);
+      console.log('Raw messages data for conversation:', messagesData?.length || 0, 'messages');
 
       const messagesWithProfiles = await Promise.all(
         (messagesData || []).map(async (msg) => {
@@ -219,8 +219,22 @@ export const useEnhancedMessages = () => {
         })
       );
 
-      console.log('Messages with profiles:', messagesWithProfiles);
-      setMessages(messagesWithProfiles);
+      console.log('Messages with profiles loaded:', messagesWithProfiles.length);
+      
+      // Update messages state by replacing messages for this conversation
+      setMessages(prevMessages => {
+        // Remove old messages for this conversation
+        const otherMessages = prevMessages.filter(msg => {
+          const belongsToThisConv = (
+            (msg.sender_id === conversation.participant_1 && msg.recipient_id === conversation.participant_2) ||
+            (msg.sender_id === conversation.participant_2 && msg.recipient_id === conversation.participant_1)
+          );
+          return !belongsToThisConv;
+        });
+        
+        // Add new messages
+        return [...otherMessages, ...messagesWithProfiles];
+      });
     } catch (error) {
       console.error('Error in fetchMessages:', error);
     }
@@ -474,7 +488,7 @@ export const useEnhancedMessages = () => {
     isSubscribedRef.current = false;
   };
 
-  // Set up realtime subscriptions with improved error handling
+  // Enhanced realtime subscriptions with better error handling and debugging
   useEffect(() => {
     if (!user) {
       cleanupChannels();
@@ -486,13 +500,15 @@ export const useEnhancedMessages = () => {
       return;
     }
 
-    console.log('Setting up realtime subscriptions for user:', user.id);
+    console.log('Setting up enhanced realtime subscriptions for user:', user.id);
     cleanupChannels();
 
     try {
-      // Messages channel with proper filtering
-      const messagesChannel = supabase
-        .channel(`messages-${user.id}-${Date.now()}`)
+      // Messages channel with proper filtering and enhanced debugging
+      const messagesChannelName = `messages-${user.id}-${Date.now()}`;
+      const messagesChannel = supabase.channel(messagesChannelName);
+      
+      messagesChannel
         .on(
           'postgres_changes',
           {
@@ -502,7 +518,7 @@ export const useEnhancedMessages = () => {
             filter: `recipient_id=eq.${user.id}`
           },
           async (payload) => {
-            console.log('New message for current user:', payload);
+            console.log('New message received for current user:', payload);
             
             if (payload.new) {
               const newMessage = payload.new as any;
@@ -519,27 +535,19 @@ export const useEnhancedMessages = () => {
               // Show toast notification
               toast({
                 title: "New message",
-                description: `${senderName} sent you a message`
+                description: `${senderName}: ${newMessage.content.substring(0, 50)}${newMessage.content.length > 50 ? '...' : ''}`
               });
 
-              // Add message with profile to local state if viewing the conversation
+              // Add message with profile to local state
               const messageWithProfile = {
                 ...newMessage,
                 sender_profile: senderProfile
               };
 
-              // Check if this message belongs to the currently selected conversation
-              if (selectedConversation) {
-                const conversation = conversations.find(c => c.id === selectedConversation);
-                if (conversation && 
-                    ((newMessage.sender_id === conversation.participant_1 && newMessage.recipient_id === conversation.participant_2) ||
-                     (newMessage.sender_id === conversation.participant_2 && newMessage.recipient_id === conversation.participant_1))) {
-                  setMessages(prev => [...prev, messageWithProfile]);
-                }
-              }
+              setMessages(prev => [...prev, messageWithProfile]);
 
-              // Refresh conversations
-              await fetchConversations(true);
+              // Refresh conversations to update last message
+              await fetchConversations();
             }
           }
         )
@@ -552,15 +560,17 @@ export const useEnhancedMessages = () => {
             filter: `sender_id=eq.${user.id}`
           },
           async (payload) => {
-            console.log('Message sent by current user:', payload);
+            console.log('Message sent by current user confirmed:', payload);
             // Refresh to update conversation list
-            await fetchConversations(true);
+            await fetchConversations();
           }
         );
 
-      // Typing indicators channel
-      const typingChannel = supabase
-        .channel(`typing-indicators-${user.id}-${Date.now()}`)
+      // Enhanced typing indicators channel
+      const typingChannelName = `typing-indicators-${user.id}-${Date.now()}`;
+      const typingChannel = supabase.channel(typingChannelName);
+      
+      typingChannel
         .on('broadcast', { event: 'typing' }, (payload) => {
           const { user_id, conversation_id, is_typing } = payload.payload;
           
@@ -582,24 +592,30 @@ export const useEnhancedMessages = () => {
           }
         })
         .on('broadcast', { event: 'incoming-call' }, (payload) => {
-          console.log('Incoming call notification:', payload);
+          console.log('Incoming call notification received:', payload);
         })
         .on('broadcast', { event: 'group-call-invitation' }, (payload) => {
-          console.log('Group call invitation:', payload);
+          console.log('Group call invitation received:', payload);
         });
 
-      // Subscribe to channels
+      // Subscribe to channels with enhanced error handling
       messagesChannel.subscribe((status) => {
-        console.log('Messages channel status:', status);
+        console.log('Messages channel status:', status, 'Channel:', messagesChannelName);
         if (status === 'SUBSCRIBED') {
           messagesChannelRef.current = messagesChannel;
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Messages channel error, retrying...');
+          setTimeout(() => messagesChannel.subscribe(), 2000);
         }
       });
 
       typingChannel.subscribe((status) => {
-        console.log('Typing channel status:', status);
+        console.log('Typing channel status:', status, 'Channel:', typingChannelName);
         if (status === 'SUBSCRIBED') {
           typingChannelRef.current = typingChannel;
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Typing channel error, retrying...');
+          setTimeout(() => typingChannel.subscribe(), 2000);
         }
       });
 
@@ -614,17 +630,17 @@ export const useEnhancedMessages = () => {
       console.log('Cleaning up on unmount');
       cleanupChannels();
     };
-  }, [user?.id, selectedConversation]);
+  }, [user?.id, selectedConversation, toast]);
 
-  // Handle selectedConversation changes separately
+  // Handle selectedConversation changes separately with better loading
   useEffect(() => {
     if (selectedConversation && user) {
-      console.log('Fetching messages for conversation:', selectedConversation);
+      console.log('Selected conversation changed, fetching messages for:', selectedConversation);
       fetchMessages(selectedConversation, true);
     }
   }, [selectedConversation, user]);
 
-  // Initial fetch
+  // Initial fetch with better error handling
   useEffect(() => {
     if (user) {
       console.log('Initial fetch for user:', user.id);
@@ -639,8 +655,6 @@ export const useEnhancedMessages = () => {
     selectedConversation,
     setSelectedConversation,
     sendMessage,
-    createGroupConversation,
-    startDirectConversation,
     sendTypingIndicator,
     typingUsers,
     refetch: () => fetchConversations(true),
