@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
+import ActiveChatBar from "@/components/ActiveChatBar";
 import Landing from "@/pages/Landing";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
@@ -37,6 +38,7 @@ function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <ActiveChatBar />
           </Router>
           <Toaster />
         </AuthProvider>
