@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Calendar, MapPin, Link as LinkIcon, Edit, MessageCircle, Save, X, Crown, Star, TrendingUp, Users } from "lucide-react";
+import { Calendar, MapPin, Link as LinkIcon, Edit, MessageCircle, Save, X, Crown, Star, TrendingUp, Users, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -111,12 +111,24 @@ const Profile = () => {
                   </div>
                 </div>
               </div>
-              {profile.premium_tier && profile.premium_tier !== 'free' && (
-                <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white">
-                  <Crown className="w-3 h-3 mr-1" />
-                  {profile.premium_tier.toUpperCase()}
-                </Badge>
-              )}
+              <div className="flex items-center gap-3">
+                {isOwnProfile && (
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/professional-accounts')}
+                    className="rounded-full border-2 border-purple-300 hover:bg-purple-50 hover:border-purple-500 transition-all duration-300"
+                  >
+                    <Building className="w-4 h-4 mr-2" />
+                    Professional Accounts
+                  </Button>
+                )}
+                {profile.premium_tier && profile.premium_tier !== 'free' && (
+                  <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white">
+                    <Crown className="w-3 h-3 mr-1" />
+                    {profile.premium_tier.toUpperCase()}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 
