@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +22,7 @@ import ConversationStarter from "@/components/ConversationStarter";
 import MessageThread from "@/components/MessageThread";
 import CallHistorySection from "@/components/CallHistorySection";
 import GroupCallDialog from "@/components/GroupCallDialog";
+import { MessagesNavigationDock } from "@/components/MessagesNavigationDock";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,31 @@ const Messages = () => {
     clearCache();
     await refetch();
     setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
+  const handleDockAction = (action: string) => {
+    switch (action) {
+      case 'search':
+        // Focus search input or open search modal
+        const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+        if (searchInput) searchInput.focus();
+        break;
+      case 'new-group':
+        console.log('Open new group dialog');
+        break;
+      case 'add-contact':
+        console.log('Open add contact dialog');
+        break;
+      case 'favorites':
+        console.log('Show favorites');
+        break;
+      case 'settings':
+        handleSettingsAction('notifications');
+        break;
+      case 'more':
+        console.log('Show more options');
+        break;
+    }
   };
 
   if (loading) {
@@ -114,11 +139,11 @@ const Messages = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
       <SidebarNav />
       
       <div className="flex-1 flex">
-        {/* Conversations Sidebar - Increased width from w-80 to w-96 */}
+        {/* Conversations Sidebar */}
         <div className="w-96 border-r border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl flex flex-col">
           {/* Header */}
           <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-4 z-10">
@@ -324,6 +349,13 @@ const Messages = () => {
           )}
         </main>
       </div>
+
+      {/* Navigation Dock */}
+      <MessagesNavigationDock 
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onAction={handleDockAction}
+      />
     </div>
   );
 };
