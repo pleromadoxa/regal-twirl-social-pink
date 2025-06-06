@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -58,6 +57,23 @@ export const PostsList = ({
            content.toLowerCase().includes('🎶');
   };
 
+  // Format thread content with numbered lines
+  const formatThreadContent = (content: string) => {
+    if (!content.includes('\n\n')) return content;
+    
+    const threadLines = content.split('\n\n').filter(line => line.trim());
+    return threadLines.map((line, index) => (
+      <div key={index} className="flex gap-3 mb-3">
+        <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
+          {index + 1}
+        </div>
+        <div className="flex-1 text-slate-700 dark:text-slate-300 leading-relaxed">
+          {line.trim()}
+        </div>
+      </div>
+    ));
+  };
+
   // Pre-calculate verified status for all posts to avoid calling hooks in render loop
   const getVerifiedStatus = (user: any) => {
     if (!user) return false;
@@ -98,9 +114,9 @@ export const PostsList = ({
         return (
           <Card 
             key={post.id} 
-            className={`hover:shadow-md transition-shadow relative z-20 border border-slate-200 dark:border-slate-700 ${
+            className={`hover:shadow-xl transition-all duration-500 relative z-20 border border-slate-200 dark:border-slate-700 ${
               isThread 
-                ? 'bg-gradient-to-br from-white/80 via-purple-50/50 to-white/80 dark:from-slate-800/80 dark:via-purple-900/20 dark:to-slate-800/80 backdrop-blur-sm' 
+                ? 'bg-gradient-to-br from-white/95 via-purple-50/80 to-pink-50/80 dark:from-slate-800/95 dark:via-purple-900/30 dark:to-pink-900/20 backdrop-blur-xl border-purple-200/50 dark:border-purple-700/50 shadow-lg' 
                 : 'bg-white dark:bg-slate-800'
             }`}
           >
@@ -135,9 +151,16 @@ export const PostsList = ({
                       {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                     </span>
                   </div>
-                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed relative z-40 mb-3">
-                    {post.content}
-                  </p>
+                  
+                  {isThread ? (
+                    <div className={`relative z-40 mb-4 p-4 rounded-xl bg-gradient-to-br from-white/60 to-transparent dark:from-slate-800/60 dark:to-transparent backdrop-blur-sm border border-white/20 dark:border-slate-600/20`}>
+                      {formatThreadContent(post.content)}
+                    </div>
+                  ) : (
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed relative z-40 mb-3">
+                      {post.content}
+                    </p>
+                  )}
                   
                   {/* Display images if available */}
                   {post.image_urls && post.image_urls.length > 0 && (

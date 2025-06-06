@@ -90,7 +90,7 @@ const TweetComposer = () => {
         const validTweets = threadTweets.filter(tweet => tweet.trim().length > 0);
         if (validTweets.length > 0) {
           const combinedContent = validTweets.join("\n\n");
-          await createPost(combinedContent, imageUrls);
+          await createPost(combinedContent, imageUrls, selectedAccount);
           setThreadTweets([""]);
           setIsThreadMode(false);
           resetForm();
@@ -103,7 +103,7 @@ const TweetComposer = () => {
             finalContent += `\n📍 ${location}`;
           }
           
-          await createPost(finalContent, imageUrls);
+          await createPost(finalContent, imageUrls, selectedAccount);
           resetForm();
         }
       }

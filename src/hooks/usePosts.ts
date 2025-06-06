@@ -16,6 +16,7 @@ export interface Post {
   user_liked?: boolean;
   user_retweeted?: boolean;
   user_pinned?: boolean;
+  posted_as_page?: string; // Add this field for professional account posts
   profiles: {
     username: string;
     display_name: string;
@@ -139,7 +140,7 @@ export const usePosts = () => {
     }
   };
 
-  const createPost = async (content: string, imageUrls: string[] = []) => {
+  const createPost = async (content: string, imageUrls: string[] = [], selectedAccount: 'personal' | string = 'personal') => {
     if (!user) {
       toast({
         title: "Authentication required",
@@ -150,15 +151,20 @@ export const usePosts = () => {
     }
 
     try {
+      const postData: any = {
+        user_id: user.id,
+        content: content.trim(),
+        image_urls: imageUrls.length > 0 ? imageUrls : null,
+      };
+
+      // Add professional account info if not posting as personal
+      if (selectedAccount !== 'personal') {
+        postData.posted_as_page = selectedAccount;
+      }
+
       const { error } = await supabase
         .from('posts')
-        .insert([
-          {
-            user_id: user.id,
-            content: content.trim(),
-            image_urls: imageUrls.length > 0 ? imageUrls : null,
-          }
-        ]);
+        .insert([postData]);
 
       if (error) {
         console.error('Error creating post:', error);
