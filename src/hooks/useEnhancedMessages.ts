@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,7 +40,7 @@ export const useEnhancedMessages = () => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
-  const channelsRef = useRef<any[]>([]);
+  const channelsRef = useRef<{ [key: string]: any }>({});
 
   const fetchConversations = async () => {
     if (!user) return;
@@ -279,21 +280,30 @@ export const useEnhancedMessages = () => {
 
   // Clean up realtime subscriptions
   const cleanupChannels = () => {
-    channelsRef.current.forEach(channel => {
-      supabase.removeChannel(channel);
+    Object.values(channelsRef.current).forEach(channel => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     });
-    channelsRef.current = [];
+    channelsRef.current = {};
   };
 
   // Set up realtime subscriptions
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      cleanupChannels();
+      return;
+    }
 
     // Clean up existing channels first
     cleanupChannels();
 
+    // Create unique channel names to avoid conflicts
+    const conversationChannelName = `conversations-${user.id}-${Date.now()}`;
+    const messagesChannelName = `messages-${user.id}-${Date.now()}`;
+
     const conversationsChannel = supabase
-      .channel(`conversations-${user.id}`)
+      .channel(conversationChannelName)
       .on(
         'postgres_changes',
         {
@@ -308,7 +318,7 @@ export const useEnhancedMessages = () => {
       .subscribe();
 
     const messagesChannel = supabase
-      .channel(`messages-${user.id}`)
+      .channel(messagesChannelName)
       .on(
         'postgres_changes',
         {
@@ -324,20 +334,26 @@ export const useEnhancedMessages = () => {
       )
       .subscribe();
 
-    channelsRef.current = [conversationsChannel, messagesChannel];
+    // Store channels with their names as keys
+    channelsRef.current[conversationChannelName] = conversationsChannel;
+    channelsRef.current[messagesChannelName] = messagesChannel;
 
     return cleanupChannels;
-  }, [user, selectedConversation]);
+  }, [user]); // Remove selectedConversation from dependencies to avoid recreating channels
 
-  useEffect(() => {
-    fetchConversations();
-  }, [user]);
-
+  // Separate effect for handling selectedConversation changes
   useEffect(() => {
     if (selectedConversation) {
       fetchMessages(selectedConversation);
     }
   }, [selectedConversation, user]);
+
+  // Initial fetch effect
+  useEffect(() => {
+    if (user) {
+      fetchConversations();
+    }
+  }, [user]);
 
   return {
     conversations,
