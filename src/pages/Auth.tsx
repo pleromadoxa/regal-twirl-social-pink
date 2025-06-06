@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LampContainer } from '@/components/ui/lamp';
+import { WavyBackground } from '@/components/ui/wavy-background';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -68,7 +68,15 @@ const Auth = () => {
   };
 
   return (
-    <LampContainer>
+    <WavyBackground
+      colors={["#38bdf8", "#818cf8", "#c084fc", "#e879f9", "#22d3ee"]}
+      waveWidth={50}
+      backgroundFill="rgb(15, 23, 42)"
+      blur={10}
+      speed="fast"
+      waveOpacity={0.5}
+      className="flex items-center justify-center"
+    >
       <div className="w-full max-w-md">
         {/* Centered Logo */}
         <div className="flex justify-center mb-8">
@@ -166,7 +174,7 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
-    </LampContainer>
+    </WavyBackground>
   );
 };
 
