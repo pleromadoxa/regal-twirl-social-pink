@@ -1,12 +1,14 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Phone, Video, Info, Smile, Paperclip, Zap } from 'lucide-react';
+import { Send, Phone, Video, Info, Smile, Paperclip, Zap, Settings } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import MediaUpload from '@/components/MediaUpload';
+import EmojiPicker from '@/components/EmojiPicker';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -19,6 +21,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
   const [selectedDocuments, setSelectedDocuments] = useState<File[]>([]);
   const [showAttachments, setShowAttachments] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const { user } = useAuth();
@@ -39,15 +42,12 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
 
     setIsSending(true);
     try {
-      if (newMessage.trim()) {
-        await sendMessage(conversationId, newMessage, {
-          images: selectedImages,
-          videos: selectedVideos,
-          documents: selectedDocuments
-        });
-        setNewMessage('');
-      }
-      
+      await sendMessage(conversationId, newMessage, {
+        images: selectedImages,
+        videos: selectedVideos,
+        documents: selectedDocuments
+      });
+      setNewMessage('');
       setSelectedImages([]);
       setSelectedVideos([]);
       setSelectedDocuments([]);
@@ -86,6 +86,11 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     }, 2000);
   };
 
+  const handleEmojiSelect = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+    setShowEmojiPicker(false);
+  };
+
   if (!conversation) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -104,6 +109,12 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   // Check if other user is typing
   const otherUserId = conversation.participant_1 === user?.id ? conversation.participant_2 : conversation.participant_1;
   const isOtherUserTyping = typingUsers[otherUserId];
+
+  // Filter messages for this conversation
+  const conversationMessages = messages.filter(msg => 
+    (msg.sender_id === conversation.participant_1 && msg.recipient_id === conversation.participant_2) ||
+    (msg.sender_id === conversation.participant_2 && msg.recipient_id === conversation.participant_1)
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -145,6 +156,9 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
               <Video className="w-4 h-4" />
             </Button>
             <Button variant="ghost" size="sm" className="rounded-full">
+              <Settings className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="rounded-full">
               <Info className="w-4 h-4" />
             </Button>
           </div>
@@ -153,10 +167,10 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-purple-50/20 to-pink-50/20 dark:from-purple-900/10 dark:to-pink-900/10">
-        {messages.length > 0 ? (
-          messages.map((message, index) => {
+        {conversationMessages.length > 0 ? (
+          conversationMessages.map((message, index) => {
             const isOwnMessage = message.sender_id === user?.id;
-            const showAvatar = index === 0 || messages[index - 1]?.sender_id !== message.sender_id;
+            const showAvatar = index === 0 || conversationMessages[index - 1]?.sender_id !== message.sender_id;
 
             return (
               <div
@@ -246,13 +260,9 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
               disabled={isSending}
               className="pr-12 rounded-full border-purple-200 dark:border-purple-700 focus:ring-purple-500"
             />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 rounded-full"
-            >
-              <Smile className="w-4 h-4" />
-            </Button>
+            <div className="absolute right-1 top-1/2 transform -translate-y-1/2">
+              <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+            </div>
           </div>
           <Button
             onClick={handleSendMessage}

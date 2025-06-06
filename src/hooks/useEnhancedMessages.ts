@@ -196,6 +196,7 @@ export const useEnhancedMessages = () => {
         })
       );
 
+      console.log('Fetched messages for conversation:', conversationId, messagesWithProfiles.length);
       setMessages(messagesWithProfiles);
     } catch (error) {
       console.error('Error in fetchMessages:', error);
@@ -232,6 +233,8 @@ export const useEnhancedMessages = () => {
         ? conversation.participant_2 
         : conversation.participant_1;
 
+      console.log('Sending message:', { content, conversationId, recipientId });
+
       const { data: messageData, error } = await supabase
         .from('messages')
         .insert({
@@ -252,6 +255,8 @@ export const useEnhancedMessages = () => {
         return;
       }
 
+      console.log('Message sent successfully:', messageData);
+
       // Update conversation last_message_at
       await supabase
         .from('conversations')
@@ -270,6 +275,7 @@ export const useEnhancedMessages = () => {
         sender_profile: senderProfile
       };
       
+      // Add message to local state immediately
       setMessages(prev => [...prev, formattedMessage]);
 
       toast({
@@ -277,6 +283,7 @@ export const useEnhancedMessages = () => {
         description: "Your message has been sent successfully."
       });
 
+      // Refresh conversations to update last message
       await fetchConversations();
     } catch (error) {
       console.error('Error in sendMessage:', error);
@@ -480,7 +487,7 @@ export const useEnhancedMessages = () => {
               // Get sender profile for toast
               const { data: senderProfile } = await supabase
                 .from('profiles')
-                .select('display_name, username')
+                .select('display_name, username, avatar_url')
                 .eq('id', newMessage.sender_id)
                 .single();
               
@@ -492,11 +499,24 @@ export const useEnhancedMessages = () => {
                 description: `${senderName} sent you a message`
               });
 
-              // Refresh conversations and messages if viewing the conversation
-              await fetchConversations();
+              // Add message with profile to local state if viewing the conversation
+              const messageWithProfile = {
+                ...newMessage,
+                sender_profile: senderProfile
+              };
+
+              // Check if this message belongs to the currently selected conversation
               if (selectedConversation) {
-                await fetchMessages(selectedConversation);
+                const conversation = conversations.find(c => c.id === selectedConversation);
+                if (conversation && 
+                    ((newMessage.sender_id === conversation.participant_1 && newMessage.recipient_id === conversation.participant_2) ||
+                     (newMessage.sender_id === conversation.participant_2 && newMessage.recipient_id === conversation.participant_1))) {
+                  setMessages(prev => [...prev, messageWithProfile]);
+                }
               }
+
+              // Refresh conversations
+              await fetchConversations();
             }
           }
         )
@@ -565,7 +585,7 @@ export const useEnhancedMessages = () => {
       console.log('Cleaning up on unmount');
       cleanupChannels();
     };
-  }, [user?.id]); // Remove selectedConversation from dependencies to prevent re-subscription
+  }, [user?.id, selectedConversation]); // Include selectedConversation for real-time message filtering
 
   // Handle selectedConversation changes separately
   useEffect(() => {
