@@ -1,9 +1,10 @@
 
-import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut } from "lucide-react";
+import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
+import BusinessPageDialog from "./BusinessPageDialog";
 
 const SidebarNav = () => {
   const { user, signOut } = useAuth();
@@ -68,6 +69,20 @@ const SidebarNav = () => {
             <Button className="w-full py-4 text-lg font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-2xl">
               Post
             </Button>
+            
+            {/* Business Page Creation */}
+            <BusinessPageDialog
+              trigger={
+                <Button 
+                  variant="outline"
+                  className="w-full py-3 text-sm font-medium"
+                >
+                  <Building className="w-4 h-4 mr-2" />
+                  Create Business Page
+                </Button>
+              }
+            />
+            
             <Button 
               onClick={handleSignOut}
               variant="outline"

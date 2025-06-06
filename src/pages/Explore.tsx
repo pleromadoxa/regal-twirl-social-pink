@@ -1,42 +1,50 @@
 
-import { useState, useEffect } from 'react';
-import { Search, Users, TrendingUp, Hash } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Search, TrendingUp, Users, Building, User as UserIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
+import SidebarNav from "@/components/SidebarNav";
+import { supabase } from "@/integrations/supabase/client";
+import { useBusinessPages } from "@/hooks/useBusinessPages";
 
-interface Profile {
+interface SearchUser {
   id: string;
   username: string;
   display_name: string;
   avatar_url: string;
   bio: string;
   followers_count: number;
-  following_count: number;
 }
 
 const Explore = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { pages, loading: pagesLoading, toggleFollow } = useBusinessPages();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Profile[]>([]);
-  const [suggestedUsers, setSuggestedUsers] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<SearchUser[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    fetchSuggestedUsers();
+  }, []);
 
   const fetchSuggestedUsers = async () => {
-    if (!user) return;
-
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, bio, followers_count, following_count')
-        .neq('id', user.id)
+        .select('id, username, display_name, avatar_url, bio, followers_count')
+        .order('followers_count', { ascending: false })
         .limit(10);
 
       if (error) {
@@ -46,7 +54,7 @@ const Explore = () => {
 
       setSuggestedUsers(data || []);
     } catch (error) {
-      console.error('Error fetching suggested users:', error);
+      console.error('Error in fetchSuggestedUsers:', error);
     }
   };
 
@@ -58,13 +66,12 @@ const Explore = () => {
       return;
     }
 
-    setLoading(true);
+    setIsSearching(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, bio, followers_count, following_count')
-        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%,bio.ilike.%${query}%`)
-        .neq('id', user?.id || '')
+        .select('id, username, display_name, avatar_url, bio, followers_count')
+        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
         .limit(20);
 
       if (error) {
@@ -76,273 +83,235 @@ const Explore = () => {
     } catch (error) {
       console.error('Search error:', error);
     } finally {
-      setLoading(false);
+      setIsSearching(false);
     }
   };
 
-  const followUser = async (userId: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('follows')
-        .insert({
-          follower_id: user.id,
-          following_id: userId
-        });
-
-      if (error) {
-        console.error('Error following user:', error);
-        toast({
-          title: "Error",
-          description: "Failed to follow user",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      toast({
-        title: "Success",
-        description: "User followed successfully"
-      });
-
-      // Refresh suggested users
-      fetchSuggestedUsers();
-    } catch (error) {
-      console.error('Error following user:', error);
-    }
-  };
-
-  const startConversation = async (recipientId: string) => {
-    if (!user) return;
-
-    try {
-      // Check if conversation already exists
-      const { data: existingConv } = await supabase
-        .from('conversations')
-        .select('id')
-        .or(`and(participant_1.eq.${user.id},participant_2.eq.${recipientId}),and(participant_1.eq.${recipientId},participant_2.eq.${user.id})`)
-        .single();
-
-      if (existingConv) {
-        navigate('/messages');
-        return;
-      }
-
-      // Create new conversation
-      const { error } = await supabase
-        .from('conversations')
-        .insert({
-          participant_1: user.id,
-          participant_2: recipientId
-        });
-
-      if (error) {
-        console.error('Error creating conversation:', error);
-        return;
-      }
-
-      toast({
-        title: "Conversation started",
-        description: "You can now chat with this user"
-      });
-
-      navigate('/messages');
-    } catch (error) {
-      console.error('Error starting conversation:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchSuggestedUsers();
-    }
-  }, [user]);
-
-  if (!user) {
-    navigate('/auth');
-    return null;
-  }
-
-  const UserCard = ({ profile }: { profile: Profile }) => (
+  const UserCard = ({ user: searchUser }: { user: SearchUser }) => (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.display_name}
-              className="w-12 h-12 rounded-full"
-            />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center">
-              <span className="text-lg font-medium">
-                {(profile.display_name || profile.username || 'U')[0].toUpperCase()}
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center overflow-hidden">
+            {searchUser.avatar_url ? (
+              <img
+                src={searchUser.avatar_url}
+                alt={searchUser.display_name || searchUser.username}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-lg font-bold text-slate-600 dark:text-slate-300">
+                {(searchUser.display_name || searchUser.username || 'U')[0].toUpperCase()}
               </span>
-            </div>
-          )}
-          
+            )}
+          </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-sm truncate">
-                  {profile.display_name || profile.username}
-                </h3>
-                <p className="text-sm text-slate-500">@{profile.username}</p>
-              </div>
-            </div>
-            
-            {profile.bio && (
-              <p className="text-sm text-slate-700 dark:text-slate-300 mt-2 line-clamp-2">
-                {profile.bio}
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+              {searchUser.display_name || searchUser.username}
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              @{searchUser.username} • {searchUser.followers_count || 0} followers
+            </p>
+            {searchUser.bio && (
+              <p className="text-sm text-slate-700 dark:text-slate-300 mt-1 line-clamp-2">
+                {searchUser.bio}
               </p>
             )}
-            
-            <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
-              <span>{profile.followers_count || 0} followers</span>
-              <span>{profile.following_count || 0} following</span>
-            </div>
-            
-            <div className="flex gap-2 mt-3">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate(`/profile/${profile.id}`)}
-              >
-                View Profile
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => followUser(profile.id)}
-              >
-                Follow
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => startConversation(profile.id)}
-              >
-                Message
-              </Button>
-            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/profile/${searchUser.id}`)}
+            >
+              View
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/messages?user=${searchUser.id}`)}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              Message
+            </Button>
           </div>
         </div>
       </CardContent>
     </Card>
   );
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl font-bold text-purple-600 dark:text-purple-400">
-              <Search className="w-6 h-6" />
-              Explore
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <Input
-                placeholder="Search for people, topics, or hashtags..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
+  const BusinessPageCard = ({ page }: { page: typeof pages[0] }) => (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center overflow-hidden">
+            {page.avatar_url ? (
+              <img
+                src={page.avatar_url}
+                alt={page.page_name}
+                className="w-full h-full object-cover"
               />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Tabs defaultValue="people" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="people">
-              <Users className="w-4 h-4 mr-2" />
-              People
-            </TabsTrigger>
-            <TabsTrigger value="trending">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Trending
-            </TabsTrigger>
-            <TabsTrigger value="topics">
-              <Hash className="w-4 h-4 mr-2" />
-              Topics
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="people" className="space-y-4">
-            {searchQuery ? (
-              <div>
-                <h3 className="text-lg font-semibold mb-4">
-                  Search Results for "{searchQuery}"
-                </h3>
-                {loading ? (
-                  <div className="text-center py-8">Searching...</div>
-                ) : searchResults.length > 0 ? (
-                  <div className="grid gap-4">
-                    {searchResults.map((profile) => (
-                      <UserCard key={profile.id} profile={profile} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-slate-500">
-                    No users found for "{searchQuery}"
-                  </div>
-                )}
-              </div>
             ) : (
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Suggested for you</h3>
-                {suggestedUsers.length > 0 ? (
-                  <div className="grid gap-4">
-                    {suggestedUsers.map((profile) => (
-                      <UserCard key={profile.id} profile={profile} />
-                    ))}
+              <Building className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                {page.page_name}
+              </h3>
+              {page.is_verified && <span className="text-blue-500">✓</span>}
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {page.page_type} • {page.followers_count || 0} followers
+            </p>
+            {page.description && (
+              <p className="text-sm text-slate-700 dark:text-slate-300 mt-1 line-clamp-2">
+                {page.description}
+              </p>
+            )}
+          </div>
+          <Button
+            variant={page.user_following ? "outline" : "default"}
+            size="sm"
+            onClick={() => toggleFollow(page.id)}
+            className={!page.user_following ? "bg-purple-600 hover:bg-purple-700" : ""}
+          >
+            {page.user_following ? 'Following' : 'Follow'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
+        <SidebarNav />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  const trendingTopics = [
+    { topic: '#TechNews', posts: '12.5k posts' },
+    { topic: '#WebDev', posts: '8.2k posts' },
+    { topic: '#AI', posts: '15.1k posts' },
+    { topic: '#Startup', posts: '6.7k posts' },
+    { topic: '#Design', posts: '9.3k posts' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
+      <SidebarNav />
+      
+      <main className="flex-1 max-w-4xl mx-auto border-x border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        <div className="sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 p-4">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Explore</h1>
+          
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <Input
+              placeholder="Search users and pages..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-10 bg-slate-100 dark:bg-slate-700 border-none"
+            />
+          </div>
+        </div>
+
+        <div className="p-4">
+          {searchQuery ? (
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                Search Results for "{searchQuery}"
+              </h2>
+              {isSearching ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {searchResults.map((user) => (
+                    <UserCard key={user.id} user={user} />
+                  ))}
+                  {searchResults.length === 0 && (
+                    <p className="text-center text-slate-500 py-8">No users found for "{searchQuery}"</p>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <Tabs defaultValue="users" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="users" className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  People
+                </TabsTrigger>
+                <TabsTrigger value="pages" className="flex items-center gap-2">
+                  <Building className="w-4 h-4" />
+                  Pages
+                </TabsTrigger>
+                <TabsTrigger value="trending" className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  Trending
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="users" className="space-y-4">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Suggested People</h2>
+                <div className="space-y-3">
+                  {suggestedUsers.map((user) => (
+                    <UserCard key={user.id} user={user} />
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="pages" className="space-y-4">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Business & Professional Pages</h2>
+                {pagesLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-slate-500">
-                    No suggestions available
+                  <div className="space-y-3">
+                    {pages.map((page) => (
+                      <BusinessPageCard key={page.id} page={page} />
+                    ))}
+                    {pages.length === 0 && (
+                      <p className="text-center text-slate-500 py-8">No business pages found</p>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
-          </TabsContent>
+              </TabsContent>
 
-          <TabsContent value="trending" className="space-y-4">
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Trending Topics</h3>
-                <div className="space-y-3">
-                  {['#TechNews', '#WebDev', '#AI', '#Startup', '#Design'].map((topic, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer">
-                      <div>
-                        <p className="font-medium">{topic}</p>
-                        <p className="text-sm text-slate-500">{Math.floor(Math.random() * 20) + 5}k posts</p>
+              <TabsContent value="trending" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-purple-600" />
+                      What's trending
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {trendingTopics.map((trend, index) => (
+                      <div key={index} className="flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700 p-2 rounded-lg cursor-pointer transition-colors">
+                        <div>
+                          <p className="font-medium text-sm">{trend.topic}</p>
+                          <p className="text-xs text-slate-500">{trend.posts}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="topics" className="space-y-4">
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Popular Topics</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {['Technology', 'Business', 'Design', 'Programming', 'Marketing', 'Startups'].map((topic, index) => (
-                    <Button key={index} variant="outline" className="h-20 flex-col">
-                      <Hash className="w-5 h-5 mb-1" />
-                      {topic}
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          )}
+        </div>
+      </main>
     </div>
   );
 };

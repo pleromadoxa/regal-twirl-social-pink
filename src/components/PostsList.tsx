@@ -11,6 +11,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { Post } from "@/hooks/usePosts";
 import { useAuth } from "@/contexts/AuthContext";
+import RepliesSection from "./RepliesSection";
 
 interface PostsListProps {
   posts: Post[];
@@ -99,15 +100,6 @@ const PostsList = ({ posts, onLike, onRetweet, onPin, onDelete }: PostsListProps
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="flex items-center space-x-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-full"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    <span className="text-sm">{post.replies_count || 0}</span>
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
                     onClick={() => onRetweet(post.id)}
                     className={`flex items-center space-x-2 rounded-full ${
                       post.user_retweeted
@@ -149,6 +141,14 @@ const PostsList = ({ posts, onLike, onRetweet, onPin, onDelete }: PostsListProps
                     <span className="text-sm font-medium">Pinned Post</span>
                   </div>
                 )}
+
+                {/* Replies Section */}
+                <div className="mt-4">
+                  <RepliesSection 
+                    postId={post.id} 
+                    initialRepliesCount={post.replies_count || 0}
+                  />
+                </div>
               </div>
             </div>
           </CardContent>
