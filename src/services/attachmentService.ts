@@ -62,7 +62,7 @@ export const createMessageAttachment = async (
     throw error;
   }
 
-  return data;
+  return data as MessageAttachment;
 };
 
 export const getMessageAttachments = async (messageId: string): Promise<MessageAttachment[]> => {
@@ -77,5 +77,5 @@ export const getMessageAttachments = async (messageId: string): Promise<MessageA
     throw error;
   }
 
-  return data || [];
+  return (data || []) as MessageAttachment[];
 };

@@ -134,9 +134,12 @@ export const subscribeToTyping = (
       console.log('Typing state updated:', state);
       
       Object.keys(state).forEach(key => {
-        const presence = state[key][0];
-        if (presence.user_id !== userId) {
-          onTypingUpdate(presence.typing, presence.user_id);
+        const presenceList = state[key];
+        if (presenceList && presenceList.length > 0) {
+          const presence = presenceList[0] as any;
+          if (presence.user_id !== userId) {
+            onTypingUpdate(presence.typing || false, presence.user_id);
+          }
         }
       });
     })

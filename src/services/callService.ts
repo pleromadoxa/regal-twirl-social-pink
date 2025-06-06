@@ -35,7 +35,12 @@ export const createCall = async (
     throw error;
   }
 
-  return data;
+  return {
+    ...data,
+    call_type: data.call_type as 'audio' | 'video' | 'group',
+    status: data.status as 'active' | 'ended',
+    participants: Array.isArray(data.participants) ? data.participants as string[] : []
+  };
 };
 
 export const joinCall = async (callId: string, userId: string): Promise<void> => {
@@ -46,7 +51,8 @@ export const joinCall = async (callId: string, userId: string): Promise<void> =>
     .single();
 
   if (call) {
-    const updatedParticipants = [...call.participants, userId];
+    const currentParticipants = Array.isArray(call.participants) ? call.participants as string[] : [];
+    const updatedParticipants = [...currentParticipants, userId];
     
     const { error } = await supabase
       .from('active_calls')
@@ -89,7 +95,13 @@ export const subscribeToCallUpdates = (
     }, (payload) => {
       console.log('Call update:', payload);
       if (payload.new) {
-        onUpdate(payload.new as ActiveCall);
+        const callData = payload.new as any;
+        onUpdate({
+          ...callData,
+          call_type: callData.call_type as 'audio' | 'video' | 'group',
+          status: callData.status as 'active' | 'ended',
+          participants: Array.isArray(callData.participants) ? callData.participants as string[] : []
+        });
       }
     })
     .subscribe();
