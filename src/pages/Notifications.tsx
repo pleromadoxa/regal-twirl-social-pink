@@ -147,9 +147,9 @@ const Notifications = () => {
                           </p>
                         </div>
                         
-                        {notification.title && notification.title !== notification.message && (
+                        {notification.content && notification.content !== notification.message && (
                           <p className="text-sm font-medium text-slate-800 dark:text-slate-200 mt-1">
-                            {notification.title}
+                            {notification.content}
                           </p>
                         )}
                       </div>

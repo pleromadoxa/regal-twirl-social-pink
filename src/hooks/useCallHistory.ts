@@ -67,9 +67,11 @@ export const useCallHistory = () => {
 
           return {
             ...call,
+            call_type: call.call_type as 'audio' | 'video',
+            call_status: call.call_status as 'completed' | 'missed' | 'declined' | 'failed',
             caller_profile: callerProfile.data,
             recipient_profile: recipientProfile.data
-          };
+          } as CallHistoryEntry;
         })
       );
 

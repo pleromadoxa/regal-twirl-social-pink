@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
@@ -171,8 +172,8 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
         event: 'incoming-call',
         payload: {
           caller_id: user.id,
-          caller_name: user.raw_user_meta_data?.display_name || user.email,
-          caller_avatar: user.raw_user_meta_data?.avatar_url,
+          caller_name: user.user_metadata?.display_name || user.email,
+          caller_avatar: user.user_metadata?.avatar_url,
           call_type: callType,
           conversation_id: conversationId
         }
@@ -192,7 +193,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
             user_id: conversation.other_user!.id,
             type: 'missed_call',
             title: 'Missed Call',
-            content: `${user.raw_user_meta_data?.display_name || user.email} called you`,
+            content: `${user.user_metadata?.display_name || user.email} called you`,
             data: {
               caller_id: user.id,
               call_type: callType,
