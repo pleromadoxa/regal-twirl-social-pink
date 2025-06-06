@@ -1,7 +1,7 @@
 
 import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { GradientButton } from "@/components/ui/gradient-button";
+import { HoverButton } from "@/components/ui/hover-button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -51,19 +51,18 @@ const SidebarNav = () => {
       {/* Navigation */}
       <nav className="space-y-2">
         {navigationItems.map((item) => (
-          <GradientButton
+          <HoverButton
             key={item.label}
-            variant={item.active ? "default" : "variant"}
             onClick={() => handleNavigation(item.path)}
-            className={`w-full justify-start px-6 py-4 text-lg rounded-2xl transition-all duration-200 hover:scale-105 ${
+            className={`w-full justify-start px-6 py-4 text-lg rounded-2xl transition-all duration-200 ${
               item.active 
-                ? 'shadow-lg' 
+                ? 'shadow-lg bg-[rgba(170,202,255,0.2)]' 
                 : 'opacity-80 hover:opacity-100'
             }`}
           >
             <item.icon className="w-6 h-6 mr-4" />
             <span className="font-medium">{item.label}</span>
-          </GradientButton>
+          </HoverButton>
         ))}
       </nav>
 
@@ -71,9 +70,9 @@ const SidebarNav = () => {
       <div className="pt-6 space-y-3">
         {user ? (
           <>
-            <GradientButton className="w-full py-4 text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200 hover:scale-105">
+            <HoverButton className="w-full py-4 text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200">
               Create Post
-            </GradientButton>
+            </HoverButton>
             
             {/* Premium Subscription */}
             <PremiumDialog
@@ -111,12 +110,12 @@ const SidebarNav = () => {
             </Button>
           </>
         ) : (
-          <GradientButton 
+          <HoverButton 
             onClick={() => navigate('/auth')}
-            className="w-full py-4 text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200 hover:scale-105"
+            className="w-full py-4 text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200"
           >
             Sign In
-          </GradientButton>
+          </HoverButton>
         )}
       </div>
 

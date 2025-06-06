@@ -100,24 +100,27 @@ export function MessagesNavigationDock({ activeTab, onTabChange, onAction }: Mes
           const isActive = item.action === 'tab' && activeTab === item.id;
           
           return (
-            <DockItem
+            <div
               key={item.id}
-              className={`aspect-square rounded-full cursor-pointer transition-colors ${
-                isActive 
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
-                  : 'bg-gray-200 dark:bg-neutral-800 hover:bg-purple-100 dark:hover:bg-purple-900/20'
-              }`}
               onClick={() => handleItemClick(item)}
             >
-              <DockLabel>{item.title}</DockLabel>
-              <DockIcon>
-                <IconComponent className={`h-full w-full ${
+              <DockItem
+                className={`aspect-square rounded-full cursor-pointer transition-colors ${
                   isActive 
-                    ? 'text-white' 
-                    : 'text-neutral-600 dark:text-neutral-300'
-                }`} />
-              </DockIcon>
-            </DockItem>
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
+                    : 'bg-gray-200 dark:bg-neutral-800 hover:bg-purple-100 dark:hover:bg-purple-900/20'
+                }`}
+              >
+                <DockLabel>{item.title}</DockLabel>
+                <DockIcon>
+                  <IconComponent className={`h-full w-full ${
+                    isActive 
+                      ? 'text-white' 
+                      : 'text-neutral-600 dark:text-neutral-300'
+                  }`} />
+                </DockIcon>
+              </DockItem>
+            </div>
           );
         })}
       </Dock>
