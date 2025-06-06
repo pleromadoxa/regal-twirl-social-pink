@@ -1,7 +1,7 @@
 
 import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HoverButton } from "@/components/ui/hover-button";
+import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -51,18 +51,17 @@ const SidebarNav = () => {
       {/* Navigation */}
       <nav className="space-y-2">
         {navigationItems.map((item) => (
-          <HoverButton
+          <InteractiveHoverButton
             key={item.label}
             onClick={() => handleNavigation(item.path)}
+            text={item.label}
+            icon={<item.icon className="w-6 h-6" />}
             className={`w-full justify-start px-6 py-4 text-lg rounded-2xl transition-all duration-200 ${
               item.active 
                 ? 'shadow-lg bg-[rgba(170,202,255,0.2)]' 
                 : 'opacity-80 hover:opacity-100'
             }`}
-          >
-            <item.icon className="w-6 h-6 mr-4" />
-            <span className="font-medium">{item.label}</span>
-          </HoverButton>
+          />
         ))}
       </nav>
 
@@ -70,9 +69,10 @@ const SidebarNav = () => {
       <div className="pt-6 space-y-3">
         {user ? (
           <>
-            <HoverButton className="w-full py-4 text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200">
-              Create Post
-            </HoverButton>
+            <InteractiveHoverButton 
+              text="Create Post"
+              className="w-full py-4 text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200"
+            />
             
             {/* Premium Subscription */}
             <PremiumDialog
@@ -110,12 +110,11 @@ const SidebarNav = () => {
             </Button>
           </>
         ) : (
-          <HoverButton 
+          <InteractiveHoverButton 
             onClick={() => navigate('/auth')}
+            text="Sign In"
             className="w-full py-4 text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200"
-          >
-            Sign In
-          </HoverButton>
+          />
         )}
       </div>
 
