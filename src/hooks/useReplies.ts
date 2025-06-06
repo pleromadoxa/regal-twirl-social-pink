@@ -32,8 +32,13 @@ export const useReplies = (postId: string) => {
       const { data: repliesData, error } = await supabase
         .from('replies')
         .select(`
-          *,
-          profiles:user_id (
+          id,
+          post_id,
+          user_id,
+          content,
+          created_at,
+          updated_at,
+          profiles!replies_user_id_fkey (
             username,
             display_name,
             avatar_url
@@ -47,7 +52,22 @@ export const useReplies = (postId: string) => {
         return;
       }
 
-      setReplies(repliesData || []);
+      // Transform the data to match our Reply interface
+      const transformedReplies = repliesData?.map(reply => ({
+        id: reply.id,
+        post_id: reply.post_id,
+        user_id: reply.user_id,
+        content: reply.content,
+        created_at: reply.created_at,
+        updated_at: reply.updated_at,
+        profiles: {
+          username: reply.profiles?.username || 'Anonymous',
+          display_name: reply.profiles?.display_name || 'Anonymous',
+          avatar_url: reply.profiles?.avatar_url || ''
+        }
+      })) || [];
+
+      setReplies(transformedReplies);
     } catch (error) {
       console.error('Error in fetchReplies:', error);
     } finally {

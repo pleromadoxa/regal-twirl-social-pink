@@ -55,12 +55,22 @@ export const useBusinessPages = () => {
 
         const enrichedPages = pagesData?.map(page => ({
           ...page,
-          user_following: followedPageIds.has(page.id)
+          page_type: page.page_type as 'business' | 'professional',
+          user_following: followedPageIds.has(page.id),
+          followers_count: page.followers_count || 0,
+          is_verified: page.is_verified || false
         })) || [];
 
         setPages(enrichedPages);
       } else {
-        setPages(pagesData || []);
+        const mappedPages = pagesData?.map(page => ({
+          ...page,
+          page_type: page.page_type as 'business' | 'professional',
+          followers_count: page.followers_count || 0,
+          is_verified: page.is_verified || false
+        })) || [];
+        
+        setPages(mappedPages);
       }
     } catch (error) {
       console.error('Error in fetchPages:', error);
