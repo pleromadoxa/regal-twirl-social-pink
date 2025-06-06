@@ -52,7 +52,7 @@ const SidebarNav = () => {
           <img 
             src="/lovable-uploads/630c36d5-5341-4bdf-bab8-ba3bd2bdc8b6.png"
             alt="Regal Network" 
-            className="h-16 w-auto"
+            className="h-24 w-auto"
           />
         </div>
         <ThemeToggle />
