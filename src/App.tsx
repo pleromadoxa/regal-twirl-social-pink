@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
+import Landing from "@/pages/Landing";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
@@ -24,6 +25,7 @@ function App() {
         <AuthProvider>
           <Router>
             <Routes>
+              <Route path="/landing" element={<Landing />} />
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile/:userId" element={<Profile />} />
