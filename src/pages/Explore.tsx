@@ -12,7 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useVerifiedStatus } from "@/hooks/useVerifiedStatus";
 
 interface User {
   id: string;
@@ -97,6 +96,28 @@ const Explore = () => {
     }
   };
 
+  // Helper function to check verified status without using hooks
+  const getVerifiedStatus = (user: User) => {
+    if (!user) return false;
+    
+    // Special case for @pleromadoxa
+    if (user.username === 'pleromadoxa') {
+      return true;
+    }
+    
+    // Check if manually verified
+    if (user.is_verified) {
+      return true;
+    }
+    
+    // Check if has 100+ followers
+    if (user.followers_count && user.followers_count >= 100) {
+      return true;
+    }
+    
+    return false;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -159,7 +180,7 @@ const Explore = () => {
                   ) : suggestedUsers.length > 0 ? (
                     <div className="space-y-4">
                       {suggestedUsers.map((suggestedUser) => {
-                        const isVerified = useVerifiedStatus(suggestedUser);
+                        const isVerified = getVerifiedStatus(suggestedUser);
                         return (
                           <div key={suggestedUser.id} className="flex items-center justify-between p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors">
                             <div className="flex items-center space-x-3 flex-1 cursor-pointer" onClick={() => navigate(`/profile/${suggestedUser.id}`)}>
