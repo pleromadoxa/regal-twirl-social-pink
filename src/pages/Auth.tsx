@@ -1,11 +1,11 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LampContainer } from '@/components/ui/lamp';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -68,127 +68,105 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-black">
-      {/* Animated Globe Background */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-10">
-        <div className="relative">
-          <Globe className="w-96 h-96 text-white animate-spin" style={{ animationDuration: '30s' }} />
-          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-transparent rounded-full" />
+    <LampContainer>
+      <div className="w-full max-w-md">
+        {/* Centered Logo */}
+        <div className="flex justify-center mb-8">
+          <img 
+            src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
+            alt="Network Logo" 
+            className="h-20 w-auto"
+          />
         </div>
-      </div>
 
-      {/* Grid Pattern Overlay */}
-      <div 
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px'
-        }}
-      />
-
-      <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
-        <div className="w-full max-w-md">
-          {/* Centered Logo */}
-          <div className="flex justify-center mb-8">
-            <img 
-              src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
-              alt="Network Logo" 
-              className="h-20 w-auto"
-            />
-          </div>
-
-          {/* Centered Auth Form */}
-          <Card className="w-full bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-white">
-                {isLogin ? 'Welcome Back' : 'Join Network'}
-              </CardTitle>
-              <CardDescription className="text-slate-300">
-                {isLogin ? 'Sign in to your account' : 'Create your account'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
-                    placeholder="Enter your email"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-white">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
-                    placeholder="Enter your password"
-                  />
-                </div>
-
-                {!isLogin && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="username" className="text-white">Username</Label>
-                      <Input
-                        id="username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                        className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
-                        placeholder="Choose a username"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName" className="text-white">Display Name</Label>
-                      <Input
-                        id="displayName"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        required
-                        className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
-                        placeholder="Your display name"
-                      />
-                    </div>
-                  </>
-                )}
-
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 transition-all duration-200 transform hover:scale-105"
-                  disabled={loading}
-                >
-                  {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
-                </Button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <Button
-                  variant="link"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-purple-300 hover:text-purple-200"
-                >
-                  {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-                </Button>
+        {/* Centered Auth Form */}
+        <Card className="w-full bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-white">
+              {isLogin ? 'Welcome Back' : 'Join Network'}
+            </CardTitle>
+            <CardDescription className="text-slate-300">
+              {isLogin ? 'Sign in to your account' : 'Create your account'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-white">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                  placeholder="Enter your email"
+                />
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-white">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              {!isLogin && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="username" className="text-white">Username</Label>
+                    <Input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                      placeholder="Choose a username"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName" className="text-white">Display Name</Label>
+                    <Input
+                      id="displayName"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      required
+                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-purple-400"
+                      placeholder="Your display name"
+                    />
+                  </div>
+                </>
+              )}
+
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 transition-all duration-200 transform hover:scale-105"
+                disabled={loading}
+              >
+                {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <Button
+                variant="link"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-purple-300 hover:text-purple-200"
+              >
+                {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </LampContainer>
   );
 };
 
