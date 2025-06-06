@@ -436,21 +436,65 @@ export const useEnhancedMessages = () => {
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages'
+          },
+          async (payload) => {
+            console.log('New message detected:', payload);
+            
+            if (payload.new && typeof payload.new === 'object' && 'sender_id' in payload.new && 'recipient_id' in payload.new) {
+              const newMessage = payload.new as any;
+              
+              // Check if this message involves the current user
+              if (newMessage.sender_id === user.id || newMessage.recipient_id === user.id) {
+                console.log('Message involves current user, updating...');
+                
+                // If user is currently viewing a conversation, refresh messages
+                if (selectedConversation) {
+                  await fetchMessages(selectedConversation);
+                }
+                
+                // Always refresh conversations to update last message
+                await fetchConversations();
+                
+                // If this is a message TO the current user (not from), show a toast
+                if (newMessage.recipient_id === user.id && newMessage.sender_id !== user.id) {
+                  // Get sender profile for toast
+                  const { data: senderProfile } = await supabase
+                    .from('profiles')
+                    .select('display_name, username')
+                    .eq('id', newMessage.sender_id)
+                    .single();
+                  
+                  const senderName = senderProfile?.display_name || senderProfile?.username || 'Someone';
+                  
+                  toast({
+                    title: "New message",
+                    description: `${senderName} sent you a message`
+                  });
+                }
+              }
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
             schema: 'public',
             table: 'messages'
           },
           (payload) => {
-            console.log('Message change detected:', payload);
+            console.log('Message updated:', payload);
             
-            // Check if this message is for the current user with proper type checking
             if (payload.new && typeof payload.new === 'object' && 'sender_id' in payload.new && 'recipient_id' in payload.new) {
-              const newMessage = payload.new as { sender_id: string; recipient_id: string };
-              if (newMessage.sender_id === user.id || newMessage.recipient_id === user.id) {
+              const updatedMessage = payload.new as any;
+              if (updatedMessage.sender_id === user.id || updatedMessage.recipient_id === user.id) {
                 if (selectedConversation) {
                   fetchMessages(selectedConversation);
                 }
-                fetchConversations(); // Refresh to update last message
+                fetchConversations();
               }
             }
           }
