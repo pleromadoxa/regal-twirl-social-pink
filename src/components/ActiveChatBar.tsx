@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageDock, Character } from '@/components/ui/message-dock';
@@ -11,6 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getStreakEmoji } from '@/services/streakService';
 
 const ActiveChatBar = () => {
   const { user } = useAuth();
@@ -42,13 +42,14 @@ const ActiveChatBar = () => {
         ...recentConversations.map((conv, index) => ({
           id: conv.id,
           emoji: conv.other_user?.avatar_url ? "👤" : ["👤", "🌟", "💼"][index] || "👤",
-          name: conv.other_user?.display_name || conv.other_user?.username || "User",
+          name: `${conv.other_user?.display_name || conv.other_user?.username || "User"}${conv.streak_count > 0 ? ` ${getStreakEmoji(conv.streak_count)}${conv.streak_count}` : ''}`,
           online: true,
           backgroundColor: ["bg-blue-300", "bg-purple-300", "bg-pink-300"][index] || "bg-gray-300",
           gradientColors: ["#93c5fd, #dbeafe", "#c084fc, #f3e8ff", "#f9a8d4, #fce7f3"][index] || "#d1d5db, #f3f4f6",
           avatar: conv.other_user?.avatar_url,
           username: conv.other_user?.username,
-          displayName: conv.other_user?.display_name
+          displayName: conv.other_user?.display_name,
+          streakCount: conv.streak_count
         })),
         { emoji: "📋", name: "Menu", online: false },
       ];

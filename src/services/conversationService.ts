@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { Conversation, UserProfile } from '@/types/messages';
+import { calculateStreak } from './streakService';
 
 export const fetchConversations = async (userId: string): Promise<Conversation[]> => {
   const { data: conversationData, error: conversationError } = await supabase
@@ -35,22 +36,30 @@ export const fetchConversations = async (userId: string): Promise<Conversation[]
 
   const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
-  return conversationData.map(conv => {
-    const participant1Profile = profilesMap.get(conv.participant_1);
-    const participant2Profile = profilesMap.get(conv.participant_2);
-    const otherUser = conv.participant_1 === userId 
-      ? participant2Profile 
-      : participant1Profile;
-    
-    return {
-      ...conv,
-      participant_1_profile: participant1Profile || null,
-      participant_2_profile: participant2Profile || null,
-      other_user: otherUser || null,
-      last_message: null,
-      streak_count: 0
-    };
-  });
+  // Calculate streaks for each conversation
+  const conversationsWithStreaks = await Promise.all(
+    conversationData.map(async (conv) => {
+      const participant1Profile = profilesMap.get(conv.participant_1);
+      const participant2Profile = profilesMap.get(conv.participant_2);
+      const otherUser = conv.participant_1 === userId 
+        ? participant2Profile 
+        : participant1Profile;
+      
+      // Calculate current streak
+      const streakCount = await calculateStreak(conv.id);
+      
+      return {
+        ...conv,
+        participant_1_profile: participant1Profile || null,
+        participant_2_profile: participant2Profile || null,
+        other_user: otherUser || null,
+        last_message: null,
+        streak_count: streakCount
+      };
+    })
+  );
+
+  return conversationsWithStreaks;
 };
 
 export const createConversation = async (participant1Id: string, participant2Id: string) => {

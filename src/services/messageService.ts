@@ -1,5 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { Message } from '@/types/messages';
+import { updateConversationStreak } from './streakService';
 
 export const fetchMessages = async (userId: string, otherUserId: string): Promise<Message[]> => {
   const { data: messageData, error: messageError } = await supabase
@@ -49,6 +51,18 @@ export const sendMessage = async (senderId: string, recipientId: string, content
   if (error) {
     console.error("Error sending message:", error);
     throw error;
+  }
+
+  // Find or create conversation
+  const { data: conversation } = await supabase
+    .from('conversations')
+    .select('id')
+    .or(`and(participant_1.eq.${senderId},participant_2.eq.${recipientId}),and(participant_1.eq.${recipientId},participant_2.eq.${senderId})`)
+    .single();
+
+  if (conversation) {
+    // Update streak count for this conversation
+    await updateConversationStreak(conversation.id);
   }
 
   // Fetch sender profile separately
