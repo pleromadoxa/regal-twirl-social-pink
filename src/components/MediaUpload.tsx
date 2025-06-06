@@ -25,6 +25,8 @@ const MediaUpload = ({
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
       const validImages = files.filter(file => file.type.startsWith('image/'));
+      const maxImages = 4 - selectedImages.length;
+      
       if (validImages.length !== files.length) {
         toast({
           title: "Invalid files",
@@ -32,11 +34,25 @@ const MediaUpload = ({
           variant: "destructive"
         });
       }
-      onImagesChange([...selectedImages, ...validImages].slice(0, 4));
-      toast({
-        title: "Images added",
-        description: `${validImages.length} image(s) added to your post`
-      });
+      
+      if (validImages.length > maxImages) {
+        toast({
+          title: "Too many images",
+          description: `You can only attach up to 4 images. ${maxImages} slots available.`,
+          variant: "destructive"
+        });
+        onImagesChange([...selectedImages, ...validImages.slice(0, maxImages)]);
+      } else {
+        onImagesChange([...selectedImages, ...validImages]);
+        toast({
+          title: "Images added",
+          description: `${validImages.length} image(s) added to your post`
+        });
+      }
+    }
+    // Reset the input
+    if (e.target) {
+      e.target.value = '';
     }
   };
 
@@ -51,20 +67,41 @@ const MediaUpload = ({
           variant: "destructive"
         });
       }
-      onVideosChange([...selectedVideos, ...validVideos].slice(0, 1));
-      toast({
-        title: "Video added",
-        description: "Video added to your post"
-      });
+      
+      if (selectedVideos.length > 0) {
+        toast({
+          title: "Video limit reached",
+          description: "You can only attach one video per post",
+          variant: "destructive"
+        });
+      } else if (validVideos.length > 0) {
+        onVideosChange([validVideos[0]]);
+        toast({
+          title: "Video added",
+          description: "Video added to your post"
+        });
+      }
+    }
+    // Reset the input
+    if (e.target) {
+      e.target.value = '';
     }
   };
 
   const removeImage = (index: number) => {
     onImagesChange(selectedImages.filter((_, i) => i !== index));
+    toast({
+      title: "Image removed",
+      description: "Image removed from your post"
+    });
   };
 
   const removeVideo = (index: number) => {
     onVideosChange(selectedVideos.filter((_, i) => i !== index));
+    toast({
+      title: "Video removed",
+      description: "Video removed from your post"
+    });
   };
 
   return (
@@ -87,6 +124,7 @@ const MediaUpload = ({
           imageInputRef.current?.click();
         }}
         className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
+        disabled={selectedImages.length >= 4}
       >
         <Image className="w-5 h-5" />
       </Button>
@@ -108,6 +146,7 @@ const MediaUpload = ({
           videoInputRef.current?.click();
         }}
         className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
+        disabled={selectedVideos.length >= 1}
       >
         <Video className="w-5 h-5" />
       </Button>
@@ -122,6 +161,7 @@ const MediaUpload = ({
                 className="w-full h-32 object-cover rounded-lg transition-all duration-300 group-hover:scale-105"
               />
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => removeImage(index)}
@@ -144,6 +184,7 @@ const MediaUpload = ({
                 controls
               />
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => removeVideo(index)}

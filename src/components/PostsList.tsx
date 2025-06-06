@@ -12,6 +12,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Post } from "@/hooks/usePosts";
 import { useAuth } from "@/contexts/AuthContext";
 import RepliesSection from "./RepliesSection";
+import ReportPostDialog from "./ReportPostDialog";
 
 interface PostsListProps {
   posts: Post[];
@@ -84,6 +85,19 @@ const PostsList = ({ posts, onLike, onRetweet, onPin, onDelete }: PostsListProps
                           <Trash2 className="w-4 h-4 mr-2" />
                           Delete Post
                         </DropdownMenuItem>
+                      )}
+                      {user && post.user_id !== user.id && (
+                        <ReportPostDialog 
+                          postId={post.id}
+                          trigger={
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                              <span className="text-red-600 dark:text-red-400 flex items-center">
+                                <span className="w-4 h-4 mr-2">🚩</span>
+                                Report Post
+                              </span>
+                            </DropdownMenuItem>
+                          }
+                        />
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
