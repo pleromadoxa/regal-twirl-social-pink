@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -168,8 +169,8 @@ export const usePosts = () => {
         description: "Your post has been published successfully."
       });
 
-      // Refresh posts
-      fetchPosts();
+      // Immediately refresh posts to show the new post
+      await fetchPosts();
     } catch (error) {
       console.error('Error in createPost:', error);
       toast({
@@ -205,7 +206,7 @@ export const usePosts = () => {
         description: "Your post has been deleted successfully."
       });
 
-      // Remove post from local state
+      // Remove post from local state immediately
       setPosts(posts.filter(p => p.id !== postId));
     } catch (error) {
       console.error('Error in deletePost:', error);
@@ -238,7 +239,7 @@ export const usePosts = () => {
           .insert([{ user_id: user.id, post_id: postId }]);
       }
 
-      // Update local state
+      // Update local state immediately
       setPosts(posts.map(p => 
         p.id === postId 
           ? { 
@@ -274,7 +275,7 @@ export const usePosts = () => {
           .insert([{ user_id: user.id, post_id: postId }]);
       }
 
-      // Update local state
+      // Update local state immediately
       setPosts(posts.map(p => 
         p.id === postId 
           ? { 
@@ -330,7 +331,7 @@ export const usePosts = () => {
         });
       }
 
-      // Update local state
+      // Update local state immediately
       setPosts(posts.map(p => 
         p.id === postId 
           ? { ...p, user_pinned: !p.user_pinned }
@@ -353,158 +354,10 @@ export const usePosts = () => {
   return {
     posts,
     loading,
-    createPost: async (content: string) => {
-      if (!user) {
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to create a post",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      try {
-        const { error } = await supabase
-          .from('posts')
-          .insert([
-            {
-              user_id: user.id,
-              content: content.trim(),
-            }
-          ]);
-
-        if (error) {
-          console.error('Error creating post:', error);
-          toast({
-            title: "Error creating post",
-            description: error.message,
-            variant: "destructive"
-          });
-          return;
-        }
-
-        toast({
-          title: "Post created!",
-          description: "Your post has been published successfully."
-        });
-
-        // Refresh posts
-        fetchPosts();
-      } catch (error) {
-        console.error('Error in createPost:', error);
-        toast({
-          title: "Something went wrong",
-          description: "Please try again later.",
-          variant: "destructive"
-        });
-      }
-    },
-    deletePost: async (postId: string) => {
-      if (!user) return;
-
-      try {
-        const { error } = await supabase
-          .from('posts')
-          .delete()
-          .eq('id', postId)
-          .eq('user_id', user.id); // Ensure users can only delete their own posts
-
-        if (error) {
-          console.error('Error deleting post:', error);
-          toast({
-            title: "Error deleting post",
-            description: error.message,
-            variant: "destructive"
-          });
-          return;
-        }
-
-        toast({
-          title: "Post deleted",
-          description: "Your post has been deleted successfully."
-        });
-
-        // Remove post from local state
-        setPosts(posts.filter(p => p.id !== postId));
-      } catch (error) {
-        console.error('Error in deletePost:', error);
-        toast({
-          title: "Something went wrong",
-          description: "Please try again later.",
-          variant: "destructive"
-        });
-      }
-    },
-    toggleLike: async (postId: string) => {
-      if (!user) return;
-
-      const post = posts.find(p => p.id === postId);
-      if (!post) return;
-
-      try {
-        if (post.user_liked) {
-          // Unlike
-          await supabase
-            .from('likes')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('post_id', postId);
-        } else {
-          // Like
-          await supabase
-            .from('likes')
-            .insert([{ user_id: user.id, post_id: postId }]);
-        }
-
-        // Update local state
-        setPosts(posts.map(p => 
-          p.id === postId 
-            ? { 
-                ...p, 
-                user_liked: !p.user_liked,
-                likes_count: p.user_liked ? p.likes_count - 1 : p.likes_count + 1
-              }
-            : p
-        ));
-      } catch (error) {
-        console.error('Error toggling like:', error);
-      }
-    },
-    toggleRetweet: async (postId: string) => {
-      if (!user) return;
-
-      const post = posts.find(p => p.id === postId);
-      if (!post) return;
-
-      try {
-        if (post.user_retweeted) {
-          // Un-retweet
-          await supabase
-            .from('retweets')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('post_id', postId);
-        } else {
-          // Retweet
-          await supabase
-            .from('retweets')
-            .insert([{ user_id: user.id, post_id: postId }]);
-        }
-
-        // Update local state
-        setPosts(posts.map(p => 
-          p.id === postId 
-            ? { 
-                ...p, 
-                user_retweeted: !p.user_retweeted,
-                retweets_count: p.user_retweeted ? p.retweets_count - 1 : p.retweets_count + 1
-              }
-            : p
-        ));
-      } catch (error) {
-        console.error('Error toggling retweet:', error);
-      }
-    },
+    createPost,
+    deletePost,
+    toggleLike,
+    toggleRetweet,
     togglePin,
     refetch: fetchPosts
   };
