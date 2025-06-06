@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -125,44 +126,44 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
   const setupSignalingChannel = () => {
     const channel = supabase.channel(`video-call-${conversationId}-${Date.now()}`);
     
-    channel.on('broadcast', {
-      event: 'offer',
-      payload: {
-        conversation_id: conversationId,
-        from: user?.id,
-        to: otherUserId
+    channel.on('broadcast', { event: 'offer' }, async (payload) => {
+      const { offer, from } = payload.payload;
+      if (from !== user?.id && peerConnectionRef.current) {
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peerConnectionRef.current.createAnswer();
+        await peerConnectionRef.current.setLocalDescription(answer);
+        
+        channel.send({
+          type: 'broadcast',
+          event: 'answer',
+          payload: {
+            answer,
+            conversation_id: conversationId,
+            from: user?.id,
+            to: from
+          }
+        });
       }
-    }, async (payload) => {
-      const offer = payload.payload.offer;
-      await peerConnectionRef.current?.setRemoteDescription(offer);
-      
-      const answer = await peerConnectionRef.current?.createAnswer();
-      await peerConnectionRef.current?.setLocalDescription(answer);
-      
-      signalingChannelRef.current.send({
-        type: 'broadcast',
-        event: 'answer',
-        payload: {
-          answer,
-          conversation_id: conversationId,
-          from: user?.id,
-          to: otherUserId
-        }
-      });
     });
 
-    channel.on('broadcast', {
-      event: 'ice-candidate',
-      payload: {
-        candidate: null,
-        conversation_id: conversationId,
-        from: user?.id,
-        to: otherUserId
+    channel.on('broadcast', { event: 'answer' }, async (payload) => {
+      const { answer, from } = payload.payload;
+      if (from !== user?.id && peerConnectionRef.current) {
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
       }
-    }, (payload) => {
-      const candidate = payload.payload.candidate;
-      if (candidate) {
-        peerConnectionRef.current?.addIceCandidate(candidate);
+    });
+
+    channel.on('broadcast', { event: 'ice-candidate' }, async (payload) => {
+      const { candidate, from } = payload.payload;
+      if (from !== user?.id && peerConnectionRef.current) {
+        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    });
+
+    channel.on('broadcast', { event: 'call-end' }, (payload) => {
+      const { from } = payload.payload;
+      if (from !== user?.id) {
+        handleEndCall();
       }
     });
 
@@ -371,7 +372,15 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
             <Button
               variant={isAudioEnabled ? "default" : "destructive"}
               size="lg"
-              onClick={toggleAudio}
+              onClick={() => {
+                if (localStreamRef.current) {
+                  const audioTrack = localStreamRef.current.getAudioTracks()[0];
+                  if (audioTrack) {
+                    audioTrack.enabled = !isAudioEnabled;
+                    setIsAudioEnabled(!isAudioEnabled);
+                  }
+                }
+              }}
               className="rounded-full w-14 h-14 p-0"
             >
               {isAudioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
@@ -380,7 +389,15 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
             <Button
               variant={isVideoEnabled ? "default" : "destructive"}
               size="lg"
-              onClick={toggleVideo}
+              onClick={() => {
+                if (localStreamRef.current) {
+                  const videoTrack = localStreamRef.current.getVideoTracks()[0];
+                  if (videoTrack) {
+                    videoTrack.enabled = !isVideoEnabled;
+                    setIsVideoEnabled(!isVideoEnabled);
+                  }
+                }
+              }}
               className="rounded-full w-14 h-14 p-0"
             >
               {isVideoEnabled ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
@@ -389,7 +406,41 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
             <Button
               variant={isScreenSharing ? "secondary" : "outline"}
               size="lg"
-              onClick={toggleScreenShare}
+              onClick={async () => {
+                try {
+                  if (!isScreenSharing) {
+                    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                      video: true,
+                      audio: true
+                    });
+                    
+                    if (peerConnectionRef.current && localStreamRef.current) {
+                      const sender = peerConnectionRef.current.getSenders().find(s => 
+                        s.track && s.track.kind === 'video'
+                      );
+                      
+                      if (sender) {
+                        await sender.replaceTrack(screenStream.getVideoTracks()[0]);
+                      }
+                    }
+                    
+                    setIsScreenSharing(true);
+                    
+                    screenStream.getVideoTracks()[0].addEventListener('ended', () => {
+                      setIsScreenSharing(false);
+                    });
+                  } else {
+                    setIsScreenSharing(false);
+                  }
+                } catch (error) {
+                  console.error('Error toggling screen share:', error);
+                  toast({
+                    title: "Screen share error",
+                    description: "Could not start screen sharing",
+                    variant: "destructive"
+                  });
+                }
+              }}
               className="rounded-full w-14 h-14 p-0"
             >
               {isScreenSharing ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
