@@ -147,12 +147,12 @@ const AudioCall = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-50 flex flex-col items-center justify-center">
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-[9999] flex flex-col items-center justify-center" style={{ zIndex: 9999 }}>
       {/* Remote audio element */}
       <audio ref={remoteAudioRef} autoPlay />
       
       {/* Call interface */}
-      <div className="text-center text-white space-y-8">
+      <div className="text-center text-white space-y-8 relative z-[10000]">
         {/* User avatar */}
         <div className="relative">
           <Avatar className="w-32 h-32 mx-auto border-4 border-white/20">
@@ -214,7 +214,7 @@ const AudioCall = ({
       </div>
 
       {/* Call status indicator */}
-      <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
+      <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[10000]">
         <div className="flex items-center space-x-2 text-white/75">
           <div className={`w-2 h-2 rounded-full ${
             callStatus === 'connected' ? 'bg-green-400' :
