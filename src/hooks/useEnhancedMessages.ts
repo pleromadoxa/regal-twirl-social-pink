@@ -112,16 +112,21 @@ export const useEnhancedMessages = () => {
     if (!user) return;
 
     try {
-      // Get conversation details
+      // Get conversation details first
       const { data: conversation } = await supabase
         .from('conversations')
         .select('*')
         .eq('id', conversationId)
         .single();
 
-      if (!conversation) return;
+      if (!conversation) {
+        console.error('Conversation not found:', conversationId);
+        return;
+      }
 
-      // Get messages between the participants
+      console.log('Fetching messages for conversation:', conversation);
+
+      // Get messages between the participants using proper filtering
       const { data: messagesData, error } = await supabase
         .from('messages')
         .select(`
@@ -191,7 +196,14 @@ export const useEnhancedMessages = () => {
           recipient_id: recipientId,
           content: content.trim()
         })
-        .select()
+        .select(`
+          *,
+          sender_profile:profiles!messages_sender_id_fkey(
+            username,
+            display_name,
+            avatar_url
+          )
+        `)
         .single();
 
       if (error) {
@@ -216,13 +228,22 @@ export const useEnhancedMessages = () => {
         console.error('Error updating conversation:', updateError);
       }
 
+      // Immediately add the message to the local state for instant feedback
+      const formattedMessage = {
+        ...messageData,
+        sender_profile: Array.isArray(messageData.sender_profile) 
+          ? messageData.sender_profile[0] 
+          : messageData.sender_profile
+      };
+      
+      setMessages(prev => [...prev, formattedMessage]);
+
       toast({
         title: "Message sent",
         description: "Your message has been sent successfully."
       });
 
-      // Refresh messages and conversations
-      await fetchMessages(conversationId);
+      // Refresh conversations to update last message
       await fetchConversations();
     } catch (error) {
       console.error('Error in sendMessage:', error);

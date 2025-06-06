@@ -5,8 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Phone, Video, Info, Smile, Paperclip } from 'lucide-react';
+import { Send, Phone, Video, Info, Smile, Paperclip, Image, File } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import MediaUpload from '@/components/MediaUpload';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -16,6 +17,9 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
+  const [showAttachments, setShowAttachments] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { messages, conversations, sendMessage } = useEnhancedMessages();
@@ -31,12 +35,20 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !conversation || isSending) return;
+    if ((!newMessage.trim() && selectedImages.length === 0 && selectedVideos.length === 0) || !conversation || isSending) return;
 
     setIsSending(true);
     try {
-      await sendMessage(conversationId, newMessage);
-      setNewMessage('');
+      // For now, just send the text message. File uploads would need additional backend support
+      if (newMessage.trim()) {
+        await sendMessage(conversationId, newMessage);
+        setNewMessage('');
+      }
+      
+      // Clear attachments after sending
+      setSelectedImages([]);
+      setSelectedVideos([]);
+      setShowAttachments(false);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -178,10 +190,27 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Attachments Preview */}
+      {showAttachments && (
+        <div className="border-t border-purple-200 dark:border-purple-800 p-4 bg-white/60 dark:bg-slate-800/60">
+          <MediaUpload
+            selectedImages={selectedImages}
+            selectedVideos={selectedVideos}
+            onImagesChange={setSelectedImages}
+            onVideosChange={setSelectedVideos}
+          />
+        </div>
+      )}
+
       {/* Message Input */}
       <div className="sticky bottom-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-t border-purple-200 dark:border-purple-800 p-4">
         <div className="flex items-end space-x-3">
-          <Button variant="ghost" size="sm" className="rounded-full">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="rounded-full"
+            onClick={() => setShowAttachments(!showAttachments)}
+          >
             <Paperclip className="w-4 h-4" />
           </Button>
           <div className="flex-1 relative">
@@ -203,7 +232,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           </div>
           <Button
             onClick={handleSendMessage}
-            disabled={!newMessage.trim() || isSending}
+            disabled={(!newMessage.trim() && selectedImages.length === 0 && selectedVideos.length === 0) || isSending}
             className="rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 w-10 h-10 p-0"
           >
             <Send className="w-4 h-4" />
