@@ -40,7 +40,10 @@ export const useEnhancedMessages = () => {
   const [typingUsers, setTypingUsers] = useState<{ [key: string]: boolean }>({});
 
   const clearCache = useCallback(() => {
-    supabase.removeChannel('*');
+    const channels = supabase.getChannels();
+    channels.forEach(channel => {
+      supabase.removeChannel(channel);
+    });
   }, []);
 
   const refetch = useCallback(async () => {
@@ -76,11 +79,11 @@ export const useEnhancedMessages = () => {
 
       if (conversationData) {
         // Process conversations to add other_user info
-        const processedConversations = conversationData.map(conv => ({
+        const processedConversations: Conversation[] = conversationData.map(conv => ({
           ...conv,
           other_user: conv.participant_1 === user.id 
-            ? conv.participant_2_profile 
-            : conv.participant_1_profile,
+            ? (conv.participant_2_profile as UserProfile) 
+            : (conv.participant_1_profile as UserProfile),
           last_message: null,
           streak_count: 0
         }));
@@ -100,7 +103,7 @@ export const useEnhancedMessages = () => {
               avatar_url
             )
           `)
-          .or(`and(sender_id.eq.${user.id},recipient_id.in.(${selectedConversation})),and(sender_id.in.(${selectedConversation}),recipient_id.eq.${user.id})`)
+          .or(`and(sender_id.eq.${user.id},recipient_id.eq.${selectedConversation}),and(sender_id.eq.${selectedConversation},recipient_id.eq.${user.id})`)
           .order('created_at', { ascending: true });
 
         if (messageError) {
@@ -109,7 +112,7 @@ export const useEnhancedMessages = () => {
         }
 
         if (messageData) {
-          setMessages(messageData);
+          setMessages(messageData as Message[]);
         }
       }
     } finally {
@@ -174,7 +177,7 @@ export const useEnhancedMessages = () => {
       }
 
       if (newMessage) {
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
+        setMessages((prevMessages) => [...prevMessages, newMessage as Message]);
       }
     } catch (error) {
       console.error("Error sending message:", error);

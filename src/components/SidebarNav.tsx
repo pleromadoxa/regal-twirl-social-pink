@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import ThemeToggle from "./ThemeToggle";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import BusinessPageDialog from "./BusinessPageDialog";
 import PremiumDialog from "./PremiumDialog";
 import { useTheme } from "@/contexts/ThemeContext";
