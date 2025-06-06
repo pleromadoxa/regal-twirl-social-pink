@@ -1,11 +1,10 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Phone, Video, Info, Smile, Paperclip } from 'lucide-react';
+import { Send, Phone, Video, Info, Smile, Paperclip, Zap } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import MediaUpload from '@/components/MediaUpload';
 
@@ -126,14 +125,12 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
                 <h2 className="font-semibold text-slate-900 dark:text-slate-100">
                   {conversation.other_user?.display_name || conversation.other_user?.username || 'Unknown User'}
                 </h2>
-                {conversation.streak_count && conversation.streak_count > 0 && (
-                  <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/20 px-2 py-1 rounded-full">
-                    <span className="text-yellow-600 dark:text-yellow-400 text-xs">⚡</span>
-                    <span className="text-yellow-700 dark:text-yellow-300 text-xs font-medium">
-                      {conversation.streak_count}
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/20 px-2 py-1 rounded-full">
+                  <Zap className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
+                  <span className="text-yellow-700 dark:text-yellow-300 text-xs font-medium">
+                    {conversation.streak_count || 0}
+                  </span>
+                </div>
               </div>
               <p className="text-sm text-slate-500">
                 {isOtherUserTyping ? 'Typing...' : 'Online'}

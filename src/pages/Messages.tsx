@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav from "@/components/SidebarNav";
-import { MessageCircle, Users, Search, Settings, Archive } from "lucide-react";
+import { MessageCircle, Users, Search, Settings, Archive, Zap } from "lucide-react";
 import { useEnhancedMessages } from "@/hooks/useEnhancedMessages";
 import ConversationStarter from "@/components/ConversationStarter";
 import MessageThread from "@/components/MessageThread";
@@ -144,14 +144,12 @@ const Messages = () => {
                                 <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
                                   {conversation.other_user?.display_name || conversation.other_user?.username || 'Unknown User'}
                                 </h3>
-                                {conversation.streak_count && conversation.streak_count > 0 && (
-                                  <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/20 px-2 py-1 rounded-full">
-                                    <span className="text-yellow-600 dark:text-yellow-400 text-xs">⚡</span>
-                                    <span className="text-yellow-700 dark:text-yellow-300 text-xs font-medium">
-                                      {conversation.streak_count}
-                                    </span>
-                                  </div>
-                                )}
+                                <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/20 px-2 py-1 rounded-full">
+                                  <Zap className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
+                                  <span className="text-yellow-700 dark:text-yellow-300 text-xs font-medium">
+                                    {conversation.streak_count || 0}
+                                  </span>
+                                </div>
                               </div>
                               <span className="text-xs text-slate-500">
                                 {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}
