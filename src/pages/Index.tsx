@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
-import AIPostComposer from "@/components/AIPostComposer";
+import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import HomeFeedNav from "@/components/HomeFeedNav";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -98,7 +98,7 @@ const Index = () => {
         {/* Scrollable Content */}
         <ScrollArea className="flex-1">
           <div>
-            {feedFilter === 'all' && <AIPostComposer />}
+            {feedFilter === 'all' && <TweetComposer />}
             
             <div className="border-t border-purple-200 dark:border-purple-800">
               {postsLoading ? (
