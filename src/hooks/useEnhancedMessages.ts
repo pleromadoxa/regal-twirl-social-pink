@@ -76,7 +76,7 @@ export const useEnhancedMessages = () => {
             .from('messages')
             .select(`
               *,
-              sender_profile:profiles!messages_sender_id_fkey(
+              profiles!messages_sender_id_fkey(
                 username,
                 display_name,
                 avatar_url
@@ -92,9 +92,9 @@ export const useEnhancedMessages = () => {
             other_user: profileData,
             last_message: lastMessageData ? {
               ...lastMessageData,
-              sender_profile: Array.isArray(lastMessageData.sender_profile) 
-                ? lastMessageData.sender_profile[0] 
-                : lastMessageData.sender_profile
+              sender_profile: Array.isArray(lastMessageData.profiles) 
+                ? lastMessageData.profiles[0] 
+                : lastMessageData.profiles
             } : undefined
           };
         })
@@ -126,12 +126,12 @@ export const useEnhancedMessages = () => {
 
       console.log('Fetching messages for conversation:', conversation);
 
-      // Get messages between the participants using proper filtering
+      // Get messages between the participants using proper foreign key reference
       const { data: messagesData, error } = await supabase
         .from('messages')
         .select(`
           *,
-          sender_profile:profiles!messages_sender_id_fkey(
+          profiles!messages_sender_id_fkey(
             username,
             display_name,
             avatar_url
@@ -147,7 +147,7 @@ export const useEnhancedMessages = () => {
 
       const formattedMessages = messagesData?.map(msg => ({
         ...msg,
-        sender_profile: Array.isArray(msg.sender_profile) ? msg.sender_profile[0] : msg.sender_profile
+        sender_profile: Array.isArray(msg.profiles) ? msg.profiles[0] : msg.profiles
       })) || [];
 
       console.log('Fetched messages for conversation:', conversationId, formattedMessages);
@@ -157,7 +157,7 @@ export const useEnhancedMessages = () => {
     }
   };
 
-  const sendMessage = async (conversationId: string, content: string) => {
+  const sendMessage = async (conversationId: string, content: string, attachments?: { images: File[], videos: File[] }) => {
     if (!user) {
       toast({
         title: "Authentication required",
@@ -167,10 +167,10 @@ export const useEnhancedMessages = () => {
       return;
     }
 
-    if (!content.trim()) {
+    if (!content.trim() && (!attachments || (attachments.images.length === 0 && attachments.videos.length === 0))) {
       toast({
         title: "Message cannot be empty",
-        description: "Please enter a message before sending",
+        description: "Please enter a message or attach files before sending",
         variant: "destructive"
       });
       return;
@@ -198,7 +198,7 @@ export const useEnhancedMessages = () => {
         })
         .select(`
           *,
-          sender_profile:profiles!messages_sender_id_fkey(
+          profiles!messages_sender_id_fkey(
             username,
             display_name,
             avatar_url
@@ -231,9 +231,9 @@ export const useEnhancedMessages = () => {
       // Immediately add the message to the local state for instant feedback
       const formattedMessage = {
         ...messageData,
-        sender_profile: Array.isArray(messageData.sender_profile) 
-          ? messageData.sender_profile[0] 
-          : messageData.sender_profile
+        sender_profile: Array.isArray(messageData.profiles) 
+          ? messageData.profiles[0] 
+          : messageData.profiles
       };
       
       setMessages(prev => [...prev, formattedMessage]);
@@ -440,7 +440,7 @@ export const useEnhancedMessages = () => {
             
             // Check if this message is for the current user with proper type checking
             if (payload.new && typeof payload.new === 'object' && 'sender_id' in payload.new && 'recipient_id' in payload.new) {
-              const newMessage = payload.new as any;
+              const newMessage = payload.new as { sender_id: string; recipient_id: string };
               if (newMessage.sender_id === user.id || newMessage.recipient_id === user.id) {
                 if (selectedConversation) {
                   fetchMessages(selectedConversation);
