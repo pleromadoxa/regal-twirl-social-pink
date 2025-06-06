@@ -8,6 +8,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { MessageCircle, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ActiveChatBar = () => {
   const { user } = useAuth();
@@ -21,6 +24,7 @@ const ActiveChatBar = () => {
     messages 
   } = useEnhancedMessages();
   
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [characters, setCharacters] = useState<Character[]>([
     { emoji: "💬", name: "Messages", online: false },
     { emoji: "👤", name: "Recent", online: true, backgroundColor: "bg-blue-300", gradientColors: "#93c5fd, #dbeafe" },
@@ -139,21 +143,82 @@ const ActiveChatBar = () => {
 
   return (
     <TooltipProvider>
-      <MessageDock 
-        characters={characters}
-        onMessageSend={handleMessageSend}
-        onCharacterSelect={handleCharacterSelect}
-        onDockToggle={handleDockToggle}
-        expandedWidth={400}
-        position="bottom"
-        placeholder={(name) => `Send a message to ${name}...`}
-        theme="light"
-        enableAnimations={true}
-        closeOnSend={false}
-        autoFocus={true}
-        className="fixed bottom-6 right-6 left-auto -translate-x-0"
-        showTooltips={true}
-      />
+      <div className="fixed bottom-6 right-6 z-50">
+        {/* Toggle Button */}
+        <AnimatePresence>
+          {isCollapsed && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setIsCollapsed(false)}
+                    className="rounded-full w-14 h-14 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
+                  >
+                    <MessageCircle className="w-6 h-6" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>Open Chat</p>
+                </TooltipContent>
+              </Tooltip>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Chat Dock */}
+        <AnimatePresence>
+          {!isCollapsed && (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="relative"
+            >
+              {/* Close Button */}
+              <div className="absolute -top-2 -right-2 z-10">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => setIsCollapsed(true)}
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full w-8 h-8 bg-white/90 hover:bg-white shadow-md"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p>Close Chat</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+
+              {/* MessageDock Component */}
+              <MessageDock 
+                characters={characters}
+                onMessageSend={handleMessageSend}
+                onCharacterSelect={handleCharacterSelect}
+                onDockToggle={handleDockToggle}
+                expandedWidth={400}
+                position="bottom"
+                placeholder={(name) => `Send a message to ${name}...`}
+                theme="light"
+                enableAnimations={true}
+                closeOnSend={false}
+                autoFocus={true}
+                className="static transform-none translate-x-0"
+                showTooltips={true}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </TooltipProvider>
   );
 };
