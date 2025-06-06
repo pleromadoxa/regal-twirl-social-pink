@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, Phone, Video, MoreVertical } from 'lucide-react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { formatDistanceToNow } from 'date-fns';
+import { WavyMessage } from '@/components/ui/wavy-message';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -136,16 +137,10 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
                   </Avatar>
                 )}
                 
-                <div className={`max-w-xs lg:max-w-md ${isOwn ? 'order-1' : ''}`}>
-                  <div
-                    className={`px-4 py-2 rounded-2xl ${
-                      isOwn
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white'
-                    }`}
-                  >
-                    <p className="text-sm">{message.content}</p>
-                  </div>
+                <div className={`${isOwn ? 'order-1' : ''}`}>
+                  <WavyMessage isOwn={isOwn}>
+                    {message.content}
+                  </WavyMessage>
                   <p className={`text-xs text-slate-500 dark:text-slate-400 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
                     {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                     {isOwn && message.read_at && (

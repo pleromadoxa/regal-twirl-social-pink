@@ -77,7 +77,7 @@ const Auth = () => {
       waveOpacity={0.5}
       className="flex items-center justify-center"
     >
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-lg">
         {/* Centered Logo */}
         <div className="flex justify-center mb-8">
           <img 
