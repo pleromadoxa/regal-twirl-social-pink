@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -296,7 +295,7 @@ const EnhancedAudioCall = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-50 flex flex-col items-center justify-center" style={{ zIndex: 9999999 }}>
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-50 flex flex-col items-center justify-center" style={{ zIndex: 99999999 }}>
       {/* Remote audio element */}
       <audio ref={remoteAudioRef} autoPlay />
       
@@ -363,7 +362,7 @@ const EnhancedAudioCall = ({
       </div>
 
       {/* Call status indicator */}
-      <div className="absolute top-8 left-1/2 transform -translate-x-1/2" style={{ zIndex: 10000000 }}>
+      <div className="absolute top-8 left-1/2 transform -translate-x-1/2" style={{ zIndex: 100000000 }}>
         <div className="flex items-center space-x-2 text-white/75">
           <div className={`w-2 h-2 rounded-full ${
             callStatus === 'connected' ? 'bg-green-400' :
