@@ -3,7 +3,19 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav from "@/components/SidebarNav";
-import { MessageCircle, Users, Search, Settings, Archive, Zap } from "lucide-react";
+import { 
+  MessageCircle, 
+  Users, 
+  Search, 
+  Settings, 
+  Archive, 
+  Zap,
+  MoreVertical,
+  Bell,
+  Shield,
+  Trash2,
+  Download
+} from "lucide-react";
 import { useEnhancedMessages } from "@/hooks/useEnhancedMessages";
 import ConversationStarter from "@/components/ConversationStarter";
 import MessageThread from "@/components/MessageThread";
@@ -12,6 +24,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 
 const Messages = () => {
@@ -55,6 +74,23 @@ const Messages = () => {
     );
   });
 
+  const handleSettingsAction = (action: string) => {
+    switch (action) {
+      case 'notifications':
+        console.log('Open notification settings');
+        break;
+      case 'privacy':
+        console.log('Open privacy settings');
+        break;
+      case 'export':
+        console.log('Export chat history');
+        break;
+      case 'clear':
+        console.log('Clear chat history');
+        break;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
@@ -70,9 +106,35 @@ const Messages = () => {
                 Messages
               </h1>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" className="rounded-full">
-                  <Settings className="w-4 h-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="rounded-full">
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleSettingsAction('notifications')}>
+                      <Bell className="w-4 h-4 mr-2" />
+                      Notification Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleSettingsAction('privacy')}>
+                      <Shield className="w-4 h-4 mr-2" />
+                      Privacy Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleSettingsAction('export')}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export Chat History
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleSettingsAction('clear')}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Clear All Chats
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 

@@ -5,7 +5,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Phone, Video, Info, Smile, Paperclip, Zap, Settings } from 'lucide-react';
+import { 
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuSeparator
+} from '@/components/ui/context-menu';
+import { Send, Phone, Video, Info, Paperclip, Zap, Settings, Copy, Reply, Forward, Delete, Pin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import MediaUpload from '@/components/MediaUpload';
 import EmojiPicker from '@/components/EmojiPicker';
@@ -21,7 +28,6 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
   const [selectedDocuments, setSelectedDocuments] = useState<File[]>([]);
   const [showAttachments, setShowAttachments] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const { user } = useAuth();
@@ -88,7 +94,29 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
 
   const handleEmojiSelect = (emoji: string) => {
     setNewMessage(prev => prev + emoji);
-    setShowEmojiPicker(false);
+  };
+
+  const handleMessageAction = (action: string, messageId: string, messageContent: string) => {
+    switch (action) {
+      case 'copy':
+        navigator.clipboard.writeText(messageContent);
+        break;
+      case 'reply':
+        setNewMessage(`@${conversation?.other_user?.username} `);
+        break;
+      case 'forward':
+        // Implement forward functionality
+        console.log('Forward message:', messageId);
+        break;
+      case 'delete':
+        // Implement delete functionality
+        console.log('Delete message:', messageId);
+        break;
+      case 'pin':
+        // Implement pin functionality
+        console.log('Pin message:', messageId);
+        break;
+    }
   };
 
   if (!conversation) {
@@ -110,11 +138,20 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const otherUserId = conversation.participant_1 === user?.id ? conversation.participant_2 : conversation.participant_1;
   const isOtherUserTyping = typingUsers[otherUserId];
 
-  // Filter messages for this conversation
-  const conversationMessages = messages.filter(msg => 
-    (msg.sender_id === conversation.participant_1 && msg.recipient_id === conversation.participant_2) ||
-    (msg.sender_id === conversation.participant_2 && msg.recipient_id === conversation.participant_1)
-  );
+  // Fix: Filter messages correctly for this conversation
+  const conversationMessages = messages.filter(msg => {
+    const participant1 = conversation.participant_1;
+    const participant2 = conversation.participant_2;
+    
+    return (
+      (msg.sender_id === participant1 && msg.recipient_id === participant2) ||
+      (msg.sender_id === participant2 && msg.recipient_id === participant1)
+    );
+  });
+
+  console.log('Conversation:', conversation);
+  console.log('All messages:', messages);
+  console.log('Filtered messages for conversation:', conversationMessages);
 
   return (
     <div className="flex flex-col h-full">
@@ -155,9 +192,28 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
             <Button variant="ghost" size="sm" className="rounded-full">
               <Video className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="rounded-full">
-              <Settings className="w-4 h-4" />
-            </Button>
+            <ContextMenu>
+              <ContextMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="rounded-full">
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                <ContextMenuItem>
+                  <Info className="w-4 h-4 mr-2" />
+                  Conversation Info
+                </ContextMenuItem>
+                <ContextMenuItem>
+                  <Pin className="w-4 h-4 mr-2" />
+                  Pin Conversation
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem className="text-red-600">
+                  <Delete className="w-4 h-4 mr-2" />
+                  Delete Conversation
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
             <Button variant="ghost" size="sm" className="rounded-full">
               <Info className="w-4 h-4" />
             </Button>
@@ -173,39 +229,72 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
             const showAvatar = index === 0 || conversationMessages[index - 1]?.sender_id !== message.sender_id;
 
             return (
-              <div
-                key={message.id}
-                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} ${
-                  showAvatar ? 'mt-4' : 'mt-1'
-                }`}
-              >
-                <div className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${
-                  isOwnMessage ? 'flex-row-reverse space-x-reverse' : ''
-                }`}>
-                  {showAvatar && !isOwnMessage && (
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={message.sender_profile?.avatar_url || "/placeholder.svg"} />
-                      <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
-                        {(message.sender_profile?.display_name || message.sender_profile?.username || 'U')[0].toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
+              <ContextMenu key={message.id}>
+                <ContextMenuTrigger asChild>
                   <div
-                    className={`px-4 py-2 rounded-2xl shadow-sm ${
-                      isOwnMessage
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-md'
-                        : 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-bl-md border border-purple-200 dark:border-purple-700'
+                    className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} ${
+                      showAvatar ? 'mt-4' : 'mt-1'
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
-                    <p className={`text-xs mt-1 ${
-                      isOwnMessage ? 'text-purple-100' : 'text-slate-500'
+                    <div className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${
+                      isOwnMessage ? 'flex-row-reverse space-x-reverse' : ''
                     }`}>
-                      {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                    </p>
+                      {showAvatar && !isOwnMessage && (
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={message.sender_profile?.avatar_url || "/placeholder.svg"} />
+                          <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
+                            {(message.sender_profile?.display_name || message.sender_profile?.username || 'U')[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div
+                        className={`px-4 py-2 rounded-2xl shadow-sm ${
+                          isOwnMessage
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-md'
+                            : 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-bl-md border border-purple-200 dark:border-purple-700'
+                        }`}
+                      >
+                        <p className="text-sm">{message.content}</p>
+                        <p className={`text-xs mt-1 ${
+                          isOwnMessage ? 'text-purple-100' : 'text-slate-500'
+                        }`}>
+                          {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => handleMessageAction('copy', message.id, message.content)}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Message
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleMessageAction('reply', message.id, message.content)}>
+                    <Reply className="w-4 h-4 mr-2" />
+                    Reply
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleMessageAction('forward', message.id, message.content)}>
+                    <Forward className="w-4 h-4 mr-2" />
+                    Forward
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleMessageAction('pin', message.id, message.content)}>
+                    <Pin className="w-4 h-4 mr-2" />
+                    Pin Message
+                  </ContextMenuItem>
+                  {isOwnMessage && (
+                    <>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem 
+                        onClick={() => handleMessageAction('delete', message.id, message.content)}
+                        className="text-red-600"
+                      >
+                        <Delete className="w-4 h-4 mr-2" />
+                        Delete Message
+                      </ContextMenuItem>
+                    </>
+                  )}
+                </ContextMenuContent>
+              </ContextMenu>
             );
           })
         ) : (
