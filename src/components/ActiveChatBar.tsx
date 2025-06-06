@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageDock, Character } from '@/components/ui/message-dock';
@@ -144,7 +145,7 @@ const ActiveChatBar = () => {
 
   return (
     <TooltipProvider>
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-6 right-6 z-40">
         {/* Toggle Button */}
         <AnimatePresence>
           {isCollapsed && (
@@ -179,10 +180,10 @@ const ActiveChatBar = () => {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.8, opacity: 0, y: 20 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="relative"
+              className="relative z-40"
             >
               {/* Close Button */}
-              <div className="absolute -top-2 -right-2 z-10">
+              <div className="absolute -top-2 -right-2 z-50">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -213,7 +214,7 @@ const ActiveChatBar = () => {
                 enableAnimations={true}
                 closeOnSend={false}
                 autoFocus={true}
-                className="static transform-none translate-x-0"
+                className="static transform-none translate-x-0 z-40"
                 showTooltips={true}
               />
             </motion.div>
