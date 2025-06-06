@@ -1,21 +1,101 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import SidebarNav from "@/components/SidebarNav";
 import UserSearch from "@/components/UserSearch";
 import TrendingWidget from "@/components/TrendingWidget";
-import { Search, Compass, TrendingUp } from "lucide-react";
+import ProfessionalUsersWidget from "@/components/ProfessionalUsersWidget";
+import { Search, Compass, TrendingUp, Users, Crown } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useVerifiedStatus } from "@/hooks/useVerifiedStatus";
+
+interface User {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string;
+  followers_count: number;
+  is_verified: boolean;
+  bio: string;
+}
 
 const Explore = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    fetchSuggestedUsers();
+  }, [user]);
+
+  const fetchSuggestedUsers = async () => {
+    if (!user) return;
+
+    try {
+      setLoadingUsers(true);
+      // Fetch users that the current user is not following, ordered by followers count
+      const { data: users, error } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, followers_count, is_verified, bio')
+        .neq('id', user.id)
+        .order('followers_count', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+
+      // Filter out users already being followed
+      const { data: following } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', user.id);
+
+      const followingIds = following?.map(f => f.following_id) || [];
+      const filteredUsers = users?.filter(u => !followingIds.includes(u.id)) || [];
+
+      setSuggestedUsers(filteredUsers);
+    } catch (error) {
+      console.error('Error fetching suggested users:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleHashtagClick = (hashtag: string) => {
+    // Navigate to search with hashtag
+    navigate(`/explore?search=${encodeURIComponent(hashtag)}`);
+  };
+
+  const handleFollowUser = async (userId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('follows')
+        .insert({
+          follower_id: user.id,
+          following_id: userId
+        });
+
+      if (error) throw error;
+
+      // Remove user from suggested list
+      setSuggestedUsers(prev => prev.filter(u => u.id !== userId));
+    } catch (error) {
+      console.error('Error following user:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -52,46 +132,99 @@ const Explore = () => {
                   <TrendingUp className="w-6 h-6 text-purple-600" />
                   What's Trending
                 </h2>
-                <div className="space-y-4">
-                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">#TechNews</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">25.2K posts</p>
-                  </div>
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl">
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">#AI</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">18.7K posts</p>
-                  </div>
-                  <div className="p-4 bg-gradient-to-r from-pink-50 to-red-50 dark:from-pink-900/20 dark:to-red-900/20 rounded-xl">
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">#Innovation</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">12.3K posts</p>
-                  </div>
-                </div>
+                <TrendingWidget onHashtagClick={handleHashtagClick} />
               </div>
 
               {/* Suggested Users */}
-              <div className="bg-white/80 dark:bg-slate-800/80 rounded-2xl p-6 border border-purple-200 dark:border-purple-700">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                  <Compass className="w-6 h-6 text-purple-600" />
-                  Discover People
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                  Find interesting people to follow and expand your network.
-                </p>
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-8 h-8 text-purple-400" />
-                  </div>
-                  <p className="text-slate-500 dark:text-slate-400">
-                    Use the search above to find users
-                  </p>
-                </div>
-              </div>
+              <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Users className="w-6 h-6 text-purple-600" />
+                    Who to Follow
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingUsers ? (
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="flex items-center space-x-3 animate-pulse">
+                          <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                            <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : suggestedUsers.length > 0 ? (
+                    <div className="space-y-4">
+                      {suggestedUsers.map((suggestedUser) => {
+                        const isVerified = useVerifiedStatus(suggestedUser);
+                        return (
+                          <div key={suggestedUser.id} className="flex items-center justify-between p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors">
+                            <div className="flex items-center space-x-3 flex-1 cursor-pointer" onClick={() => navigate(`/profile/${suggestedUser.id}`)}>
+                              <Avatar className="w-12 h-12">
+                                <AvatarImage src={suggestedUser.avatar_url || undefined} />
+                                <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white">
+                                  {suggestedUser.display_name?.[0] || suggestedUser.username?.[0] || 'U'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                                    {suggestedUser.display_name || suggestedUser.username}
+                                  </p>
+                                  {isVerified && (
+                                    <Badge variant="verified" className="flex items-center gap-1">
+                                      <Crown className="w-3 h-3" />
+                                      Verified
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                  @{suggestedUser.username}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-500">
+                                  {suggestedUser.followers_count} followers
+                                </p>
+                                {suggestedUser.bio && (
+                                  <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-1">
+                                    {suggestedUser.bio}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => handleFollowUser(suggestedUser.id)}
+                              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl"
+                            >
+                              Follow
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Users className="w-8 h-8 text-purple-400" />
+                      </div>
+                      <p className="text-slate-500 dark:text-slate-400">
+                        No new users to follow
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Professional Accounts */}
+              <ProfessionalUsersWidget />
             </div>
           </div>
         </main>
 
         <aside className="w-80 p-6">
-          <TrendingWidget onHashtagClick={() => {}} />
+          <TrendingWidget onHashtagClick={handleHashtagClick} />
         </aside>
       </div>
     </div>

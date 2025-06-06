@@ -71,7 +71,7 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
           {trends.map((trend, index) => (
             <div 
               key={index} 
-              className="hover:bg-slate-50 dark:hover:bg-slate-700 p-4 rounded-xl cursor-pointer transition-all duration-200"
+              className="hover:bg-slate-50 dark:hover:bg-slate-700 p-4 rounded-xl cursor-pointer transition-all duration-200 group"
               onClick={() => handleTrendClick(trend.topic)}
             >
               <div className="flex items-start justify-between">
@@ -82,7 +82,7 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
                     </Badge>
                     <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold">{trend.growth}</span>
                   </div>
-                  <p className="font-semibold text-slate-900 dark:text-slate-100 text-lg">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100 text-lg group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                     {trend.topic}
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{trend.tweets} Posts</p>

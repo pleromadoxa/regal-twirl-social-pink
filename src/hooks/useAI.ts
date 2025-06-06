@@ -112,9 +112,145 @@ export const useAI = () => {
     }
   };
 
+  const generateHashtags = async (content: string) => {
+    if (!user) return null;
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('generate-ai-content', {
+        body: { 
+          prompt: `Generate 5-8 relevant hashtags for this post: "${content}"`,
+          type: 'hashtags'
+        }
+      });
+
+      if (error) throw error;
+
+      await supabase
+        .from('ai_generations')
+        .insert({
+          user_id: user.id,
+          generation_type: 'hashtags',
+          prompt: content,
+          result: data.generatedText
+        });
+
+      return data.generatedText;
+    } catch (error) {
+      console.error('Error generating hashtags:', error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const translateContent = async (content: string, targetLanguage: string) => {
+    if (!user) return null;
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('generate-ai-content', {
+        body: { 
+          prompt: `Translate this text to ${targetLanguage}: "${content}"`,
+          type: 'translation'
+        }
+      });
+
+      if (error) throw error;
+
+      await supabase
+        .from('ai_generations')
+        .insert({
+          user_id: user.id,
+          generation_type: 'translation',
+          prompt: `${content} -> ${targetLanguage}`,
+          result: data.generatedText
+        });
+
+      return data.generatedText;
+    } catch (error) {
+      console.error('Error translating content:', error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const summarizeContent = async (content: string) => {
+    if (!user) return null;
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('generate-ai-content', {
+        body: { 
+          prompt: `Summarize this content in 2-3 sentences: "${content}"`,
+          type: 'summary'
+        }
+      });
+
+      if (error) throw error;
+
+      await supabase
+        .from('ai_generations')
+        .insert({
+          user_id: user.id,
+          generation_type: 'summary',
+          prompt: content,
+          result: data.generatedText
+        });
+
+      return data.generatedText;
+    } catch (error) {
+      console.error('Error summarizing content:', error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateResponseSuggestions = async (originalPost: string) => {
+    if (!user) return null;
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('generate-ai-content', {
+        body: { 
+          prompt: `Generate 3 different response suggestions for this post: "${originalPost}"`,
+          type: 'response_suggestions'
+        }
+      });
+
+      if (error) throw error;
+
+      await supabase
+        .from('ai_generations')
+        .insert({
+          user_id: user.id,
+          generation_type: 'response_suggestions',
+          prompt: originalPost,
+          result: data.generatedText
+        });
+
+      return data.generatedText;
+    } catch (error) {
+      console.error('Error generating response suggestions:', error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     generateCaption,
     enhanceContent,
+    generateHashtags,
+    translateContent,
+    summarizeContent,
+    generateResponseSuggestions,
     loading
   };
 };
