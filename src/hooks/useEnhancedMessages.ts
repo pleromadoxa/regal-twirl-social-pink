@@ -40,7 +40,8 @@ export const useEnhancedMessages = () => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
-  const channelsRef = useRef<{ [key: string]: any }>({});
+  const conversationsChannelRef = useRef<any>(null);
+  const messagesChannelRef = useRef<any>(null);
 
   const fetchConversations = async () => {
     if (!user) return;
@@ -278,79 +279,133 @@ export const useEnhancedMessages = () => {
     }
   };
 
-  // Clean up realtime subscriptions
+  // Clean up function for channels
   const cleanupChannels = () => {
-    Object.values(channelsRef.current).forEach(channel => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-    });
-    channelsRef.current = {};
+    console.log('Cleaning up channels...');
+    
+    if (conversationsChannelRef.current) {
+      console.log('Removing conversations channel');
+      supabase.removeChannel(conversationsChannelRef.current);
+      conversationsChannelRef.current = null;
+    }
+    
+    if (messagesChannelRef.current) {
+      console.log('Removing messages channel');
+      supabase.removeChannel(messagesChannelRef.current);
+      messagesChannelRef.current = null;
+    }
   };
 
-  // Set up realtime subscriptions
+  // Set up realtime subscriptions for conversations
   useEffect(() => {
     if (!user) {
       cleanupChannels();
       return;
     }
 
-    // Clean up existing channels first
+    // Clean up any existing channels
     cleanupChannels();
 
-    // Create unique channel names to avoid conflicts
+    console.log('Setting up conversations channel for user:', user.id);
+
+    // Create conversations channel
     const conversationChannelName = `conversations-${user.id}-${Date.now()}`;
-    const messagesChannelName = `messages-${user.id}-${Date.now()}`;
-
-    const conversationsChannel = supabase
-      .channel(conversationChannelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'conversations'
-        },
-        () => {
-          fetchConversations();
-        }
-      )
-      .subscribe();
-
-    const messagesChannel = supabase
-      .channel(messagesChannelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages'
-        },
-        () => {
-          if (selectedConversation) {
-            fetchMessages(selectedConversation);
+    
+    try {
+      const conversationsChannel = supabase
+        .channel(conversationChannelName)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'conversations'
+          },
+          (payload) => {
+            console.log('Conversations change detected:', payload);
+            fetchConversations();
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe((status) => {
+          console.log('Conversations channel status:', status);
+        });
 
-    // Store channels with their names as keys
-    channelsRef.current[conversationChannelName] = conversationsChannel;
-    channelsRef.current[messagesChannelName] = messagesChannel;
+      conversationsChannelRef.current = conversationsChannel;
+    } catch (error) {
+      console.error('Error setting up conversations channel:', error);
+    }
 
     return cleanupChannels;
-  }, [user]); // Remove selectedConversation from dependencies to avoid recreating channels
+  }, [user?.id]); // Only depend on user.id
 
-  // Separate effect for handling selectedConversation changes
+  // Set up realtime subscriptions for messages
   useEffect(() => {
-    if (selectedConversation) {
+    if (!user) {
+      if (messagesChannelRef.current) {
+        supabase.removeChannel(messagesChannelRef.current);
+        messagesChannelRef.current = null;
+      }
+      return;
+    }
+
+    // Clean up existing messages channel
+    if (messagesChannelRef.current) {
+      supabase.removeChannel(messagesChannelRef.current);
+      messagesChannelRef.current = null;
+    }
+
+    console.log('Setting up messages channel for user:', user.id);
+
+    // Create messages channel
+    const messagesChannelName = `messages-${user.id}-${Date.now()}`;
+    
+    try {
+      const messagesChannel = supabase
+        .channel(messagesChannelName)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages'
+          },
+          (payload) => {
+            console.log('New message detected:', payload);
+            if (selectedConversation) {
+              fetchMessages(selectedConversation);
+            }
+            fetchConversations(); // Refresh to update last message
+          }
+        )
+        .subscribe((status) => {
+          console.log('Messages channel status:', status);
+        });
+
+      messagesChannelRef.current = messagesChannel;
+    } catch (error) {
+      console.error('Error setting up messages channel:', error);
+    }
+
+    return () => {
+      if (messagesChannelRef.current) {
+        supabase.removeChannel(messagesChannelRef.current);
+        messagesChannelRef.current = null;
+      }
+    };
+  }, [user?.id]); // Only depend on user.id
+
+  // Handle selectedConversation changes
+  useEffect(() => {
+    if (selectedConversation && user) {
+      console.log('Fetching messages for conversation:', selectedConversation);
       fetchMessages(selectedConversation);
     }
   }, [selectedConversation, user]);
 
-  // Initial fetch effect
+  // Initial fetch
   useEffect(() => {
     if (user) {
+      console.log('Initial fetch for user:', user.id);
       fetchConversations();
     }
   }, [user]);
