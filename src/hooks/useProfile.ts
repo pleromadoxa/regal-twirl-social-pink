@@ -17,6 +17,7 @@ export interface Profile {
   following_count: number;
   posts_count: number;
   is_verified: boolean;
+  premium_tier: string | null;
   created_at: string;
 }
 

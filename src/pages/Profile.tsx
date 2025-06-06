@@ -111,10 +111,10 @@ const Profile = () => {
                   </div>
                 </div>
               </div>
-              {profile.premium_tier !== 'free' && (
+              {profile.premium_tier && profile.premium_tier !== 'free' && (
                 <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white">
                   <Crown className="w-3 h-3 mr-1" />
-                  {profile.premium_tier?.toUpperCase()}
+                  {profile.premium_tier.toUpperCase()}
                 </Badge>
               )}
             </div>
@@ -316,7 +316,7 @@ const Profile = () => {
                         Verified
                       </Badge>
                     )}
-                    {profile.premium_tier !== 'free' && (
+                    {profile.premium_tier && profile.premium_tier !== 'free' && (
                       <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white">
                         <Crown className="w-3 h-3 mr-1" />
                         Premium
