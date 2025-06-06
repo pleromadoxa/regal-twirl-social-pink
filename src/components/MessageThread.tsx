@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Phone, Video, MoreVertical } from 'lucide-react';
+import { Send, Phone, Video, MoreVertical, History } from 'lucide-react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { formatDistanceToNow } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import CallHistoryDialog from '@/components/CallHistoryDialog';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -22,7 +24,8 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     conversations,
     activeCall,
     setActiveCall,
-    typingUsers
+    typingUsers,
+    refetch
   } = useEnhancedMessages();
 
   const [newMessage, setNewMessage] = useState('');
@@ -41,6 +44,46 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Real-time messaging setup
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const currentConversation = conversations.find(c => c.id === conversationId);
+    if (!currentConversation) return;
+
+    const otherUserId = currentConversation.participant_1 === supabase.auth.getUser().then(({ data }) => data.user?.id) 
+      ? currentConversation.participant_2 
+      : currentConversation.participant_1;
+
+    // Subscribe to real-time messages
+    const messagesChannel = supabase
+      .channel(`messages-${conversationId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `or(and(sender_id.eq.${supabase.auth.getUser().then(({ data }) => data.user?.id)},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${supabase.auth.getUser().then(({ data }) => data.user?.id)}))`
+      }, () => {
+        console.log('New message received, refreshing...');
+        refetch();
+      })
+      .subscribe();
+
+    // Subscribe to typing indicators
+    const typingChannel = supabase
+      .channel(`typing-${conversationId}`)
+      .on('presence', { event: 'sync' }, () => {
+        const state = typingChannel.presenceState();
+        console.log('Typing state updated:', state);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(typingChannel);
+    };
+  }, [conversationId, conversations, refetch]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,6 +158,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           >
             <Video className="w-5 h-5" />
           </Button>
+          <CallHistoryDialog />
           <Button
             variant="ghost"
             size="icon"
