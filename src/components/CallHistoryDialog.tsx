@@ -35,6 +35,12 @@ const CallHistoryDialog = () => {
       <PhoneIncoming className="w-4 h-4 text-blue-500" />;
   };
 
+  const getCallTypeIcon = (callType: string) => {
+    return callType === 'video' ? 
+      <Video className="w-4 h-4 text-blue-500" /> : 
+      <Phone className="w-4 h-4 text-green-500" />;
+  };
+
   const getCallStatusBadge = (status: string) => {
     const statusConfig = {
       completed: { color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400', label: 'Completed' },
@@ -107,6 +113,7 @@ const CallHistoryDialog = () => {
                           <h3 className="font-medium text-slate-900 dark:text-slate-100 truncate">
                             {otherUser?.display_name || otherUser?.username || 'Unknown User'}
                           </h3>
+                          {getCallTypeIcon(call.call_type)}
                         </div>
                         {getCallStatusBadge(call.call_status)}
                       </div>
