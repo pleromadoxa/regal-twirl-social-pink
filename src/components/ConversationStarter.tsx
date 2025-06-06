@@ -16,6 +16,12 @@ const ConversationStarter = () => {
     setOpen(false);
   };
 
+  const handleCreateGroup = async (groupName: string, participantIds: string[]) => {
+    await createGroupConversation(participantIds, groupName);
+    setOpen(false);
+    return groupName;
+  };
+
   return (
     <div className="flex items-center gap-2">
       <Dialog open={open} onOpenChange={setOpen}>
@@ -42,7 +48,7 @@ const ConversationStarter = () => {
       </Dialog>
 
       <GroupCreationDialog
-        onCreateGroup={createGroupConversation}
+        onCreateGroup={handleCreateGroup}
         trigger={
           <Button variant="outline" size="sm" className="rounded-full">
             <Users className="w-4 h-4" />

@@ -54,7 +54,11 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const { toast } = useToast();
   const { playRinging, stopRinging, playEndCall, playConnect } = useCallSounds();
 
-  const conversation = conversations.find(c => c.id === conversationId);
+  // Find conversation by looking for the other user
+  const conversation = conversations.find(c => 
+    c.other_user?.id === conversationId || 
+    (c.participant_1 === conversationId || c.participant_2 === conversationId)
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -66,7 +70,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
 
   // Enhanced call notification listener with better error handling
   useEffect(() => {
-    if (!user || !conversation) return;
+    if (!user || !conversationId) return;
 
     console.log('Setting up call notifications for conversation:', conversationId);
 
@@ -153,15 +157,11 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   }, [user, conversationId, conversation, playRinging, stopRinging, toast]);
 
   const handleSendMessage = async () => {
-    if ((!newMessage.trim() && selectedImages.length === 0 && selectedVideos.length === 0 && selectedDocuments.length === 0) || !conversation || isSending) return;
+    if ((!newMessage.trim() && selectedImages.length === 0 && selectedVideos.length === 0 && selectedDocuments.length === 0) || !conversationId || isSending) return;
 
     setIsSending(true);
     try {
-      await sendMessage(conversationId, newMessage, {
-        images: selectedImages,
-        videos: selectedVideos,
-        documents: selectedDocuments
-      });
+      await sendMessage(conversationId, newMessage);
       setNewMessage('');
       setSelectedImages([]);
       setSelectedVideos([]);
@@ -285,7 +285,6 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           await supabase.from('call_history').insert({
             caller_id: user.id,
             recipient_id: conversation.other_user!.id,
-            conversation_id: conversationId,
             call_type: callType,
             call_status: 'initiated',
             duration_seconds: 0,
@@ -359,7 +358,6 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
         await supabase.from('call_history').insert({
           caller_id: incomingCall.callerId,
           recipient_id: user.id,
-          conversation_id: conversationId,
           call_type: incomingCall.callType,
           call_status: 'declined',
           duration_seconds: 0,
@@ -427,25 +425,19 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   }
 
   // Check if other user is typing
-  const otherUserId = conversation.participant_1 === user?.id ? conversation.participant_2 : conversation.participant_1;
-  const isOtherUserTyping = typingUsers[otherUserId];
+  const isOtherUserTyping = typingUsers[conversationId];
 
-  // Filter messages for this conversation with better debugging
+  // Filter messages for this conversation with the other user
   const conversationMessages = messages.filter(msg => {
-    const participant1 = conversation.participant_1;
-    const participant2 = conversation.participant_2;
-    
-    const belongsToConversation = (
-      (msg.sender_id === participant1 && msg.recipient_id === participant2) ||
-      (msg.sender_id === participant2 && msg.recipient_id === participant1)
+    return (
+      (msg.sender_id === user?.id && msg.recipient_id === conversationId) ||
+      (msg.sender_id === conversationId && msg.recipient_id === user?.id)
     );
-    
-    return belongsToConversation;
   });
 
   console.log('MessageThread Debug Info:', {
     conversationId,
-    participants: [conversation.participant_1, conversation.participant_2],
+    otherUserId: conversationId,
     totalMessages: messages.length,
     filteredMessages: conversationMessages.length,
     messagesPreview: conversationMessages.slice(-3).map(m => ({ id: m.id, content: m.content.substring(0, 50) }))
