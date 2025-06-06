@@ -55,7 +55,8 @@ const ReportPostDialog = ({ postId, trigger }: ReportPostDialogProps) => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      // Use type assertion to work around TypeScript issues until types are regenerated
+      const { error } = await (supabase as any)
         .from('post_reports')
         .insert({
           post_id: postId,
