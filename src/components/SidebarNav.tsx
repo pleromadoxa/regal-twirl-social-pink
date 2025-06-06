@@ -1,3 +1,4 @@
+
 import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
@@ -48,12 +49,11 @@ const SidebarNav = () => {
       {/* Logo */}
       <div className="px-3 py-6 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-xl">R</span>
-          </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Regal
-          </h1>
+          <img 
+            src="/lovable-uploads/630c36d5-5341-4bdf-bab8-ba3bd2bdc8b6.png"
+            alt="Regal Network" 
+            className="h-12 w-auto"
+          />
         </div>
         <ThemeToggle />
       </div>
