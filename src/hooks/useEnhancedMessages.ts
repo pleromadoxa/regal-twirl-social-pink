@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -418,13 +417,15 @@ export const useEnhancedMessages = () => {
           (payload) => {
             console.log('Message change detected:', payload);
             
-            // Check if this message is for the current user
-            const newMessage = payload.new;
-            if (newMessage && (newMessage.sender_id === user.id || newMessage.recipient_id === user.id)) {
-              if (selectedConversation) {
-                fetchMessages(selectedConversation);
+            // Check if this message is for the current user with proper type checking
+            if (payload.new && typeof payload.new === 'object' && 'sender_id' in payload.new && 'recipient_id' in payload.new) {
+              const newMessage = payload.new as any;
+              if (newMessage.sender_id === user.id || newMessage.recipient_id === user.id) {
+                if (selectedConversation) {
+                  fetchMessages(selectedConversation);
+                }
+                fetchConversations(); // Refresh to update last message
               }
-              fetchConversations(); // Refresh to update last message
             }
           }
         )
