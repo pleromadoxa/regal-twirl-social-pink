@@ -7,6 +7,7 @@ import RightSidebar from "@/components/RightSidebar";
 import AIPostComposer from "@/components/AIPostComposer";
 import PostsList from "@/components/PostsList";
 import HomeFeedNav from "@/components/HomeFeedNav";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePosts } from "@/hooks/usePosts";
 
 const Index = () => {
@@ -78,10 +79,11 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex h-screen">
       <SidebarNav />
       
-      <main className="flex-1 max-w-2xl mx-auto border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+      <main className="flex-1 max-w-2xl mx-auto border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl flex flex-col h-screen">
+        {/* Fixed Header */}
         <div className="sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             {getFeedTitle()}
@@ -93,37 +95,42 @@ const Index = () => {
         
         <HomeFeedNav onFilterChange={setFeedFilter} />
         
-        {feedFilter === 'all' && <AIPostComposer />}
-        
-        <div className="border-t border-purple-200 dark:border-purple-800">
-          {postsLoading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-              <p className="mt-4 text-slate-500">Loading your feed...</p>
-            </div>
-          ) : filteredPosts.length > 0 ? (
-            <PostsList 
-              posts={filteredPosts}
-              onLike={toggleLike}
-              onRetweet={toggleRetweet}
-              onPin={togglePin}
-              onDelete={deletePost}
-            />
-          ) : (
-            <div className="p-8 text-center">
-              <p className="text-slate-500 dark:text-slate-400">
-                {feedFilter === 'professional' && 'No professional posts to show yet.'}
-                {feedFilter === 'trending' && 'No trending posts at the moment.'}
-                {feedFilter === 'all' && 'No posts to show yet.'}
-              </p>
-              {feedFilter !== 'all' && (
-                <p className="text-sm text-slate-400 dark:text-slate-500 mt-2">
-                  Try switching to "All Posts" to see more content.
-                </p>
+        {/* Scrollable Content */}
+        <ScrollArea className="flex-1">
+          <div>
+            {feedFilter === 'all' && <AIPostComposer />}
+            
+            <div className="border-t border-purple-200 dark:border-purple-800">
+              {postsLoading ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                  <p className="mt-4 text-slate-500">Loading your feed...</p>
+                </div>
+              ) : filteredPosts.length > 0 ? (
+                <PostsList 
+                  posts={filteredPosts}
+                  onLike={toggleLike}
+                  onRetweet={toggleRetweet}
+                  onPin={togglePin}
+                  onDelete={deletePost}
+                />
+              ) : (
+                <div className="p-8 text-center">
+                  <p className="text-slate-500 dark:text-slate-400">
+                    {feedFilter === 'professional' && 'No professional posts to show yet.'}
+                    {feedFilter === 'trending' && 'No trending posts at the moment.'}
+                    {feedFilter === 'all' && 'No posts to show yet.'}
+                  </p>
+                  {feedFilter !== 'all' && (
+                    <p className="text-sm text-slate-400 dark:text-slate-500 mt-2">
+                      Try switching to "All Posts" to see more content.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        </ScrollArea>
       </main>
 
       <RightSidebar />
