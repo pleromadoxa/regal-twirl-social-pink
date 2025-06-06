@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { usePosts } from '@/hooks/usePosts';
 import { PostActions } from '@/components/PostActions';
+import { PostIndicators } from '@/components/PostIndicators';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVerifiedStatus } from '@/hooks/useVerifiedStatus';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +17,7 @@ interface PostsListProps {
   onRetweet?: (postId: string) => void;
   onPin?: (postId: string) => void;
   onDelete?: (postId: string) => void;
-  userId?: string; // Add userId prop
+  userId?: string;
 }
 
 export const PostsList = ({ 
@@ -42,6 +43,20 @@ export const PostsList = ({
   const onRetweet = externalOnRetweet || toggleRetweet;
   const onPin = externalOnPin || togglePin;
   const onDelete = externalOnDelete || deletePost;
+
+  // Check if post is a thread (contains multiple paragraphs or thread indicators)
+  const isThreadPost = (content: string) => {
+    return content.includes('\n\n') || content.toLowerCase().includes('thread') || content.includes('🧵');
+  };
+
+  // Check if post has audio (placeholder logic - can be enhanced)
+  const hasAudioContent = (content: string) => {
+    return content.toLowerCase().includes('🎵') || 
+           content.toLowerCase().includes('🎧') || 
+           content.toLowerCase().includes('audio') ||
+           content.toLowerCase().includes('music') ||
+           content.toLowerCase().includes('🎶');
+  };
 
   // Pre-calculate verified status for all posts to avoid calling hooks in render loop
   const getVerifiedStatus = (user: any) => {
@@ -77,10 +92,25 @@ export const PostsList = ({
     <div className="space-y-4 relative z-10">
       {posts.map((post) => {
         const isVerified = getVerifiedStatus(post.profiles);
+        const isThread = isThreadPost(post.content);
+        const hasAudio = hasAudioContent(post.content);
         
         return (
-          <Card key={post.id} className="hover:shadow-md transition-shadow relative z-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <Card 
+            key={post.id} 
+            className={`hover:shadow-md transition-shadow relative z-20 border border-slate-200 dark:border-slate-700 ${
+              isThread 
+                ? 'bg-gradient-to-br from-white/80 via-purple-50/50 to-white/80 dark:from-slate-800/80 dark:via-purple-900/20 dark:to-slate-800/80 backdrop-blur-sm' 
+                : 'bg-white dark:bg-slate-800'
+            }`}
+          >
             <CardContent className="p-6 relative z-30">
+              <PostIndicators 
+                isThread={isThread} 
+                hasAudio={hasAudio}
+                className="relative z-40"
+              />
+              
               <div className="flex items-start space-x-3">
                 <Avatar className="w-12 h-12 relative z-40">
                   <AvatarImage src={post.profiles.avatar_url} />
