@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +39,7 @@ export const useEnhancedMessages = () => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const channelsRef = useRef<any[]>([]);
 
   const fetchConversations = async () => {
     if (!user) return;
@@ -277,12 +277,23 @@ export const useEnhancedMessages = () => {
     }
   };
 
+  // Clean up realtime subscriptions
+  const cleanupChannels = () => {
+    channelsRef.current.forEach(channel => {
+      supabase.removeChannel(channel);
+    });
+    channelsRef.current = [];
+  };
+
   // Set up realtime subscriptions
   useEffect(() => {
     if (!user) return;
 
+    // Clean up existing channels first
+    cleanupChannels();
+
     const conversationsChannel = supabase
-      .channel('conversations-changes')
+      .channel(`conversations-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -297,7 +308,7 @@ export const useEnhancedMessages = () => {
       .subscribe();
 
     const messagesChannel = supabase
-      .channel('messages-changes')
+      .channel(`messages-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -313,10 +324,9 @@ export const useEnhancedMessages = () => {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(conversationsChannel);
-      supabase.removeChannel(messagesChannel);
-    };
+    channelsRef.current = [conversationsChannel, messagesChannel];
+
+    return cleanupChannels;
   }, [user, selectedConversation]);
 
   useEffect(() => {

@@ -94,6 +94,15 @@ const Auth = () => {
           {/* Left Side - Brand Information */}
           <div className="text-center lg:text-left space-y-8">
             <div className="space-y-4">
+              {/* Logo */}
+              <div className="flex justify-center lg:justify-start mb-6">
+                <img 
+                  src="/lovable-uploads/0ed82dd9-3b2e-4688-a5e8-7f5b11e8a893.png" 
+                  alt="Regal Network Logo" 
+                  className="h-20 w-auto"
+                />
+              </div>
+              
               <h1 className="text-5xl lg:text-7xl font-bold text-white tracking-tight">
                 <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Regal
