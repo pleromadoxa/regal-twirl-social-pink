@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
-import PostComposer from "@/components/PostComposer";
+import AIPostComposer from "@/components/AIPostComposer";
 import PostsList from "@/components/PostsList";
 import { usePosts } from "@/hooks/usePosts";
 
@@ -51,7 +51,7 @@ const Index = () => {
           </p>
         </div>
         
-        <PostComposer />
+        <AIPostComposer />
         
         <div className="border-t border-purple-200 dark:border-purple-800">
           {postsLoading ? (

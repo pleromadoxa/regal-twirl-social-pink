@@ -9,18 +9,16 @@ const ThemeToggle = () => {
   return (
     <Button
       variant="ghost"
-      size="sm"
+      size="icon"
       onClick={toggleTheme}
-      className="relative w-10 h-10 p-0 rounded-full hover:bg-purple-100 dark:hover:bg-purple-800 transition-all duration-500 group overflow-hidden shadow-lg border border-purple-200 dark:border-purple-700 hover:scale-110 hover:rotate-180"
+      className="relative w-10 h-10 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/20 transition-all duration-300"
     >
-      <div className="relative w-6 h-6">
-        <Sun className={`absolute inset-0 w-6 h-6 text-amber-500 transition-all duration-700 ${
-          theme === 'dark' ? 'rotate-180 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'
-        }`} />
-        <Moon className={`absolute inset-0 w-6 h-6 text-blue-600 transition-all duration-700 ${
-          theme === 'dark' ? 'rotate-0 scale-100 opacity-100' : '-rotate-180 scale-0 opacity-0'
-        }`} />
-      </div>
+      <Sun className={`h-5 w-5 transition-all duration-300 ${
+        theme === 'dark' ? 'rotate-90 scale-0' : 'rotate-0 scale-100'
+      } text-yellow-500`} />
+      <Moon className={`absolute h-5 w-5 transition-all duration-300 ${
+        theme === 'dark' ? 'rotate-0 scale-100' : '-rotate-90 scale-0'
+      } text-purple-300`} />
       <span className="sr-only">Toggle theme</span>
     </Button>
   );

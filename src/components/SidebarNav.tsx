@@ -1,10 +1,11 @@
 
-import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp } from "lucide-react";
+import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import BusinessPageDialog from "./BusinessPageDialog";
+import PremiumDialog from "./PremiumDialog";
 
 const SidebarNav = () => {
   const { user, signOut } = useAuth();
@@ -17,7 +18,6 @@ const SidebarNav = () => {
     { icon: MessageCircle, label: "Messages", path: "/messages", active: location.pathname === "/messages" },
     { icon: Pin, label: "Pinned", path: "/pinned", active: location.pathname === "/pinned" },
     { icon: User, label: "Profile", path: `/profile/${user?.id}`, active: location.pathname.startsWith("/profile") },
-    { icon: Star, label: "Premium", path: "/premium", active: location.pathname === "/premium" },
   ];
 
   const handleSignOut = async () => {
@@ -26,10 +26,6 @@ const SidebarNav = () => {
   };
 
   const handleNavigation = (path: string) => {
-    if (path === "/premium") {
-      // Premium page doesn't exist yet, so we'll just return for now
-      return;
-    }
     navigate(path);
   };
 
@@ -38,7 +34,7 @@ const SidebarNav = () => {
       {/* Logo */}
       <div className="px-3 py-6 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full gradient-bg flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
             <span className="text-white font-bold text-xl">R</span>
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -74,6 +70,19 @@ const SidebarNav = () => {
             <Button className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-2xl shadow-lg transition-all duration-200 hover:scale-105">
               Create Post
             </Button>
+            
+            {/* Premium Subscription */}
+            <PremiumDialog
+              trigger={
+                <Button 
+                  variant="outline"
+                  className="w-full py-3 text-sm font-medium rounded-2xl border-amber-200 hover:bg-amber-50 text-amber-600 dark:border-amber-800 dark:hover:bg-amber-900/20 dark:text-amber-400 transition-all duration-200"
+                >
+                  <Crown className="w-4 h-4 mr-2" />
+                  Upgrade to Premium
+                </Button>
+              }
+            />
             
             {/* Professional Account Creation */}
             <BusinessPageDialog

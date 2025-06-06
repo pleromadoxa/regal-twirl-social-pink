@@ -38,7 +38,7 @@ export const useReplies = (postId: string) => {
           content,
           created_at,
           updated_at,
-          profiles!user_id (
+          profiles!replies_user_id_fkey (
             username,
             display_name,
             avatar_url
@@ -60,10 +60,10 @@ export const useReplies = (postId: string) => {
         content: reply.content,
         created_at: reply.created_at,
         updated_at: reply.updated_at,
-        profiles: {
-          username: reply.profiles?.username || 'Anonymous',
-          display_name: reply.profiles?.display_name || 'Anonymous',
-          avatar_url: reply.profiles?.avatar_url || ''
+        profiles: Array.isArray(reply.profiles) ? reply.profiles[0] : reply.profiles || {
+          username: 'Anonymous',
+          display_name: 'Anonymous',
+          avatar_url: ''
         }
       })) || [];
 

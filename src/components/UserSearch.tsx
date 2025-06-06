@@ -1,258 +1,210 @@
 
-import { useState, useEffect } from 'react';
-import { Search, UserCheck, MessageCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Search, UserPlus, UserCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFollow } from '@/hooks/useFollow';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
 
-interface SearchUser {
+interface UserResult {
   id: string;
   username: string;
   display_name: string;
   avatar_url: string;
-  bio: string;
-  followers_count: number;
   is_verified: boolean;
-  isFollowing?: boolean;
+  followers_count: number;
+  bio: string;
 }
 
 const UserSearch = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [followingStates, setFollowingStates] = useState<Record<string, boolean>>({});
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<UserResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
+  const searchRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const { followUser, unfollowUser, checkFollowStatus } = useFollow();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  const searchUsers = async (query: string) => {
-    if (query.trim().length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url, bio, followers_count, is_verified')
-        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
-        .limit(10);
-
-      if (error) {
-        console.error('Search error:', error);
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (query.length < 2) {
+        setResults([]);
+        setShowResults(false);
         return;
       }
 
-      if (user && data) {
-        // Check which users the current user follows
-        const userIds = data.map(u => u.id);
-        const { data: followsData } = await supabase
-          .from('follows')
-          .select('following_id')
-          .eq('follower_id', user.id)
-          .in('following_id', userIds);
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, is_verified, followers_count, bio')
+          .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+          .neq('id', user?.id || '')
+          .limit(8);
 
-        const followedIds = new Set(followsData?.map(f => f.following_id) || []);
-        
-        const enrichedResults = data.map(user => ({
-          ...user,
-          username: user.username || 'user',
-          display_name: user.display_name || 'Anonymous',
-          avatar_url: user.avatar_url || '',
-          bio: user.bio || '',
-          followers_count: user.followers_count || 0,
-          is_verified: user.is_verified || false,
-          isFollowing: followedIds.has(user.id)
-        }));
+        if (error) throw error;
 
-        setSearchResults(enrichedResults);
-        
-        // Initialize following states
-        const initialStates: Record<string, boolean> = {};
-        enrichedResults.forEach(u => {
-          initialStates[u.id] = u.isFollowing || false;
-        });
-        setFollowingStates(initialStates);
-      } else {
-        setSearchResults(data || []);
+        const users = data || [];
+        setResults(users);
+        setShowResults(users.length > 0);
+
+        // Check follow status for each user
+        if (user) {
+          const statusPromises = users.map(async (searchUser) => {
+            const isFollowing = await checkFollowStatus(searchUser.id);
+            return { userId: searchUser.id, isFollowing };
+          });
+
+          const statuses = await Promise.all(statusPromises);
+          const statusMap = statuses.reduce((acc, { userId, isFollowing }) => {
+            acc[userId] = isFollowing;
+            return acc;
+          }, {} as Record<string, boolean>);
+
+          setFollowingStatus(statusMap);
+        }
+      } catch (error) {
+        console.error('Error searching users:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Search error:', error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+    };
 
-  const toggleFollow = async (userId: string) => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to follow users",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const isCurrentlyFollowing = followingStates[userId];
-
-    try {
-      if (isCurrentlyFollowing) {
-        await supabase
-          .from('follows')
-          .delete()
-          .eq('follower_id', user.id)
-          .eq('following_id', userId);
-      } else {
-        await supabase
-          .from('follows')
-          .insert({ follower_id: user.id, following_id: userId });
-      }
-
-      setFollowingStates(prev => ({
-        ...prev,
-        [userId]: !isCurrentlyFollowing
-      }));
-
-      // Update the search results
-      setSearchResults(prev => prev.map(u => 
-        u.id === userId 
-          ? { 
-              ...u, 
-              followers_count: isCurrentlyFollowing ? u.followers_count - 1 : u.followers_count + 1,
-              isFollowing: !isCurrentlyFollowing
-            }
-          : u
-      ));
-
-      toast({
-        title: isCurrentlyFollowing ? "Unfollowed" : "Following",
-        description: `You are ${isCurrentlyFollowing ? 'no longer following' : 'now following'} this user`,
-      });
-    } catch (error) {
-      console.error('Error toggling follow:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update follow status",
-        variant: "destructive"
-      });
-    }
-  };
+    const debounce = setTimeout(searchUsers, 300);
+    return () => clearTimeout(debounce);
+  }, [query, user]);
 
   useEffect(() => {
-    const delayedSearch = setTimeout(() => {
-      searchUsers(searchQuery);
-    }, 300);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
 
-    return () => clearTimeout(delayedSearch);
-  }, [searchQuery]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleFollow = async (userId: string) => {
+    const isCurrentlyFollowing = followingStatus[userId];
+    
+    if (isCurrentlyFollowing) {
+      const success = await unfollowUser(userId);
+      if (success) {
+        setFollowingStatus(prev => ({ ...prev, [userId]: false }));
+      }
+    } else {
+      const success = await followUser(userId);
+      if (success) {
+        setFollowingStatus(prev => ({ ...prev, [userId]: true }));
+      }
+    }
+  };
+
+  const handleUserClick = (userId: string) => {
+    navigate(`/profile/${userId}`);
+    setShowResults(false);
+    setQuery('');
+  };
 
   return (
-    <div className="space-y-4">
+    <div ref={searchRef} className="relative">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input
-          placeholder="Search users by name or username..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-12 h-12 rounded-2xl border-purple-200 focus:border-purple-500 bg-white/50 backdrop-blur-sm"
+          type="text"
+          placeholder="Search users..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setShowResults(results.length > 0)}
+          className="pl-10 bg-slate-100 dark:bg-slate-800 border-0 rounded-full focus:ring-2 focus:ring-purple-500 transition-all"
         />
-        {isSearching && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
-          </div>
-        )}
       </div>
 
-      {searchResults.length > 0 && (
-        <div className="space-y-3 animate-slide-up">
-          {searchResults.map((searchUser) => (
-            <Card key={searchUser.id} className="p-4 hover:shadow-lg transition-all duration-200 border-purple-100 hover:border-purple-300">
-              <div className="flex items-center justify-between">
-                <div 
-                  className="flex items-center gap-3 flex-1 cursor-pointer"
-                  onClick={() => navigate(`/profile/${searchUser.id}`)}
+      {showResults && (
+        <div className="absolute top-full mt-2 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 max-h-96 overflow-y-auto">
+          {loading ? (
+            <div className="p-4 text-center text-slate-500">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+            </div>
+          ) : results.length > 0 ? (
+            <div className="p-2">
+              {results.map((userResult) => (
+                <div
+                  key={userResult.id}
+                  className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors"
                 >
-                  {searchUser.avatar_url ? (
-                    <img
-                      src={searchUser.avatar_url}
-                      alt={searchUser.display_name}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">
-                        {(searchUser.display_name || searchUser.username || 'U')[0].toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">
-                        {searchUser.display_name || searchUser.username}
-                      </h3>
-                      {searchUser.is_verified && (
-                        <span className="text-blue-500">✓</span>
+                  <div 
+                    className="flex items-center space-x-3 flex-1 cursor-pointer"
+                    onClick={() => handleUserClick(userResult.id)}
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={userResult.avatar_url || "/placeholder.svg"} />
+                      <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                        {userResult.display_name?.[0]?.toUpperCase() || userResult.username?.[0]?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-1">
+                        <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          {userResult.display_name || userResult.username}
+                        </p>
+                        {userResult.is_verified && (
+                          <Badge className="bg-blue-500 text-white text-xs px-1 py-0">✓</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-500 truncate">@{userResult.username}</p>
+                      {userResult.bio && (
+                        <p className="text-xs text-slate-400 truncate mt-1">{userResult.bio}</p>
                       )}
-                    </div>
-                    <p className="text-sm text-slate-500">@{searchUser.username}</p>
-                    {searchUser.bio && (
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">
-                        {searchUser.bio}
+                      <p className="text-xs text-slate-400">
+                        {userResult.followers_count || 0} followers
                       </p>
-                    )}
-                    <p className="text-xs text-slate-500 mt-1">
-                      {searchUser.followers_count} followers
-                    </p>
+                    </div>
                   </div>
-                </div>
-                
-                {user && user.id !== searchUser.id && (
-                  <div className="flex gap-2">
+                  
+                  {user && user.id !== userResult.id && (
                     <Button
-                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFollow(userResult.id);
+                      }}
+                      variant={followingStatus[userResult.id] ? "outline" : "default"}
                       size="sm"
-                      onClick={() => navigate(`/messages?user=${searchUser.id}`)}
-                      className="rounded-xl"
+                      className={
+                        followingStatus[userResult.id]
+                          ? "border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                          : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      }
                     >
-                      <MessageCircle className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      onClick={() => toggleFollow(searchUser.id)}
-                      variant={followingStates[searchUser.id] ? "secondary" : "default"}
-                      size="sm"
-                      className={`rounded-xl min-w-20 ${
-                        followingStates[searchUser.id] 
-                          ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' 
-                          : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
-                      }`}
-                    >
-                      {followingStates[searchUser.id] ? (
+                      {followingStatus[userResult.id] ? (
                         <>
                           <UserCheck className="w-4 h-4 mr-1" />
                           Following
                         </>
                       ) : (
-                        'Follow'
+                        <>
+                          <UserPlus className="w-4 h-4 mr-1" />
+                          Follow
+                        </>
                       )}
                     </Button>
-                  </div>
-                )}
-              </div>
-            </Card>
-          ))}
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 text-center text-slate-500">
+              No users found
+            </div>
+          )}
         </div>
-      )}
-
-      {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
-        <Card className="p-8 text-center border-purple-100">
-          <Search className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-          <p className="text-slate-500">No users found for "{searchQuery}"</p>
-        </Card>
       )}
     </div>
   );

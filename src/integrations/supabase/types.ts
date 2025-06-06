@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_generations: {
+        Row: {
+          created_at: string
+          generation_type: string
+          id: string
+          prompt: string
+          result: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          generation_type: string
+          id?: string
+          prompt: string
+          result: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          generation_type?: string
+          id?: string
+          prompt?: string
+          result?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       business_page_follows: {
         Row: {
           created_at: string
@@ -296,8 +323,37 @@ export type Database = {
         }
         Relationships: []
       }
+      premium_features: {
+        Row: {
+          created_at: string
+          feature_description: string | null
+          feature_name: string
+          id: string
+          is_active: boolean | null
+          tier: string
+        }
+        Insert: {
+          created_at?: string
+          feature_description?: string | null
+          feature_name: string
+          id?: string
+          is_active?: boolean | null
+          tier: string
+        }
+        Update: {
+          created_at?: string
+          feature_description?: string | null
+          feature_name?: string
+          id?: string
+          is_active?: boolean | null
+          tier?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          ai_generations_limit: number | null
+          ai_generations_used: number | null
           avatar_url: string | null
           banner_url: string | null
           bio: string | null
@@ -309,11 +365,14 @@ export type Database = {
           is_verified: boolean | null
           location: string | null
           posts_count: number | null
+          premium_tier: string | null
           updated_at: string | null
           username: string | null
           website: string | null
         }
         Insert: {
+          ai_generations_limit?: number | null
+          ai_generations_used?: number | null
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
@@ -325,11 +384,14 @@ export type Database = {
           is_verified?: boolean | null
           location?: string | null
           posts_count?: number | null
+          premium_tier?: string | null
           updated_at?: string | null
           username?: string | null
           website?: string | null
         }
         Update: {
+          ai_generations_limit?: number | null
+          ai_generations_used?: number | null
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
@@ -341,6 +403,7 @@ export type Database = {
           is_verified?: boolean | null
           location?: string | null
           posts_count?: number | null
+          premium_tier?: string | null
           updated_at?: string | null
           username?: string | null
           website?: string | null
@@ -410,6 +473,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
