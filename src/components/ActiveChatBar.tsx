@@ -5,6 +5,9 @@ import { MessageDock, Character } from '@/components/ui/message-dock';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const ActiveChatBar = () => {
   const { user } = useAuth();
@@ -39,7 +42,9 @@ const ActiveChatBar = () => {
           online: true,
           backgroundColor: ["bg-blue-300", "bg-purple-300", "bg-pink-300"][index] || "bg-gray-300",
           gradientColors: ["#93c5fd, #dbeafe", "#c084fc, #f3e8ff", "#f9a8d4, #fce7f3"][index] || "#d1d5db, #f3f4f6",
-          avatar: conv.other_user?.avatar_url
+          avatar: conv.other_user?.avatar_url,
+          username: conv.other_user?.username,
+          displayName: conv.other_user?.display_name
         })),
         { emoji: "📋", name: "Menu", online: false },
       ];
@@ -89,6 +94,13 @@ const ActiveChatBar = () => {
               navigate('/messages');
             }
             break;
+          case "Menu":
+            // Show menu options for messages page
+            toast({
+              title: "Messages Menu",
+              description: "New group, Settings, Help & Support available",
+            });
+            break;
           default:
             toast({
               title: "Feature coming soon",
@@ -126,20 +138,23 @@ const ActiveChatBar = () => {
   }
 
   return (
-    <MessageDock 
-      characters={characters}
-      onMessageSend={handleMessageSend}
-      onCharacterSelect={handleCharacterSelect}
-      onDockToggle={handleDockToggle}
-      expandedWidth={400}
-      position="bottom"
-      placeholder={(name) => `Send a message to ${name}...`}
-      theme="light"
-      enableAnimations={true}
-      closeOnSend={false}
-      autoFocus={true}
-      className="fixed bottom-6 right-6 left-auto -translate-x-0"
-    />
+    <TooltipProvider>
+      <MessageDock 
+        characters={characters}
+        onMessageSend={handleMessageSend}
+        onCharacterSelect={handleCharacterSelect}
+        onDockToggle={handleDockToggle}
+        expandedWidth={400}
+        position="bottom"
+        placeholder={(name) => `Send a message to ${name}...`}
+        theme="light"
+        enableAnimations={true}
+        closeOnSend={false}
+        autoFocus={true}
+        className="fixed bottom-6 right-6 left-auto -translate-x-0"
+        showTooltips={true}
+      />
+    </TooltipProvider>
   );
 };
 

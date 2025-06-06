@@ -4,6 +4,9 @@
 import { cn } from "@/lib/utils";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export interface Character {
   id?: string | number;
@@ -15,6 +18,8 @@ export interface Character {
   gradientTo?: string;
   gradientColors?: string;
   avatar?: string; // Optional image URL
+  username?: string;
+  displayName?: string;
 }
 
 export interface MessageDockProps {
@@ -32,6 +37,7 @@ export interface MessageDockProps {
   position?: "bottom" | "top";
   showSparkleButton?: boolean;
   showMenuButton?: boolean;
+  showTooltips?: boolean;
   
   // Animation settings
   enableAnimations?: boolean;
@@ -102,6 +108,7 @@ export function MessageDock({
   position = "bottom",
   showSparkleButton = true,
   showMenuButton = true,
+  showTooltips = false,
   enableAnimations = true,
   animationDuration = 1,
   placeholder = (name: string) => `Message ${name}...`,
@@ -220,6 +227,103 @@ export function MessageDock({
     ? "fixed top-6 left-1/2 -translate-x-1/2 z-50"
     : "fixed bottom-6 left-1/2 -translate-x-1/2 z-50";
 
+  const renderCharacterButton = (character: Character, actualIndex: number, index: number) => {
+    const isSelected = expandedCharacter === actualIndex;
+    const buttonContent = (
+      <motion.button
+        className={cn(
+          "relative w-10 h-10 rounded-full flex items-center justify-center text-xl cursor-pointer overflow-hidden",
+          isSelected && isExpanded
+            ? "bg-white/90"
+            : character.backgroundColor
+        )}
+        onClick={() => handleCharacterClick(actualIndex)}
+        whileHover={!isExpanded ? hoverAnimation : { scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        aria-label={`Message ${character.name}`}
+      >
+        {character.avatar ? (
+          <Avatar className="w-full h-full">
+            <AvatarImage src={character.avatar} alt={character.name} />
+            <AvatarFallback className="text-sm">
+              {character.displayName?.[0] || character.username?.[0] || character.emoji}
+            </AvatarFallback>
+          </Avatar>
+        ) : (
+          <span className="text-2xl">{character.emoji}</span>
+        )}
+
+        {/* Online indicator */}
+        {character.online && (
+          <motion.div
+            className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"
+            initial={{ scale: 0 }}
+            animate={{ scale: isExpanded && !isSelected ? 0 : 1 }}
+            transition={{
+              delay: isExpanded
+                ? isSelected
+                  ? 0.3
+                  : 0
+                : (index + 1) * 0.1 + 0.5,
+              type: "spring",
+              stiffness: 500,
+              damping: 30,
+            }}
+          />
+        )}
+      </motion.button>
+    );
+
+    if (showTooltips && character.avatar && (character.username || character.displayName)) {
+      return (
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            {buttonContent}
+          </HoverCardTrigger>
+          <HoverCardContent className="w-64" side="top">
+            <div className="flex items-center space-x-3">
+              <Avatar className="w-12 h-12">
+                <AvatarImage src={character.avatar} alt={character.name} />
+                <AvatarFallback>
+                  {character.displayName?.[0] || character.username?.[0] || character.emoji}
+                </AvatarFallback>
+              </Avatar>
+              <div className="space-y-1">
+                <h4 className="text-sm font-semibold">
+                  {character.displayName || character.name}
+                </h4>
+                {character.username && (
+                  <p className="text-sm text-muted-foreground">
+                    @{character.username}
+                  </p>
+                )}
+                {character.online && (
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-xs text-muted-foreground">Online</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </HoverCardContent>
+        </HoverCard>
+      );
+    } else if (showTooltips) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {buttonContent}
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <p>{character.name}</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return buttonContent;
+  };
+
   return (
     <motion.div
       ref={dockRef}
@@ -261,7 +365,7 @@ export function MessageDock({
               type: "spring",
               stiffness: 400,
               damping: 30,
-              delay: isExpanded ? 0 : 0, // Remove delay when coming back
+              delay: isExpanded ? 0 : 0,
             }}
           >
             <motion.button
@@ -315,7 +419,6 @@ export function MessageDock({
                   isSelected && isExpanded && "absolute left-1 top-1 z-20"
                 )}
                 style={{
-                  // When selected and expanded, don't take up space in flex layout
                   width: isSelected && isExpanded ? 0 : "auto",
                   minWidth: isSelected && isExpanded ? 0 : "auto",
                   overflow: "visible",
@@ -324,7 +427,6 @@ export function MessageDock({
                   opacity: isExpanded && !isSelected ? 0 : 1,
                   y: isExpanded && !isSelected ? 60 : 0,
                   scale: isExpanded && !isSelected ? 0.8 : 1,
-                  // Only use translateX for non-selected or non-expanded
                   x: isSelected && isExpanded ? 0 : 0,
                 }}
                 transition={{
@@ -336,42 +438,10 @@ export function MessageDock({
                       ? index * 0.05
                       : isExpanded
                       ? 0.1
-                      : 0, // Remove delay when coming back - immediate return
+                      : 0,
                 }}
               >
-                <motion.button
-                  className={cn(
-                    "relative w-10 h-10 rounded-full flex items-center justify-center text-xl cursor-pointer",
-                    isSelected && isExpanded
-                      ? "bg-white/90"
-                      : character.backgroundColor
-                  )}
-                  onClick={() => handleCharacterClick(actualIndex)}
-                  whileHover={!isExpanded ? hoverAnimation : { scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  aria-label={`Message ${character.name}`}
-                >
-                  <span className="text-2xl">{character.emoji}</span>
-
-                  {/* Online indicator */}
-                  {character.online && (
-                    <motion.div
-                      className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: isExpanded && !isSelected ? 0 : 1 }}
-                      transition={{
-                        delay: isExpanded
-                          ? isSelected
-                            ? 0.3
-                            : 0
-                          : (index + 1) * 0.1 + 0.5,
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 30,
-                      }}
-                    />
-                  )}
-                </motion.button>
+                {renderCharacterButton(character, actualIndex, index)}
               </motion.div>
             );
           })}
@@ -434,7 +504,7 @@ export function MessageDock({
               type: "spring",
               stiffness: 300,
               damping: 30,
-              delay: isExpanded ? 0 : 0, // Remove delay when coming back
+              delay: isExpanded ? 0 : 0,
             }}
           />
 
@@ -449,39 +519,46 @@ export function MessageDock({
             >
               <AnimatePresence mode="wait">
                 {!isExpanded ? (
-                <motion.button
-                  key="menu"
-                  className="w-12 h-12 flex items-center justify-center cursor-pointer"
-                  whileHover={{
-                    scale: 1.02,
-                    y: -2,
-                    transition: {
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 25,
-                    },
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                  aria-label="Menu"
-                  initial={{ opacity: 0, rotate: -90 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  exit={{ opacity: 0, rotate: 90 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className={theme === "dark" ? "text-gray-300" : "text-gray-600"}
-                  >
-                    <line x1="3" y1="6" x2="21" y2="6" />
-                    <line x1="3" y1="12" x2="21" y2="12" />
-                    <line x1="3" y1="18" x2="21" y2="18" />
-                  </svg>
-                </motion.button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <motion.button
+                      key="menu"
+                      className="w-12 h-12 flex items-center justify-center cursor-pointer"
+                      whileHover={{
+                        scale: 1.02,
+                        y: -2,
+                        transition: {
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 25,
+                        },
+                      }}
+                      whileTap={{ scale: 0.95 }}
+                      aria-label="Menu"
+                      initial={{ opacity: 0, rotate: -90 }}
+                      animate={{ opacity: 1, rotate: 0 }}
+                      exit={{ opacity: 0, rotate: 90 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className={theme === "dark" ? "text-gray-300" : "text-gray-600"}
+                      >
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="18" x2="21" y2="18" />
+                      </svg>
+                    </motion.button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Messages Menu</p>
+                  </TooltipContent>
+                </Tooltip>
                 ) : (
                 <motion.button
                   key="send"
