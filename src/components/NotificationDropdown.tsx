@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Bell, User, Heart, Repeat, UserCheck } from 'lucide-react';
+import { Bell, User, Heart, Repeat, UserCheck, MessageCircle, PhoneMissed, Phone, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -26,9 +26,23 @@ const NotificationDropdown = () => {
         return <Repeat className="w-4 h-4 text-green-500" />;
       case 'follow':
         return <UserCheck className="w-4 h-4 text-blue-500" />;
+      case 'reply':
+        return <MessageCircle className="w-4 h-4 text-purple-500" />;
+      case 'message':
+        return <MessageCircle className="w-4 h-4 text-blue-500" />;
+      case 'missed_call':
+        return <PhoneMissed className="w-4 h-4 text-red-500" />;
       default:
         return <User className="w-4 h-4 text-gray-500" />;
     }
+  };
+
+  const getNotificationMessage = (notification: any) => {
+    if (notification.type === 'missed_call') {
+      const callType = notification.data?.call_type || 'call';
+      return `Missed ${callType}`;
+    }
+    return notification.message || 'New notification';
   };
 
   const handleNotificationClick = (notificationId: string) => {
@@ -99,7 +113,7 @@ const NotificationDropdown = () => {
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {notification.message}
+                      {getNotificationMessage(notification)}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}

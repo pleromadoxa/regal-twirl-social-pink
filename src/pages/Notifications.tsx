@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Bell, Heart, UserPlus, MessageSquare, PhoneMissed, Phone, Video, CheckCheck } from "lucide-react";
+import { Bell, Heart, UserPlus, MessageSquare, PhoneMissed, Phone, Video, CheckCheck, Repeat, UserCheck } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 
@@ -39,10 +39,14 @@ const Notifications = () => {
     switch (type) {
       case 'like':
         return <Heart className="w-5 h-5 text-red-500" />;
+      case 'retweet':
+        return <Repeat className="w-5 h-5 text-green-500" />;
       case 'follow':
-        return <UserPlus className="w-5 h-5 text-blue-500" />;
+        return <UserCheck className="w-5 h-5 text-blue-500" />;
+      case 'reply':
+        return <MessageSquare className="w-5 h-5 text-purple-500" />;
       case 'message':
-        return <MessageSquare className="w-5 h-5 text-green-500" />;
+        return <MessageSquare className="w-5 h-5 text-blue-500" />;
       case 'missed_call':
         return <PhoneMissed className="w-5 h-5 text-red-500" />;
       default:

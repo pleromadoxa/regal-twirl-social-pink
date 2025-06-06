@@ -7,12 +7,13 @@ import { useToast } from '@/hooks/use-toast';
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'like' | 'retweet' | 'follow' | 'mention' | 'reply';
+  type: 'like' | 'retweet' | 'follow' | 'mention' | 'reply' | 'message' | 'missed_call';
   actor_id: string | null;
   post_id: string | null;
   message: string | null;
   read: boolean;
   created_at: string;
+  data?: any;
   actor_profile?: {
     username: string;
     display_name: string;
@@ -33,7 +34,6 @@ export const useNotifications = () => {
     try {
       setLoading(true);
       
-      // First get notifications
       const { data: notificationsData, error } = await supabase
         .from('notifications')
         .select('*')
@@ -52,7 +52,6 @@ export const useNotifications = () => {
         return;
       }
 
-      // Get unique actor IDs to fetch profiles
       const actorIds = [...new Set(notificationsData
         .map(n => n.actor_id)
         .filter(id => id !== null))] as string[];
@@ -81,6 +80,7 @@ export const useNotifications = () => {
         message: notification.message,
         read: notification.read,
         created_at: notification.created_at,
+        data: notification.data,
         actor_profile: notification.actor_id ? profilesMap.get(notification.actor_id) || null : null
       }));
 
@@ -151,7 +151,6 @@ export const useNotifications = () => {
   useEffect(() => {
     fetchNotifications();
 
-    // Set up real-time subscription
     if (user) {
       const subscription = supabase
         .channel('notifications')
@@ -160,8 +159,16 @@ export const useNotifications = () => {
           schema: 'public',
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
-        }, () => {
+        }, (payload) => {
+          console.log('New notification received:', payload);
           fetchNotifications();
+          
+          // Show toast for new notification
+          const newNotification = payload.new as any;
+          toast({
+            title: "New notification",
+            description: newNotification.message || "You have a new notification",
+          });
         })
         .subscribe();
 

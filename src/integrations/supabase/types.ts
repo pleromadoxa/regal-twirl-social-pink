@@ -467,6 +467,7 @@ export type Database = {
           id: string
           image_urls: string[] | null
           likes_count: number | null
+          posted_as_page: string | null
           replies_count: number | null
           retweets_count: number | null
           updated_at: string
@@ -478,6 +479,7 @@ export type Database = {
           id?: string
           image_urls?: string[] | null
           likes_count?: number | null
+          posted_as_page?: string | null
           replies_count?: number | null
           retweets_count?: number | null
           updated_at?: string
@@ -489,12 +491,21 @@ export type Database = {
           id?: string
           image_urls?: string[] | null
           likes_count?: number | null
+          posted_as_page?: string | null
           replies_count?: number | null
           retweets_count?: number | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_posted_as_page_fkey"
+            columns: ["posted_as_page"]
+            isOneToOne: false
+            referencedRelation: "business_pages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       premium_features: {
         Row: {
