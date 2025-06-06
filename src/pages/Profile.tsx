@@ -1,117 +1,94 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { useVerifiedStatus } from "@/hooks/useVerifiedStatus";
+import { supabase } from "@/integrations/supabase/client";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
 import PostsList from "@/components/PostsList";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Calendar, Settings, Building, Crown } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { 
+  MapPin, 
+  Link as LinkIcon, 
+  Calendar, 
+  Crown, 
+  Building,
+  Users as UsersIcon,
+  User as UserIcon,
+  Settings,
+  MessageCircle
+} from "lucide-react";
 
-interface ProfileData {
+interface BusinessPage {
   id: string;
-  username: string;
-  display_name: string;
-  avatar_url: string;
-  bio: string;
+  page_name: string;
+  page_type: string;
+  description: string;
   is_verified: boolean;
-  premium_tier: string;
-  created_at: string;
   followers_count: number;
-  following_count: number;
 }
 
-export const Profile = () => {
+const Profile = () => {
+  const { userId } = useParams();
   const { user } = useAuth();
-  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const isOwnProfile = user?.id === id;
-  const [posts, setPosts] = useState([]);
+  const { profile, loading, isFollowing, toggleFollow } = useProfile(userId);
+  const [businessPages, setBusinessPages] = useState<BusinessPage[]>([]);
+  const isVerified = useVerifiedStatus(profile);
+  const isOwnProfile = user?.id === userId;
 
   useEffect(() => {
-    fetchProfile();
-    fetchPosts();
-  }, [id, user]);
+    if (userId) {
+      fetchBusinessPages();
+    }
+  }, [userId]);
 
-  const fetchProfile = async () => {
+  const fetchBusinessPages = async () => {
+    if (!userId) return;
+
     try {
-      setLoading(true);
-      
-      const profileId = id || user?.id;
-
-      if (!profileId) {
-        console.log('No profile ID provided.');
-        return;
-      }
-
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', profileId)
-        .single();
+        .from('business_pages')
+        .select('id, page_name, page_type, description, is_verified, followers_count')
+        .eq('owner_id', userId);
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-      }
-
-      setProfile(data);
-    } finally {
-      setLoading(false);
+      if (error) throw error;
+      setBusinessPages(data || []);
+    } catch (error) {
+      console.error('Error fetching business pages:', error);
     }
   };
 
-  const fetchPosts = async () => {
-    try {
-      setLoading(true);
-      const profileId = id || user?.id;
+  const getBusinessIcon = (type: string) => {
+    switch (type) {
+      case 'business':
+        return <Building className="w-4 h-4 text-purple-600" />;
+      case 'organization':
+        return <UsersIcon className="w-4 h-4 text-blue-600" />;
+      case 'professional':
+        return <UserIcon className="w-4 h-4 text-green-600" />;
+      default:
+        return <UserIcon className="w-4 h-4 text-gray-600" />;
+    }
+  };
 
-      if (!profileId) {
-        console.log('No profile ID provided.');
-        return;
-      }
-
-      // Fetch posts with profile information to prevent the error
-      const { data, error } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          profiles (
-            username,
-            display_name,
-            avatar_url,
-            is_verified,
-            premium_tier,
-            followers_count
-          )
-        `)
-        .eq('user_id', profileId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching posts:', error);
-      }
-
-      setPosts(data || []);
-    } finally {
-      setLoading(false);
+  const handleMessage = () => {
+    if (userId) {
+      navigate(`/messages?user=${userId}`);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center mb-4 mx-auto animate-pulse">
-            <span className="text-white font-bold text-2xl">R</span>
-          </div>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-slate-600 dark:text-slate-400">Loading profile...</p>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+        <SidebarNav />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
         </div>
       </div>
     );
@@ -119,147 +96,210 @@ export const Profile = () => {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Profile Not Found</h1>
-          <p className="mt-4 text-slate-600 dark:text-slate-400">The requested profile could not be found.</p>
-          <Button onClick={() => navigate('/')} className="mt-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
-            Go Home
-          </Button>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+        <SidebarNav />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">User not found</h1>
+            <p className="text-slate-600 dark:text-slate-400">The profile you're looking for doesn't exist.</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  const isVerified = profile?.is_verified || false;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
       
-      <main className="flex-1 max-w-4xl mx-auto border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl sticky top-0 z-10 border-b border-purple-200 dark:border-purple-800 p-6">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            {profile?.display_name || profile?.username || 'Profile'}
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            View and manage your profile information.
-          </p>
-        </div>
-        
-        <div className="p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-4">
-              <Avatar className="w-24 h-24 ring-4 ring-white dark:ring-slate-800">
-                <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} />
-                <AvatarFallback className="text-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                  {profile?.display_name?.[0] || profile?.username?.[0] || user?.email?.[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    {profile?.display_name || profile?.username || 'User'}
-                  </h1>
-                  {isVerified && (
-                    <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700">
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Verified
-                    </Badge>
-                  )}
-                  {profile?.premium_tier && profile.premium_tier !== 'free' && (
-                    <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-                      <Crown className="w-4 h-4 mr-1" />
-                      {profile.premium_tier}
-                    </Badge>
+      <div className="flex-1 flex gap-6">
+        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+          {/* Profile Header */}
+          <div className="relative">
+            {/* Banner */}
+            {profile.banner_url ? (
+              <img 
+                src={profile.banner_url} 
+                alt="Profile banner"
+                className="w-full h-48 object-cover"
+              />
+            ) : (
+              <div className="w-full h-48 bg-gradient-to-r from-purple-600 to-pink-600"></div>
+            )}
+            
+            {/* Profile Info */}
+            <div className="px-6 pb-6">
+              <div className="flex justify-between items-start -mt-16 mb-4">
+                <Avatar className="w-32 h-32 border-4 border-white dark:border-slate-800 shadow-lg">
+                  <AvatarImage src={profile.avatar_url || undefined} />
+                  <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white text-3xl font-bold">
+                    {profile.display_name?.[0] || profile.username?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="flex gap-2 mt-16">
+                  {isOwnProfile ? (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate('/settings')}
+                      className="rounded-xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={handleMessage}
+                        className="rounded-xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Message
+                      </Button>
+                      <Button
+                        onClick={toggleFollow}
+                        className={`rounded-xl ${
+                          isFollowing
+                            ? 'bg-slate-500 hover:bg-slate-600'
+                            : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
+                        } text-white`}
+                      >
+                        {isFollowing ? 'Unfollow' : 'Follow'}
+                      </Button>
+                    </>
                   )}
                 </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                      {profile.display_name || profile.username}
+                    </h1>
+                    {isVerified && (
+                      <Badge variant="verified" className="flex items-center gap-1">
+                        <Crown className="w-4 h-4" />
+                        Verified
+                      </Badge>
+                    )}
+                    {profile.premium_tier && profile.premium_tier !== 'free' && (
+                      <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                        Premium
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400">
+                    @{profile.username}
+                  </p>
+                </div>
                 
-                <p className="text-slate-600 dark:text-slate-400">
-                  @{profile?.username}
-                </p>
-                
-                {profile?.bio && (
-                  <p className="text-slate-700 dark:text-slate-300 max-w-md">
+                {profile.bio && (
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
                     {profile.bio}
                   </p>
                 )}
                 
-                <div className="flex items-center space-x-6 text-sm text-slate-600 dark:text-slate-400">
-                  <div className="flex items-center space-x-1">
+                <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
+                  {profile.location && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      {profile.location}
+                    </div>
+                  )}
+                  {profile.website && (
+                    <div className="flex items-center gap-1">
+                      <LinkIcon className="w-4 h-4" />
+                      <a 
+                        href={profile.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-purple-600 hover:underline"
+                      >
+                        {profile.website}
+                      </a>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    <span>
-                      Joined {formatDistanceToNow(new Date(profile?.created_at || Date.now()), { addSuffix: true })}
-                    </span>
+                    Joined {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <span><strong>{profile?.followers_count || 0}</strong> Followers</span>
-                    <span><strong>{profile?.following_count || 0}</strong> Following</span>
+                </div>
+                
+                <div className="flex gap-6 text-sm">
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{profile.following_count}</span>
+                    <span className="text-slate-600 dark:text-slate-400">Following</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{profile.followers_count}</span>
+                    <span className="text-slate-600 dark:text-slate-400">Followers</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{profile.posts_count}</span>
+                    <span className="text-slate-600 dark:text-slate-400">Posts</span>
                   </div>
                 </div>
               </div>
             </div>
-            
-            {isOwnProfile && (
-              <div className="flex items-center space-x-2">
-                <Button 
-                  onClick={() => navigate('/settings')}
-                  variant="outline"
-                  className="border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-400 dark:hover:bg-purple-900/20"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Edit Profile
-                </Button>
-                
-                <Button
-                  onClick={() => navigate('/professional')}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                >
-                  <Building className="w-4 h-4 mr-2" />
-                  Professional Account
-                </Button>
-              </div>
-            )}
           </div>
-          
-          <Tabs defaultValue="posts" className="mt-8">
-            <TabsList>
-              <TabsTrigger value="posts">Posts</TabsTrigger>
-              <TabsTrigger value="about">About</TabsTrigger>
-            </TabsList>
-            <TabsContent value="posts" className="mt-4">
-              {loading ? (
-                <div className="p-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-                  <p className="mt-4 text-slate-500">Loading posts...</p>
-                </div>
-              ) : (
-                <PostsList posts={posts} />
-              )}
-            </TabsContent>
-            <TabsContent value="about" className="mt-4">
-              <div className="space-y-4">
-                <div className="text-slate-700 dark:text-slate-300">
-                  <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">About Me</h2>
-                  {profile?.bio ? (
-                    <p>{profile.bio}</p>
-                  ) : (
-                    <p>No bio available.</p>
-                  )}
-                </div>
-                
-                <div className="text-slate-700 dark:text-slate-300">
-                  <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Contact Information</h2>
-                  <p>Email: {user?.email}</p>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
 
-      <RightSidebar />
+          {/* Business Pages */}
+          {businessPages.length > 0 && (
+            <div className="border-t border-purple-200 dark:border-purple-800 p-6">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                <Building className="w-5 h-5 text-purple-600" />
+                Professional Accounts
+              </h2>
+              <div className="grid gap-4">
+                {businessPages.map((page) => (
+                  <Card key={page.id} className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {getBusinessIcon(page.page_type)}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                                {page.page_name}
+                              </h3>
+                              {page.is_verified && (
+                                <Badge variant="verified" className="flex items-center gap-1">
+                                  <Crown className="w-3 h-3" />
+                                  Verified
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                              <Badge variant="outline" className="text-xs">
+                                {page.page_type.charAt(0).toUpperCase() + page.page_type.slice(1)}
+                              </Badge>
+                              <span>{page.followers_count} followers</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {page.description && (
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+                          {page.description}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Posts */}
+          <div className="border-t border-purple-200 dark:border-purple-800">
+            <PostsList userId={userId} />
+          </div>
+        </main>
+        
+        <RightSidebar />
+      </div>
     </div>
   );
 };
