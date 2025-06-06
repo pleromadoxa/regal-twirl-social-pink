@@ -1,8 +1,24 @@
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const Footer = () => {
   const { theme } = useTheme();
+  
+  // Get logo URLs from Supabase storage
+  const getLightLogoUrl = () => {
+    const { data } = supabase.storage
+      .from('logos')
+      .getPublicUrl('regal-network-light.png');
+    return data.publicUrl;
+  };
+
+  const getDarkLogoUrl = () => {
+    const { data } = supabase.storage
+      .from('logos')
+      .getPublicUrl('regal-network-dark.png');
+    return data.publicUrl;
+  };
   
   return (
     <footer className="border-t border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl p-6">
@@ -10,9 +26,18 @@ const Footer = () => {
         {/* Logo */}
         <div className="flex items-center space-x-3">
           <img 
-            src={theme === 'dark' ? "/lovable-uploads/b4c5e1b1-b654-4fb8-8b85-ec33a9c87b0f.png" : "/lovable-uploads/0ed82dd9-3b2e-4688-a5e8-7f5b11e8a893.png"}
+            src={theme === 'dark' ? getLightLogoUrl() : getDarkLogoUrl()}
             alt="Regal Network Logo" 
             className="h-8 w-auto"
+            onError={(e) => {
+              // Fallback to text if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const fallback = document.createElement('span');
+              fallback.className = 'text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent';
+              fallback.textContent = 'RN';
+              target.parentNode?.appendChild(fallback);
+            }}
           />
           <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             Regal Network

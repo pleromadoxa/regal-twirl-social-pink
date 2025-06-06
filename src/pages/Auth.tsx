@@ -67,6 +67,14 @@ const Auth = () => {
     }
   };
 
+  // Get logo URL from Supabase storage
+  const getLogoUrl = () => {
+    const { data } = supabase.storage
+      .from('logos')
+      .getPublicUrl('regal-network-light.png');
+    return data.publicUrl;
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-black">
       {/* Animated Globe Background */}
@@ -97,9 +105,18 @@ const Auth = () => {
               {/* Logo */}
               <div className="flex justify-center lg:justify-start mb-6">
                 <img 
-                  src="/lovable-uploads/0ed82dd9-3b2e-4688-a5e8-7f5b11e8a893.png" 
+                  src={getLogoUrl()}
                   alt="Regal Network Logo" 
                   className="h-20 w-auto"
+                  onError={(e) => {
+                    // Fallback to text if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const fallback = document.createElement('div');
+                    fallback.className = 'h-20 flex items-center justify-center text-white text-2xl font-bold';
+                    fallback.textContent = 'Regal Network';
+                    target.parentNode?.appendChild(fallback);
+                  }}
                 />
               </div>
               
