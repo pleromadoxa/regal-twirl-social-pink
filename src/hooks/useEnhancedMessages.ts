@@ -30,6 +30,7 @@ export interface EnhancedConversation {
     avatar_url: string;
   };
   last_message?: EnhancedMessage;
+  streak_count?: number;
 }
 
 export const useEnhancedMessages = () => {
@@ -37,10 +38,42 @@ export const useEnhancedMessages = () => {
   const [messages, setMessages] = useState<EnhancedMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
   const { user } = useAuth();
   const { toast } = useToast();
   const conversationsChannelRef = useRef<any>(null);
   const messagesChannelRef = useRef<any>(null);
+  const typingChannelRef = useRef<any>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const calculateStreak = (messages: EnhancedMessage[]) => {
+    if (!messages || messages.length === 0) return 0;
+    
+    // Sort messages by date descending
+    const sortedMessages = [...messages].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    
+    let streak = 0;
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    
+    // Check consecutive days with messages
+    for (let i = 0; i < sortedMessages.length; i++) {
+      const messageDate = new Date(sortedMessages[i].created_at);
+      messageDate.setHours(0, 0, 0, 0);
+      
+      const daysDiff = Math.floor((currentDate.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff === streak) {
+        streak++;
+      } else if (daysDiff > streak) {
+        break;
+      }
+    }
+    
+    return streak;
+  };
 
   const fetchConversations = async () => {
     if (!user) return;
@@ -59,10 +92,9 @@ export const useEnhancedMessages = () => {
         return;
       }
 
-      // Get enriched conversations with participant info and last message
+      // Get enriched conversations with participant info, last message, and streaks
       const enrichedConversations = await Promise.all(
         conversationsData.map(async (conv) => {
-          // Get other user for one-on-one conversation
           const otherUserId = conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1;
           
           const { data: profileData } = await supabase
@@ -71,7 +103,14 @@ export const useEnhancedMessages = () => {
             .eq('id', otherUserId)
             .single();
 
-          // Get last message for this conversation with sender profile
+          // Get all messages for streak calculation
+          const { data: allMessages } = await supabase
+            .from('messages')
+            .select('*')
+            .or(`and(sender_id.eq.${conv.participant_1},recipient_id.eq.${conv.participant_2}),and(sender_id.eq.${conv.participant_2},recipient_id.eq.${conv.participant_1})`)
+            .order('created_at', { ascending: false });
+
+          // Get last message with sender profile
           const { data: lastMessageData } = await supabase
             .from('messages')
             .select('*')
@@ -82,7 +121,6 @@ export const useEnhancedMessages = () => {
 
           let lastMessageWithProfile = undefined;
           if (lastMessageData) {
-            // Get sender profile for last message
             const { data: senderProfile } = await supabase
               .from('profiles')
               .select('username, display_name, avatar_url')
@@ -95,10 +133,13 @@ export const useEnhancedMessages = () => {
             };
           }
 
+          const streakCount = calculateStreak(allMessages || []);
+
           return {
             ...conv,
             other_user: profileData,
-            last_message: lastMessageWithProfile
+            last_message: lastMessageWithProfile,
+            streak_count: streakCount
           };
         })
       );
@@ -115,7 +156,6 @@ export const useEnhancedMessages = () => {
     if (!user) return;
 
     try {
-      // Get conversation details first
       const { data: conversation } = await supabase
         .from('conversations')
         .select('*')
@@ -127,9 +167,6 @@ export const useEnhancedMessages = () => {
         return;
       }
 
-      console.log('Fetching messages for conversation:', conversation);
-
-      // Get messages between the participants
       const { data: messagesData, error } = await supabase
         .from('messages')
         .select('*')
@@ -141,7 +178,6 @@ export const useEnhancedMessages = () => {
         return;
       }
 
-      // Get sender profiles for all messages
       const messagesWithProfiles = await Promise.all(
         (messagesData || []).map(async (msg) => {
           const { data: senderProfile } = await supabase
@@ -157,14 +193,13 @@ export const useEnhancedMessages = () => {
         })
       );
 
-      console.log('Fetched messages for conversation:', conversationId, messagesWithProfiles);
       setMessages(messagesWithProfiles);
     } catch (error) {
       console.error('Error in fetchMessages:', error);
     }
   };
 
-  const sendMessage = async (conversationId: string, content: string, attachments?: { images: File[], videos: File[] }) => {
+  const sendMessage = async (conversationId: string, content: string, attachments?: { images: File[], videos: File[], documents: File[] }) => {
     if (!user) {
       toast({
         title: "Authentication required",
@@ -174,7 +209,7 @@ export const useEnhancedMessages = () => {
       return;
     }
 
-    if (!content.trim() && (!attachments || (attachments.images.length === 0 && attachments.videos.length === 0))) {
+    if (!content.trim() && (!attachments || (attachments.images.length === 0 && attachments.videos.length === 0 && attachments.documents.length === 0))) {
       toast({
         title: "Message cannot be empty",
         description: "Please enter a message or attach files before sending",
@@ -193,8 +228,6 @@ export const useEnhancedMessages = () => {
       const recipientId = conversation.participant_1 === user.id 
         ? conversation.participant_2 
         : conversation.participant_1;
-
-      console.log('Sending message:', { conversationId, recipientId, content: content.trim() });
 
       const { data: messageData, error } = await supabase
         .from('messages')
@@ -216,17 +249,11 @@ export const useEnhancedMessages = () => {
         return;
       }
 
-      console.log('Message sent successfully:', messageData);
-
       // Update conversation last_message_at
-      const { error: updateError } = await supabase
+      await supabase
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', conversationId);
-
-      if (updateError) {
-        console.error('Error updating conversation:', updateError);
-      }
 
       // Get sender profile for the message
       const { data: senderProfile } = await supabase
@@ -235,7 +262,6 @@ export const useEnhancedMessages = () => {
         .eq('id', user.id)
         .single();
 
-      // Immediately add the message to the local state for instant feedback
       const formattedMessage = {
         ...messageData,
         sender_profile: senderProfile
@@ -248,7 +274,6 @@ export const useEnhancedMessages = () => {
         description: "Your message has been sent successfully."
       });
 
-      // Refresh conversations to update last message
       await fetchConversations();
     } catch (error) {
       console.error('Error in sendMessage:', error);
@@ -260,12 +285,55 @@ export const useEnhancedMessages = () => {
     }
   };
 
+  const sendTypingIndicator = (conversationId: string, isTyping: boolean) => {
+    if (!user || !typingChannelRef.current) return;
+
+    if (isTyping) {
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Send typing indicator
+      typingChannelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: {
+          user_id: user.id,
+          conversation_id: conversationId,
+          is_typing: true
+        }
+      });
+
+      // Auto-stop typing after 3 seconds
+      typingTimeoutRef.current = setTimeout(() => {
+        typingChannelRef.current?.send({
+          type: 'broadcast',
+          event: 'typing',
+          payload: {
+            user_id: user.id,
+            conversation_id: conversationId,
+            is_typing: false
+          }
+        });
+      }, 3000);
+    } else {
+      typingChannelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: {
+          user_id: user.id,
+          conversation_id: conversationId,
+          is_typing: false
+        }
+      });
+    }
+  };
+
   const createGroupConversation = async (groupName: string, participantIds: string[]) => {
     if (!user) return;
 
     try {
-      // For now, create a simple conversation with the first participant
-      // This is a simplified implementation until we have proper group support
       if (participantIds.length === 0) {
         toast({
           title: "Error creating group",
@@ -315,7 +383,6 @@ export const useEnhancedMessages = () => {
     if (!user) return;
 
     try {
-      // Check if conversation already exists
       const { data: existingConv } = await supabase
         .from('conversations')
         .select('id')
@@ -327,7 +394,6 @@ export const useEnhancedMessages = () => {
         return existingConv.id;
       }
 
-      // Create new conversation
       const { data: newConv, error } = await supabase
         .from('conversations')
         .insert({
@@ -350,170 +416,122 @@ export const useEnhancedMessages = () => {
     }
   };
 
-  // Clean up function for channels
   const cleanupChannels = () => {
-    console.log('Cleaning up channels...');
-    
     if (conversationsChannelRef.current) {
-      console.log('Removing conversations channel');
       supabase.removeChannel(conversationsChannelRef.current);
       conversationsChannelRef.current = null;
     }
     
     if (messagesChannelRef.current) {
-      console.log('Removing messages channel');
       supabase.removeChannel(messagesChannelRef.current);
       messagesChannelRef.current = null;
     }
+
+    if (typingChannelRef.current) {
+      supabase.removeChannel(typingChannelRef.current);
+      typingChannelRef.current = null;
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
   };
 
-  // Set up realtime subscriptions for conversations
+  // Set up realtime subscriptions
   useEffect(() => {
     if (!user) {
       cleanupChannels();
       return;
     }
 
-    // Clean up any existing channels
     cleanupChannels();
 
-    console.log('Setting up conversations channel for user:', user.id);
+    // Messages channel with proper filtering
+    const messagesChannel = supabase
+      .channel(`messages-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `recipient_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('New message for current user:', payload);
+          
+          if (payload.new) {
+            const newMessage = payload.new as any;
+            
+            // Get sender profile for toast
+            const { data: senderProfile } = await supabase
+              .from('profiles')
+              .select('display_name, username')
+              .eq('id', newMessage.sender_id)
+              .single();
+            
+            const senderName = senderProfile?.display_name || senderProfile?.username || 'Someone';
+            
+            // Show toast notification
+            toast({
+              title: "New message",
+              description: `${senderName} sent you a message`
+            });
 
-    // Create conversations channel
-    const conversationChannelName = `conversations-${user.id}-${Date.now()}`;
-    
-    try {
-      const conversationsChannel = supabase
-        .channel(conversationChannelName)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'conversations'
-          },
-          (payload) => {
-            console.log('Conversations change detected:', payload);
-            fetchConversations();
+            // Refresh conversations and messages if viewing the conversation
+            await fetchConversations();
+            if (selectedConversation) {
+              await fetchMessages(selectedConversation);
+            }
           }
-        )
-        .subscribe((status) => {
-          console.log('Conversations channel status:', status);
-        });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `sender_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('Message sent by current user:', payload);
+          // Refresh to update conversation list
+          await fetchConversations();
+        }
+      )
+      .subscribe();
 
-      conversationsChannelRef.current = conversationsChannel;
-    } catch (error) {
-      console.error('Error setting up conversations channel:', error);
-    }
+    messagesChannelRef.current = messagesChannel;
+
+    // Typing indicators channel
+    const typingChannel = supabase
+      .channel('typing-indicators')
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        const { user_id, conversation_id, is_typing } = payload.payload;
+        
+        if (user_id !== user.id && conversation_id === selectedConversation) {
+          setTypingUsers(prev => ({
+            ...prev,
+            [user_id]: is_typing
+          }));
+
+          // Auto-clear typing indicator after 5 seconds
+          if (is_typing) {
+            setTimeout(() => {
+              setTypingUsers(prev => ({
+                ...prev,
+                [user_id]: false
+              }));
+            }, 5000);
+          }
+        }
+      })
+      .subscribe();
+
+    typingChannelRef.current = typingChannel;
 
     return cleanupChannels;
-  }, [user?.id]);
-
-  // Set up realtime subscriptions for messages
-  useEffect(() => {
-    if (!user) {
-      if (messagesChannelRef.current) {
-        supabase.removeChannel(messagesChannelRef.current);
-        messagesChannelRef.current = null;
-      }
-      return;
-    }
-
-    // Clean up existing messages channel
-    if (messagesChannelRef.current) {
-      supabase.removeChannel(messagesChannelRef.current);
-      messagesChannelRef.current = null;
-    }
-
-    console.log('Setting up messages channel for user:', user.id);
-
-    // Create messages channel
-    const messagesChannelName = `messages-${user.id}-${Date.now()}`;
-    
-    try {
-      const messagesChannel = supabase
-        .channel(messagesChannelName)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages'
-          },
-          async (payload) => {
-            console.log('New message detected:', payload);
-            
-            if (payload.new && typeof payload.new === 'object' && 'sender_id' in payload.new && 'recipient_id' in payload.new) {
-              const newMessage = payload.new as any;
-              
-              // Check if this message involves the current user
-              if (newMessage.sender_id === user.id || newMessage.recipient_id === user.id) {
-                console.log('Message involves current user, updating...');
-                
-                // If user is currently viewing a conversation, refresh messages
-                if (selectedConversation) {
-                  await fetchMessages(selectedConversation);
-                }
-                
-                // Always refresh conversations to update last message
-                await fetchConversations();
-                
-                // If this is a message TO the current user (not from), show a toast
-                if (newMessage.recipient_id === user.id && newMessage.sender_id !== user.id) {
-                  // Get sender profile for toast
-                  const { data: senderProfile } = await supabase
-                    .from('profiles')
-                    .select('display_name, username')
-                    .eq('id', newMessage.sender_id)
-                    .single();
-                  
-                  const senderName = senderProfile?.display_name || senderProfile?.username || 'Someone';
-                  
-                  toast({
-                    title: "New message",
-                    description: `${senderName} sent you a message`
-                  });
-                }
-              }
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'messages'
-          },
-          (payload) => {
-            console.log('Message updated:', payload);
-            
-            if (payload.new && typeof payload.new === 'object' && 'sender_id' in payload.new && 'recipient_id' in payload.new) {
-              const updatedMessage = payload.new as any;
-              if (updatedMessage.sender_id === user.id || updatedMessage.recipient_id === user.id) {
-                if (selectedConversation) {
-                  fetchMessages(selectedConversation);
-                }
-                fetchConversations();
-              }
-            }
-          }
-        )
-        .subscribe((status) => {
-          console.log('Messages channel status:', status);
-        });
-
-      messagesChannelRef.current = messagesChannel;
-    } catch (error) {
-      console.error('Error setting up messages channel:', error);
-    }
-
-    return () => {
-      if (messagesChannelRef.current) {
-        supabase.removeChannel(messagesChannelRef.current);
-        messagesChannelRef.current = null;
-      }
-    };
   }, [user?.id, selectedConversation]);
 
   // Handle selectedConversation changes
@@ -541,6 +559,8 @@ export const useEnhancedMessages = () => {
     sendMessage,
     createGroupConversation,
     startDirectConversation,
+    sendTypingIndicator,
+    typingUsers,
     refetch: fetchConversations
   };
 };

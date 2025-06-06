@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Phone, Video, Info, Smile, Paperclip, Image, File } from 'lucide-react';
+import { Send, Phone, Video, Info, Smile, Paperclip } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import MediaUpload from '@/components/MediaUpload';
 
@@ -15,14 +15,15 @@ interface MessageThreadProps {
 
 const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
+  const [selectedDocuments, setSelectedDocuments] = useState<File[]>([]);
   const [showAttachments, setShowAttachments] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const { user } = useAuth();
-  const { messages, conversations, sendMessage } = useEnhancedMessages();
+  const { messages, conversations, sendMessage, sendTypingIndicator, typingUsers } = useEnhancedMessages();
 
   const conversation = conversations.find(c => c.id === conversationId);
 
@@ -35,20 +36,26 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if ((!newMessage.trim() && selectedImages.length === 0 && selectedVideos.length === 0) || !conversation || isSending) return;
+    if ((!newMessage.trim() && selectedImages.length === 0 && selectedVideos.length === 0 && selectedDocuments.length === 0) || !conversation || isSending) return;
 
     setIsSending(true);
     try {
-      // For now, just send the text message. File uploads would need additional backend support
       if (newMessage.trim()) {
-        await sendMessage(conversationId, newMessage);
+        await sendMessage(conversationId, newMessage, {
+          images: selectedImages,
+          videos: selectedVideos,
+          documents: selectedDocuments
+        });
         setNewMessage('');
       }
       
-      // Clear attachments after sending
       setSelectedImages([]);
       setSelectedVideos([]);
+      setSelectedDocuments([]);
       setShowAttachments(false);
+      
+      // Stop typing indicator
+      sendTypingIndicator(conversationId, false);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -66,11 +73,18 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
     
-    // Simulate typing indicator
-    if (!isTyping) {
-      setIsTyping(true);
-      setTimeout(() => setIsTyping(false), 1000);
+    // Send typing indicator
+    sendTypingIndicator(conversationId, true);
+    
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
     }
+    
+    // Stop typing after 2 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTypingIndicator(conversationId, false);
+    }, 2000);
   };
 
   if (!conversation) {
@@ -88,8 +102,9 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     );
   }
 
-  console.log('Current conversation:', conversation);
-  console.log('Messages for conversation:', messages);
+  // Check if other user is typing
+  const otherUserId = conversation.participant_1 === user?.id ? conversation.participant_2 : conversation.participant_1;
+  const isOtherUserTyping = typingUsers[otherUserId];
 
   return (
     <div className="flex flex-col h-full">
@@ -107,11 +122,21 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white dark:border-slate-800 rounded-full"></div>
             </div>
             <div>
-              <h2 className="font-semibold text-slate-900 dark:text-slate-100">
-                {conversation.other_user?.display_name || conversation.other_user?.username || 'Unknown User'}
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-slate-900 dark:text-slate-100">
+                  {conversation.other_user?.display_name || conversation.other_user?.username || 'Unknown User'}
+                </h2>
+                {conversation.streak_count && conversation.streak_count > 0 && (
+                  <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/20 px-2 py-1 rounded-full">
+                    <span className="text-yellow-600 dark:text-yellow-400 text-xs">⚡</span>
+                    <span className="text-yellow-700 dark:text-yellow-300 text-xs font-medium">
+                      {conversation.streak_count}
+                    </span>
+                  </div>
+                )}
+              </div>
               <p className="text-sm text-slate-500">
-                {isTyping ? 'Typing...' : 'Online'}
+                {isOtherUserTyping ? 'Typing...' : 'Online'}
               </p>
             </div>
           </div>
@@ -196,8 +221,10 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           <MediaUpload
             selectedImages={selectedImages}
             selectedVideos={selectedVideos}
+            selectedDocuments={selectedDocuments}
             onImagesChange={setSelectedImages}
             onVideosChange={setSelectedVideos}
+            onDocumentsChange={setSelectedDocuments}
           />
         </div>
       )}
@@ -232,7 +259,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           </div>
           <Button
             onClick={handleSendMessage}
-            disabled={(!newMessage.trim() && selectedImages.length === 0 && selectedVideos.length === 0) || isSending}
+            disabled={(!newMessage.trim() && selectedImages.length === 0 && selectedVideos.length === 0 && selectedDocuments.length === 0) || isSending}
             className="rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 w-10 h-10 p-0"
           >
             <Send className="w-4 h-4" />
