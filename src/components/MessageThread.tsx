@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,37 +51,44 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     const currentConversation = conversations.find(c => c.id === conversationId);
     if (!currentConversation) return;
 
-    const otherUserId = currentConversation.participant_1 === supabase.auth.getUser().then(({ data }) => data.user?.id) 
-      ? currentConversation.participant_2 
-      : currentConversation.participant_1;
+    const setupRealtime = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    // Subscribe to real-time messages
-    const messagesChannel = supabase
-      .channel(`messages-${conversationId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `or(and(sender_id.eq.${supabase.auth.getUser().then(({ data }) => data.user?.id)},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${supabase.auth.getUser().then(({ data }) => data.user?.id)}))`
-      }, () => {
-        console.log('New message received, refreshing...');
-        refetch();
-      })
-      .subscribe();
+      const otherUserId = currentConversation.participant_1 === user.id 
+        ? currentConversation.participant_2 
+        : currentConversation.participant_1;
 
-    // Subscribe to typing indicators
-    const typingChannel = supabase
-      .channel(`typing-${conversationId}`)
-      .on('presence', { event: 'sync' }, () => {
-        const state = typingChannel.presenceState();
-        console.log('Typing state updated:', state);
-      })
-      .subscribe();
+      // Subscribe to real-time messages
+      const messagesChannel = supabase
+        .channel(`messages-${conversationId}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `or(and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id}))`
+        }, () => {
+          console.log('New message received, refreshing...');
+          refetch();
+        })
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(typingChannel);
+      // Subscribe to typing indicators
+      const typingChannel = supabase
+        .channel(`typing-${conversationId}`)
+        .on('presence', { event: 'sync' }, () => {
+          const state = typingChannel.presenceState();
+          console.log('Typing state updated:', state);
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(messagesChannel);
+        supabase.removeChannel(typingChannel);
+      };
     };
+
+    setupRealtime();
   }, [conversationId, conversations, refetch]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
