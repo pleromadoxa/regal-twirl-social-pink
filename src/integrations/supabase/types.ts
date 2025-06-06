@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      active_calls: {
+        Row: {
+          call_type: string
+          caller_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          participants: Json
+          room_id: string
+          status: string
+        }
+        Insert: {
+          call_type: string
+          caller_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          participants?: Json
+          room_id: string
+          status?: string
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          participants?: Json
+          room_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       ai_generations: {
         Row: {
           created_at: string
@@ -173,6 +206,7 @@ export type Database = {
           last_message_at: string | null
           participant_1: string
           participant_2: string
+          streak_count: number | null
         }
         Insert: {
           created_at?: string | null
@@ -180,6 +214,7 @@ export type Database = {
           last_message_at?: string | null
           participant_1: string
           participant_2: string
+          streak_count?: number | null
         }
         Update: {
           created_at?: string | null
@@ -187,6 +222,7 @@ export type Database = {
           last_message_at?: string | null
           participant_1?: string
           participant_2?: string
+          streak_count?: number | null
         }
         Relationships: []
       }
@@ -239,6 +275,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      message_attachments: {
+        Row: {
+          attachment_type: string
+          created_at: string
+          file_name: string
+          file_size: number
+          file_type: string
+          file_url: string
+          id: string
+          message_id: string
+        }
+        Insert: {
+          attachment_type: string
+          created_at?: string
+          file_name: string
+          file_size: number
+          file_type: string
+          file_url: string
+          id?: string
+          message_id: string
+        }
+        Update: {
+          attachment_type?: string
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          file_url?: string
+          id?: string
+          message_id?: string
+        }
+        Relationships: []
       }
       messages: {
         Row: {

@@ -1,0 +1,98 @@
+
+import { supabase } from '@/integrations/supabase/client';
+
+export interface ActiveCall {
+  id: string;
+  room_id: string;
+  caller_id: string;
+  call_type: 'audio' | 'video' | 'group';
+  participants: string[];
+  status: 'active' | 'ended';
+  created_at: string;
+  ended_at?: string;
+}
+
+export const createCall = async (
+  callerId: string,
+  callType: 'audio' | 'video' | 'group',
+  participants: string[] = []
+): Promise<ActiveCall> => {
+  const roomId = `call-${Date.now()}-${callerId}`;
+  
+  const { data, error } = await supabase
+    .from('active_calls')
+    .insert({
+      room_id: roomId,
+      caller_id: callerId,
+      call_type: callType,
+      participants: participants
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating call:', error);
+    throw error;
+  }
+
+  return data;
+};
+
+export const joinCall = async (callId: string, userId: string): Promise<void> => {
+  const { data: call } = await supabase
+    .from('active_calls')
+    .select('participants')
+    .eq('id', callId)
+    .single();
+
+  if (call) {
+    const updatedParticipants = [...call.participants, userId];
+    
+    const { error } = await supabase
+      .from('active_calls')
+      .update({ participants: updatedParticipants })
+      .eq('id', callId);
+
+    if (error) {
+      console.error('Error joining call:', error);
+      throw error;
+    }
+  }
+};
+
+export const endCall = async (callId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('active_calls')
+    .update({ 
+      status: 'ended',
+      ended_at: new Date().toISOString()
+    })
+    .eq('id', callId);
+
+  if (error) {
+    console.error('Error ending call:', error);
+    throw error;
+  }
+};
+
+export const subscribeToCallUpdates = (
+  callId: string,
+  onUpdate: (call: ActiveCall) => void
+) => {
+  const channel = supabase
+    .channel(`call-${callId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'active_calls',
+      filter: `id=eq.${callId}`
+    }, (payload) => {
+      console.log('Call update:', payload);
+      if (payload.new) {
+        onUpdate(payload.new as ActiveCall);
+      }
+    })
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+};

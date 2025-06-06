@@ -84,3 +84,74 @@ export const markMessageAsRead = async (messageId: string) => {
     .update({ read_at: new Date().toISOString() })
     .eq('id', messageId);
 };
+
+// Real-time subscription for messages
+export const subscribeToMessages = (
+  conversationId: string,
+  userId: string,
+  otherUserId: string,
+  onNewMessage: (message: Message) => void
+) => {
+  const channel = supabase
+    .channel(`messages-${conversationId}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `or(and(sender_id.eq.${userId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${userId}))`
+    }, async (payload) => {
+      console.log('Real-time message received:', payload);
+      
+      // Fetch sender profile for the new message
+      const { data: senderProfile } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .eq('id', payload.new.sender_id)
+        .single();
+
+      const messageWithProfile = {
+        ...payload.new,
+        sender_profile: senderProfile || null
+      } as Message;
+
+      onNewMessage(messageWithProfile);
+    })
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+};
+
+// Subscribe to typing indicators
+export const subscribeToTyping = (
+  conversationId: string,
+  userId: string,
+  onTypingUpdate: (isTyping: boolean, userId: string) => void
+) => {
+  const channel = supabase
+    .channel(`typing-${conversationId}`)
+    .on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState();
+      console.log('Typing state updated:', state);
+      
+      Object.keys(state).forEach(key => {
+        const presence = state[key][0];
+        if (presence.user_id !== userId) {
+          onTypingUpdate(presence.typing, presence.user_id);
+        }
+      });
+    })
+    .subscribe();
+
+  const sendTypingIndicator = async (isTyping: boolean) => {
+    await channel.track({
+      user_id: userId,
+      typing: isTyping,
+      online_at: new Date().toISOString()
+    });
+  };
+
+  return {
+    unsubscribe: () => supabase.removeChannel(channel),
+    sendTypingIndicator
+  };
+};

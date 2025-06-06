@@ -1,13 +1,19 @@
+
 import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Phone, Video, MoreVertical, History } from 'lucide-react';
+import { MoreVertical } from 'lucide-react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import CallHistoryDialog from '@/components/CallHistoryDialog';
+import EnhancedMessageComposer from '@/components/EnhancedMessageComposer';
+import MessageAttachments from '@/components/MessageAttachments';
+import RealTimeCallManager from '@/components/RealTimeCallManager';
+import { uploadMessageAttachment, createMessageAttachment } from '@/services/attachmentService';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -21,17 +27,14 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     selectedConversation,
     setSelectedConversation,
     conversations,
-    activeCall,
-    setActiveCall,
     typingUsers,
     refetch
   } = useEnhancedMessages();
 
-  const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (conversationId && selectedConversation !== conversationId) {
@@ -73,45 +76,70 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
         })
         .subscribe();
 
-      // Subscribe to typing indicators
-      const typingChannel = supabase
-        .channel(`typing-${conversationId}`)
-        .on('presence', { event: 'sync' }, () => {
-          const state = typingChannel.presenceState();
-          console.log('Typing state updated:', state);
-        })
-        .subscribe();
-
       return () => {
         supabase.removeChannel(messagesChannel);
-        supabase.removeChannel(typingChannel);
       };
     };
 
     setupRealtime();
   }, [conversationId, conversations, refetch]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || sendingMessage) return;
+  const handleSendMessage = async (content: string, attachments: File[] = []) => {
+    if ((!content.trim() && attachments.length === 0) || sendingMessage || !user) return;
 
     setSendingMessage(true);
     try {
-      console.log('Sending message from MessageThread:', newMessage.trim());
-      await sendMessage(newMessage.trim());
-      setNewMessage('');
-      inputRef.current?.focus();
+      console.log('Sending message with attachments:', { content, attachments: attachments.length });
+      
+      // Send the message first
+      await sendMessage(content.trim());
+      
+      // If there are attachments, upload them and link to the message
+      if (attachments.length > 0) {
+        // Get the latest message to attach files to
+        const latestMessages = messages.filter(m => m.sender_id === user.id).slice(-1);
+        const messageId = latestMessages[0]?.id;
+        
+        if (messageId) {
+          for (const file of attachments) {
+            try {
+              const attachmentType = file.type.startsWith('image/') ? 'image' :
+                                   file.type.startsWith('video/') ? 'video' :
+                                   file.type.startsWith('audio/') ? 'audio' : 'document';
+              
+              const fileUrl = await uploadMessageAttachment(file, user.id, attachmentType);
+              
+              await createMessageAttachment(
+                messageId,
+                file.name,
+                file.type,
+                file.size,
+                fileUrl,
+                attachmentType
+              );
+            } catch (error) {
+              console.error('Error uploading attachment:', error);
+              toast({
+                title: "Attachment upload failed",
+                description: `Failed to upload ${file.name}`,
+                variant: "destructive"
+              });
+            }
+          }
+        }
+      }
+      
+      // Refresh to show attachments
+      refetch();
     } catch (error) {
       console.error('Error in handleSendMessage:', error);
+      toast({
+        title: "Error sending message",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
     } finally {
       setSendingMessage(false);
-    }
-  };
-
-  const handleTyping = () => {
-    if (!isTyping) {
-      setIsTyping(true);
-      setTimeout(() => setIsTyping(false), 3000);
     }
   };
 
@@ -125,6 +153,21 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       </div>
     );
   }
+
+  const participants = [
+    {
+      id: currentConversation.participant_1,
+      username: currentConversation.participant_1_profile?.username || 'user1',
+      display_name: currentConversation.participant_1_profile?.display_name || 'User 1',
+      avatar_url: currentConversation.participant_1_profile?.avatar_url || ''
+    },
+    {
+      id: currentConversation.participant_2,
+      username: currentConversation.participant_2_profile?.username || 'user2',
+      display_name: currentConversation.participant_2_profile?.display_name || 'User 2',
+      avatar_url: currentConversation.participant_2_profile?.avatar_url || ''
+    }
+  ].filter(p => p.id !== user?.id);
 
   return (
     <div className="flex-1 flex flex-col h-full">
@@ -148,22 +191,10 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setActiveCall({ type: 'audio', userId: otherUser?.id })}
-            className="text-slate-600 hover:text-purple-600 dark:text-slate-400"
-          >
-            <Phone className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setActiveCall({ type: 'video', userId: otherUser?.id })}
-            className="text-slate-600 hover:text-purple-600 dark:text-slate-400"
-          >
-            <Video className="w-5 h-5" />
-          </Button>
+          <RealTimeCallManager
+            conversationId={conversationId}
+            participants={participants}
+          />
           <CallHistoryDialog />
           <Button
             variant="ghost"
@@ -205,6 +236,10 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
                   }`}>
                     <p className="text-sm break-words">{message.content}</p>
                   </div>
+                  
+                  {/* Message Attachments */}
+                  <MessageAttachments messageId={message.id} />
+                  
                   <p className={`text-xs text-slate-500 dark:text-slate-400 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
                     {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                     {isOwn && message.read_at && (
@@ -228,28 +263,13 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
         </div>
       </ScrollArea>
 
-      {/* Message Input */}
+      {/* Enhanced Message Input */}
       <div className="p-4 border-t border-purple-200 dark:border-purple-800 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-        <form onSubmit={handleSendMessage} className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={newMessage}
-            onChange={(e) => {
-              setNewMessage(e.target.value);
-              handleTyping();
-            }}
-            placeholder="Type a message..."
-            disabled={sendingMessage}
-            className="flex-1 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus:border-purple-500 dark:focus:border-purple-400"
-          />
-          <Button
-            type="submit"
-            disabled={!newMessage.trim() || sendingMessage}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </form>
+        <EnhancedMessageComposer
+          onSendMessage={handleSendMessage}
+          disabled={sendingMessage}
+          placeholder="Type a message..."
+        />
       </div>
     </div>
   );
