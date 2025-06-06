@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePosts } from "@/hooks/usePosts";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import AccountSwitcher from "@/components/AccountSwitcher";
 import AudioVisualizer from "./AudioVisualizer";
 import ThreadComposer from "./ThreadComposer";
@@ -31,6 +32,7 @@ const TweetComposer = () => {
   const [mentionInput, setMentionInput] = useState("");
   const [audioDuration, setAudioDuration] = useState(0);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   
   const { toast } = useToast();
   const { createPost } = usePosts();
@@ -38,27 +40,82 @@ const TweetComposer = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const maxLength = 280;
 
+  const uploadImages = async (images: File[]): Promise<string[]> => {
+    const uploadedUrls: string[] = [];
+    
+    for (const image of images) {
+      const fileExt = image.name.split('.').pop();
+      const fileName = `${user?.id}/${Date.now()}-${Math.random()}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('post-images')
+        .upload(fileName, image);
+      
+      if (error) {
+        console.error('Error uploading image:', error);
+        throw error;
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('post-images')
+        .getPublicUrl(data.path);
+      
+      uploadedUrls.push(publicUrl);
+    }
+    
+    return uploadedUrls;
+  };
+
   const handleTweetSubmit = async () => {
-    if (isThreadMode) {
-      const validTweets = threadTweets.filter(tweet => tweet.trim().length > 0);
-      if (validTweets.length > 0) {
-        const combinedContent = validTweets.join("\n\n");
-        await createPost(combinedContent);
-        setThreadTweets([""]);
-        setIsThreadMode(false);
-        resetForm();
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to create a post",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    
+    try {
+      let imageUrls: string[] = [];
+      
+      // Upload images if any are selected
+      if (selectedImages.length > 0) {
+        imageUrls = await uploadImages(selectedImages);
       }
-    } else {
-      if (tweetText.trim()) {
-        let finalContent = tweetText;
-        
-        if (location.trim()) {
-          finalContent += `\n📍 ${location}`;
+      
+      if (isThreadMode) {
+        const validTweets = threadTweets.filter(tweet => tweet.trim().length > 0);
+        if (validTweets.length > 0) {
+          const combinedContent = validTweets.join("\n\n");
+          await createPost(combinedContent, imageUrls);
+          setThreadTweets([""]);
+          setIsThreadMode(false);
+          resetForm();
         }
-        
-        await createPost(finalContent);
-        resetForm();
+      } else {
+        if (tweetText.trim() || imageUrls.length > 0) {
+          let finalContent = tweetText;
+          
+          if (location.trim()) {
+            finalContent += `\n📍 ${location}`;
+          }
+          
+          await createPost(finalContent, imageUrls);
+          resetForm();
+        }
       }
+    } catch (error) {
+      console.error('Error creating post:', error);
+      toast({
+        title: "Error creating post",
+        description: "Failed to upload images or create post",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -236,6 +293,29 @@ const TweetComposer = () => {
             onHashtagClick={() => setShowHashtagInput(true)}
             onMentionClick={() => setShowMentionInput(true)}
           />
+
+          {/* Image Preview */}
+          {selectedImages.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              {selectedImages.map((image, index) => (
+                <div key={index} className="relative">
+                  <img
+                    src={URL.createObjectURL(image)}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedImages(selectedImages.filter((_, i) => i !== index))}
+                    className="absolute top-1 right-1 bg-black/50 text-white hover:bg-black/70 rounded-full p-1 h-6 w-6"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
           
           <AudioVisualizer
             selectedAudio={selectedAudio}
@@ -347,9 +427,9 @@ const TweetComposer = () => {
               
               <InteractiveHoverButton
                 type="button"
-                disabled={isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() || tweetText.length > maxLength)}
+                disabled={isUploading || (isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() && selectedImages.length === 0) || tweetText.length > maxLength)}
                 onClick={handleTweetSubmit}
-                text={isThreadMode ? 'Post Thread' : 'Post'}
+                text={isUploading ? 'Posting...' : (isThreadMode ? 'Post Thread' : 'Post')}
                 className="w-auto px-6"
               />
             </div>

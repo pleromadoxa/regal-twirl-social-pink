@@ -105,9 +105,35 @@ export const PostsList = ({
                       {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                     </span>
                   </div>
-                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed relative z-40">
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed relative z-40 mb-3">
                     {post.content}
                   </p>
+                  
+                  {/* Display images if available */}
+                  {post.image_urls && post.image_urls.length > 0 && (
+                    <div className={`grid gap-2 mb-3 rounded-lg overflow-hidden ${
+                      post.image_urls.length === 1 ? 'grid-cols-1' : 
+                      post.image_urls.length === 2 ? 'grid-cols-2' : 
+                      post.image_urls.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
+                    }`}>
+                      {post.image_urls.map((imageUrl: string, index: number) => (
+                        <div 
+                          key={index} 
+                          className={`relative ${
+                            post.image_urls.length === 3 && index === 0 ? 'col-span-2' : ''
+                          }`}
+                        >
+                          <img
+                            src={imageUrl}
+                            alt={`Post image ${index + 1}`}
+                            className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
+                            onClick={() => window.open(imageUrl, '_blank')}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
                   <div className="relative z-40">
                     <PostActions 
                       postId={post.id}

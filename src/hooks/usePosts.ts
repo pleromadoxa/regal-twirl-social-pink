@@ -7,6 +7,7 @@ export interface Post {
   id: string;
   user_id: string;
   content: string;
+  image_urls?: string[];
   created_at: string;
   updated_at: string;
   likes_count: number;
@@ -102,6 +103,7 @@ export const usePosts = () => {
           likes_count: post.likes_count || 0,
           retweets_count: post.retweets_count || 0,
           replies_count: post.replies_count || 0,
+          image_urls: post.image_urls || [],
           profiles: profilesMap.get(post.user_id) || {
             username: 'unknown',
             display_name: 'Unknown User',
@@ -118,6 +120,7 @@ export const usePosts = () => {
           likes_count: post.likes_count || 0,
           retweets_count: post.retweets_count || 0,
           replies_count: post.replies_count || 0,
+          image_urls: post.image_urls || [],
           profiles: profilesMap.get(post.user_id) || {
             username: 'unknown',
             display_name: 'Unknown User',
@@ -136,7 +139,7 @@ export const usePosts = () => {
     }
   };
 
-  const createPost = async (content: string) => {
+  const createPost = async (content: string, imageUrls: string[] = []) => {
     if (!user) {
       toast({
         title: "Authentication required",
@@ -153,6 +156,7 @@ export const usePosts = () => {
           {
             user_id: user.id,
             content: content.trim(),
+            image_urls: imageUrls.length > 0 ? imageUrls : null,
           }
         ]);
 
