@@ -1,3 +1,4 @@
+
 import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,8 +10,9 @@ import { useTheme } from "@/contexts/ThemeContext";
 
 const SidebarNav = () => {
   const location = useLocation();
-  const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { theme } = useTheme();
 
   const navigationItems = [
     { icon: Home, label: "Home", path: "/", active: location.pathname === "/" },
@@ -18,12 +20,7 @@ const SidebarNav = () => {
     { icon: MessageCircle, label: "Messages", path: "/messages", active: location.pathname === "/messages" },
     { icon: Pin, label: "Pinned", path: "/pinned", active: location.pathname === "/pinned" },
     { icon: User, label: "Profile", path: `/profile/${user?.id}`, active: location.pathname.startsWith("/profile") },
-    {
-      name: "Settings",
-      href: "/settings",
-      icon: Settings,
-      count: 0
-    }
+    { icon: Settings, label: "Settings", path: "/settings", active: location.pathname === "/settings" }
   ];
 
   const handleSignOut = async () => {
