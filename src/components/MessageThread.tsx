@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +16,11 @@ import { formatDistanceToNow } from 'date-fns';
 import MediaUpload from '@/components/MediaUpload';
 import EmojiPicker from '@/components/EmojiPicker';
 import VideoCall from '@/components/VideoCall';
-import AudioCall from '@/components/AudioCall';
+import EnhancedAudioCall from '@/components/EnhancedAudioCall';
+import IncomingCallPopup from '@/components/IncomingCallPopup';
+import CallHistoryDialog from '@/components/CallHistoryDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -32,10 +35,18 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const [showAttachments, setShowAttachments] = useState(false);
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [isAudioCallActive, setIsAudioCallActive] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<{
+    callerId: string;
+    callerName: string;
+    callerAvatar?: string;
+    callType: 'audio' | 'video';
+  } | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const { user } = useAuth();
   const { messages, conversations, sendMessage, sendTypingIndicator, typingUsers, clearCache } = useEnhancedMessages();
+  const { toast } = useToast();
 
   const conversation = conversations.find(c => c.id === conversationId);
 
@@ -47,10 +58,35 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     scrollToBottom();
   }, [messages]);
 
-  // Clear cache when component mounts to ensure fresh data
   useEffect(() => {
     clearCache();
   }, [conversationId]);
+
+  // Set up incoming call listener
+  useEffect(() => {
+    if (!user || !conversation) return;
+
+    const channel = supabase.channel(`incoming-calls-${user.id}`);
+    
+    channel.on('broadcast', { event: 'incoming-call' }, (payload) => {
+      const { caller_id, caller_name, caller_avatar, call_type, conversation_id } = payload.payload;
+      
+      if (conversation_id === conversationId && caller_id !== user.id) {
+        setIncomingCall({
+          callerId: caller_id,
+          callerName: caller_name,
+          callerAvatar: caller_avatar,
+          callType: call_type
+        });
+      }
+    });
+
+    channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, conversationId, conversation]);
 
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && selectedImages.length === 0 && selectedVideos.length === 0 && selectedDocuments.length === 0) || !conversation || isSending) return;
@@ -68,7 +104,6 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       setSelectedDocuments([]);
       setShowAttachments(false);
       
-      // Stop typing indicator
       sendTypingIndicator(conversationId, false);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -87,15 +122,12 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
     
-    // Send typing indicator
     sendTypingIndicator(conversationId, true);
     
-    // Clear existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
     
-    // Stop typing after 2 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       sendTypingIndicator(conversationId, false);
     }, 2000);
@@ -125,17 +157,98 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     }
   };
 
-  const handleVideoCall = () => {
-    setIsVideoCallActive(true);
+  const initiateCall = async (callType: 'audio' | 'video') => {
+    if (!conversation?.other_user || !user) return;
+
+    try {
+      // Notify the other user about incoming call
+      const channel = supabase.channel(`call-initiation-${Date.now()}`);
+      
+      await channel.subscribe();
+      
+      channel.send({
+        type: 'broadcast',
+        event: 'incoming-call',
+        payload: {
+          caller_id: user.id,
+          caller_name: user.raw_user_meta_data?.display_name || user.email,
+          caller_avatar: user.raw_user_meta_data?.avatar_url,
+          call_type: callType,
+          conversation_id: conversationId
+        }
+      });
+
+      // Start the call
+      if (callType === 'video') {
+        setIsVideoCallActive(true);
+      } else {
+        setIsAudioCallActive(true);
+      }
+
+      // Create missed call notification if not answered
+      setTimeout(async () => {
+        if (!isVideoCallActive && !isAudioCallActive) {
+          await supabase.from('notifications').insert({
+            user_id: conversation.other_user!.id,
+            type: 'missed_call',
+            title: 'Missed Call',
+            content: `${user.raw_user_meta_data?.display_name || user.email} called you`,
+            data: {
+              caller_id: user.id,
+              call_type: callType,
+              conversation_id: conversationId
+            }
+          });
+        }
+      }, 30000); // 30 seconds timeout
+
+      supabase.removeChannel(channel);
+    } catch (error) {
+      console.error('Error initiating call:', error);
+      toast({
+        title: "Call failed",
+        description: "Could not initiate the call",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleAudioCall = () => {
-    setIsAudioCallActive(true);
-  };
+  const handleVideoCall = () => initiateCall('video');
+  const handleAudioCall = () => initiateCall('audio');
 
   const handleCallEnd = () => {
     setIsVideoCallActive(false);
     setIsAudioCallActive(false);
+  };
+
+  const handleAcceptIncomingCall = () => {
+    if (incomingCall?.callType === 'video') {
+      setIsVideoCallActive(true);
+    } else {
+      setIsAudioCallActive(true);
+    }
+    setIncomingCall(null);
+  };
+
+  const handleDeclineIncomingCall = async () => {
+    if (incomingCall && user) {
+      // Record the declined call
+      try {
+        await supabase.from('call_history').insert({
+          caller_id: incomingCall.callerId,
+          recipient_id: user.id,
+          conversation_id: conversationId,
+          call_type: incomingCall.callType,
+          call_status: 'declined',
+          duration_seconds: 0,
+          started_at: new Date().toISOString(),
+          ended_at: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Error recording declined call:', error);
+      }
+    }
+    setIncomingCall(null);
   };
 
   if (!conversation) {
@@ -167,7 +280,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   // Audio call overlay
   if (isAudioCallActive) {
     return (
-      <AudioCall
+      <EnhancedAudioCall
         conversationId={conversationId}
         otherUserId={conversation.other_user?.id || ''}
         otherUserName={conversation.other_user?.display_name || conversation.other_user?.username || 'Unknown'}
@@ -198,6 +311,18 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Incoming call popup */}
+      {incomingCall && (
+        <IncomingCallPopup
+          callerName={incomingCall.callerName}
+          callerAvatar={incomingCall.callerAvatar}
+          callType={incomingCall.callType}
+          onAccept={handleAcceptIncomingCall}
+          onDecline={handleDeclineIncomingCall}
+          isVisible={!!incomingCall}
+        />
+      )}
+
       {/* Chat Header */}
       <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-4 z-10">
         <div className="flex items-center justify-between">
@@ -235,6 +360,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
             <Button variant="ghost" size="sm" className="rounded-full" onClick={handleVideoCall}>
               <Video className="w-4 h-4" />
             </Button>
+            <CallHistoryDialog />
             <ContextMenu>
               <ContextMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="rounded-full">

@@ -119,6 +119,53 @@ export type Database = {
         }
         Relationships: []
       }
+      call_history: {
+        Row: {
+          call_status: string
+          call_type: string
+          caller_id: string
+          conversation_id: string | null
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          recipient_id: string
+          started_at: string
+        }
+        Insert: {
+          call_status: string
+          call_type: string
+          caller_id: string
+          conversation_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          recipient_id: string
+          started_at?: string
+        }
+        Update: {
+          call_status?: string
+          call_type?: string
+          caller_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          recipient_id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_history_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string | null
@@ -223,31 +270,43 @@ export type Database = {
       notifications: {
         Row: {
           actor_id: string | null
+          content: string | null
           created_at: string | null
+          data: Json | null
           id: string
           message: string | null
           post_id: string | null
           read: boolean | null
+          read_at: string | null
+          title: string | null
           type: string
           user_id: string
         }
         Insert: {
           actor_id?: string | null
+          content?: string | null
           created_at?: string | null
+          data?: Json | null
           id?: string
           message?: string | null
           post_id?: string | null
           read?: boolean | null
+          read_at?: string | null
+          title?: string | null
           type: string
           user_id: string
         }
         Update: {
           actor_id?: string | null
+          content?: string | null
           created_at?: string | null
+          data?: Json | null
           id?: string
           message?: string | null
           post_id?: string | null
           read?: boolean | null
+          read_at?: string | null
+          title?: string | null
           type?: string
           user_id?: string
         }
