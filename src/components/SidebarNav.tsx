@@ -1,5 +1,5 @@
 
-import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, Building } from "lucide-react";
+import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -14,10 +14,10 @@ const SidebarNav = () => {
   const navItems = [
     { icon: Home, label: "Home", path: "/", active: location.pathname === "/" },
     { icon: Search, label: "Explore", path: "/explore", active: location.pathname === "/explore" },
-    { icon: MessageCircle, label: "Conversations", path: "/messages", active: location.pathname === "/messages" },
+    { icon: MessageCircle, label: "Messages", path: "/messages", active: location.pathname === "/messages" },
     { icon: Pin, label: "Pinned", path: "/pinned", active: location.pathname === "/pinned" },
     { icon: User, label: "Profile", path: `/profile/${user?.id}`, active: location.pathname.startsWith("/profile") },
-    { icon: MoreHorizontal, label: "More", path: "/more", active: location.pathname === "/more" },
+    { icon: Star, label: "Premium", path: "/premium", active: location.pathname === "/premium" },
   ];
 
   const handleSignOut = async () => {
@@ -26,59 +26,64 @@ const SidebarNav = () => {
   };
 
   const handleNavigation = (path: string) => {
-    if (path === "/more") {
-      // This page doesn't exist yet, so we'll just return for now
+    if (path === "/premium") {
+      // Premium page doesn't exist yet, so we'll just return for now
       return;
     }
     navigate(path);
   };
 
   return (
-    <aside className="w-64 p-4 space-y-2 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700">
+    <aside className="w-72 p-6 space-y-4 bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900 border-r border-purple-200 dark:border-purple-800">
       {/* Logo */}
-      <div className="px-3 py-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-          Regal
-        </h1>
+      <div className="px-3 py-6 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-full gradient-bg flex items-center justify-center">
+            <span className="text-white font-bold text-xl">R</span>
+          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Regal
+          </h1>
+        </div>
         <ThemeToggle />
       </div>
 
       {/* Navigation */}
-      <nav className="space-y-1">
+      <nav className="space-y-2">
         {navItems.map((item) => (
           <Button
             key={item.label}
             variant="ghost"
             onClick={() => handleNavigation(item.path)}
-            className={`w-full justify-start px-4 py-6 text-lg hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl ${
+            className={`w-full justify-start px-6 py-4 text-lg rounded-2xl transition-all duration-200 hover:scale-105 ${
               item.active 
-                ? 'bg-slate-100 dark:bg-slate-700 text-purple-600 dark:text-purple-400 font-semibold' 
-                : 'text-slate-700 dark:text-slate-300'
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg hover:from-purple-600 hover:to-pink-600' 
+                : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-800/50'
             }`}
           >
             <item.icon className="w-6 h-6 mr-4" />
-            <span>{item.label}</span>
+            <span className="font-medium">{item.label}</span>
           </Button>
         ))}
       </nav>
 
-      {/* Post Button or Auth Button */}
-      <div className="pt-4 space-y-2">
+      {/* Action Buttons */}
+      <div className="pt-6 space-y-3">
         {user ? (
           <>
-            <Button className="w-full py-4 text-lg font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-2xl">
-              Post
+            <Button className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-2xl shadow-lg transition-all duration-200 hover:scale-105">
+              Create Post
             </Button>
             
-            {/* Business Page Creation */}
+            {/* Professional Account Creation */}
             <BusinessPageDialog
               trigger={
                 <Button 
                   variant="outline"
-                  className="w-full py-3 text-sm font-medium"
+                  className="w-full py-3 text-sm font-medium rounded-2xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/50 transition-all duration-200"
                 >
-                  <Building className="w-4 h-4 mr-2" />
-                  Create Business Page
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  Create Professional Account
                 </Button>
               }
             />
@@ -86,7 +91,7 @@ const SidebarNav = () => {
             <Button 
               onClick={handleSignOut}
               variant="outline"
-              className="w-full py-3 text-sm font-medium"
+              className="w-full py-3 text-sm font-medium rounded-2xl border-red-200 hover:bg-red-50 text-red-600 dark:border-red-800 dark:hover:bg-red-900/20 dark:text-red-400 transition-all duration-200"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
@@ -95,12 +100,33 @@ const SidebarNav = () => {
         ) : (
           <Button 
             onClick={() => navigate('/auth')}
-            className="w-full py-4 text-lg font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-2xl"
+            className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-2xl shadow-lg transition-all duration-200 hover:scale-105"
           >
             Sign In
           </Button>
         )}
       </div>
+
+      {/* User Card */}
+      {user && (
+        <div className="mt-8 p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-purple-200 dark:border-purple-800">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
+              <span className="text-white font-bold text-lg">
+                {user.email?.[0]?.toUpperCase() || 'U'}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                Welcome back!
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                {user.email}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };

@@ -38,7 +38,7 @@ export const useReplies = (postId: string) => {
           content,
           created_at,
           updated_at,
-          profiles!replies_user_id_fkey (
+          profiles!user_id (
             username,
             display_name,
             avatar_url
