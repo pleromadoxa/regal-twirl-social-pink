@@ -16,6 +16,8 @@ import { Send, Phone, Video, Info, Paperclip, Zap, Settings, Copy, Reply, Forwar
 import { formatDistanceToNow } from 'date-fns';
 import MediaUpload from '@/components/MediaUpload';
 import EmojiPicker from '@/components/EmojiPicker';
+import VideoCall from '@/components/VideoCall';
+import AudioCall from '@/components/AudioCall';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -28,10 +30,12 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
   const [selectedDocuments, setSelectedDocuments] = useState<File[]>([]);
   const [showAttachments, setShowAttachments] = useState(false);
+  const [isVideoCallActive, setIsVideoCallActive] = useState(false);
+  const [isAudioCallActive, setIsAudioCallActive] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const { user } = useAuth();
-  const { messages, conversations, sendMessage, sendTypingIndicator, typingUsers } = useEnhancedMessages();
+  const { messages, conversations, sendMessage, sendTypingIndicator, typingUsers, clearCache } = useEnhancedMessages();
 
   const conversation = conversations.find(c => c.id === conversationId);
 
@@ -42,6 +46,11 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Clear cache when component mounts to ensure fresh data
+  useEffect(() => {
+    clearCache();
+  }, [conversationId]);
 
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && selectedImages.length === 0 && selectedVideos.length === 0 && selectedDocuments.length === 0) || !conversation || isSending) return;
@@ -105,18 +114,28 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
         setNewMessage(`@${conversation?.other_user?.username} `);
         break;
       case 'forward':
-        // Implement forward functionality
         console.log('Forward message:', messageId);
         break;
       case 'delete':
-        // Implement delete functionality
         console.log('Delete message:', messageId);
         break;
       case 'pin':
-        // Implement pin functionality
         console.log('Pin message:', messageId);
         break;
     }
+  };
+
+  const handleVideoCall = () => {
+    setIsVideoCallActive(true);
+  };
+
+  const handleAudioCall = () => {
+    setIsAudioCallActive(true);
+  };
+
+  const handleCallEnd = () => {
+    setIsVideoCallActive(false);
+    setIsAudioCallActive(false);
   };
 
   if (!conversation) {
@@ -131,6 +150,30 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           </p>
         </div>
       </div>
+    );
+  }
+
+  // Video call overlay
+  if (isVideoCallActive) {
+    return (
+      <VideoCall
+        conversationId={conversationId}
+        otherUserId={conversation.other_user?.id || ''}
+        onCallEnd={handleCallEnd}
+      />
+    );
+  }
+
+  // Audio call overlay
+  if (isAudioCallActive) {
+    return (
+      <AudioCall
+        conversationId={conversationId}
+        otherUserId={conversation.other_user?.id || ''}
+        otherUserName={conversation.other_user?.display_name || conversation.other_user?.username || 'Unknown'}
+        otherUserAvatar={conversation.other_user?.avatar_url}
+        onCallEnd={handleCallEnd}
+      />
     );
   }
 
@@ -186,10 +229,10 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm" className="rounded-full">
+            <Button variant="ghost" size="sm" className="rounded-full" onClick={handleAudioCall}>
               <Phone className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="rounded-full">
+            <Button variant="ghost" size="sm" className="rounded-full" onClick={handleVideoCall}>
               <Video className="w-4 h-4" />
             </Button>
             <ContextMenu>

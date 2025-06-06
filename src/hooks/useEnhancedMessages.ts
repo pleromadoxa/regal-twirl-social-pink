@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -49,6 +48,16 @@ export const useEnhancedMessages = () => {
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const isSubscribedRef = useRef<boolean>(false);
 
+  // Clear cache function
+  const clearCache = () => {
+    console.log('Clearing message cache...');
+    setMessages([]);
+    setConversations([]);
+    setTypingUsers({});
+    localStorage.removeItem('cached_conversations');
+    localStorage.removeItem('cached_messages');
+  };
+
   const calculateStreak = (messages: EnhancedMessage[]) => {
     if (!messages || messages.length === 0) return 0;
     
@@ -78,12 +87,17 @@ export const useEnhancedMessages = () => {
     return streak;
   };
 
-  const fetchConversations = async () => {
+  const fetchConversations = async (forceRefresh = false) => {
     if (!user) return;
 
     try {
       setLoading(true);
       
+      // Clear cache if force refresh
+      if (forceRefresh) {
+        clearCache();
+      }
+
       const { data: conversationsData, error } = await supabase
         .from('conversations')
         .select('*')
@@ -155,10 +169,15 @@ export const useEnhancedMessages = () => {
     }
   };
 
-  const fetchMessages = async (conversationId: string) => {
+  const fetchMessages = async (conversationId: string, forceRefresh = false) => {
     if (!user) return;
 
     try {
+      // Clear messages cache if force refresh
+      if (forceRefresh) {
+        setMessages([]);
+      }
+
       const { data: conversation } = await supabase
         .from('conversations')
         .select('*')
@@ -381,7 +400,7 @@ export const useEnhancedMessages = () => {
         description: `Conversation started successfully.`
       });
 
-      fetchConversations();
+      fetchConversations(true); // Force refresh
       return newConv.id;
     } catch (error) {
       console.error('Error creating group:', error);
@@ -422,7 +441,7 @@ export const useEnhancedMessages = () => {
         return;
       }
 
-      fetchConversations();
+      fetchConversations(true); // Force refresh
       setSelectedConversation(newConv.id);
       return newConv.id;
     } catch (error) {
@@ -451,7 +470,7 @@ export const useEnhancedMessages = () => {
     isSubscribedRef.current = false;
   };
 
-  // Set up realtime subscriptions
+  // Set up realtime subscriptions with improved cache clearing
   useEffect(() => {
     if (!user) {
       cleanupChannels();
@@ -469,7 +488,7 @@ export const useEnhancedMessages = () => {
     try {
       // Messages channel with proper filtering
       const messagesChannel = supabase
-        .channel(`messages-${user.id}-${Date.now()}`) // Add timestamp to ensure unique channel name
+        .channel(`messages-${user.id}-${Date.now()}`)
         .on(
           'postgres_changes',
           {
@@ -516,7 +535,7 @@ export const useEnhancedMessages = () => {
               }
 
               // Refresh conversations
-              await fetchConversations();
+              await fetchConversations(true);
             }
           }
         )
@@ -531,13 +550,13 @@ export const useEnhancedMessages = () => {
           async (payload) => {
             console.log('Message sent by current user:', payload);
             // Refresh to update conversation list
-            await fetchConversations();
+            await fetchConversations(true);
           }
         );
 
       // Typing indicators channel
       const typingChannel = supabase
-        .channel(`typing-indicators-${user.id}-${Date.now()}`) // Add timestamp to ensure unique channel name
+        .channel(`typing-indicators-${user.id}-${Date.now()}`)
         .on('broadcast', { event: 'typing' }, (payload) => {
           const { user_id, conversation_id, is_typing } = payload.payload;
           
@@ -585,21 +604,21 @@ export const useEnhancedMessages = () => {
       console.log('Cleaning up on unmount');
       cleanupChannels();
     };
-  }, [user?.id, selectedConversation]); // Include selectedConversation for real-time message filtering
+  }, [user?.id, selectedConversation]);
 
-  // Handle selectedConversation changes separately
+  // Handle selectedConversation changes separately with cache clearing
   useEffect(() => {
     if (selectedConversation && user) {
       console.log('Fetching messages for conversation:', selectedConversation);
-      fetchMessages(selectedConversation);
+      fetchMessages(selectedConversation, true); // Force refresh when switching conversations
     }
   }, [selectedConversation, user]);
 
-  // Initial fetch
+  // Initial fetch with cache clearing
   useEffect(() => {
     if (user) {
       console.log('Initial fetch for user:', user.id);
-      fetchConversations();
+      fetchConversations(true); // Force refresh on initial load
     }
   }, [user]);
 
@@ -614,6 +633,7 @@ export const useEnhancedMessages = () => {
     startDirectConversation,
     sendTypingIndicator,
     typingUsers,
-    refetch: fetchConversations
+    refetch: () => fetchConversations(true),
+    clearCache
   };
 };

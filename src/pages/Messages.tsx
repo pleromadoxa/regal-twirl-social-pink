@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +13,8 @@ import {
   Bell,
   Shield,
   Trash2,
-  Download
+  Download,
+  RefreshCw
 } from "lucide-react";
 import { useEnhancedMessages } from "@/hooks/useEnhancedMessages";
 import ConversationStarter from "@/components/ConversationStarter";
@@ -41,17 +41,27 @@ const Messages = () => {
     messages, 
     loading: conversationsLoading, 
     selectedConversation,
-    setSelectedConversation 
+    setSelectedConversation,
+    refetch,
+    clearCache
   } = useEnhancedMessages();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    clearCache();
+    await refetch();
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
 
   if (loading) {
     return (
@@ -106,6 +116,15 @@ const Messages = () => {
                 Messages
               </h1>
               <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="rounded-full"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="rounded-full">
