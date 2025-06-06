@@ -6,7 +6,6 @@ import {
   VideoOff, 
   Mic, 
   MicOff, 
-  Phone, 
   PhoneOff,
   Monitor,
   MonitorOff
@@ -14,6 +13,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useCallHistory } from '@/hooks/useCallHistory';
 
 interface VideoCallProps {
   conversationId: string;
@@ -33,9 +33,12 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const signalingChannelRef = useRef<any>(null);
+  const callStartTimeRef = useRef<number | null>(null);
+  const callSessionStartRef = useRef<string>(new Date().toISOString());
   
   const { user } = useAuth();
   const { toast } = useToast();
+  const { addCallToHistory } = useCallHistory();
 
   const rtcConfiguration = {
     iceServers: [
@@ -190,7 +193,24 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
     }
   };
 
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
+    const endTime = new Date().toISOString();
+    const duration = callStartTimeRef.current ? 
+      Math.floor((Date.now() - callStartTimeRef.current) / 1000) : 0;
+
+    // Add to call history
+    if (user) {
+      await addCallToHistory({
+        recipient_id: otherUserId,
+        conversation_id: conversationId,
+        call_type: 'video',
+        call_status: callStatus === 'connected' ? 'completed' : 'failed',
+        duration_seconds: duration,
+        started_at: callSessionStartRef.current,
+        ended_at: endTime
+      });
+    }
+
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
     }
@@ -284,9 +304,9 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex flex-col">
-      {/* Remote video */}
-      <div className="flex-1 relative">
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-50 flex flex-col">
+      {/* Remote video with enhanced overlay */}
+      <div className="flex-1 relative overflow-hidden">
         <video
           ref={remoteVideoRef}
           autoPlay
@@ -294,20 +314,25 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
           className="w-full h-full object-cover"
         />
         
+        {/* Enhanced connecting overlay */}
         {callStatus === 'connecting' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <Card className="bg-gradient-to-br from-purple-900 via-blue-900 to-black border-white/20 text-white">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <Card className="bg-black/60 border-white/20 text-white backdrop-blur-lg">
               <CardContent className="p-8 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                <p className="text-lg">Connecting...</p>
+                <div className="relative mb-6">
+                  <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
+                  <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-400 rounded-full animate-spin mx-auto" style={{ animationDelay: '0.3s' }}></div>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Connecting...</h3>
+                <p className="text-white/70">Setting up video call</p>
               </CardContent>
             </Card>
           </div>
         )}
       </div>
 
-      {/* Local video */}
-      <div className="absolute top-4 right-4 w-32 h-24 bg-gray-800 rounded-lg overflow-hidden border-2 border-white/20">
+      {/* Enhanced local video */}
+      <div className="absolute top-6 right-6 w-40 h-30 bg-black/80 rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl">
         <video
           ref={localVideoRef}
           autoPlay
@@ -315,17 +340,22 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
           muted
           className="w-full h-full object-cover"
         />
+        {!isVideoEnabled && (
+          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+            <VideoOff className="w-8 h-8 text-white/70" />
+          </div>
+        )}
       </div>
 
-      {/* Call controls */}
-      <Card className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/80 border-white/20">
+      {/* Enhanced call controls */}
+      <Card className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/60 border-white/20 backdrop-blur-lg">
         <CardContent className="p-4">
           <div className="flex items-center space-x-4">
             <Button
               variant={isAudioEnabled ? "default" : "destructive"}
               size="lg"
               onClick={toggleAudio}
-              className="rounded-full w-12 h-12 p-0"
+              className="rounded-full w-14 h-14 p-0 shadow-lg transition-all duration-200 hover:scale-110"
             >
               {isAudioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
             </Button>
@@ -334,7 +364,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
               variant={isVideoEnabled ? "default" : "destructive"}
               size="lg"
               onClick={toggleVideo}
-              className="rounded-full w-12 h-12 p-0"
+              className="rounded-full w-14 h-14 p-0 shadow-lg transition-all duration-200 hover:scale-110"
             >
               {isVideoEnabled ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
             </Button>
@@ -343,7 +373,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
               variant={isScreenSharing ? "secondary" : "outline"}
               size="lg"
               onClick={toggleScreenShare}
-              className="rounded-full w-12 h-12 p-0"
+              className="rounded-full w-14 h-14 p-0 shadow-lg transition-all duration-200 hover:scale-110"
             >
               {isScreenSharing ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
             </Button>
@@ -352,7 +382,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
               variant="destructive"
               size="lg"
               onClick={handleEndCall}
-              className="rounded-full w-12 h-12 p-0 bg-red-500 hover:bg-red-600"
+              className="rounded-full w-14 h-14 p-0 bg-red-500 hover:bg-red-600 shadow-lg transition-all duration-200 hover:scale-110"
             >
               <PhoneOff className="w-6 h-6" />
             </Button>
@@ -360,15 +390,15 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
         </CardContent>
       </Card>
 
-      {/* Call status */}
-      <div className="absolute top-4 left-4 text-white">
-        <div className="flex items-center space-x-2 bg-black/50 px-3 py-2 rounded-full">
-          <div className={`w-2 h-2 rounded-full ${
-            callStatus === 'connected' ? 'bg-green-400' :
+      {/* Enhanced call status */}
+      <div className="absolute top-6 left-6 text-white">
+        <div className="flex items-center space-x-3 bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
+          <div className={`w-3 h-3 rounded-full ${
+            callStatus === 'connected' ? 'bg-green-400 animate-pulse' :
             callStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
             'bg-red-400'
           }`}></div>
-          <span className="text-sm">
+          <span className="text-sm font-medium">
             {callStatus === 'connecting' && 'Connecting...'}
             {callStatus === 'connected' && 'Connected'}
             {callStatus === 'ended' && 'Call ended'}

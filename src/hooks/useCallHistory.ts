@@ -95,11 +95,19 @@ export const useCallHistory = () => {
     if (!user) return;
 
     try {
+      console.log('Adding call to history:', callData);
+      
       const { error } = await supabase
         .from('call_history')
         .insert({
           caller_id: user.id,
-          ...callData
+          recipient_id: callData.recipient_id,
+          conversation_id: callData.conversation_id,
+          call_type: callData.call_type,
+          call_status: callData.call_status,
+          duration_seconds: callData.duration_seconds || 0,
+          started_at: callData.started_at,
+          ended_at: callData.ended_at
         });
 
       if (error) {
@@ -107,6 +115,7 @@ export const useCallHistory = () => {
         return;
       }
 
+      console.log('Call added to history successfully');
       // Refresh history
       await fetchCallHistory();
     } catch (error) {
@@ -118,15 +127,16 @@ export const useCallHistory = () => {
     if (user) {
       fetchCallHistory();
 
-      // Set up real-time subscription
+      // Set up real-time subscription for call history updates
       const subscription = supabase
-        .channel('call-history')
+        .channel('call-history-updates')
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
           table: 'call_history',
           filter: `caller_id=eq.${user.id}`
-        }, () => {
+        }, (payload) => {
+          console.log('Call history update for caller:', payload);
           fetchCallHistory();
         })
         .on('postgres_changes', {
@@ -134,7 +144,8 @@ export const useCallHistory = () => {
           schema: 'public',
           table: 'call_history',
           filter: `recipient_id=eq.${user.id}`
-        }, () => {
+        }, (payload) => {
+          console.log('Call history update for recipient:', payload);
           fetchCallHistory();
         })
         .subscribe();
