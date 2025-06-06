@@ -1,8 +1,9 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { X } from "lucide-react";
+import { X, Image as ImageIcon, Video, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePosts } from "@/hooks/usePosts";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +21,7 @@ const TweetComposer = () => {
   const [threadTweets, setThreadTweets] = useState([""]);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [selectedVideos, setSelectedVideos] = useState<File[]>([]);
+  const [selectedDocuments, setSelectedDocuments] = useState<File[]>([]);
   const [selectedAudio, setSelectedAudio] = useState<File | null>(null);
   const [audioURL, setAudioURL] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -32,17 +34,59 @@ const TweetComposer = () => {
   const [audioDuration, setAudioDuration] = useState(0);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
+  
   const { toast } = useToast();
   const { createPost } = usePosts();
   const { user } = useAuth();
   const audioRef = useRef<HTMLAudioElement>(null);
   const maxLength = 280;
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document') => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      switch (type) {
+        case 'image':
+          setSelectedImages(prev => [...prev, ...files]);
+          break;
+        case 'video':
+          setSelectedVideos(prev => [...prev, ...files]);
+          break;
+        case 'document':
+          setSelectedDocuments(prev => [...prev, ...files]);
+          break;
+      }
+      toast({
+        title: "Files added",
+        description: `${files.length} ${type}(s) added to your post`
+      });
+    }
+    if (e.target) e.target.value = '';
+  };
+
+  const removeFile = (index: number, type: 'image' | 'video' | 'document') => {
+    switch (type) {
+      case 'image':
+        setSelectedImages(prev => prev.filter((_, i) => i !== index));
+        break;
+      case 'video':
+        setSelectedVideos(prev => prev.filter((_, i) => i !== index));
+        break;
+      case 'document':
+        setSelectedDocuments(prev => prev.filter((_, i) => i !== index));
+        break;
+    }
+  };
+
   const handleTweetSubmit = async () => {
     if (isThreadMode) {
       const validTweets = threadTweets.filter(tweet => tweet.trim().length > 0);
       if (validTweets.length > 0) {
-        const combinedContent = validTweets.join("\n\n");
+        const combinedContent = validTweets.map((tweet, index) => 
+          `🧵 ${index + 1}/${validTweets.length} ${tweet}`
+        ).join("\n\n");
         await createPost(combinedContent);
         setThreadTweets([""]);
         setIsThreadMode(false);
@@ -66,6 +110,7 @@ const TweetComposer = () => {
     setTweetText("");
     setSelectedImages([]);
     setSelectedVideos([]);
+    setSelectedDocuments([]);
     setSelectedAudio(null);
     setAudioURL("");
     setLocation("");
@@ -205,6 +250,62 @@ const TweetComposer = () => {
             onAccountChange={setSelectedAccount}
           />
 
+          {/* Media Previews */}
+          {(selectedImages.length > 0 || selectedVideos.length > 0 || selectedDocuments.length > 0) && (
+            <div className="grid grid-cols-2 gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              {selectedImages.map((file, index) => (
+                <div key={`img-${index}`} className="relative group">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`Upload ${index + 1}`}
+                    className="w-full h-24 object-cover rounded-lg"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFile(index, 'image')}
+                    className="absolute top-1 right-1 bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+              
+              {selectedVideos.map((file, index) => (
+                <div key={`vid-${index}`} className="relative group">
+                  <video
+                    src={URL.createObjectURL(file)}
+                    className="w-full h-24 object-cover rounded-lg"
+                    controls={false}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFile(index, 'video')}
+                    className="absolute top-1 right-1 bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+              
+              {selectedDocuments.map((file, index) => (
+                <div key={`doc-${index}`} className="relative group flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg">
+                  <Paperclip className="w-4 h-4 text-purple-500" />
+                  <span className="text-sm truncate flex-1">{file.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFile(index, 'document')}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {isThreadMode ? (
             <ThreadComposer
               threadTweets={threadTweets}
@@ -224,12 +325,46 @@ const TweetComposer = () => {
               />
             </div>
           )}
+
+          {/* Hidden file inputs */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFileSelect(e, 'image')}
+          />
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/*"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFileSelect(e, 'video')}
+          />
+          <input
+            ref={documentInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.txt"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFileSelect(e, 'document')}
+          />
           
           <TweetActions
             selectedImages={selectedImages}
             selectedVideos={selectedVideos}
-            onImagesChange={setSelectedImages}
-            onVideosChange={setSelectedVideos}
+            onImagesChange={(files) => {
+              setSelectedImages(files);
+              if (files.length === 0) return;
+              imageInputRef.current?.click();
+            }}
+            onVideosChange={(files) => {
+              setSelectedVideos(files);
+              if (files.length === 0) return;
+              videoInputRef.current?.click();
+            }}
             onAudioRecorded={handleAudioRecorded}
             onAudioUploaded={handleAudioUploaded}
             onLocationClick={getCurrentLocation}
