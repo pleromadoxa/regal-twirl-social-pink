@@ -10,11 +10,54 @@ import { useVerifiedStatus } from '@/hooks/useVerifiedStatus';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle } from 'lucide-react';
 
-export const PostsList = () => {
-  const { posts, loading, toggleLike, toggleRetweet, togglePin, deletePost } = usePosts();
+interface PostsListProps {
+  posts?: any[];
+  onLike?: (postId: string) => void;
+  onRetweet?: (postId: string) => void;
+  onPin?: (postId: string) => void;
+  onDelete?: (postId: string) => void;
+}
+
+export const PostsList = ({ 
+  posts: externalPosts, 
+  onLike: externalOnLike, 
+  onRetweet: externalOnRetweet, 
+  onPin: externalOnPin, 
+  onDelete: externalOnDelete 
+}: PostsListProps = {}) => {
+  const { posts: hookPosts, loading, toggleLike, toggleRetweet, togglePin, deletePost } = usePosts();
   const { user } = useAuth();
 
-  if (loading) {
+  // Use external posts if provided, otherwise use hook posts
+  const posts = externalPosts || hookPosts;
+  const onLike = externalOnLike || toggleLike;
+  const onRetweet = externalOnRetweet || toggleRetweet;
+  const onPin = externalOnPin || togglePin;
+  const onDelete = externalOnDelete || deletePost;
+
+  // Pre-calculate verified status for all posts to avoid calling hooks in render loop
+  const getVerifiedStatus = (user: any) => {
+    if (!user) return false;
+    
+    // Special case for @pleromadoxa
+    if (user.username === 'pleromadoxa') {
+      return true;
+    }
+    
+    // Check if manually verified
+    if (user.is_verified) {
+      return true;
+    }
+    
+    // Check if has 100+ followers
+    if (user.followers_count && user.followers_count >= 100) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  if (loading && !externalPosts) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -25,7 +68,7 @@ export const PostsList = () => {
   return (
     <div className="space-y-4">
       {posts.map((post) => {
-        const isVerified = useVerifiedStatus(post.profiles);
+        const isVerified = getVerifiedStatus(post.profiles);
         
         return (
           <Card key={post.id} className="hover:shadow-md transition-shadow">
@@ -66,10 +109,10 @@ export const PostsList = () => {
                     userLiked={post.user_liked}
                     userRetweeted={post.user_retweeted}
                     userPinned={post.user_pinned}
-                    onLike={() => toggleLike(post.id)}
-                    onRetweet={() => toggleRetweet(post.id)}
-                    onPin={() => togglePin(post.id)}
-                    onDelete={() => deletePost(post.id)}
+                    onLike={() => onLike(post.id)}
+                    onRetweet={() => onRetweet(post.id)}
+                    onPin={() => onPin(post.id)}
+                    onDelete={() => onDelete(post.id)}
                     isOwnPost={user?.id === post.user_id}
                   />
                 </div>
@@ -82,5 +125,4 @@ export const PostsList = () => {
   );
 };
 
-// Add default export
 export default PostsList;
