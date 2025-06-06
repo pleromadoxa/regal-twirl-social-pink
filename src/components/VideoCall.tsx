@@ -316,7 +316,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
     <div 
       className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black flex flex-col"
       style={{ 
-        zIndex: 999999,
+        zIndex: 9999999,
         position: 'fixed',
         top: 0,
         left: 0,
@@ -335,7 +335,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
         
         {/* Connecting overlay */}
         {callStatus === 'connecting' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm" style={{ zIndex: 1000000 }}>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm" style={{ zIndex: 10000000 }}>
             <Card className="bg-black/60 border-white/20 text-white backdrop-blur-lg">
               <CardContent className="p-8 text-center">
                 <div className="relative mb-6">
@@ -350,7 +350,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       </div>
 
       {/* Local video */}
-      <div className="absolute top-6 right-6 w-40 h-30 bg-black/80 rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl" style={{ zIndex: 1000000 }}>
+      <div className="absolute top-6 right-6 w-40 h-30 bg-black/80 rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl" style={{ zIndex: 10000000 }}>
         <video
           ref={localVideoRef}
           autoPlay
@@ -366,7 +366,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       </div>
 
       {/* Call controls */}
-      <Card className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/60 border-white/20 backdrop-blur-lg" style={{ zIndex: 1000000 }}>
+      <Card className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/60 border-white/20 backdrop-blur-lg" style={{ zIndex: 10000000 }}>
         <CardContent className="p-4">
           <div className="flex items-center space-x-4">
             <Button
@@ -459,7 +459,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       </Card>
 
       {/* Call status */}
-      <div className="absolute top-6 left-6 text-white" style={{ zIndex: 1000000 }}>
+      <div className="absolute top-6 left-6 text-white" style={{ zIndex: 10000000 }}>
         <div className="flex items-center space-x-3 bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
           <div className={`w-3 h-3 rounded-full ${
             callStatus === 'connected' ? 'bg-green-400 animate-pulse' :

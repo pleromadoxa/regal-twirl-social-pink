@@ -204,7 +204,7 @@ const RealTimeCallManager = ({
     const caller = participants.find(p => p.id === incomingCall.caller_id);
     
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4" style={{ zIndex: 9999999 }}>
         <Card className="w-full max-w-sm bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-0 shadow-2xl">
           <CardContent className="p-8 text-center">
             {/* Caller avatar with enhanced pulse animation */}
@@ -286,7 +286,7 @@ const RealTimeCallManager = ({
     ).filter(p => p.id !== user?.id);
 
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4" style={{ zIndex: 9999999 }}>
         <Card className="w-full max-w-sm bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-0 shadow-2xl">
           <CardContent className="p-8 text-center">
             {/* Participants avatars */}
