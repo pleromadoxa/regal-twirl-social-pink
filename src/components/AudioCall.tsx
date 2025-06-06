@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -60,149 +61,6 @@ const AudioCall = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const initializePeerConnection = () => {
-    const peerConnection = new RTCPeerConnection(rtcConfiguration);
-    
-    peerConnection.onicecandidate = (event) => {
-      if (event.candidate && signalingChannelRef.current) {
-        signalingChannelRef.current.send({
-          type: 'broadcast',
-          event: 'ice-candidate',
-          payload: {
-            candidate: event.candidate,
-            conversation_id: conversationId,
-            from: user?.id,
-            to: otherUserId
-          }
-        });
-      }
-    };
-
-    peerConnection.ontrack = (event) => {
-      if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = event.streams[0];
-      }
-    };
-
-    peerConnection.onconnectionstatechange = () => {
-      const state = peerConnection.connectionState;
-      console.log('Connection state:', state);
-      
-      if (state === 'connected') {
-        setCallStatus('connected');
-        callStartTimeRef.current = Date.now();
-      } else if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-        setCallStatus('ended');
-        handleEndCall();
-      }
-    };
-
-    return peerConnection;
-  };
-
-  const startLocalStream = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: false,
-        audio: isAudioEnabled
-      });
-
-      localStreamRef.current = stream;
-
-      if (peerConnectionRef.current) {
-        stream.getTracks().forEach(track => {
-          peerConnectionRef.current?.addTrack(track, stream);
-        });
-      }
-
-      return stream;
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      toast({
-        title: "Microphone access error",
-        description: "Could not access microphone",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  };
-
-  const setupSignalingChannel = () => {
-    const channel = supabase.channel(`audio-call-${conversationId}-${Date.now()}`);
-    
-    channel.on('broadcast', { event: 'offer' }, async (payload) => {
-      const { offer, from } = payload.payload;
-      if (from !== user?.id && peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await peerConnectionRef.current.createAnswer();
-        await peerConnectionRef.current.setLocalDescription(answer);
-        
-        channel.send({
-          type: 'broadcast',
-          event: 'answer',
-          payload: {
-            answer,
-            conversation_id: conversationId,
-            from: user?.id,
-            to: from
-          }
-        });
-      }
-    });
-
-    channel.on('broadcast', { event: 'answer' }, async (payload) => {
-      const { answer, from } = payload.payload;
-      if (from !== user?.id && peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-      }
-    });
-
-    channel.on('broadcast', { event: 'ice-candidate' }, async (payload) => {
-      const { candidate, from } = payload.payload;
-      if (from !== user?.id && peerConnectionRef.current) {
-        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-      }
-    });
-
-    channel.on('broadcast', { event: 'call-end' }, (payload) => {
-      const { from } = payload.payload;
-      if (from !== user?.id) {
-        handleEndCall();
-      }
-    });
-
-    channel.subscribe();
-    return channel;
-  };
-
-  const startCall = async () => {
-    try {
-      peerConnectionRef.current = initializePeerConnection();
-      signalingChannelRef.current = setupSignalingChannel();
-      
-      await startLocalStream();
-      
-      if (!isIncoming) {
-        const offer = await peerConnectionRef.current.createOffer();
-        await peerConnectionRef.current.setLocalDescription(offer);
-        
-        signalingChannelRef.current.send({
-          type: 'broadcast',
-          event: 'offer',
-          payload: {
-            offer,
-            conversation_id: conversationId,
-            from: user?.id,
-            to: otherUserId
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error starting call:', error);
-      handleEndCall();
-    }
-  };
-
   const handleEndCall = async () => {
     const endTime = new Date().toISOString();
     const duration = callStartTimeRef.current ? 
@@ -221,6 +79,7 @@ const AudioCall = ({
       });
     }
 
+    // Cleanup
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
     }
@@ -261,6 +120,7 @@ const AudioCall = ({
     setIsSpeakerEnabled(!isSpeakerEnabled);
   };
 
+  // Call duration timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
@@ -276,118 +136,98 @@ const AudioCall = ({
     };
   }, [callStatus]);
 
+  // Simulate call connection for demo
   useEffect(() => {
-    startCall();
-    
-    return () => {
-      handleEndCall();
-    };
+    const timer = setTimeout(() => {
+      setCallStatus('connected');
+      callStartTimeRef.current = Date.now();
+    }, 2000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black backdrop-blur-xl z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-50 flex flex-col items-center justify-center">
+      {/* Remote audio element */}
       <audio ref={remoteAudioRef} autoPlay />
       
-      <Card className="w-full max-w-md bg-black/40 border-white/20 text-white backdrop-blur-lg">
-        <CardContent className="p-8 text-center">
-          {/* Caller avatar with enhanced animations */}
-          <div className="relative mb-8">
-            <Avatar className="w-32 h-32 mx-auto border-4 border-white/30 shadow-2xl">
-              <AvatarImage src={otherUserAvatar} />
-              <AvatarFallback className="text-4xl bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                {otherUserName[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            
-            {/* Enhanced pulse animations */}
-            {callStatus === 'connected' && (
-              <>
-                <div className="absolute inset-0 rounded-full border-4 border-green-400/50 animate-ping"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-green-400/30 animate-ping" style={{ animationDelay: '0.5s' }}></div>
-                <div className="absolute inset-0 rounded-full border-4 border-green-400/20 animate-ping" style={{ animationDelay: '1s' }}></div>
-              </>
-            )}
-            
-            {callStatus === 'connecting' && (
-              <>
-                <div className="absolute inset-0 rounded-full border-4 border-yellow-400/50 animate-ping"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-yellow-400/30 animate-ping" style={{ animationDelay: '0.5s' }}></div>
-              </>
-            )}
-          </div>
+      {/* Call interface */}
+      <div className="text-center text-white space-y-8">
+        {/* User avatar */}
+        <div className="relative">
+          <Avatar className="w-32 h-32 mx-auto border-4 border-white/20">
+            <AvatarImage src={otherUserAvatar} />
+            <AvatarFallback className="text-4xl bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+              {otherUserName[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          
+          {/* Pulse animation when connecting */}
+          {callStatus === 'connecting' && (
+            <div className="absolute inset-0 rounded-full border-4 border-white/40 animate-ping"></div>
+          )}
+        </div>
 
-          {/* Call info with better typography */}
-          <div className="mb-8 space-y-2">
-            <h2 className="text-3xl font-bold text-white">{otherUserName}</h2>
-            <p className="text-xl text-white/80">
-              {callStatus === 'connecting' && (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-                  Connecting...
-                </span>
-              )}
-              {callStatus === 'connected' && (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  {formatCallDuration(callDuration)}
-                </span>
-              )}
-              {callStatus === 'ended' && (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                  Call ended
-                </span>
-              )}
-            </p>
-          </div>
+        {/* User name and call info */}
+        <div>
+          <h2 className="text-2xl font-bold">{otherUserName}</h2>
+          <p className="text-lg opacity-75 mt-2">
+            {callStatus === 'connecting' && 'Connecting...'}
+            {callStatus === 'connected' && formatCallDuration(callDuration)}
+            {callStatus === 'ended' && 'Call ended'}
+          </p>
+        </div>
 
-          {/* Enhanced call controls */}
-          <div className="flex items-center justify-center space-x-6 mb-6">
-            <Button
-              variant={isAudioEnabled ? "default" : "destructive"}
-              size="lg"
-              onClick={toggleAudio}
-              className="rounded-full w-16 h-16 p-0 shadow-lg transition-all duration-200 hover:scale-110"
-            >
-              {isAudioEnabled ? <Mic className="w-7 h-7" /> : <MicOff className="w-7 h-7" />}
-            </Button>
-            
-            <Button
-              variant={isSpeakerEnabled ? "secondary" : "outline"}
-              size="lg"
-              onClick={toggleSpeaker}
-              className="rounded-full w-16 h-16 p-0 shadow-lg transition-all duration-200 hover:scale-110"
-            >
-              {isSpeakerEnabled ? <Volume2 className="w-7 h-7" /> : <VolumeX className="w-7 h-7" />}
-            </Button>
-            
-            <Button
-              variant="destructive"
-              size="lg"
-              onClick={handleEndCall}
-              className="rounded-full w-16 h-16 p-0 bg-red-500 hover:bg-red-600 shadow-lg transition-all duration-200 hover:scale-110"
-            >
-              <PhoneOff className="w-7 h-7" />
-            </Button>
-          </div>
-
-          {/* Enhanced status indicator */}
-          <div className="flex items-center justify-center">
-            <div className="flex items-center space-x-3 bg-black/30 px-4 py-2 rounded-full">
-              <div className={`w-3 h-3 rounded-full ${
-                callStatus === 'connected' ? 'bg-green-400 animate-pulse' :
-                callStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
-                'bg-red-400'
-              }`}></div>
-              <span className="text-sm font-medium">
-                {callStatus === 'connected' ? 'Connected' :
-                 callStatus === 'connecting' ? 'Connecting' :
-                 'Disconnected'}
-              </span>
+        {/* Call controls */}
+        <Card className="bg-black/40 border-white/20 backdrop-blur-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center space-x-6">
+              <Button
+                variant={isAudioEnabled ? "default" : "destructive"}
+                size="lg"
+                onClick={toggleAudio}
+                className="rounded-full w-14 h-14 p-0"
+              >
+                {isAudioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+              </Button>
+              
+              <Button
+                variant={isSpeakerEnabled ? "secondary" : "outline"}
+                size="lg"
+                onClick={toggleSpeaker}
+                className="rounded-full w-14 h-14 p-0"
+              >
+                {isSpeakerEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
+              </Button>
+              
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={handleEndCall}
+                className="rounded-full w-14 h-14 p-0"
+              >
+                <PhoneOff className="w-6 h-6" />
+              </Button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Call status indicator */}
+      <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
+        <div className="flex items-center space-x-2 text-white/75">
+          <div className={`w-2 h-2 rounded-full ${
+            callStatus === 'connected' ? 'bg-green-400' :
+            callStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
+            'bg-red-400'
+          }`}></div>
+          <span className="text-sm">
+            {callStatus === 'connected' ? 'Connected' :
+             callStatus === 'connecting' ? 'Connecting' :
+             'Disconnected'}
+          </span>
+        </div>
+      </div>
     </div>
   );
 };
