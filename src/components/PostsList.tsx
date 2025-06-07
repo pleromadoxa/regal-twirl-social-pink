@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -11,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Repeat } from 'lucide-react';
 import PostComments from './PostComments';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface PostsListProps {
   posts?: any[];
@@ -31,8 +31,10 @@ export const PostsList = ({
 }: PostsListProps = {}) => {
   const { posts: hookPosts, loading, toggleLike, toggleRetweet, togglePin, deletePost } = usePosts();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [retweetedBy, setRetweetedBy] = useState<{[key: string]: any}>({});
   const [commentsOpen, setCommentsOpen] = useState<{[key: string]: boolean}>({});
+  const [newPostNotification, setNewPostNotification] = useState<string | null>(null);
 
   let posts = externalPosts || hookPosts;
   
@@ -84,8 +86,48 @@ export const PostsList = ({
   const onPin = externalOnPin || togglePin;
   const onDelete = externalOnDelete || deletePost;
 
+  // Real-time notification for new posts
   useEffect(() => {
-    // Fetch retweet information for posts
+    if (!user || externalPosts) return; // Only for main feed, not profile pages
+
+    const channel = supabase
+      .channel('new-posts-notifications')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'posts'
+      }, async (payload) => {
+        const newPost = payload.new;
+        
+        // Don't show notification for user's own posts
+        if (newPost.user_id === user.id) return;
+
+        // Fetch the author's profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, display_name')
+          .eq('id', newPost.user_id)
+          .single();
+
+        if (profile) {
+          const authorName = profile.display_name || profile.username || 'Someone';
+          setNewPostNotification(`${authorName} just posted!`);
+          
+          // Auto-hide notification after 5 seconds
+          setTimeout(() => {
+            setNewPostNotification(null);
+          }, 5000);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, externalPosts]);
+
+  // Fetch retweet information for posts
+  useEffect(() => {
     const fetchRetweetInfo = async () => {
       if (!posts || posts.length === 0 || !user) return;
       
@@ -217,6 +259,15 @@ export const PostsList = ({
 
   return (
     <div className="space-y-4 relative z-10">
+      {/* New post notification */}
+      {newPostNotification && (
+        <div className="sticky top-0 z-50 mx-4 mb-4">
+          <div className="bg-purple-500 text-white px-4 py-2 rounded-lg shadow-lg animate-in slide-in-from-top duration-300">
+            <p className="text-sm font-medium">{newPostNotification}</p>
+          </div>
+        </div>
+      )}
+
       {posts.map((post) => {
         const isVerified = getVerifiedStatus(post.profiles);
         const isThread = isThreadPost(post.content);

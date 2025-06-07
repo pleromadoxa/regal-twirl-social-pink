@@ -17,16 +17,7 @@ export const FinancialSection = () => {
       case 'alerts':
         return <PriceAlertsWidget />;
       default:
-        return (
-          <div className="p-6 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Financial Dashboard
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Select a category above to view financial content
-            </p>
-          </div>
-        );
+        return null; // Don't show anything by default
     }
   };
 

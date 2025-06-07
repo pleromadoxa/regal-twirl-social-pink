@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
-import PostComposer from "@/components/PostComposer";
+import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import { StoriesBar } from "@/components/StoriesBar";
 import HomeFeedNav from "@/components/HomeFeedNav";
@@ -40,9 +40,7 @@ const Index = () => {
         <main className="flex-1 max-w-2xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
           <HomeFeedNav />
           <StoriesBar />
-          <div className="border-b border-purple-200 dark:border-purple-800 p-6">
-            <PostComposer />
-          </div>
+          <TweetComposer />
           <PostsList />
           <FinancialSection />
         </main>
