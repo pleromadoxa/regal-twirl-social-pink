@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { Plus, Building, User, Briefcase, Users, Store, Code, Globe, TrendingUp, Stethoscope, GraduationCap, DollarSign, MoreHorizontal } from 'lucide-react';
+import { Plus, Building, User, Briefcase, Users, Store, Code, Globe, TrendingUp, Stethoscope, GraduationCap, DollarSign, MoreHorizontal, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { supabase } from '@/integrations/supabase/client';
+import ImageUpload from '@/components/ImageUpload';
 
 interface BusinessPageDialogProps {
   trigger?: React.ReactNode;
@@ -81,6 +81,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
     email: '',
     phone: '',
     address: '',
+    avatar_url: '',
   });
 
   useEffect(() => {
@@ -125,6 +126,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
       email: formData.email || undefined,
       phone: formData.phone || undefined,
       address: formData.address || undefined,
+      avatar_url: formData.avatar_url || undefined,
     });
     
     setFormData({
@@ -137,6 +139,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
       email: '',
       phone: '',
       address: '',
+      avatar_url: '',
     });
     setIsSubmitting(false);
     setOpen(false);
@@ -144,6 +147,10 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAvatarUpload = (url: string) => {
+    setFormData(prev => ({ ...prev, avatar_url: url }));
   };
 
   const getBusinessTypeIcon = (type: string) => {
@@ -204,6 +211,22 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Avatar Upload */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Profile Picture
+            </Label>
+            <div className="flex justify-center">
+              <ImageUpload
+                currentImageUrl={formData.avatar_url}
+                onImageUpload={handleAvatarUpload}
+                bucketName="business-avatars"
+                folder="avatars"
+                isAvatar={true}
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="page_name" className="text-sm font-medium text-slate-700 dark:text-slate-300">

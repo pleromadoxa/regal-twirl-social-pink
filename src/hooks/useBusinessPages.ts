@@ -98,6 +98,7 @@ export const useBusinessPages = () => {
     email?: string;
     phone?: string;
     address?: string;
+    avatar_url?: string;
   }) => {
     if (!user) {
       toast({
@@ -122,6 +123,7 @@ export const useBusinessPages = () => {
           email: pageData.email,
           phone: pageData.phone,
           address: pageData.address,
+          avatar_url: pageData.avatar_url,
         });
 
       if (error) {

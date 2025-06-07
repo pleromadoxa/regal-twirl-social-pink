@@ -1,17 +1,17 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft, Upload, X } from 'lucide-react';
+import { Save, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { useToast } from '@/hooks/use-toast';
 import SidebarNav from '@/components/SidebarNav';
+import ImageUpload from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 
 const EditProfessionalAccount = () => {
@@ -23,8 +23,6 @@ const EditProfessionalAccount = () => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const [formData, setFormData] = useState({
     page_name: '',
@@ -65,75 +63,10 @@ const EditProfessionalAccount = () => {
           description: "This professional account doesn't exist or you don't have permission to edit it.",
           variant: "destructive"
         });
-        navigate('/professional-accounts');
+        navigate('/business');
       }
     }
   }, [user, pageId, myPages, navigate, toast]);
-
-  const uploadFile = async (file: File, bucket: string, folder: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${folder}/${user?.id}/${Date.now()}.${fileExt}`;
-
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, file);
-
-    if (error) throw error;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(data.path);
-
-    return publicUrl;
-  };
-
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setUploadingAvatar(true);
-    try {
-      const url = await uploadFile(file, 'avatars', 'business-pages');
-      setFormData(prev => ({ ...prev, avatar_url: url }));
-      toast({
-        title: "Avatar uploaded",
-        description: "Profile picture has been updated."
-      });
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload profile picture.",
-        variant: "destructive"
-      });
-    } finally {
-      setUploadingAvatar(false);
-    }
-  };
-
-  const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setUploadingBanner(true);
-    try {
-      const url = await uploadFile(file, 'banners', 'business-pages');
-      setFormData(prev => ({ ...prev, banner_url: url }));
-      toast({
-        title: "Banner uploaded",
-        description: "Cover image has been updated."
-      });
-    } catch (error) {
-      console.error('Error uploading banner:', error);
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload cover image.",
-        variant: "destructive"
-      });
-    } finally {
-      setUploadingBanner(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,7 +98,7 @@ const EditProfessionalAccount = () => {
         description: "Your professional account has been updated successfully."
       });
 
-      navigate('/professional-accounts');
+      navigate('/business');
     } catch (error) {
       console.error('Error updating page:', error);
       toast({
@@ -176,6 +109,14 @@ const EditProfessionalAccount = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAvatarUpload = (url: string) => {
+    setFormData(prev => ({ ...prev, avatar_url: url }));
+  };
+
+  const handleBannerUpload = (url: string) => {
+    setFormData(prev => ({ ...prev, banner_url: url }));
   };
 
   if (loading) {
@@ -197,7 +138,7 @@ const EditProfessionalAccount = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/professional-accounts')}
+              onClick={() => navigate('/business')}
               className="p-2"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -218,82 +159,33 @@ const EditProfessionalAccount = () => {
             {/* Banner Upload */}
             <Card>
               <CardContent className="p-6">
-                <div className="relative">
-                  <div className="h-48 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg overflow-hidden">
-                    {formData.banner_url ? (
-                      <img 
-                        src={formData.banner_url} 
-                        alt="Banner" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-r from-purple-500 to-pink-500" />
-                    )}
-                    <div className="absolute inset-0 bg-black/20" />
-                  </div>
-                  
-                  <div className="absolute bottom-4 right-4">
-                    <label htmlFor="banner-upload">
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={uploadingBanner}
-                        className="bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                        asChild
-                      >
-                        <span className="cursor-pointer">
-                          {uploadingBanner ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                          ) : (
-                            <Upload className="w-4 h-4" />
-                          )}
-                        </span>
-                      </Button>
-                    </label>
-                    <input
-                      id="banner-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleBannerUpload}
-                      className="hidden"
-                    />
-                  </div>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Banner Image</h3>
+                  <ImageUpload
+                    currentImageUrl={formData.banner_url}
+                    onImageUpload={handleBannerUpload}
+                    bucketName="business-banners"
+                    folder="banners"
+                    className="w-full"
+                    isAvatar={false}
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-                  {/* Avatar */}
-                  <div className="absolute -bottom-16 left-6">
-                    <div className="relative">
-                      <Avatar className="w-32 h-32 border-4 border-white dark:border-slate-800">
-                        <AvatarImage src={formData.avatar_url} />
-                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-3xl">
-                          {formData.page_name[0]?.toUpperCase() || 'P'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <label htmlFor="avatar-upload">
-                        <Button
-                          type="button"
-                          size="sm"
-                          disabled={uploadingAvatar}
-                          className="absolute bottom-2 right-2 rounded-full w-8 h-8 p-0"
-                          asChild
-                        >
-                          <span className="cursor-pointer">
-                            {uploadingAvatar ? (
-                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
-                            ) : (
-                              <Upload className="w-3 h-3" />
-                            )}
-                          </span>
-                        </Button>
-                      </label>
-                      <input
-                        id="avatar-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarUpload}
-                        className="hidden"
-                      />
-                    </div>
-                  </div>
+            {/* Avatar Upload */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Profile Picture</h3>
+                  <ImageUpload
+                    currentImageUrl={formData.avatar_url}
+                    onImageUpload={handleAvatarUpload}
+                    bucketName="business-avatars"
+                    folder="avatars"
+                    className="flex justify-center"
+                    isAvatar={true}
+                  />
                 </div>
               </CardContent>
             </Card>
