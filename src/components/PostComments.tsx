@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import { MessageCircle, Send } from 'lucide-react';
+import { MessageCircle, Send, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -128,83 +128,107 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[80vh] bg-white dark:bg-slate-800">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <MessageCircle className="w-5 h-5" />
-              Comments
-            </h3>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              ×
-            </Button>
-          </div>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl max-h-[85vh] bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-purple-200 dark:border-purple-700 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-purple-200 dark:border-purple-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+          <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-900 dark:text-slate-100">
+            <MessageCircle className="w-5 h-5 text-purple-600" />
+            Comments
+          </h3>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onClose}
+            className="h-8 w-8 p-0 rounded-full hover:bg-purple-100 dark:hover:bg-purple-800"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
 
-          <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
+        {/* Comments Container */}
+        <div className="flex flex-col h-full max-h-[calc(85vh-140px)]">
+          {/* Comments List */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {loading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Loading comments...</p>
               </div>
             ) : comments.length > 0 ? (
               comments.map((comment) => (
-                <div key={comment.id} className="flex space-x-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700">
-                  <Avatar className="w-8 h-8">
+                <div key={comment.id} className="flex space-x-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+                  <Avatar className="w-8 h-8 border-2 border-purple-200 dark:border-purple-700">
                     <AvatarImage src={comment.profiles?.avatar_url} />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
                       {comment.profiles?.display_name?.[0] || comment.profiles?.username?.[0] || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <span className="font-semibold text-sm">
+                      <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
                         {comment.profiles?.display_name || comment.profiles?.username || 'Unknown User'}
                       </span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        @{comment.profiles?.username || 'unknown'}
+                      </span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500">
                         {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-700 dark:text-slate-300">
+                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                       {comment.content}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-slate-500">
-                No comments yet. Be the first to comment!
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle className="w-8 h-8 text-purple-400" />
+                </div>
+                <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">No comments yet</h4>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Be the first to comment!</p>
               </div>
             )}
           </div>
 
+          {/* Comment Input */}
           {user && (
-            <div className="flex space-x-3">
-              <Avatar className="w-8 h-8">
-                <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback>
-                  {user.email?.[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 flex space-x-2">
-                <Input
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Write a comment..."
-                  onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment()}
-                  disabled={submitting}
-                />
-                <Button
-                  onClick={handleSubmitComment}
-                  disabled={!newComment.trim() || submitting}
-                  size="sm"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+            <div className="border-t border-purple-200 dark:border-purple-700 p-4 bg-slate-50/50 dark:bg-slate-800/50">
+              <div className="flex space-x-3">
+                <Avatar className="w-8 h-8 border-2 border-purple-200 dark:border-purple-700">
+                  <AvatarImage src={user.user_metadata?.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
+                    {user.user_metadata?.display_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 flex space-x-2">
+                  <Input
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Write a comment..."
+                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmitComment()}
+                    disabled={submitting}
+                    className="border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-600 bg-white dark:bg-slate-700"
+                  />
+                  <Button
+                    onClick={handleSubmitComment}
+                    disabled={!newComment.trim() || submitting}
+                    size="sm"
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 ml-11">
+                Press Enter to send, Shift + Enter for new line
+              </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
