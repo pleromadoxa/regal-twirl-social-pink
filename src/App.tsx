@@ -1,50 +1,53 @@
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "@/contexts/ThemeContext";
-import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
-import ActiveChatBar from "@/components/ActiveChatBar";
-import Landing from "@/pages/Landing";
-import Index from "@/pages/Index";
-import Auth from "@/pages/Auth";
-import Profile from "@/pages/Profile";
-import Messages from "@/pages/Messages";
-import Notifications from "@/pages/Notifications";
-import Explore from "@/pages/Explore";
-import Pinned from "@/pages/Pinned";
-import ProfessionalAccounts from "@/pages/ProfessionalAccounts";
-import Settings from "@/pages/Settings";
-import NotFound from "@/pages/NotFound";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import Messages from "./pages/Messages";
+import Notifications from "./pages/Notifications";
+import Explore from "./pages/Explore";
+import Landing from "./pages/Landing";
+import NotFound from "./pages/NotFound";
+import Pinned from "./pages/Pinned";
+import ProfessionalAccounts from "./pages/ProfessionalAccounts";
+import EditProfessionalAccount from "./pages/EditProfessionalAccount";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <Router>
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
             <Routes>
+              <Route path="/auth" element={<Auth />} />
               <Route path="/landing" element={<Landing />} />
               <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
               <Route path="/profile/:userId" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/explore" element={<Explore />} />
               <Route path="/pinned" element={<Pinned />} />
-              <Route path="/professional" element={<ProfessionalAccounts />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/professional-accounts" element={<ProfessionalAccounts />} />
+              <Route path="/professional-accounts/edit/:pageId" element={<EditProfessionalAccount />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <ActiveChatBar />
-          </Router>
-          <Toaster />
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  );
-}
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
+);
 
 export default App;

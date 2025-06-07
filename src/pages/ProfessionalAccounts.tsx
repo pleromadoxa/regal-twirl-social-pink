@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Search, Building, Users, User, Crown, Plus, Eye, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -249,10 +248,11 @@ const ProfessionalAccounts = () => {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => navigate(`/professional-accounts/edit/${page.id}`)}
                               className="rounded-full"
                             >
                               <Settings className="w-4 h-4 mr-2" />
-                              Manage
+                              Edit
                             </Button>
                             <Button
                               variant="outline"

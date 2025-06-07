@@ -1,8 +1,9 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { X } from "lucide-react";
+import { X, Smile } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePosts } from "@/hooks/usePosts";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +13,9 @@ import AudioVisualizer from "./AudioVisualizer";
 import ThreadComposer from "./ThreadComposer";
 import TweetActions from "./TweetActions";
 import CharacterCounter from "./CharacterCounter";
+import UserMentions from "./UserMentions";
+import LocationPicker from "./LocationPicker";
+import CalendarPicker from "./CalendarPicker";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 
 const TweetComposer = () => {
@@ -25,11 +29,11 @@ const TweetComposer = () => {
   const [audioURL, setAudioURL] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [location, setLocation] = useState("");
-  const [showLocationInput, setShowLocationInput] = useState(false);
-  const [showHashtagInput, setShowHashtagInput] = useState(false);
-  const [showMentionInput, setShowMentionInput] = useState(false);
-  const [hashtagInput, setHashtagInput] = useState("");
-  const [mentionInput, setMentionInput] = useState("");
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [cursorPosition, setCursorPosition] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -38,6 +42,7 @@ const TweetComposer = () => {
   const { createPost } = usePosts();
   const { user } = useAuth();
   const audioRef = useRef<HTMLAudioElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const maxLength = 280;
 
   const uploadImages = async (images: File[]): Promise<string[]> => {
@@ -66,6 +71,26 @@ const TweetComposer = () => {
     return uploadedUrls;
   };
 
+  const uploadAudio = async (audio: File): Promise<string> => {
+    const fileExt = audio.name.split('.').pop();
+    const fileName = `${user?.id}/${Date.now()}-audio.${fileExt}`;
+    
+    const { data, error } = await supabase.storage
+      .from('post-audio')
+      .upload(fileName, audio);
+    
+    if (error) {
+      console.error('Error uploading audio:', error);
+      throw error;
+    }
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('post-audio')
+      .getPublicUrl(data.path);
+    
+    return publicUrl;
+  };
+
   const handleTweetSubmit = async () => {
     if (!user) {
       toast({
@@ -80,27 +105,51 @@ const TweetComposer = () => {
     
     try {
       let imageUrls: string[] = [];
+      let audioUrl = "";
       
       // Upload images if any are selected
       if (selectedImages.length > 0) {
         imageUrls = await uploadImages(selectedImages);
       }
+
+      // Upload audio if selected
+      if (selectedAudio) {
+        audioUrl = await uploadAudio(selectedAudio);
+      }
       
       if (isThreadMode) {
         const validTweets = threadTweets.filter(tweet => tweet.trim().length > 0);
         if (validTweets.length > 0) {
-          const combinedContent = validTweets.join("\n\n");
+          let combinedContent = validTweets.join("\n\n");
+          
+          // Add location and scheduled date if set
+          if (location.trim()) {
+            combinedContent += `\n📍 ${location}`;
+          }
+          if (scheduledDate) {
+            combinedContent += `\n📅 Scheduled for ${scheduledDate.toLocaleDateString()}`;
+          }
+          if (audioUrl) {
+            combinedContent += `\n🎵 Audio message attached`;
+          }
+          
           await createPost(combinedContent, imageUrls, selectedAccount);
           setThreadTweets([""]);
           setIsThreadMode(false);
           resetForm();
         }
       } else {
-        if (tweetText.trim() || imageUrls.length > 0) {
+        if (tweetText.trim() || imageUrls.length > 0 || audioUrl) {
           let finalContent = tweetText;
           
           if (location.trim()) {
             finalContent += `\n📍 ${location}`;
+          }
+          if (scheduledDate) {
+            finalContent += `\n📅 Scheduled for ${scheduledDate.toLocaleDateString()}`;
+          }
+          if (audioUrl) {
+            finalContent += `\n🎵 Audio message attached`;
           }
           
           await createPost(finalContent, imageUrls, selectedAccount);
@@ -111,7 +160,7 @@ const TweetComposer = () => {
       console.error('Error creating post:', error);
       toast({
         title: "Error creating post",
-        description: "Failed to upload images or create post",
+        description: "Failed to upload media or create post",
         variant: "destructive"
       });
     } finally {
@@ -126,13 +175,57 @@ const TweetComposer = () => {
     setSelectedAudio(null);
     setAudioURL("");
     setLocation("");
-    setShowLocationInput(false);
-    setShowHashtagInput(false);
-    setShowMentionInput(false);
-    setHashtagInput("");
-    setMentionInput("");
+    setScheduledDate(null);
+    setShowLocationPicker(false);
+    setShowMentions(false);
+    setMentionQuery("");
     setAudioCurrentTime(0);
     setAudioDuration(0);
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    const position = e.target.selectionStart;
+    
+    setTweetText(text);
+    setCursorPosition(position);
+    
+    // Check for mentions
+    const textBeforeCursor = text.slice(0, position);
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+    
+    if (mentionMatch) {
+      setMentionQuery(mentionMatch[1]);
+      setShowMentions(true);
+    } else {
+      setShowMentions(false);
+      setMentionQuery("");
+    }
+  };
+
+  const handleMentionSelect = (username: string) => {
+    if (!textareaRef.current) return;
+    
+    const textBeforeCursor = tweetText.slice(0, cursorPosition);
+    const textAfterCursor = tweetText.slice(cursorPosition);
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+    
+    if (mentionMatch) {
+      const beforeMention = textBeforeCursor.slice(0, mentionMatch.index);
+      const newText = `${beforeMention}@${username} ${textAfterCursor}`;
+      setTweetText(newText);
+      setShowMentions(false);
+      setMentionQuery("");
+      
+      // Focus back to textarea
+      setTimeout(() => {
+        if (textareaRef.current) {
+          const newPosition = beforeMention.length + username.length + 2;
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(newPosition, newPosition);
+        }
+      }, 0);
+    }
   };
 
   const handleAudioRecorded = (file: File, url: string) => {
@@ -180,66 +273,20 @@ const TweetComposer = () => {
     }
   };
 
-  const insertHashtag = () => {
-    if (hashtagInput.trim()) {
-      const hashtag = hashtagInput.startsWith('#') ? hashtagInput : `#${hashtagInput}`;
-      if (isThreadMode) {
-        const lastIndex = threadTweets.length - 1;
-        updateThreadTweet(lastIndex, threadTweets[lastIndex] + ` ${hashtag}`);
-      } else {
-        setTweetText(prev => prev + ` ${hashtag}`);
-      }
-      setHashtagInput("");
-      setShowHashtagInput(false);
-      toast({
-        title: "Hashtag added",
-        description: `Added ${hashtag} to your post`
-      });
-    }
+  const handleLocationSelect = (selectedLocation: string) => {
+    setLocation(selectedLocation);
+    toast({
+      description: `Location "${selectedLocation}" added to your post!`,
+      duration: 2000,
+    });
   };
 
-  const insertMention = () => {
-    if (mentionInput.trim()) {
-      const mention = mentionInput.startsWith('@') ? mentionInput : `@${mentionInput}`;
-      if (isThreadMode) {
-        const lastIndex = threadTweets.length - 1;
-        updateThreadTweet(lastIndex, threadTweets[lastIndex] + ` ${mention}`);
-      } else {
-        setTweetText(prev => prev + ` ${mention}`);
-      }
-      setMentionInput("");
-      setShowMentionInput(false);
-      toast({
-        title: "Mention added",
-        description: `Added ${mention} to your post`
-      });
-    }
-  };
-
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-          setShowLocationInput(true);
-          toast({
-            description: "Location added to your post!",
-            duration: 2000,
-          });
-        },
-        (error) => {
-          toast({
-            description: "Unable to get your location. Please enter manually.",
-            variant: "destructive",
-            duration: 3000,
-          });
-          setShowLocationInput(true);
-        }
-      );
-    } else {
-      setShowLocationInput(true);
-    }
+  const handleDateSelect = (date: Date) => {
+    setScheduledDate(date);
+    toast({
+      description: `Post scheduled for ${date.toLocaleDateString()}`,
+      duration: 2000,
+    });
   };
 
   if (!user) return null;
@@ -273,26 +320,70 @@ const TweetComposer = () => {
           ) : (
             <div className="relative">
               <textarea
+                ref={textareaRef}
                 value={tweetText}
-                onChange={(e) => setTweetText(e.target.value)}
+                onChange={handleTextChange}
                 placeholder="What's happening?"
                 className="w-full text-xl placeholder:text-purple-500 dark:placeholder:text-purple-400 border-0 resize-none outline-none bg-transparent dark:text-slate-100 min-h-[100px] transition-all duration-300 focus:bg-purple-50/50 dark:focus:bg-purple-800/50 rounded-xl p-3 hover:shadow-lg"
                 maxLength={maxLength + 50}
               />
+              
+              <UserMentions
+                query={mentionQuery}
+                onSelect={handleMentionSelect}
+                isVisible={showMentions}
+              />
             </div>
           )}
           
-          <TweetActions
-            selectedImages={selectedImages}
-            selectedVideos={selectedVideos}
-            onImagesChange={setSelectedImages}
-            onVideosChange={setSelectedVideos}
-            onAudioRecorded={handleAudioRecorded}
-            onAudioUploaded={handleAudioUploaded}
-            onLocationClick={getCurrentLocation}
-            onHashtagClick={() => setShowHashtagInput(true)}
-            onMentionClick={() => setShowMentionInput(true)}
-          />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <TweetActions
+                selectedImages={selectedImages}
+                selectedVideos={selectedVideos}
+                onImagesChange={setSelectedImages}
+                onVideosChange={setSelectedVideos}
+                onAudioRecorded={handleAudioRecorded}
+                onAudioUploaded={handleAudioUploaded}
+                onLocationClick={() => setShowLocationPicker(true)}
+                onHashtagClick={() => {
+                  const hashtag = prompt("Enter hashtag:");
+                  if (hashtag) {
+                    const tag = hashtag.startsWith('#') ? hashtag : `#${hashtag}`;
+                    setTweetText(prev => prev + ` ${tag}`);
+                  }
+                }}
+                onMentionClick={() => {
+                  if (textareaRef.current) {
+                    const position = textareaRef.current.selectionStart;
+                    const newText = tweetText.slice(0, position) + '@' + tweetText.slice(position);
+                    setTweetText(newText);
+                    textareaRef.current.focus();
+                    textareaRef.current.setSelectionRange(position + 1, position + 1);
+                  }
+                }}
+              />
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
+              >
+                <Smile className="w-5 h-5" />
+              </Button>
+
+              <CalendarPicker onDateSelect={handleDateSelect} />
+            </div>
+          </div>
+
+          {/* Location Picker */}
+          <div className="relative">
+            <LocationPicker
+              onLocationSelect={handleLocationSelect}
+              isVisible={showLocationPicker}
+              onClose={() => setShowLocationPicker(false)}
+            />
+          </div>
 
           {/* Image Preview */}
           {selectedImages.length > 0 && (
@@ -328,81 +419,32 @@ const TweetComposer = () => {
             audioRef={audioRef}
           />
           
-          {/* Location Input */}
-          {showLocationInput && (
+          {/* Location Display */}
+          {location && (
             <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <Input
-                type="text"
-                placeholder="Add location..."
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="flex-1 border-0 bg-transparent focus-visible:ring-0"
-              />
+              <span className="text-sm text-purple-600 dark:text-purple-400">📍 {location}</span>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowLocationInput(false)}
-                className="text-purple-600"
+                onClick={() => setLocation("")}
+                className="text-purple-600 p-1 h-6 w-6"
               >
                 <X className="w-4 h-4" />
               </Button>
             </div>
           )}
-          
-          {/* Hashtag Input */}
-          {showHashtagInput && (
+
+          {/* Scheduled Date Display */}
+          {scheduledDate && (
             <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <Input
-                type="text"
-                placeholder="Add hashtag..."
-                value={hashtagInput}
-                onChange={(e) => setHashtagInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && insertHashtag()}
-                className="flex-1 border-0 bg-transparent focus-visible:ring-0"
-              />
+              <span className="text-sm text-purple-600 dark:text-purple-400">
+                📅 Scheduled for {scheduledDate.toLocaleDateString()}
+              </span>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={insertHashtag}
-                className="text-purple-600"
-              >
-                Add
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowHashtagInput(false)}
-                className="text-purple-600"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
-          
-          {/* Mention Input */}
-          {showMentionInput && (
-            <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <Input
-                type="text"
-                placeholder="Mention someone..."
-                value={mentionInput}
-                onChange={(e) => setMentionInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && insertMention()}
-                className="flex-1 border-0 bg-transparent focus-visible:ring-0"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={insertMention}
-                className="text-purple-600"
-              >
-                Add
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowMentionInput(false)}
-                className="text-purple-600"
+                onClick={() => setScheduledDate(null)}
+                className="text-purple-600 p-1 h-6 w-6"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -427,7 +469,7 @@ const TweetComposer = () => {
               
               <InteractiveHoverButton
                 type="button"
-                disabled={isUploading || (isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() && selectedImages.length === 0) || tweetText.length > maxLength)}
+                disabled={isUploading || (isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() && selectedImages.length === 0 && !selectedAudio) || tweetText.length > maxLength)}
                 onClick={handleTweetSubmit}
                 text={isUploading ? 'Posting...' : (isThreadMode ? 'Post Thread' : 'Post')}
                 className="w-auto px-6"

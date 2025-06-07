@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -7,9 +6,9 @@ import { usePosts } from '@/hooks/usePosts';
 import { PostActions } from '@/components/PostActions';
 import { PostIndicators } from '@/components/PostIndicators';
 import { useAuth } from '@/contexts/AuthContext';
-import { useVerifiedStatus } from '@/hooks/useVerifiedStatus';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Repeat } from 'lucide-react';
+import PostComments from './PostComments';
 
 interface PostsListProps {
   posts?: any[];
@@ -31,6 +30,7 @@ export const PostsList = ({
   const { posts: hookPosts, loading, toggleLike, toggleRetweet, togglePin, deletePost } = usePosts();
   const { user } = useAuth();
   const [retweetedBy, setRetweetedBy] = useState<{[key: string]: any}>({});
+  const [commentsOpen, setCommentsOpen] = useState<{[key: string]: boolean}>({});
 
   let posts = externalPosts || hookPosts;
   
@@ -65,6 +65,14 @@ export const PostsList = ({
 
     fetchRetweetInfo();
   }, [posts, user]);
+
+  const handleCommentClick = (postId: string) => {
+    setCommentsOpen(prev => ({ ...prev, [postId]: !prev[postId] }));
+  };
+
+  const closeComments = (postId: string) => {
+    setCommentsOpen(prev => ({ ...prev, [postId]: false }));
+  };
 
   const isThreadPost = (content: string) => {
     return content.includes('\n\n') || content.toLowerCase().includes('thread') || content.includes('🧵');
@@ -151,112 +159,120 @@ export const PostsList = ({
         const retweetInfo = retweetedBy[post.id];
         
         return (
-          <Card 
-            key={post.id} 
-            className={`hover:shadow-xl transition-all duration-500 relative z-20 border border-slate-200 dark:border-slate-700 ${
-              isThread 
-                ? 'bg-gradient-to-br from-white/95 via-purple-50/80 to-pink-50/80 dark:from-slate-800/95 dark:via-purple-900/30 dark:to-pink-900/20 backdrop-blur-xl border-purple-200/50 dark:border-purple-700/50 shadow-lg' 
-                : 'bg-white dark:bg-slate-800'
-            }`}
-          >
-            <CardContent className="p-6 relative z-30">
-              {/* Retweet indicator */}
-              {retweetInfo && (
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
-                  <Repeat className="w-4 h-4" />
-                  <span>
-                    {retweetInfo.isCurrentUser ? 'You' : `@${retweetInfo.retweetedBy.username}`} reshared
-                  </span>
-                </div>
-              )}
-              
-              <PostIndicators 
-                isThread={isThread} 
-                hasAudio={hasAudio}
-                className="relative z-40"
-              />
-              
-              <div className="flex items-start space-x-3">
-                <Avatar className="w-12 h-12 relative z-40">
-                  <AvatarImage src={post.profiles.avatar_url} />
-                  <AvatarFallback>
-                    {post.profiles.display_name?.[0] || post.profiles.username?.[0] || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0 relative z-40">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                        {post.profiles.display_name || post.profiles.username}
-                      </h3>
-                      {isVerified && (
-                        <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-1.5 py-0.5 relative z-50">
-                          <CheckCircle className="w-3 h-3" />
-                        </Badge>
-                      )}
-                    </div>
-                    <span className="text-slate-500 dark:text-slate-400">@{post.profiles.username}</span>
-                    <span className="text-slate-400 dark:text-slate-500 text-sm">
-                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+          <div key={post.id}>
+            <Card 
+              className={`hover:shadow-xl transition-all duration-500 relative z-20 border border-slate-200 dark:border-slate-700 ${
+                isThread 
+                  ? 'bg-gradient-to-br from-white/95 via-purple-50/80 to-pink-50/80 dark:from-slate-800/95 dark:via-purple-900/30 dark:to-pink-900/20 backdrop-blur-xl border-purple-200/50 dark:border-purple-700/50 shadow-lg' 
+                  : 'bg-white dark:bg-slate-800'
+              }`}
+            >
+              <CardContent className="p-6 relative z-30">
+                {/* Retweet indicator */}
+                {retweetInfo && (
+                  <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
+                    <Repeat className="w-4 h-4" />
+                    <span>
+                      {retweetInfo.isCurrentUser ? 'You' : `@${retweetInfo.retweetedBy.username}`} reshared
                     </span>
                   </div>
-                  
-                  {isThread ? (
-                    <div className={`relative z-40 mb-4 p-6 rounded-xl bg-gradient-to-br from-white/60 to-transparent dark:from-slate-800/60 dark:to-transparent backdrop-blur-sm border border-white/20 dark:border-slate-600/20`}>
-                      {formatThreadContent(post.content)}
+                )}
+                
+                <PostIndicators 
+                  isThread={isThread} 
+                  hasAudio={hasAudio}
+                  className="relative z-40"
+                />
+                
+                <div className="flex items-start space-x-3">
+                  <Avatar className="w-12 h-12 relative z-40">
+                    <AvatarImage src={post.profiles.avatar_url} />
+                    <AvatarFallback>
+                      {post.profiles.display_name?.[0] || post.profiles.username?.[0] || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0 relative z-40">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          {post.profiles.display_name || post.profiles.username}
+                        </h3>
+                        {isVerified && (
+                          <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-1.5 py-0.5 relative z-50">
+                            <CheckCircle className="w-3 h-3" />
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-slate-500 dark:text-slate-400">@{post.profiles.username}</span>
+                      <span className="text-slate-400 dark:text-slate-500 text-sm">
+                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                      </span>
                     </div>
-                  ) : (
-                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed relative z-40 mb-3">
-                      {post.content}
-                    </p>
-                  )}
-                  
-                  {/* Display images if available */}
-                  {post.image_urls && post.image_urls.length > 0 && (
-                    <div className={`grid gap-2 mb-3 rounded-lg overflow-hidden ${
-                      post.image_urls.length === 1 ? 'grid-cols-1' : 
-                      post.image_urls.length === 2 ? 'grid-cols-2' : 
-                      post.image_urls.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
-                    }`}>
-                      {post.image_urls.map((imageUrl: string, index: number) => (
-                        <div 
-                          key={index} 
-                          className={`relative ${
-                            post.image_urls.length === 3 && index === 0 ? 'col-span-2' : ''
-                          }`}
-                        >
-                          <img
-                            src={imageUrl}
-                            alt={`Post image ${index + 1}`}
-                            className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
-                            onClick={() => window.open(imageUrl, '_blank')}
-                          />
-                        </div>
-                      ))}
+                    
+                    {isThread ? (
+                      <div className={`relative z-40 mb-4 p-6 rounded-xl bg-gradient-to-br from-white/60 to-transparent dark:from-slate-800/60 dark:to-transparent backdrop-blur-sm border border-white/20 dark:border-slate-600/20`}>
+                        {formatThreadContent(post.content)}
+                      </div>
+                    ) : (
+                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed relative z-40 mb-3">
+                        {post.content}
+                      </p>
+                    )}
+                    
+                    {/* Display images if available */}
+                    {post.image_urls && post.image_urls.length > 0 && (
+                      <div className={`grid gap-2 mb-3 rounded-lg overflow-hidden ${
+                        post.image_urls.length === 1 ? 'grid-cols-1' : 
+                        post.image_urls.length === 2 ? 'grid-cols-2' : 
+                        post.image_urls.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
+                      }`}>
+                        {post.image_urls.map((imageUrl: string, index: number) => (
+                          <div 
+                            key={index} 
+                            className={`relative ${
+                              post.image_urls.length === 3 && index === 0 ? 'col-span-2' : ''
+                            }`}
+                          >
+                            <img
+                              src={imageUrl}
+                              alt={`Post image ${index + 1}`}
+                              className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
+                              onClick={() => window.open(imageUrl, '_blank')}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="relative z-40">
+                      <PostActions 
+                        postId={post.id}
+                        userId={post.user_id}
+                        likesCount={post.likes_count}
+                        retweetsCount={post.retweets_count}
+                        repliesCount={post.replies_count}
+                        userLiked={post.user_liked}
+                        userRetweeted={post.user_retweeted}
+                        userPinned={post.user_pinned}
+                        onLike={() => onLike(post.id)}
+                        onRetweet={() => onRetweet(post.id)}
+                        onPin={() => onPin(post.id)}
+                        onDelete={() => onDelete(post.id)}
+                        onComment={() => handleCommentClick(post.id)}
+                        isOwnPost={user?.id === post.user_id}
+                      />
                     </div>
-                  )}
-                  
-                  <div className="relative z-40">
-                    <PostActions 
-                      postId={post.id}
-                      userId={post.user_id}
-                      likesCount={post.likes_count}
-                      retweetsCount={post.retweets_count}
-                      repliesCount={post.replies_count}
-                      userLiked={post.user_liked}
-                      userRetweeted={post.user_retweeted}
-                      userPinned={post.user_pinned}
-                      onLike={() => onLike(post.id)}
-                      onRetweet={() => onRetweet(post.id)}
-                      onPin={() => onPin(post.id)}
-                      onDelete={() => onDelete(post.id)}
-                      isOwnPost={user?.id === post.user_id}
-                    />
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <PostComments
+              postId={post.id}
+              isOpen={commentsOpen[post.id] || false}
+              onClose={() => closeComments(post.id)}
+            />
+          </div>
         );
       })}
     </div>
