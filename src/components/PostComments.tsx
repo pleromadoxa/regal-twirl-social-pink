@@ -49,7 +49,7 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
         .from('replies')
         .select(`
           *,
-          profiles:user_id (
+          profiles (
             username,
             display_name,
             avatar_url
@@ -131,15 +131,15 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
               comments.map((comment) => (
                 <div key={comment.id} className="flex space-x-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700">
                   <Avatar className="w-8 h-8">
-                    <AvatarImage src={comment.profiles.avatar_url} />
+                    <AvatarImage src={comment.profiles?.avatar_url} />
                     <AvatarFallback>
-                      {comment.profiles.display_name?.[0] || comment.profiles.username?.[0] || 'U'}
+                      {comment.profiles?.display_name?.[0] || comment.profiles?.username?.[0] || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
                       <span className="font-semibold text-sm">
-                        {comment.profiles.display_name || comment.profiles.username}
+                        {comment.profiles?.display_name || comment.profiles?.username || 'Unknown User'}
                       </span>
                       <span className="text-xs text-slate-500">
                         {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}

@@ -16,6 +16,7 @@ interface PostActionsProps {
   onRetweet: () => void;
   onPin: () => void;
   onDelete: () => void;
+  onComment: () => void;
   isOwnPost: boolean;
 }
 
@@ -32,6 +33,7 @@ export const PostActions = ({
   onRetweet,
   onPin,
   onDelete,
+  onComment,
   isOwnPost
 }: PostActionsProps) => {
   return (
@@ -52,6 +54,7 @@ export const PostActions = ({
         <Button
           variant="ghost"
           size="sm"
+          onClick={onComment}
           className="flex items-center space-x-2 text-slate-500 hover:text-blue-500"
         >
           <MessageCircle className="w-4 h-4" />
