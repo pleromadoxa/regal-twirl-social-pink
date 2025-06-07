@@ -54,8 +54,8 @@ const Pinned = () => {
         ) : pinnedPosts.length > 0 ? (
           <PostsList 
             posts={pinnedPosts.map(post => ({ ...post, user_pinned: true }))}
-            onLike={() => {}} 
-            onRetweet={() => {}} 
+            onLike={() => {}} // Pinned posts don't need like functionality
+            onRetweet={() => {}} // Pinned posts don't need retweet functionality
             onPin={togglePin}
           />
         ) : (

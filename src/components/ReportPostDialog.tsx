@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -13,24 +13,15 @@ import { supabase } from '@/integrations/supabase/client';
 interface ReportPostDialogProps {
   postId: string;
   trigger?: React.ReactNode;
-  isOpen?: boolean;
-  onClose?: () => void;
 }
 
-const ReportPostDialog = ({ postId, trigger, isOpen, onClose }: ReportPostDialogProps) => {
-  const [open, setOpen] = useState(isOpen || false);
+const ReportPostDialog = ({ postId, trigger }: ReportPostDialogProps) => {
+  const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-
-  // Update local open state when isOpen prop changes
-  React.useEffect(() => {
-    if (isOpen !== undefined) {
-      setOpen(isOpen);
-    }
-  }, [isOpen]);
 
   const reportReasons = [
     'Spam',
@@ -42,13 +33,6 @@ const ReportPostDialog = ({ postId, trigger, isOpen, onClose }: ReportPostDialog
     'Copyright infringement',
     'Other'
   ];
-
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (!newOpen && onClose) {
-      onClose();
-    }
-  };
 
   const handleSubmitReport = async () => {
     if (!user) {
@@ -97,7 +81,6 @@ const ReportPostDialog = ({ postId, trigger, isOpen, onClose }: ReportPostDialog
       });
 
       setOpen(false);
-      if (onClose) onClose();
       setReason('');
       setDetails('');
     } catch (error) {
@@ -113,7 +96,7 @@ const ReportPostDialog = ({ postId, trigger, isOpen, onClose }: ReportPostDialog
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
@@ -156,7 +139,7 @@ const ReportPostDialog = ({ postId, trigger, isOpen, onClose }: ReportPostDialog
           <div className="flex gap-3 pt-4">
             <Button
               variant="outline"
-              onClick={() => handleOpenChange(false)}
+              onClick={() => setOpen(false)}
               className="flex-1"
               disabled={loading}
             >
