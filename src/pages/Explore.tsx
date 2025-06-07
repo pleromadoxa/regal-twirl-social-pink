@@ -185,14 +185,29 @@ const Explore = () => {
           user_id
         `)
         .not('image_urls', 'is', null)
-        .gt('array_length(image_urls, 1)', 0)
         .order('created_at', { ascending: false })
-        .limit(8);
+        .limit(50);
 
       if (error) throw error;
 
+      // Filter posts that actually have images in JavaScript
+      const postsWithImages = data?.filter(post => 
+        post.image_urls && 
+        Array.isArray(post.image_urls) && 
+        post.image_urls.length > 0
+      ) || [];
+
+      // Take only the first 8 posts with images
+      const limitedPosts = postsWithImages.slice(0, 8);
+
       // Fetch profiles separately
-      const userIds = [...new Set(data?.map(post => post.user_id) || [])];
+      const userIds = [...new Set(limitedPosts.map(post => post.user_id))];
+      if (userIds.length === 0) {
+        setVideoPosts([]);
+        setLoadingPosts(false);
+        return;
+      }
+
       const { data: profilesData } = await supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url, is_verified, followers_count')
@@ -200,7 +215,7 @@ const Explore = () => {
 
       const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
 
-      const enrichedPosts = data?.map(post => ({
+      const enrichedPosts = limitedPosts.map(post => ({
         ...post,
         profiles: profilesMap.get(post.user_id) || {
           username: 'unknown',
@@ -209,7 +224,7 @@ const Explore = () => {
           is_verified: false,
           followers_count: 0
         }
-      })) || [];
+      }));
 
       setVideoPosts(enrichedPosts);
     } catch (error) {
@@ -434,11 +449,18 @@ const Explore = () => {
                             </div>
                           ))}
                         </div>
-                      ) : (
+                      ) : videoPosts.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {videoPosts.slice(0, 6).map((post) => (
                             <PostCard key={post.id} post={post} />
                           ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Video className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+                          <p className="text-slate-500 dark:text-slate-400">
+                            No media posts found
+                          </p>
                         </div>
                       )}
                     </CardContent>
