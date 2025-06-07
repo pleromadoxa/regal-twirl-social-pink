@@ -56,7 +56,7 @@ const TweetComposer = () => {
       
       if (error) {
         console.error('Error uploading image:', error);
-        throw error;
+        throw new Error(`Failed to upload image: ${error.message}`);
       }
       
       const { data: { publicUrl } } = supabase.storage
@@ -74,16 +74,23 @@ const TweetComposer = () => {
     
     for (const video of videos) {
       const fileExt = video.name.split('.').pop();
-      const fileName = `${user?.id}/${Date.now()}-video.${fileExt}`;
+      const fileName = `${user?.id}/${Date.now()}-video-${Math.random()}.${fileExt}`;
+      
+      console.log('Uploading video:', fileName, 'Size:', video.size);
       
       const { data, error } = await supabase.storage
         .from('post-videos')
-        .upload(fileName, video);
+        .upload(fileName, video, {
+          cacheControl: '3600',
+          upsert: false
+        });
       
       if (error) {
         console.error('Error uploading video:', error);
-        throw error;
+        throw new Error(`Failed to upload video: ${error.message}`);
       }
+      
+      console.log('Video uploaded successfully:', data.path);
       
       const { data: { publicUrl } } = supabase.storage
         .from('post-videos')
@@ -97,7 +104,7 @@ const TweetComposer = () => {
 
   const uploadAudio = async (audio: File): Promise<string> => {
     const fileExt = audio.name.split('.').pop();
-    const fileName = `${user?.id}/${Date.now()}-audio.${fileExt}`;
+    const fileName = `${user?.id}/${Date.now()}-audio-${Math.random()}.${fileExt}`;
     
     const { data, error } = await supabase.storage
       .from('post-audio')
@@ -105,7 +112,7 @@ const TweetComposer = () => {
     
     if (error) {
       console.error('Error uploading audio:', error);
-      throw error;
+      throw new Error(`Failed to upload audio: ${error.message}`);
     }
     
     const { data: { publicUrl } } = supabase.storage
@@ -131,22 +138,35 @@ const TweetComposer = () => {
       let mediaUrls: string[] = [];
       let audioUrl = "";
       
+      console.log('Starting upload process...');
+      console.log('Images to upload:', selectedImages.length);
+      console.log('Videos to upload:', selectedVideos.length);
+      console.log('Audio to upload:', selectedAudio ? 'Yes' : 'No');
+      
       // Upload images
       if (selectedImages.length > 0) {
+        console.log('Uploading images...');
         const imageUrls = await uploadImages(selectedImages);
         mediaUrls = [...mediaUrls, ...imageUrls];
+        console.log('Images uploaded successfully:', imageUrls);
       }
 
       // Upload videos
       if (selectedVideos.length > 0) {
+        console.log('Uploading videos...');
         const videoUrls = await uploadVideos(selectedVideos);
         mediaUrls = [...mediaUrls, ...videoUrls];
+        console.log('Videos uploaded successfully:', videoUrls);
       }
 
       // Upload audio
       if (selectedAudio) {
+        console.log('Uploading audio...');
         audioUrl = await uploadAudio(selectedAudio);
+        console.log('Audio uploaded successfully:', audioUrl);
       }
+      
+      console.log('All media uploaded, creating post...');
       
       if (isThreadMode) {
         const validTweets = threadTweets.filter(tweet => tweet.trim().length > 0);
@@ -186,11 +206,13 @@ const TweetComposer = () => {
           resetForm();
         }
       }
+      
+      console.log('Post created successfully');
     } catch (error) {
       console.error('Error creating post:', error);
       toast({
         title: "Error creating post",
-        description: "Failed to upload media or create post",
+        description: error instanceof Error ? error.message : "Failed to upload media or create post",
         variant: "destructive"
       });
     } finally {
