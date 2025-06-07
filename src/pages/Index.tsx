@@ -1,9 +1,10 @@
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
-import AIPostComposer from "@/components/AIPostComposer";
+import PostComposer from "@/components/PostComposer";
 import PostsList from "@/components/PostsList";
 import HomeFeedNav from "@/components/HomeFeedNav";
 import { StoriesBar } from "@/components/StoriesBar";
@@ -148,7 +149,7 @@ const Index = () => {
               renderFinancialContent()
             ) : (
               <>
-                {feedFilter === 'all' && <AIPostComposer />}
+                {feedFilter === 'all' && <PostComposer />}
                 
                 <div className="border-t border-purple-200 dark:border-purple-800">
                   {postsLoading ? (
