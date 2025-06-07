@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,22 +34,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
-
-interface GroupChat {
-  id: string;
-  name: string;
-  members: number;
-  lastMessage: string;
-  lastMessageTime: Date;
-  avatar: string | null;
-  participants: Array<{
-    id: string;
-    username: string;
-    display_name: string;
-    avatar_url: string;
-  }>;
-}
+import { fetchUserGroupConversations, type GroupConversation } from "@/services/groupConversationService";
 
 const Messages = () => {
   const { user, loading } = useAuth();
@@ -68,7 +52,7 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [groupChats, setGroupChats] = useState<GroupChat[]>([]);
+  const [groupChats, setGroupChats] = useState<GroupConversation[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
 
   useEffect(() => {
@@ -82,63 +66,13 @@ const Messages = () => {
     
     setGroupsLoading(true);
     try {
-      // For now, we'll simulate group chats by finding conversations with multiple participants
-      // In a real implementation, you'd have a separate group_conversations table
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url')
-        .neq('id', user.id)
-        .limit(20);
-
-      if (error) {
-        console.error('Error fetching profiles for groups:', error);
-        return;
-      }
-
-      // Create mock group chats with real user data
-      const mockGroups: GroupChat[] = [];
-      
-      if (profiles && profiles.length >= 3) {
-        // Create a few sample groups with real users
-        const groups = [
-          {
-            name: "Family Group",
-            participants: profiles.slice(0, 4),
-            lastMessage: "Hey everyone! How's it going?",
-            lastMessageTime: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          },
-          {
-            name: "Work Team",
-            participants: profiles.slice(2, 8),
-            lastMessage: "The project deadline is next Friday",
-            lastMessageTime: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          },
-          {
-            name: "Book Club",
-            participants: profiles.slice(5, 12),
-            lastMessage: "What did everyone think of chapter 5?",
-            lastMessageTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-          }
-        ];
-
-        groups.forEach((group, index) => {
-          if (group.participants.length > 0) {
-            mockGroups.push({
-              id: `group-${index + 1}`,
-              name: group.name,
-              members: group.participants.length + 1, // +1 for current user
-              lastMessage: group.lastMessage,
-              lastMessageTime: group.lastMessageTime,
-              avatar: null,
-              participants: group.participants
-            });
-          }
-        });
-      }
-
-      setGroupChats(mockGroups);
+      console.log('Fetching group chats for user:', user.id);
+      const groups = await fetchUserGroupConversations(user.id);
+      console.log('Fetched groups:', groups);
+      setGroupChats(groups);
     } catch (error) {
       console.error('Error fetching group chats:', error);
+      setGroupChats([]);
     } finally {
       setGroupsLoading(false);
     }
@@ -406,10 +340,18 @@ const Messages = () => {
                         >
                           <div className="relative">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
-                              <Users className="w-6 h-6 text-white" />
+                              {group.avatar_url ? (
+                                <img
+                                  src={group.avatar_url}
+                                  alt={group.name}
+                                  className="w-full h-full object-cover rounded-full"
+                                />
+                              ) : (
+                                <Users className="w-6 h-6 text-white" />
+                              )}
                             </div>
                             <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-blue-400 border-2 border-white dark:border-slate-800 rounded-full flex items-center justify-center">
-                              <span className="text-xs text-white font-bold">{group.members}</span>
+                              <span className="text-xs text-white font-bold">{group.member_count}</span>
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
@@ -419,43 +361,48 @@ const Messages = () => {
                                   {group.name}
                                 </h3>
                                 <Badge variant="secondary" className="text-xs">
-                                  {group.members} members
+                                  {group.member_count} members
                                 </Badge>
                               </div>
                               <span className="text-xs text-slate-500">
-                                {formatDistanceToNow(group.lastMessageTime, { addSuffix: true })}
+                                {group.last_message_at 
+                                  ? formatDistanceToNow(new Date(group.last_message_at), { addSuffix: true })
+                                  : formatDistanceToNow(new Date(group.created_at), { addSuffix: true })
+                                }
                               </span>
                             </div>
+                            {group.description && (
+                              <p className="text-xs text-slate-500 truncate mt-1">
+                                {group.description}
+                              </p>
+                            )}
                             <div className="flex items-center gap-1 mt-1">
                               <span className="text-xs text-slate-500">Members:</span>
                               <div className="flex -space-x-1">
-                                {group.participants.slice(0, 3).map((participant, index) => (
-                                  <div key={participant.id} className="relative">
+                                {group.members.slice(0, 3).map((member) => (
+                                  <div key={member.id} className="relative">
                                     <div className="w-5 h-5 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center border border-white dark:border-slate-800">
-                                      {participant.avatar_url ? (
+                                      {member.avatar_url ? (
                                         <img
-                                          src={participant.avatar_url}
-                                          alt={participant.display_name || participant.username}
+                                          src={member.avatar_url}
+                                          alt={member.display_name}
                                           className="w-full h-full object-cover rounded-full"
                                         />
                                       ) : (
                                         <span className="text-white text-xs font-bold">
-                                          {(participant.display_name || participant.username)[0].toUpperCase()}
+                                          {member.display_name[0].toUpperCase()}
                                         </span>
                                       )}
                                     </div>
                                   </div>
                                 ))}
-                                {group.participants.length > 3 && (
+                                {group.member_count > 3 && (
                                   <div className="w-5 h-5 rounded-full bg-slate-400 dark:bg-slate-600 flex items-center justify-center border border-white dark:border-slate-800">
-                                    <span className="text-white text-xs font-bold">+{group.participants.length - 3}</span>
+                                    <span className="text-white text-xs font-bold">+{group.member_count - 3}</span>
                                   </div>
                                 )}
                               </div>
                             </div>
-                            <p className="text-xs text-slate-500 truncate flex-1 mt-1">
-                              {group.lastMessage}
-                            </p>
                           </div>
                         </div>
                       </CardContent>
