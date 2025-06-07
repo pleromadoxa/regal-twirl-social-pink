@@ -24,6 +24,7 @@ import CallHistorySection from "@/components/CallHistorySection";
 import GroupCallDialog from "@/components/GroupCallDialog";
 import GroupChatThread from "@/components/GroupChatThread";
 import GroupInviteDialog from "@/components/GroupInviteDialog";
+import GroupCreationDialog from "@/components/GroupCreationDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
-import { fetchUserGroupConversations, type GroupConversation } from "@/services/groupConversationService";
+import { fetchUserGroupConversations, createGroupConversation, type GroupConversation } from "@/services/groupConversationService";
 
 const Messages = () => {
   const { user, loading } = useAuth();
@@ -120,6 +121,48 @@ const Messages = () => {
     fetchGroupChats();
   };
 
+  const handleCreateGroup = async (groupName: string, participantIds: string[]) => {
+    if (!user) return;
+    
+    try {
+      const newGroup = await createGroupConversation(
+        groupName,
+        null, // description
+        user.id,
+        participantIds,
+        false, // isPrivate
+        50 // maxMembers
+      );
+      
+      // Refresh group chats and select the new group
+      await fetchGroupChats();
+      setSelectedGroup(newGroup);
+      setActiveTab("groups");
+      
+      return newGroup.id;
+    } catch (error) {
+      console.error('Error creating group:', error);
+      throw error;
+    }
+  };
+
+  const handleSettingsAction = (action: string) => {
+    switch (action) {
+      case 'notifications':
+        console.log('Open notification settings');
+        break;
+      case 'privacy':
+        console.log('Open privacy settings');
+        break;
+      case 'export':
+        console.log('Export chat history');
+        break;
+      case 'clear':
+        console.log('Clear chat history');
+        break;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -153,23 +196,6 @@ const Messages = () => {
     display_name: string;
     avatar_url: string;
   }>;
-
-  const handleSettingsAction = (action: string) => {
-    switch (action) {
-      case 'notifications':
-        console.log('Open notification settings');
-        break;
-      case 'privacy':
-        console.log('Open privacy settings');
-        break;
-      case 'export':
-        console.log('Export chat history');
-        break;
-      case 'clear':
-        console.log('Clear chat history');
-        break;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -244,6 +270,14 @@ const Messages = () => {
             {/* Quick Actions */}
             <div className="flex items-center gap-2">
               <ConversationStarter />
+              <GroupCreationDialog 
+                onCreateGroup={handleCreateGroup}
+                trigger={
+                  <Button variant="outline" size="sm" className="rounded-full">
+                    <Users className="w-4 h-4" />
+                  </Button>
+                }
+              />
               <GroupInviteDialog 
                 onGroupJoined={handleGroupJoined}
                 trigger={
@@ -285,7 +319,7 @@ const Messages = () => {
                     >
                       <CardContent className="p-3">
                         <div
-                          onClick={() => setSelectedConversation(conversation.id)}
+                          onClick={() => handleDirectMessageSelect(conversation.id)}
                           className="flex items-center space-x-3 w-full"
                         >
                           <div className="relative">
@@ -467,15 +501,26 @@ const Messages = () => {
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                       Create your first group chat or join one with an invite code!
                     </p>
-                    <GroupInviteDialog 
-                      onGroupJoined={handleGroupJoined}
-                      trigger={
-                        <Button variant="outline" size="sm">
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Join with Code
-                        </Button>
-                      }
-                    />
+                    <div className="flex gap-2 justify-center">
+                      <GroupCreationDialog 
+                        onCreateGroup={handleCreateGroup}
+                        trigger={
+                          <Button variant="outline" size="sm">
+                            <Users className="w-4 h-4 mr-2" />
+                            Create Group
+                          </Button>
+                        }
+                      />
+                      <GroupInviteDialog 
+                        onGroupJoined={handleGroupJoined}
+                        trigger={
+                          <Button variant="outline" size="sm">
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Join with Code
+                          </Button>
+                        }
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -524,15 +569,26 @@ const Messages = () => {
                 </p>
                 <div className="space-y-3">
                   <ConversationStarter />
-                  <GroupInviteDialog 
-                    onGroupJoined={handleGroupJoined}
-                    trigger={
-                      <Button variant="outline" className="w-full">
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Join Group with Code
-                      </Button>
-                    }
-                  />
+                  <div className="flex gap-2 justify-center">
+                    <GroupCreationDialog 
+                      onCreateGroup={handleCreateGroup}
+                      trigger={
+                        <Button variant="outline" className="w-full">
+                          <Users className="w-4 h-4 mr-2" />
+                          Create Group
+                        </Button>
+                      }
+                    />
+                    <GroupInviteDialog 
+                      onGroupJoined={handleGroupJoined}
+                      trigger={
+                        <Button variant="outline" className="w-full">
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Join Group with Code
+                        </Button>
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             </div>
