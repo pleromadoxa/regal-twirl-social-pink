@@ -1,128 +1,171 @@
 
 import { useState, useEffect } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Phone, PhoneOff, Video, CheckCircle } from 'lucide-react';
-import { useCallSounds } from '@/hooks/useCallSounds';
+import { Phone, PhoneOff, Video, VideoOff } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface IncomingCallPopupProps {
+  callId: string;
+  callerId: string;
   callerName: string;
   callerAvatar?: string;
   callType: 'audio' | 'video';
   onAccept: () => void;
   onDecline: () => void;
   isVisible: boolean;
-  isVerified?: boolean;
 }
 
 const IncomingCallPopup = ({
+  callId,
+  callerId,
   callerName,
   callerAvatar,
   callType,
   onAccept,
   onDecline,
-  isVisible,
-  isVerified = false
+  isVisible
 }: IncomingCallPopupProps) => {
-  const [isAnimating, setIsAnimating] = useState(false);
-  const { playRinging, stopRinging } = useCallSounds();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isRinging, setIsRinging] = useState(true);
 
   useEffect(() => {
-    if (isVisible) {
-      setIsAnimating(true);
-      playRinging();
-    } else {
-      setIsAnimating(false);
-      stopRinging();
+    let ringTimeout: NodeJS.Timeout;
+    
+    if (isVisible && isRinging) {
+      // Auto-decline after 30 seconds
+      ringTimeout = setTimeout(() => {
+        handleDecline();
+      }, 30000);
     }
 
     return () => {
-      stopRinging();
+      if (ringTimeout) {
+        clearTimeout(ringTimeout);
+      }
     };
-  }, [isVisible, playRinging, stopRinging]);
+  }, [isVisible, isRinging]);
 
-  if (!isVisible) return null;
+  const handleAccept = async () => {
+    if (!user) return;
+    
+    try {
+      // Join the call in database
+      const { error } = await supabase
+        .from('active_calls')
+        .update({
+          participants: [callerId, user.id]
+        })
+        .eq('id', callId);
 
-  const handleAccept = () => {
-    stopRinging();
-    onAccept();
+      if (error) throw error;
+
+      setIsRinging(false);
+      onAccept();
+      
+      toast({
+        title: "Call connected",
+        description: `Connected to ${callType} call with ${callerName}`
+      });
+    } catch (error) {
+      console.error('Error accepting call:', error);
+      toast({
+        title: "Error",
+        description: "Failed to accept call",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDecline = () => {
-    stopRinging();
-    onDecline();
+  const handleDecline = async () => {
+    try {
+      // End the call in database
+      await supabase
+        .from('active_calls')
+        .update({
+          status: 'ended',
+          ended_at: new Date().toISOString()
+        })
+        .eq('id', callId);
+
+      setIsRinging(false);
+      onDecline();
+      
+      toast({
+        title: "Call declined",
+        description: `Declined ${callType} call from ${callerName}`
+      });
+    } catch (error) {
+      console.error('Error declining call:', error);
+    }
   };
+
+  if (!isVisible || !isRinging) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <Card className={`w-full max-w-sm bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-0 shadow-2xl transition-all duration-500 ${
-        isAnimating ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-      }`}>
-        <CardContent className="p-8 text-center">
-          {/* Caller avatar with enhanced pulse animation */}
-          <div className="relative mb-8">
-            <div className="relative">
-              <Avatar className="w-28 h-28 mx-auto ring-4 ring-white/20 dark:ring-slate-700/40 shadow-xl">
-                <AvatarImage src={callerAvatar} />
-                <AvatarFallback className="text-3xl bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 text-white font-semibold">
-                  {callerName[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <Card className="w-96 bg-white dark:bg-slate-800 shadow-2xl animate-in zoom-in-95 duration-300">
+        <CardContent className="p-8">
+          <div className="text-center space-y-6">
+            {/* Caller Info */}
+            <div className="space-y-4">
+              <div className="relative">
+                <Avatar className="w-24 h-24 mx-auto ring-4 ring-white dark:ring-slate-600 shadow-lg">
+                  <AvatarImage src={callerAvatar} />
+                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl">
+                    {callerName[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+                  <div className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                    {callType === 'video' ? 'Video Call' : 'Audio Call'}
+                  </div>
+                </div>
+              </div>
               
-              {/* Multiple pulse rings with different delays */}
-              <div className="absolute inset-0 rounded-full ring-4 ring-purple-400/60 animate-ping"></div>
-              <div className="absolute inset-0 rounded-full ring-4 ring-blue-400/40 animate-ping" style={{ animationDelay: '0.5s' }}></div>
-              <div className="absolute inset-0 rounded-full ring-4 ring-pink-400/30 animate-ping" style={{ animationDelay: '1s' }}></div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                  {callerName}
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 animate-pulse">
+                  Incoming {callType} call...
+                </p>
+              </div>
+            </div>
+
+            {/* Call Actions */}
+            <div className="flex justify-center gap-8">
+              <Button
+                onClick={handleDecline}
+                size="lg"
+                className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <PhoneOff className="w-6 h-6" />
+              </Button>
+              
+              <Button
+                onClick={handleAccept}
+                size="lg"
+                className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                {callType === 'video' ? (
+                  <Video className="w-6 h-6" />
+                ) : (
+                  <Phone className="w-6 h-6" />
+                )}
+              </Button>
+            </div>
+
+            {/* Decline/Accept Labels */}
+            <div className="flex justify-center gap-8 text-sm text-slate-500 dark:text-slate-400">
+              <span>Decline</span>
+              <span>Accept</span>
             </div>
           </div>
-
-          {/* Caller info with verified badge */}
-          <div className="mb-8 space-y-3">
-            <div className="flex items-center justify-center gap-2">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{callerName}</h2>
-              {isVerified && (
-                <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Verified
-                </Badge>
-              )}
-            </div>
-            
-            <div className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400">
-              {callType === 'video' ? <Video className="w-5 h-5" /> : <Phone className="w-5 h-5" />}
-              <span className="text-lg font-medium">
-                Incoming {callType} call
-              </span>
-            </div>
-            
-            <div className="w-16 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-full mx-auto"></div>
-          </div>
-
-          {/* Enhanced call actions */}
-          <div className="flex items-center justify-center space-x-12">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={handleDecline}
-              className="rounded-full w-16 h-16 p-0 border-2 border-red-200 bg-red-50 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-            >
-              <PhoneOff className="w-7 h-7" />
-            </Button>
-            
-            <Button
-              size="lg"
-              onClick={handleAccept}
-              className="rounded-full w-16 h-16 p-0 bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 text-white"
-            >
-              {callType === 'video' ? <Video className="w-7 h-7" /> : <Phone className="w-7 h-7" />}
-            </Button>
-          </div>
-
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-6 font-medium">
-            Tap to answer • Swipe to decline
-          </p>
         </CardContent>
       </Card>
     </div>

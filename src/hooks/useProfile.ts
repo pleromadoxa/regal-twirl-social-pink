@@ -47,7 +47,15 @@ export const useProfile = (userId?: string) => {
         return;
       }
 
-      setProfile(profileData);
+      // Ensure avatar_url is properly handled
+      const processedProfile = {
+        ...profileData,
+        avatar_url: profileData.avatar_url || null,
+        display_name: profileData.display_name || null,
+        username: profileData.username || null
+      };
+
+      setProfile(processedProfile);
 
       // Check if current user follows this profile
       if (user && userId && user.id !== userId) {

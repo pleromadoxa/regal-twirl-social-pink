@@ -76,6 +76,7 @@ const Settings = () => {
   useEffect(() => {
     if (user) {
       fetchProfile();
+      fetchSettings();
     }
   }, [user]);
 
@@ -101,6 +102,38 @@ const Settings = () => {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data) {
+        setNotifications({
+          email_notifications: data.email_notifications,
+          push_notifications: data.push_notifications,
+          likes_notifications: data.likes_notifications,
+          follows_notifications: data.follows_notifications,
+          messages_notifications: data.messages_notifications,
+          mentions_notifications: data.mentions_notifications
+        });
+
+        setPrivacy({
+          private_account: data.private_account,
+          allow_messages: data.allow_messages,
+          show_online_status: data.show_online_status,
+          discoverable: data.discoverable
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
     }
   };
 
@@ -144,8 +177,16 @@ const Settings = () => {
 
     setSaving(true);
     try {
-      // In a real app, you would save notification preferences to the database
-      // For now, we'll just show a success message
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          ...notifications,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
       toast({
         title: "Notification preferences updated",
         description: "Your notification settings have been saved."
@@ -167,8 +208,16 @@ const Settings = () => {
 
     setSaving(true);
     try {
-      // In a real app, you would save privacy settings to the database
-      // For now, we'll just show a success message
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          ...privacy,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
       toast({
         title: "Privacy settings updated",
         description: "Your privacy preferences have been saved."

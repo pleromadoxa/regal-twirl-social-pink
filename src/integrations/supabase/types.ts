@@ -509,6 +509,7 @@ export type Database = {
       notifications: {
         Row: {
           actor_id: string | null
+          call_id: string | null
           content: string | null
           created_at: string | null
           data: Json | null
@@ -523,6 +524,7 @@ export type Database = {
         }
         Insert: {
           actor_id?: string | null
+          call_id?: string | null
           content?: string | null
           created_at?: string | null
           data?: Json | null
@@ -537,6 +539,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string | null
+          call_id?: string | null
           content?: string | null
           created_at?: string | null
           data?: Json | null
@@ -550,6 +553,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "active_calls"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_post_id_fkey"
             columns: ["post_id"]
@@ -909,6 +919,57 @@ export type Database = {
           id?: string
           is_online?: boolean
           last_seen?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          allow_messages: boolean | null
+          created_at: string
+          discoverable: boolean | null
+          email_notifications: boolean | null
+          follows_notifications: boolean | null
+          id: string
+          likes_notifications: boolean | null
+          mentions_notifications: boolean | null
+          messages_notifications: boolean | null
+          private_account: boolean | null
+          push_notifications: boolean | null
+          show_online_status: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allow_messages?: boolean | null
+          created_at?: string
+          discoverable?: boolean | null
+          email_notifications?: boolean | null
+          follows_notifications?: boolean | null
+          id?: string
+          likes_notifications?: boolean | null
+          mentions_notifications?: boolean | null
+          messages_notifications?: boolean | null
+          private_account?: boolean | null
+          push_notifications?: boolean | null
+          show_online_status?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allow_messages?: boolean | null
+          created_at?: string
+          discoverable?: boolean | null
+          email_notifications?: boolean | null
+          follows_notifications?: boolean | null
+          id?: string
+          likes_notifications?: boolean | null
+          mentions_notifications?: boolean | null
+          messages_notifications?: boolean | null
+          private_account?: boolean | null
+          push_notifications?: boolean | null
+          show_online_status?: boolean | null
           updated_at?: string
           user_id?: string
         }
