@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { usePosts } from "@/hooks/usePosts";
 import PostComments from "./PostComments";
-import PostActions from "./PostActions";
+import { PostActions } from "./PostActions";
 import PostIndicators from "./PostIndicators";
 import PostMediaDisplay from "./PostMediaDisplay";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,14 +14,31 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from "@/contexts/AuthContext";
 import ReportPostDialog from "./ReportPostDialog";
 
-const PostsList = () => {
-  const { posts, loading, deletePost, toggleLike, toggleRetweet, togglePin } = usePosts();
+interface PostsListProps {
+  posts?: any[];
+  onLike?: (postId: string) => void;
+  onRetweet?: (postId: string) => void;
+  onPin?: (postId: string) => void;
+  userId?: string;
+}
+
+const PostsList = ({ posts: externalPosts, onLike: externalOnLike, onRetweet: externalOnRetweet, onPin: externalOnPin, userId }: PostsListProps = {}) => {
+  const { posts: hookPosts, loading, deletePost, toggleLike, toggleRetweet, togglePin } = usePosts();
   const { user } = useAuth();
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportPostId, setReportPostId] = useState<string | null>(null);
 
-  if (loading) {
+  // Use external posts if provided, otherwise use hook posts
+  const displayPosts = externalPosts || hookPosts;
+  const handleLike = externalOnLike || toggleLike;
+  const handleRetweet = externalOnRetweet || toggleRetweet;
+  const handlePin = externalOnPin || togglePin;
+
+  // Filter posts by userId if provided
+  const filteredPosts = userId ? displayPosts.filter(post => post.user_id === userId) : displayPosts;
+
+  if (loading && !externalPosts) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -42,7 +59,7 @@ const PostsList = () => {
 
   return (
     <div className="space-y-6 pb-6">
-      {posts.map((post) => (
+      {filteredPosts.map((post) => (
         <Card key={post.id} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-purple-200 dark:border-purple-800 hover:shadow-lg transition-all duration-300">
           <CardContent className="p-6">
             <div className="flex space-x-4">
@@ -90,7 +107,7 @@ const PostsList = () => {
                       {user && user.id === post.user_id ? (
                         <>
                           <DropdownMenuItem
-                            onClick={() => togglePin(post.id)}
+                            onClick={() => handlePin(post.id)}
                             className="cursor-pointer"
                           >
                             {post.user_pinned ? 'Unpin post' : 'Pin post'}
@@ -124,15 +141,25 @@ const PostsList = () => {
                 </div>
                 
                 <PostIndicators 
-                  premium_tier={post.profiles?.premium_tier || 'free'}
-                  posted_as_page={post.posted_as_page}
+                  isThread={false}
+                  hasAudio={false}
                 />
                 
                 <PostActions
-                  post={post}
-                  onLike={() => toggleLike(post.id)}
-                  onRetweet={() => toggleRetweet(post.id)}
+                  postId={post.id}
+                  userId={post.user_id}
+                  likesCount={post.likes_count || 0}
+                  retweetsCount={post.retweets_count || 0}
+                  repliesCount={post.replies_count || 0}
+                  userLiked={post.user_liked || false}
+                  userRetweeted={post.user_retweeted || false}
+                  userPinned={post.user_pinned || false}
+                  onLike={() => handleLike(post.id)}
+                  onRetweet={() => handleRetweet(post.id)}
+                  onPin={() => handlePin(post.id)}
+                  onDelete={() => handleDeletePost(post.id)}
                   onComment={() => setSelectedPostId(post.id)}
+                  isOwnPost={user?.id === post.user_id}
                 />
               </div>
             </div>
@@ -147,12 +174,8 @@ const PostsList = () => {
       />
 
       <ReportPostDialog
-        isOpen={reportDialogOpen}
-        onClose={() => {
-          setReportDialogOpen(false);
-          setReportPostId(null);
-        }}
-        postId={reportPostId}
+        trigger={null}
+        postId={reportPostId || ''}
       />
     </div>
   );
