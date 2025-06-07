@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -464,9 +465,12 @@ export const usePosts = () => {
   useEffect(() => {
     fetchPosts();
 
+    // Create a unique channel name to avoid conflicts
+    const channelName = `posts-realtime-${Date.now()}-${Math.random()}`;
+    
     // Set up real-time subscription for posts
     const channel = supabase
-      .channel('posts-realtime')
+      .channel(channelName)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -486,9 +490,10 @@ export const usePosts = () => {
 
     // Cleanup subscription on unmount
     return () => {
+      console.log('Cleaning up posts channel subscription');
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id to prevent unnecessary re-subscriptions
 
   return {
     posts,
