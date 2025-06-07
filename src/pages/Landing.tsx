@@ -44,7 +44,7 @@ const Landing = () => {
               <span className="text-white/90"> Network</span>
             </h2>
             <p className="text-xl md:text-2xl text-white/80 font-normal max-w-2xl mx-auto leading-relaxed">
-              The Royal Social Media Experience
+              A Global Christian Social Network
             </p>
           </div>
 
@@ -52,20 +52,20 @@ const Landing = () => {
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12 text-center">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
               <div className="w-3 h-3 bg-purple-400 rounded-full mx-auto mb-3" />
-              <h3 className="text-lg font-semibold mb-2">Connect Globally</h3>
-              <p className="text-white/70 text-sm">Join millions sharing their royal stories</p>
+              <h3 className="text-lg font-semibold mb-2">Faith Community</h3>
+              <p className="text-white/70 text-sm">Connect with believers worldwide in fellowship</p>
             </div>
             
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
               <div className="w-3 h-3 bg-pink-400 rounded-full mx-auto mb-3" />
-              <h3 className="text-lg font-semibold mb-2">Express Yourself</h3>
-              <p className="text-white/70 text-sm">Share your voice with powerful tools</p>
+              <h3 className="text-lg font-semibold mb-2">Share Your Testimony</h3>
+              <p className="text-white/70 text-sm">Inspire others with your faith journey</p>
             </div>
             
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
               <div className="w-3 h-3 bg-blue-400 rounded-full mx-auto mb-3" />
-              <h3 className="text-lg font-semibold mb-2">Stay Informed</h3>
-              <p className="text-white/70 text-sm">Keep up with trends that matter</p>
+              <h3 className="text-lg font-semibold mb-2">Biblical Resources</h3>
+              <p className="text-white/70 text-sm">Access devotions, prayers, and scripture</p>
             </div>
           </div>
 
