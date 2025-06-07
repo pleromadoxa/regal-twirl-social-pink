@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,10 +58,19 @@ const BusinessOrders = ({ businessPage }: BusinessOrdersProps) => {
 
       if (error) throw error;
       
-      // Map the data to ensure items is properly typed
-      const mappedOrders = data?.map(order => ({
-        ...order,
-        items: Array.isArray(order.items) ? order.items : []
+      // Map the data to ensure items is properly typed and handle nulls
+      const mappedOrders: Order[] = data?.map(order => ({
+        id: order.id,
+        customer_name: order.customer_name || '',
+        customer_email: order.customer_email || '',
+        customer_address: order.customer_address || '',
+        items: Array.isArray(order.items) ? order.items as OrderItem[] : [],
+        total_amount: order.total_amount || 0,
+        currency: order.currency || 'USD',
+        status: order.status || 'pending',
+        payment_status: order.payment_status || 'pending',
+        tracking_number: order.tracking_number || '',
+        created_at: order.created_at || ''
       })) || [];
       
       setOrders(mappedOrders);
