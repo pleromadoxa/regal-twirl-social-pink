@@ -20,15 +20,6 @@ export interface GroupConversation {
   }>;
 }
 
-// Create a security definer function to get current user role to avoid RLS recursion
-const createGetCurrentUserRoleFunction = async () => {
-  try {
-    await supabase.rpc('create_get_current_user_role_function');
-  } catch (error) {
-    console.log('Function might already exist:', error);
-  }
-};
-
 export const fetchUserGroupConversations = async (userId: string): Promise<GroupConversation[]> => {
   try {
     console.log('Fetching group conversations for user:', userId);
