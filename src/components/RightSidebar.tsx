@@ -2,7 +2,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import TrendingWidget from "./TrendingWidget";
-import ProfessionalUsersWidget from "./ProfessionalUsersWidget";
 import NotificationDropdown from "./NotificationDropdown";
 import UserSearch from "./UserSearch";
 import { useNavigate } from "react-router-dom";
@@ -29,9 +28,6 @@ const RightSidebar = () => {
 
           {/* Trending */}
           <TrendingWidget onHashtagClick={handleHashtagClick} />
-
-          {/* Professional Users */}
-          <ProfessionalUsersWidget />
         </div>
       </ScrollArea>
     </aside>

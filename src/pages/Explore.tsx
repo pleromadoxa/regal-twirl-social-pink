@@ -6,8 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import SidebarNav from "@/components/SidebarNav";
 import UserSearch from "@/components/UserSearch";
 import TrendingWidget from "@/components/TrendingWidget";
-import ProfessionalUsersWidget from "@/components/ProfessionalUsersWidget";
-import { Search, Compass, TrendingUp, Users, Crown } from "lucide-react";
+import { Search, TrendingUp, Users, Crown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -45,21 +44,23 @@ const Explore = () => {
     try {
       setLoadingUsers(true);
       
-      // First get all users that the current user is not following and exclude self
+      // Get users that the current user is not following and exclude self
       const { data: following } = await supabase
         .from('follows')
         .select('following_id')
         .eq('follower_id', user.id);
 
       const followingIds = following?.map(f => f.following_id) || [];
+      const excludeIds = [...followingIds, user.id];
       
-      // Get a larger set of random users first, then filter
-      const { data: allUsers, error } = await supabase
+      // Build the query to exclude followed users and self
+      let query = supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url, followers_count, is_verified, bio')
-        .neq('id', user.id)
-        .not('id', 'in', `(${followingIds.length > 0 ? followingIds.join(',') : 'null'})`)
-        .limit(20); // Get more users to randomize from
+        .not('id', 'in', `(${excludeIds.join(',')})`)
+        .limit(20);
+
+      const { data: allUsers, error } = await query;
 
       if (error) throw error;
 
@@ -74,7 +75,6 @@ const Explore = () => {
   };
 
   const handleHashtagClick = (hashtag: string) => {
-    // Navigate to search with hashtag
     navigate(`/explore?search=${encodeURIComponent(hashtag)}`);
   };
 
@@ -98,21 +98,17 @@ const Explore = () => {
     }
   };
 
-  // Helper function to check verified status without using hooks
   const getVerifiedStatus = (user: User) => {
     if (!user) return false;
     
-    // Special case for @pleromadoxa
     if (user.username === 'pleromadoxa') {
       return true;
     }
     
-    // Check if manually verified
     if (user.is_verified) {
       return true;
     }
     
-    // Check if has 100+ followers
     if (user.followers_count && user.followers_count >= 100) {
       return true;
     }
@@ -158,7 +154,7 @@ const Explore = () => {
                 <TrendingWidget onHashtagClick={handleHashtagClick} />
               </div>
 
-              {/* Suggested Users */}
+              {/* Who to Follow - Real Data */}
               <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -198,9 +194,8 @@ const Explore = () => {
                                     {suggestedUser.display_name || suggestedUser.username}
                                   </p>
                                   {isVerified && (
-                                    <Badge variant="verified" className="flex items-center gap-1">
+                                    <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-1.5 py-0.5">
                                       <Crown className="w-3 h-3" />
-                                      Verified
                                     </Badge>
                                   )}
                                 </div>
@@ -208,7 +203,7 @@ const Explore = () => {
                                   @{suggestedUser.username}
                                 </p>
                                 <p className="text-xs text-slate-500 dark:text-slate-500">
-                                  {suggestedUser.followers_count} followers
+                                  {suggestedUser.followers_count || 0} followers
                                 </p>
                                 {suggestedUser.bio && (
                                   <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-1">
@@ -246,9 +241,6 @@ const Explore = () => {
                   )}
                 </CardContent>
               </Card>
-
-              {/* Professional Accounts */}
-              <ProfessionalUsersWidget />
             </div>
           </div>
         </main>
