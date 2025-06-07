@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -8,7 +9,7 @@ import { PostIndicators } from '@/components/PostIndicators';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Repeat } from 'lucide-react';
-import PostComments from './PostComments';
+import InlineComments from './InlineComments';
 import MediaPreview from './MediaPreview';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -337,13 +338,6 @@ export const PostsList = ({
         
         return (
           <div key={post.id}>
-            {/* Comments displayed above the post when opened */}
-            <PostComments
-              postId={post.id}
-              isOpen={commentsOpen[post.id] || false}
-              onClose={() => closeComments(post.id)}
-            />
-
             <Card 
               className={`hover:shadow-xl transition-all duration-500 relative z-20 border border-slate-200 dark:border-slate-700 ${
                 isThread 
@@ -471,6 +465,13 @@ export const PostsList = ({
                 </div>
               </CardContent>
             </Card>
+
+            {/* Inline comments displayed below the post when opened */}
+            <InlineComments
+              postId={post.id}
+              isOpen={commentsOpen[post.id] || false}
+              onClose={() => closeComments(post.id)}
+            />
           </div>
         );
       })}
