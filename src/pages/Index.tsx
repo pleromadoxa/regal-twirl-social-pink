@@ -37,8 +37,8 @@ const Index = () => {
       
       <div className="flex-1 flex">
         <main className="flex-1 max-w-2xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
-          <HomeFeedNav />
           <StoriesBar />
+          <HomeFeedNav />
           <TweetComposer />
           <PostsList />
         </main>
