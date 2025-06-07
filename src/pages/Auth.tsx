@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -40,7 +39,7 @@ const Auth = () => {
             title: "Welcome back!",
             description: "You have successfully signed in."
           });
-          navigate('/');
+          navigate('/home');
         }
       } else {
         const { error } = await signUp(email, password, username, displayName);

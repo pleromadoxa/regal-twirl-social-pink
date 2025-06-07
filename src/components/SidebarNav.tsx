@@ -1,4 +1,3 @@
-
 import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
@@ -17,7 +16,7 @@ const SidebarNav = () => {
   const { theme } = useTheme();
 
   const navigationItems = [
-    { icon: Home, label: "Home", path: "/", active: location.pathname === "/" },
+    { icon: Home, label: "Home", path: "/home", active: location.pathname === "/home" },
     { icon: Search, label: "Explore", path: "/explore", active: location.pathname === "/explore" },
     { icon: MessageCircle, label: "Messages", path: "/messages", active: location.pathname === "/messages" },
     { icon: Pin, label: "Pinned", path: "/pinned", active: location.pathname === "/pinned" },
@@ -27,7 +26,7 @@ const SidebarNav = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
+    navigate('/');
   };
 
   const handleNavigation = (path: string) => {
@@ -35,7 +34,7 @@ const SidebarNav = () => {
   };
 
   const handleCreatePost = () => {
-    navigate('/');
+    navigate('/home');
     // Focus on the post composer if on home page
     setTimeout(() => {
       const postComposer = document.querySelector('textarea[placeholder*="What\'s happening"]');
