@@ -49,6 +49,23 @@ const businessTypes = [
   { value: 'other', label: 'Other', icon: MoreHorizontal },
 ];
 
+const professionalTypes = [
+  { value: 'consulting', label: 'Consulting', icon: Briefcase },
+  { value: 'it-services', label: 'IT Services', icon: Code },
+  { value: 'healthcare', label: 'Healthcare', icon: Stethoscope },
+  { value: 'education', label: 'Education', icon: GraduationCap },
+  { value: 'finance', label: 'Finance', icon: DollarSign },
+  { value: 'other', label: 'Other', icon: MoreHorizontal },
+];
+
+const organizationTypes = [
+  { value: 'education', label: 'Educational Institution', icon: GraduationCap },
+  { value: 'healthcare', label: 'Healthcare Organization', icon: Stethoscope },
+  { value: 'other', label: 'Non-Profit Organization', icon: Users },
+  { value: 'other', label: 'Government Agency', icon: Building },
+  { value: 'other', label: 'Other', icon: MoreHorizontal },
+];
+
 const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
   const { createPage } = useBusinessPages();
   const [open, setOpen] = useState(false);
@@ -70,6 +87,13 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
     fetchCurrencies();
   }, []);
 
+  // Reset business_type when page_type changes
+  useEffect(() => {
+    if (formData.page_type) {
+      setFormData(prev => ({ ...prev, business_type: '' }));
+    }
+  }, [formData.page_type]);
+
   const fetchCurrencies = async () => {
     const { data } = await supabase
       .from('currencies')
@@ -83,13 +107,18 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.page_name.trim() || !formData.page_type || !formData.business_type) return;
+    if (!formData.page_name.trim() || !formData.page_type) return;
+
+    // For non-business accounts, set a default business_type if none selected
+    const businessType = formData.page_type === 'business' ? formData.business_type : (formData.business_type || 'other');
+
+    if (formData.page_type === 'business' && !businessType) return;
 
     setIsSubmitting(true);
     await createPage({
       page_name: formData.page_name,
       page_type: formData.page_type,
-      business_type: formData.business_type,
+      business_type: businessType,
       default_currency: formData.default_currency,
       description: formData.description || undefined,
       website: formData.website || undefined,
@@ -118,10 +147,40 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
   };
 
   const getBusinessTypeIcon = (type: string) => {
-    const businessType = businessTypes.find(bt => bt.value === type);
+    const allTypes = [...businessTypes, ...professionalTypes, ...organizationTypes];
+    const businessType = allTypes.find(bt => bt.value === type);
     const IconComponent = businessType?.icon || MoreHorizontal;
     return <IconComponent className="w-4 h-4 mr-2 text-purple-600" />;
   };
+
+  const getTypeOptions = () => {
+    switch (formData.page_type) {
+      case 'business':
+        return businessTypes;
+      case 'professional':
+        return professionalTypes;
+      case 'organization':
+        return organizationTypes;
+      default:
+        return businessTypes;
+    }
+  };
+
+  const getTypeFieldLabel = () => {
+    switch (formData.page_type) {
+      case 'business':
+        return 'Business Type *';
+      case 'professional':
+        return 'Professional Field';
+      case 'organization':
+        return 'Organization Type';
+      default:
+        return 'Type';
+    }
+  };
+
+  const shouldShowTypeField = formData.page_type === 'business';
+  const shouldRequireTypeField = formData.page_type === 'business';
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -193,26 +252,28 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="business_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Business Type *
-              </Label>
-              <Select value={formData.business_type} onValueChange={(value) => handleInputChange('business_type', value)}>
-                <SelectTrigger className="rounded-xl border-purple-200 focus:border-purple-500">
-                  <SelectValue placeholder="Select business type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {businessTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      <div className="flex items-center">
-                        {getBusinessTypeIcon(type.value)}
-                        {type.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {shouldShowTypeField && (
+              <div className="space-y-2">
+                <Label htmlFor="business_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {getTypeFieldLabel()}
+                </Label>
+                <Select value={formData.business_type} onValueChange={(value) => handleInputChange('business_type', value)}>
+                  <SelectTrigger className="rounded-xl border-purple-200 focus:border-purple-500">
+                    <SelectValue placeholder={`Select ${formData.page_type === 'business' ? 'business' : formData.page_type} type`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getTypeOptions().map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        <div className="flex items-center">
+                          {getBusinessTypeIcon(type.value)}
+                          {type.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="default_currency" className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -318,7 +379,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
             </Button>
             <Button
               type="submit"
-              disabled={!formData.page_name.trim() || !formData.page_type || !formData.business_type || isSubmitting}
+              disabled={!formData.page_name.trim() || !formData.page_type || (shouldRequireTypeField && !formData.business_type) || isSubmitting}
               className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl"
             >
               {isSubmitting ? 'Creating...' : 'Create Account'}
