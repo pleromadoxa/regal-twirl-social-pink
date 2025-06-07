@@ -26,12 +26,13 @@ export interface Post {
   };
 }
 
-export const usePosts = () => {
+export const usePosts = (userId?: string) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
   const channelRef = useRef<any>(null);
+  const mountedRef = useRef(true);
 
   const enrichPostWithUserData = async (post: any, profilesMap: Map<string, any>) => {
     let userLiked = false;
@@ -83,14 +84,23 @@ export const usePosts = () => {
   };
 
   const fetchPosts = async () => {
+    if (!mountedRef.current) return;
+    
     try {
       setLoading(true);
       
-      // First, get all posts including the new image_urls column
-      const { data: postsData, error: postsError } = await supabase
+      // Build query based on whether we're filtering by userId
+      let query = supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // If userId is provided, filter by that user
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: postsData, error: postsError } = await query;
 
       if (postsError) {
         console.error('Error fetching posts:', postsError);
@@ -98,7 +108,9 @@ export const usePosts = () => {
       }
 
       if (!postsData || postsData.length === 0) {
-        setPosts([]);
+        if (mountedRef.current) {
+          setPosts([]);
+        }
         return;
       }
 
@@ -120,7 +132,7 @@ export const usePosts = () => {
         (profilesData || []).map(profile => [profile.id, profile])
       );
 
-      if (user) {
+      if (user && mountedRef.current) {
         // Get user likes, retweets, and pinned posts
         const postIds = postsData.map(post => post.id);
         
@@ -164,7 +176,9 @@ export const usePosts = () => {
           }
         }));
 
-        setPosts(enrichedPosts);
+        if (mountedRef.current) {
+          setPosts(enrichedPosts);
+        }
       } else {
         const enrichedPosts: Post[] = postsData.map(post => ({
           ...post,
@@ -181,19 +195,30 @@ export const usePosts = () => {
           }
         }));
         
-        setPosts(enrichedPosts);
+        if (mountedRef.current) {
+          setPosts(enrichedPosts);
+        }
       }
     } catch (error) {
       console.error('Error in fetchPosts:', error);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   // Handle real-time new posts
   const handleNewPost = async (payload: any) => {
+    if (!mountedRef.current) return;
+    
     console.log('New post received:', payload);
     const newPost = payload.new;
+    
+    // If we're filtering by userId and this post isn't from that user, ignore it
+    if (userId && newPost.user_id !== userId) {
+      return;
+    }
     
     // Fetch the profile for the new post author
     const { data: profileData } = await supabase
@@ -211,29 +236,39 @@ export const usePosts = () => {
     const enrichedPost = await enrichPostWithUserData(newPost, profilesMap);
     
     // Add the new post to the beginning of the posts array
-    setPosts(prevPosts => [enrichedPost, ...prevPosts]);
+    if (mountedRef.current) {
+      setPosts(prevPosts => [enrichedPost, ...prevPosts]);
+    }
   };
 
   // Handle real-time post updates (likes, retweets, etc.)
   const handlePostUpdate = async (payload: any) => {
+    if (!mountedRef.current) return;
+    
     console.log('Post updated:', payload);
     const updatedPost = payload.new;
     
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === updatedPost.id 
-          ? { ...post, ...updatedPost }
-          : post
-      )
-    );
+    if (mountedRef.current) {
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === updatedPost.id 
+            ? { ...post, ...updatedPost }
+            : post
+        )
+      );
+    }
   };
 
   // Handle real-time post deletions
   const handlePostDelete = (payload: any) => {
+    if (!mountedRef.current) return;
+    
     console.log('Post deleted:', payload);
     const deletedPostId = payload.old.id;
     
-    setPosts(prevPosts => prevPosts.filter(post => post.id !== deletedPostId));
+    if (mountedRef.current) {
+      setPosts(prevPosts => prevPosts.filter(post => post.id !== deletedPostId));
+    }
   };
 
   const createPost = async (content: string, imageUrls: string[] = [], selectedAccount: 'personal' | string = 'personal') => {
@@ -454,21 +489,20 @@ export const usePosts = () => {
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchPosts();
 
-    // Clean up any existing channel before creating a new one
-    if (channelRef.current) {
-      console.log('Cleaning up existing posts channel subscription');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-
-    // Create a new channel with a unique name
-    const channelName = `posts-realtime-${user?.id || 'anonymous'}-${Date.now()}`;
+    // Create a truly unique channel name that includes component context
+    const contextId = userId ? `profile-${userId}` : 'home';
+    const channelName = `posts-${contextId}-${user?.id || 'anon'}-${Math.random().toString(36).substr(2, 9)}`;
+    
     console.log('Creating new channel:', channelName);
     
-    channelRef.current = supabase
-      .channel(channelName)
+    // Create the channel
+    channelRef.current = supabase.channel(channelName);
+    
+    // Set up event listeners
+    channelRef.current
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -483,20 +517,23 @@ export const usePosts = () => {
         event: 'DELETE',
         schema: 'public',
         table: 'posts'
-      }, handlePostDelete)
-      .subscribe((status: string) => {
-        console.log('Posts real-time subscription status:', status);
-      });
+      }, handlePostDelete);
+
+    // Subscribe to the channel
+    channelRef.current.subscribe((status: string) => {
+      console.log('Posts real-time subscription status:', status);
+    });
 
     // Cleanup function
     return () => {
+      mountedRef.current = false;
       if (channelRef.current) {
         console.log('Cleaning up posts channel subscription on unmount');
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [user?.id]); // Only depend on user.id to prevent unnecessary re-subscriptions
+  }, [user?.id, userId]); // Include userId in dependencies
 
   return {
     posts,
