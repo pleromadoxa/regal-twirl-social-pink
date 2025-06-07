@@ -64,7 +64,7 @@ const BusinessOrders = ({ businessPage }: BusinessOrdersProps) => {
         customer_name: order.customer_name || '',
         customer_email: order.customer_email || '',
         customer_address: order.customer_address || '',
-        items: Array.isArray(order.items) ? order.items as OrderItem[] : [],
+        items: Array.isArray(order.items) ? (order.items as unknown as OrderItem[]) : [],
         total_amount: order.total_amount || 0,
         currency: order.currency || 'USD',
         status: order.status || 'pending',
