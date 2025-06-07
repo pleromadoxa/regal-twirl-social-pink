@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -123,10 +122,9 @@ export const useUserPresence = () => {
           }
         );
 
-      // Subscribe only once
-      channelRef.current.subscribe().then(() => {
-        isSubscribedRef.current = true;
-      });
+      // Subscribe without using .then()
+      channelRef.current.subscribe();
+      isSubscribedRef.current = true;
     }
 
     // Handle page visibility changes
