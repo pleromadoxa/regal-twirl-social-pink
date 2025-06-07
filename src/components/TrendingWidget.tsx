@@ -3,41 +3,47 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface TrendingWidgetProps {
   onHashtagClick?: (hashtag: string) => void;
 }
 
 const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
+  const navigate = useNavigate();
+
   const trends = [
-    { topic: "#WebDevelopment", tweets: "125K", growth: "+12%", category: "Technology" },
-    { topic: "#React", tweets: "89K", growth: "+8%", category: "Programming" },
-    { topic: "#TechTrends", tweets: "67K", growth: "+15%", category: "Technology" },
-    { topic: "#Design", tweets: "45K", growth: "+5%", category: "Creative" },
-    { topic: "#Innovation", tweets: "32K", growth: "+20%", category: "Business" },
+    { topic: "#ChristianLife", tweets: "125K", growth: "+12%", category: "Faith" },
+    { topic: "#Prayer", tweets: "89K", growth: "+8%", category: "Spiritual" },
+    { topic: "#BibleStudy", tweets: "67K", growth: "+15%", category: "Scripture" },
+    { topic: "#Faith", tweets: "45K", growth: "+5%", category: "Spiritual" },
+    { topic: "#Worship", tweets: "32K", growth: "+20%", category: "Praise" },
   ];
 
   const whoToFollow = [
     { 
-      name: "Emma Watson", 
-      handle: "@EmmaWatson", 
-      followers: "12.5M",
+      name: "Pastor John", 
+      handle: "@PastorJohn", 
+      followers: "12.5K",
       isVerified: true,
-      description: "Actress & Activist"
+      description: "Senior Pastor & Teacher",
+      userId: "pastor-john-id"
     },
     { 
-      name: "Tech Insider", 
-      handle: "@TechInsider", 
-      followers: "2.1M",
+      name: "Christian Daily", 
+      handle: "@ChristianDaily", 
+      followers: "8.1K",
       isVerified: true,
-      description: "Latest in technology"
+      description: "Daily inspiration",
+      userId: "christian-daily-id"
     },
     { 
-      name: "Design Daily", 
-      handle: "@DesignDaily", 
-      followers: "890K",
+      name: "Bible Verses", 
+      handle: "@BibleVerses", 
+      followers: "15.2K",
       isVerified: false,
-      description: "Daily design inspiration"
+      description: "Scripture & meditation",
+      userId: "bible-verses-id"
     },
   ];
 
@@ -47,12 +53,16 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
     }
   };
 
+  const handleUserClick = (userId: string) => {
+    navigate(`/profile/${userId}`);
+  };
+
   const getCategoryColor = (category: string) => {
     const colors = {
-      Technology: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
-      Programming: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-      Creative: "bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300",
-      Business: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300"
+      Faith: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+      Spiritual: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+      Scripture: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+      Praise: "bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300"
     };
     return colors[category as keyof typeof colors] || "bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300";
   };
@@ -111,7 +121,10 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
         <CardContent className="space-y-4">
           {whoToFollow.map((user, index) => (
             <div key={index} className="flex items-start justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all duration-200">
-              <div className="flex items-center space-x-3 flex-1">
+              <div 
+                className="flex items-center space-x-3 flex-1 cursor-pointer"
+                onClick={() => handleUserClick(user.userId)}
+              >
                 <div className="relative">
                   <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                     {user.name.split(' ').map(n => n[0]).join('')}

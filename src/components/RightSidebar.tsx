@@ -56,8 +56,13 @@ const RightSidebar = () => {
     navigate(`/profile/${userId}`);
   };
 
+  const handleHashtagClick = (hashtag: string) => {
+    // Navigate to explore page with hashtag search
+    navigate(`/explore?search=${encodeURIComponent(hashtag)}`);
+  };
+
   return (
-    <aside className="w-80 bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900 border-l border-purple-200 dark:border-purple-800 h-screen overflow-hidden">
+    <aside className="w-96 bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900 border-l border-purple-200 dark:border-purple-800 h-screen overflow-hidden">
       <ScrollArea className="h-full">
         <div className="p-6 space-y-6">
           {/* Notifications */}
@@ -142,7 +147,7 @@ const RightSidebar = () => {
           )}
 
           {/* Trending */}
-          <TrendingWidget />
+          <TrendingWidget onHashtagClick={handleHashtagClick} />
 
           {/* Professional Users */}
           <ProfessionalUsersWidget />

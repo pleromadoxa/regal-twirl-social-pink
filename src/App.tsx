@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import Pinned from "./pages/Pinned";
 import ProfessionalAccounts from "./pages/ProfessionalAccounts";
 import EditProfessionalAccount from "./pages/EditProfessionalAccount";
+import ProfessionalAccountProfile from "./pages/ProfessionalAccountProfile";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -39,8 +40,10 @@ const App = () => (
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/explore" element={<Explore />} />
               <Route path="/pinned" element={<Pinned />} />
+              <Route path="/professional" element={<ProfessionalAccounts />} />
               <Route path="/professional-accounts" element={<ProfessionalAccounts />} />
               <Route path="/professional-accounts/edit/:pageId" element={<EditProfessionalAccount />} />
+              <Route path="/professional-account/:pageId" element={<ProfessionalAccountProfile />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
