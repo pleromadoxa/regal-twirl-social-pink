@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -46,6 +45,7 @@ export const PostsList = ({
     images: [],
     initialIndex: 0
   });
+  const [businessPages, setBusinessPages] = useState<{[key: string]: any}>({});
 
   let posts = externalPosts || hookPosts;
   
@@ -96,6 +96,39 @@ export const PostsList = ({
   const onRetweet = externalOnRetweet || handleRetweet;
   const onPin = externalOnPin || togglePin;
   const onDelete = externalOnDelete || deletePost;
+
+  // Fetch business page information for posts made as professional accounts
+  useEffect(() => {
+    const fetchBusinessPages = async () => {
+      if (!posts || posts.length === 0) return;
+      
+      const pageIds = posts
+        .filter(post => post.posted_as_page)
+        .map(post => post.posted_as_page)
+        .filter(Boolean);
+      
+      if (pageIds.length === 0) return;
+      
+      try {
+        const { data: pagesData } = await supabase
+          .from('business_pages')
+          .select('id, page_name, page_type, avatar_url, is_verified')
+          .in('id', pageIds);
+
+        if (pagesData) {
+          const pagesMap: {[key: string]: any} = {};
+          pagesData.forEach(page => {
+            pagesMap[page.id] = page;
+          });
+          setBusinessPages(pagesMap);
+        }
+      } catch (error) {
+        console.error('Error fetching business pages:', error);
+      }
+    };
+
+    fetchBusinessPages();
+  }, [posts]);
 
   // Real-time notification for new posts
   useEffect(() => {
@@ -300,6 +333,7 @@ export const PostsList = ({
         const isThread = isThreadPost(post.content);
         const hasAudio = hasAudioContent(post.content);
         const retweetInfo = retweetedBy[post.id];
+        const businessPage = post.posted_as_page ? businessPages[post.posted_as_page] : null;
         
         return (
           <div key={post.id}>
@@ -332,24 +366,37 @@ export const PostsList = ({
                 
                 <div className="flex items-start space-x-3">
                   <Avatar className="w-12 h-12 relative z-40">
-                    <AvatarImage src={post.profiles.avatar_url} />
+                    <AvatarImage src={businessPage ? businessPage.avatar_url : post.profiles.avatar_url} />
                     <AvatarFallback>
-                      {post.profiles.display_name?.[0] || post.profiles.username?.[0] || 'U'}
+                      {businessPage 
+                        ? businessPage.page_name?.[0] || 'B'
+                        : post.profiles.display_name?.[0] || post.profiles.username?.[0] || 'U'
+                      }
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 relative z-40">
                     <div className="flex items-center space-x-2 mb-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                          {post.profiles.display_name || post.profiles.username}
+                          {businessPage 
+                            ? businessPage.page_name 
+                            : post.profiles.display_name || post.profiles.username
+                          }
                         </h3>
-                        {isVerified && (
+                        {(businessPage?.is_verified || isVerified) && (
                           <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-1.5 py-0.5 relative z-50">
                             <CheckCircle className="w-3 h-3" />
                           </Badge>
                         )}
+                        {businessPage && (
+                          <Badge variant="outline" className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700 px-1.5 py-0.5 text-xs">
+                            {businessPage.page_type}
+                          </Badge>
+                        )}
                       </div>
-                      <span className="text-slate-500 dark:text-slate-400">@{post.profiles.username}</span>
+                      <span className="text-slate-500 dark:text-slate-400">
+                        @{businessPage ? businessPage.page_name.toLowerCase().replace(/\s+/g, '') : post.profiles.username}
+                      </span>
                       <span className="text-slate-400 dark:text-slate-500 text-sm">
                         {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                       </span>

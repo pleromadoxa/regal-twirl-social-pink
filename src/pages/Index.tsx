@@ -5,9 +5,12 @@ import RightSidebar from "@/components/RightSidebar";
 import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import { StoriesBar } from "@/components/StoriesBar";
+import HomeFeedNav from "@/components/HomeFeedNav";
+import { useState } from "react";
 
 const Index = () => {
   const { user } = useAuth();
+  const [feedFilter, setFeedFilter] = useState<'all' | 'professional' | 'trending'>('all');
 
   if (!user) {
     return null;
@@ -23,6 +26,9 @@ const Index = () => {
           <div className="border-b border-purple-200 dark:border-purple-800 p-4">
             <StoriesBar />
           </div>
+
+          {/* Home Feed Navigation with Expandable Tabs */}
+          <HomeFeedNav onFilterChange={setFeedFilter} />
 
           {/* Tweet Composer */}
           <div className="border-b border-purple-200 dark:border-purple-800">
