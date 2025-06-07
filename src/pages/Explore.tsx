@@ -44,26 +44,28 @@ const Explore = () => {
 
     try {
       setLoadingUsers(true);
-      // Fetch users that the current user is not following, ordered by followers count
-      const { data: users, error } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url, followers_count, is_verified, bio')
-        .neq('id', user.id)
-        .order('followers_count', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-
-      // Filter out users already being followed
+      
+      // First get all users that the current user is not following and exclude self
       const { data: following } = await supabase
         .from('follows')
         .select('following_id')
         .eq('follower_id', user.id);
 
       const followingIds = following?.map(f => f.following_id) || [];
-      const filteredUsers = users?.filter(u => !followingIds.includes(u.id)) || [];
+      
+      // Get a larger set of random users first, then filter
+      const { data: allUsers, error } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, followers_count, is_verified, bio')
+        .neq('id', user.id)
+        .not('id', 'in', `(${followingIds.length > 0 ? followingIds.join(',') : 'null'})`)
+        .limit(20); // Get more users to randomize from
 
-      setSuggestedUsers(filteredUsers);
+      if (error) throw error;
+
+      // Randomly shuffle and take 5 users
+      const shuffledUsers = allUsers?.sort(() => Math.random() - 0.5).slice(0, 5) || [];
+      setSuggestedUsers(shuffledUsers);
     } catch (error) {
       console.error('Error fetching suggested users:', error);
     } finally {
@@ -224,6 +226,13 @@ const Explore = () => {
                           </div>
                         );
                       })}
+                      <Button
+                        variant="outline"
+                        className="w-full rounded-xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
+                        onClick={() => fetchSuggestedUsers()}
+                      >
+                        Refresh suggestions
+                      </Button>
                     </div>
                   ) : (
                     <div className="text-center py-8">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -120,6 +121,11 @@ const ProfessionalUsersWidget = () => {
     }
   };
 
+  // Helper function to check if the current user owns this account
+  const isOwnAccount = (account: BusinessPage) => {
+    return user && account.owner_id === user.id;
+  };
+
   if (loading) {
     return (
       <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
@@ -197,19 +203,32 @@ const ProfessionalUsersWidget = () => {
                     )}
                   </div>
                 </div>
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleFollow(account.id);
-                  }}
-                  className={`rounded-xl ${
-                    account.user_following
-                      ? 'bg-slate-500 hover:bg-slate-600'
-                      : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
-                  } text-white`}
-                >
-                  {account.user_following ? 'Following' : 'Follow'}
-                </Button>
+                {isOwnAccount(account) ? (
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/edit-professional-account/${account.id}`);
+                    }}
+                  >
+                    Mine
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleFollow(account.id);
+                    }}
+                    className={`rounded-xl ${
+                      account.user_following
+                        ? 'bg-slate-500 hover:bg-slate-600'
+                        : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
+                    } text-white`}
+                  >
+                    {account.user_following ? 'Following' : 'Follow'}
+                  </Button>
+                )}
               </div>
             ))}
             <Button
