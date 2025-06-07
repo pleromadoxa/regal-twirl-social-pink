@@ -8,6 +8,7 @@ import PostComposer from "@/components/PostComposer";
 import PostsList from "@/components/PostsList";
 import { StoriesBar } from "@/components/StoriesBar";
 import HomeFeedNav from "@/components/HomeFeedNav";
+import { FinancialSection } from "@/components/FinancialSection";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -43,6 +44,7 @@ const Index = () => {
             <PostComposer />
           </div>
           <PostsList />
+          <FinancialSection />
         </main>
         
         <RightSidebar />
