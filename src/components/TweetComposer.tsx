@@ -221,6 +221,15 @@ const TweetComposer = () => {
     }
   };
 
+  const handleBibleVerseSelect = (verse: string) => {
+    if (isThreadMode) {
+      const currentIndex = threadTweets.length - 1;
+      updateThreadTweet(currentIndex, threadTweets[currentIndex] + (threadTweets[currentIndex] ? '\n\n' : '') + verse);
+    } else {
+      setTweetText(prev => prev + (prev ? '\n\n' : '') + verse);
+    }
+  };
+
   const handleAudioRecorded = (file: File, url: string) => {
     setSelectedAudio(file);
     setAudioURL(url);
@@ -343,7 +352,12 @@ const TweetComposer = () => {
                   const hashtag = prompt("Enter hashtag:");
                   if (hashtag) {
                     const tag = hashtag.startsWith('#') ? hashtag : `#${hashtag}`;
-                    setTweetText(prev => prev + ` ${tag}`);
+                    if (isThreadMode) {
+                      const currentIndex = threadTweets.length - 1;
+                      updateThreadTweet(currentIndex, threadTweets[currentIndex] + ` ${tag}`);
+                    } else {
+                      setTweetText(prev => prev + ` ${tag}`);
+                    }
                   }
                 }}
                 onMentionClick={() => {
@@ -355,6 +369,7 @@ const TweetComposer = () => {
                     textareaRef.current.setSelectionRange(position + 1, position + 1);
                   }
                 }}
+                onBibleVerseSelect={handleBibleVerseSelect}
               />
 
               <CalendarPicker onDateSelect={handleDateSelect} />

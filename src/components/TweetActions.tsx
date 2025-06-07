@@ -3,6 +3,7 @@ import { MapPin, Hash, AtSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MediaUpload from "./MediaUpload";
 import AudioRecorder from "./AudioRecorder";
+import BibleVersePicker from "./BibleVersePicker";
 
 interface TweetActionsProps {
   selectedImages: File[];
@@ -14,6 +15,7 @@ interface TweetActionsProps {
   onLocationClick: () => void;
   onHashtagClick: () => void;
   onMentionClick: () => void;
+  onBibleVerseSelect?: (verse: string) => void;
 }
 
 const TweetActions = ({
@@ -25,7 +27,8 @@ const TweetActions = ({
   onAudioUploaded,
   onLocationClick,
   onHashtagClick,
-  onMentionClick
+  onMentionClick,
+  onBibleVerseSelect
 }: TweetActionsProps) => {
   return (
     <div className="flex items-center space-x-2">
@@ -40,6 +43,10 @@ const TweetActions = ({
         onAudioRecorded={onAudioRecorded}
         onAudioUploaded={onAudioUploaded}
       />
+
+      {onBibleVerseSelect && (
+        <BibleVersePicker onVerseSelect={onBibleVerseSelect} />
+      )}
       
       <Button 
         type="button"
