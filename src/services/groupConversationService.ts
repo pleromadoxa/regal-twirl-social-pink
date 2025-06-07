@@ -248,10 +248,7 @@ export const createGroupConversation = async (
 
     console.log('Successfully created group:', groupData.id);
 
-    // Step 2: Use a timeout to ensure the group exists before adding members
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Step 3: Add the creator as admin first (one by one to avoid RLS issues)
+    // Step 2: Add the creator as admin first
     try {
       const { error: creatorError } = await supabase
         .from('group_conversation_members')
@@ -275,34 +272,51 @@ export const createGroupConversation = async (
       throw new Error('Failed to add creator to group');
     }
 
-    // Step 4: Add other members one by one with error handling
+    // Step 3: Add other members using a function call (bypasses RLS)
     if (memberIds.length > 0) {
-      let successfullyAdded = 0;
-      
-      for (const memberId of memberIds) {
-        try {
-          const { error: memberError } = await supabase
-            .from('group_conversation_members')
-            .insert({
-              group_id: groupData.id,
-              user_id: memberId,
-              role: 'member'
-            });
+      try {
+        // Use rpc to add members as the group creator
+        const { error: membersError } = await supabase.rpc('add_group_members', {
+          group_id: groupData.id,
+          member_ids: memberIds,
+          creator_id: createdBy
+        });
 
-          if (memberError) {
-            console.error(`Error adding member ${memberId}:`, memberError);
-          } else {
-            successfullyAdded++;
+        if (membersError) {
+          console.error('Error adding members via RPC:', membersError);
+          // If RPC fails, fall back to individual inserts
+          console.log('Falling back to individual member inserts');
+          
+          let successfullyAdded = 0;
+          for (const memberId of memberIds) {
+            try {
+              const { error: memberError } = await supabase
+                .from('group_conversation_members')
+                .insert({
+                  group_id: groupData.id,
+                  user_id: memberId,
+                  role: 'member'
+                });
+
+              if (memberError) {
+                console.error(`Error adding member ${memberId}:`, memberError);
+              } else {
+                successfullyAdded++;
+              }
+            } catch (error) {
+              console.error(`Exception adding member ${memberId}:`, error);
+            }
           }
-        } catch (error) {
-          console.error(`Exception adding member ${memberId}:`, error);
+          console.log(`Successfully added ${successfullyAdded} out of ${memberIds.length} members via fallback`);
+        } else {
+          console.log(`Successfully added all ${memberIds.length} members via RPC`);
         }
+      } catch (error) {
+        console.error('Exception in member addition:', error);
       }
-
-      console.log(`Successfully added ${successfullyAdded} out of ${memberIds.length} members to group`);
     }
 
-    // Step 5: Build and return the group object manually to avoid fetching issues
+    // Step 4: Build and return the group object
     const createdGroup: GroupConversation = {
       id: groupData.id,
       name: groupData.name,
