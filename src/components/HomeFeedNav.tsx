@@ -12,6 +12,7 @@ interface HomeFeedNavProps {
 
 const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'professional' | 'trending' | 'news' | 'stocks' | 'alerts'>('all');
+  const [selectedTabIndex, setSelectedTabIndex] = useState<number>(0); // Set All Posts as active
 
   const allTabs = [
     { title: "All Posts", icon: Home },
@@ -30,6 +31,7 @@ const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
     const newFilter = filters[index];
     
     setActiveFilter(newFilter);
+    setSelectedTabIndex(index);
     
     // Only call onFilterChange for the main feed filters
     if (['all', 'professional', 'trending'].includes(newFilter)) {
@@ -58,6 +60,7 @@ const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
           onChange={handleTabChange}
           activeColor="text-purple-600 dark:text-purple-400"
           className="border-purple-200 dark:border-purple-800 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm"
+          defaultSelected={0}
         />
       </div>
       

@@ -62,6 +62,7 @@ export const fetchRandomVerse = async (): Promise<BibleVerse | null> => {
 
 export const fetchVerse = async (verseId: string): Promise<BibleVerse | null> => {
   try {
+    // First try the API
     const response = await fetch(
       `${BIBLE_API_BASE}/${DEFAULT_BIBLE_ID}/verses/${verseId}?content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=true`,
       {
@@ -71,20 +72,30 @@ export const fetchVerse = async (verseId: string): Promise<BibleVerse | null> =>
       }
     );
 
-    if (!response.ok) {
-      return getFallbackVerse(verseId);
+    if (response.ok) {
+      const data: BibleApiResponse = await response.json();
+      
+      if (data.data && data.data.verses && data.data.verses.length > 0) {
+        const verses = data.data.verses;
+        // Properly join all verses for ranges
+        const fullText = verses.map((v, index) => {
+          // Add verse numbers for multi-verse passages
+          if (verses.length > 1) {
+            return `${v.verse} ${v.text}`;
+          }
+          return v.text;
+        }).join(' ');
+        
+        return {
+          reference: data.data.reference,
+          text: fullText,
+          translation: 'ESV'
+        };
+      }
     }
-
-    const data: BibleApiResponse = await response.json();
     
-    const verses = data.data.verses;
-    const fullText = verses.map(v => v.text).join(' ');
-    
-    return {
-      reference: data.data.reference,
-      text: fullText,
-      translation: 'ESV'
-    };
+    // Fall back to local verses if API fails
+    return getFallbackVerse(verseId);
   } catch (error) {
     console.error('Error fetching verse:', error);
     return getFallbackVerse(verseId);
@@ -134,7 +145,17 @@ const getFallbackVerse = (verseId: string): BibleVerse => {
     },
     'PSA.23.1-6': {
       reference: 'Psalm 23:1-6',
-      text: 'The Lord is my shepherd; I shall not want. He makes me lie down in green pastures. He leads me beside still waters. He restores my soul. He leads me in paths of righteousness for his name\'s sake. Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me; your rod and your staff, they comfort me. You prepare a table before me in the presence of my enemies; you anoint my head with oil; my cup overflows. Surely goodness and mercy shall follow me all the days of my life, and I shall dwell in the house of the Lord forever.',
+      text: '1 The Lord is my shepherd; I shall not want. 2 He makes me lie down in green pastures. He leads me beside still waters. 3 He restores my soul. He leads me in paths of righteousness for his name\'s sake. 4 Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me; your rod and your staff, they comfort me. 5 You prepare a table before me in the presence of my enemies; you anoint my head with oil; my cup overflows. 6 Surely goodness and mercy shall follow me all the days of my life, and I shall dwell in the house of the Lord forever.',
+      translation: 'ESV'
+    },
+    '1CO.13.4-8': {
+      reference: '1 Corinthians 13:4-8',
+      text: '4 Love is patient and kind; love does not envy or boast; it is not arrogant 5 or rude. It does not insist on its own way; it is not irritable or resentful; 6 it does not rejoice at wrongdoing, but rejoices with the truth. 7 Love bears all things, believes all things, hopes all things, endures all things. 8 Love never ends.',
+      translation: 'ESV'
+    },
+    'MAT.5.3-12': {
+      reference: 'Matthew 5:3-12',
+      text: '3 Blessed are the poor in spirit, for theirs is the kingdom of heaven. 4 Blessed are those who mourn, for they shall be comforted. 5 Blessed are the meek, for they shall inherit the earth. 6 Blessed are those who hunger and thirst for righteousness, for they shall be satisfied. 7 Blessed are the merciful, for they shall receive mercy. 8 Blessed are the pure in heart, for they shall see God. 9 Blessed are the peacemakers, for they shall be called sons of God. 10 Blessed are those who are persecuted for righteousness\' sake, for theirs is the kingdom of heaven. 11 Blessed are you when others revile you and persecute you and utter all kinds of evil against you falsely on my account. 12 Rejoice and be glad, for your reward is great in heaven.',
       translation: 'ESV'
     },
     'PHP.4.13': {
