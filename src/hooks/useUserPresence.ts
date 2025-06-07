@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +15,7 @@ export const useUserPresence = () => {
   const { user } = useAuth();
   const heartbeatRef = useRef<NodeJS.Timeout>();
   const channelRef = useRef<any>();
+  const isSubscribedRef = useRef(false);
 
   // Update user's own presence
   const updatePresence = async (isOnline: boolean) => {
@@ -88,7 +90,7 @@ export const useUserPresence = () => {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isSubscribedRef.current) return;
 
     // Set user online when they connect
     updatePresence(true);
@@ -98,28 +100,34 @@ export const useUserPresence = () => {
       updatePresence(true);
     }, 2 * 60 * 1000); // Update every 2 minutes
 
-    // Set up real-time subscription for presence updates
-    channelRef.current = supabase
-      .channel('user_presence_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_presence'
-        },
-        (payload) => {
-          console.log('Presence change:', payload);
-          const presence = payload.new as UserPresence;
-          if (presence) {
-            setPresenceData(prev => ({
-              ...prev,
-              [presence.user_id]: presence
-            }));
+    // Set up real-time subscription for presence updates only if not already subscribed
+    if (!channelRef.current) {
+      channelRef.current = supabase
+        .channel(`user_presence_changes_${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_presence'
+          },
+          (payload) => {
+            console.log('Presence change:', payload);
+            const presence = payload.new as UserPresence;
+            if (presence) {
+              setPresenceData(prev => ({
+                ...prev,
+                [presence.user_id]: presence
+              }));
+            }
           }
-        }
-      )
-      .subscribe();
+        );
+
+      // Subscribe only once
+      channelRef.current.subscribe().then(() => {
+        isSubscribedRef.current = true;
+      });
+    }
 
     // Handle page visibility changes
     const handleVisibilityChange = () => {
@@ -144,8 +152,10 @@ export const useUserPresence = () => {
         clearInterval(heartbeatRef.current);
       }
       
-      if (channelRef.current) {
+      if (channelRef.current && isSubscribedRef.current) {
         supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        isSubscribedRef.current = false;
       }
 
       document.removeEventListener('visibilitychange', handleVisibilityChange);
