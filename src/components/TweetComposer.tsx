@@ -69,6 +69,32 @@ const TweetComposer = () => {
     return uploadedUrls;
   };
 
+  const uploadVideos = async (videos: File[]): Promise<string[]> => {
+    const uploadedUrls: string[] = [];
+    
+    for (const video of videos) {
+      const fileExt = video.name.split('.').pop();
+      const fileName = `${user?.id}/${Date.now()}-video.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('post-videos')
+        .upload(fileName, video);
+      
+      if (error) {
+        console.error('Error uploading video:', error);
+        throw error;
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('post-videos')
+        .getPublicUrl(data.path);
+      
+      uploadedUrls.push(publicUrl);
+    }
+    
+    return uploadedUrls;
+  };
+
   const uploadAudio = async (audio: File): Promise<string> => {
     const fileExt = audio.name.split('.').pop();
     const fileName = `${user?.id}/${Date.now()}-audio.${fileExt}`;
@@ -102,13 +128,22 @@ const TweetComposer = () => {
     setIsUploading(true);
     
     try {
-      let imageUrls: string[] = [];
+      let mediaUrls: string[] = [];
       let audioUrl = "";
       
+      // Upload images
       if (selectedImages.length > 0) {
-        imageUrls = await uploadImages(selectedImages);
+        const imageUrls = await uploadImages(selectedImages);
+        mediaUrls = [...mediaUrls, ...imageUrls];
       }
 
+      // Upload videos
+      if (selectedVideos.length > 0) {
+        const videoUrls = await uploadVideos(selectedVideos);
+        mediaUrls = [...mediaUrls, ...videoUrls];
+      }
+
+      // Upload audio
       if (selectedAudio) {
         audioUrl = await uploadAudio(selectedAudio);
       }
@@ -128,13 +163,13 @@ const TweetComposer = () => {
             combinedContent += `\n🎵 Audio message attached`;
           }
           
-          await createPost(combinedContent, imageUrls, selectedAccount);
+          await createPost(combinedContent, mediaUrls, selectedAccount);
           setThreadTweets([""]);
           setIsThreadMode(false);
           resetForm();
         }
       } else {
-        if (tweetText.trim() || imageUrls.length > 0 || audioUrl) {
+        if (tweetText.trim() || mediaUrls.length > 0 || audioUrl) {
           let finalContent = tweetText;
           
           if (location.trim()) {
@@ -147,7 +182,7 @@ const TweetComposer = () => {
             finalContent += `\n🎵 Audio message attached`;
           }
           
-          await createPost(finalContent, imageUrls, selectedAccount);
+          await createPost(finalContent, mediaUrls, selectedAccount);
           resetForm();
         }
       }
@@ -406,6 +441,29 @@ const TweetComposer = () => {
               ))}
             </div>
           )}
+
+          {/* Video Preview */}
+          {selectedVideos.length > 0 && (
+            <div className="space-y-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              {selectedVideos.map((video, index) => (
+                <div key={index} className="relative">
+                  <video
+                    src={URL.createObjectURL(video)}
+                    className="w-full h-48 object-cover rounded-lg"
+                    controls
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedVideos(selectedVideos.filter((_, i) => i !== index))}
+                    className="absolute top-1 right-1 bg-black/50 text-white hover:bg-black/70 rounded-full p-1 h-6 w-6"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
           
           <AudioVisualizer
             selectedAudio={selectedAudio}
@@ -468,7 +526,7 @@ const TweetComposer = () => {
               
               <InteractiveHoverButton
                 type="button"
-                disabled={isUploading || (isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() && selectedImages.length === 0 && !selectedAudio) || tweetText.length > maxLength)}
+                disabled={isUploading || (isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() && selectedImages.length === 0 && selectedVideos.length === 0 && !selectedAudio) || tweetText.length > maxLength)}
                 onClick={handleTweetSubmit}
                 text={isUploading ? 'Posting...' : (isThreadMode ? 'Post Thread' : 'Post')}
                 className="w-auto px-6"
