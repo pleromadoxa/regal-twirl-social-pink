@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
 import PostsList from "@/components/PostsList";
+import { WorldMap } from "@/components/ui/world-map";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -182,10 +182,31 @@ const ProfessionalAccountProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
+      {/* World Map Background */}
+      <div className="absolute inset-0 opacity-10 z-0">
+        <WorldMap
+          dots={[
+            {
+              start: { lat: 40.7128, lng: -74.0060 }, // New York
+              end: { lat: 51.5074, lng: -0.1278 }, // London
+            },
+            {
+              start: { lat: 35.6762, lng: 139.6503 }, // Tokyo
+              end: { lat: -33.8688, lng: 151.2093 }, // Sydney
+            },
+            {
+              start: { lat: 37.7749, lng: -122.4194 }, // San Francisco
+              end: { lat: 55.7558, lng: 37.6176 }, // Moscow
+            }
+          ]}
+          lineColor="#9333ea"
+        />
+      </div>
+      
       <SidebarNav />
       
-      <div className="flex-1 flex gap-6">
+      <div className="flex-1 flex gap-6 relative z-10">
         <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
           {/* Profile Header */}
           <div className="relative">
