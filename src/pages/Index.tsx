@@ -32,15 +32,21 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex w-full">
       <SidebarNav />
       
-      <div className="flex-1 flex">
-        <main className="flex-1 max-w-2xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
-          <StoriesBar />
-          <HomeFeedNav />
-          <TweetComposer />
-          <PostsList />
+      <div className="flex-1 flex min-w-0">
+        <main className="flex-1 max-w-2xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl min-w-0">
+          <div className="flex flex-col h-screen">
+            <div className="flex-none">
+              <StoriesBar />
+              <HomeFeedNav />
+              <TweetComposer />
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <PostsList />
+            </div>
+          </div>
         </main>
         
         <RightSidebar />

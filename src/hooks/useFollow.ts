@@ -19,8 +19,39 @@ export const useFollow = () => {
       return false;
     }
 
+    if (user.id === userId) {
+      toast({
+        title: "Cannot follow yourself",
+        description: "You cannot follow your own account",
+        variant: "destructive"
+      });
+      return false;
+    }
+
     try {
       setLoading(true);
+      
+      // Check if already following
+      const { data: existingFollow, error: checkError } = await supabase
+        .from('follows')
+        .select('id')
+        .eq('follower_id', user.id)
+        .eq('following_id', userId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingFollow) {
+        toast({
+          title: "Already following",
+          description: "You are already following this user",
+          variant: "destructive"
+        });
+        return false;
+      }
+
       const { error } = await supabase
         .from('follows')
         .insert({
@@ -29,16 +60,8 @@ export const useFollow = () => {
         });
 
       if (error) {
-        if (error.code === '23505') { // Unique constraint violation
-          toast({
-            title: "Already following",
-            description: "You are already following this user",
-            variant: "destructive"
-          });
-        } else {
-          throw error;
-        }
-        return false;
+        console.error('Follow error:', error);
+        throw error;
       }
 
       toast({
@@ -50,7 +73,7 @@ export const useFollow = () => {
       console.error('Error following user:', error);
       toast({
         title: "Error",
-        description: "Failed to follow user",
+        description: "Failed to follow user. Please try again.",
         variant: "destructive"
       });
       return false;
@@ -70,7 +93,10 @@ export const useFollow = () => {
         .eq('follower_id', user.id)
         .eq('following_id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Unfollow error:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -81,7 +107,7 @@ export const useFollow = () => {
       console.error('Error unfollowing user:', error);
       toast({
         title: "Error",
-        description: "Failed to unfollow user",
+        description: "Failed to unfollow user. Please try again.",
         variant: "destructive"
       });
       return false;
@@ -91,7 +117,7 @@ export const useFollow = () => {
   };
 
   const checkFollowStatus = async (userId: string) => {
-    if (!user) return false;
+    if (!user || user.id === userId) return false;
 
     try {
       const { data, error } = await supabase
@@ -101,7 +127,11 @@ export const useFollow = () => {
         .eq('following_id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking follow status:', error);
+        return false;
+      }
+      
       return !!data;
     } catch (error) {
       console.error('Error checking follow status:', error);
