@@ -22,7 +22,24 @@ export interface GroupConversation {
 
 export const fetchUserGroupConversations = async (userId: string): Promise<GroupConversation[]> => {
   try {
-    // First, get all group conversations the user is a member of
+    // First, get groups where the user is a member
+    const { data: membershipData, error: membershipError } = await supabase
+      .from('group_conversation_members')
+      .select('group_id')
+      .eq('user_id', userId);
+
+    if (membershipError) {
+      console.error('Error fetching user memberships:', membershipError);
+      throw membershipError;
+    }
+
+    if (!membershipData || membershipData.length === 0) {
+      return [];
+    }
+
+    const groupIds = membershipData.map(m => m.group_id);
+
+    // Get group conversations the user is a member of
     const { data: groupsData, error: groupsError } = await supabase
       .from('group_conversations')
       .select(`
@@ -35,6 +52,7 @@ export const fetchUserGroupConversations = async (userId: string): Promise<Group
         updated_at,
         last_message_at
       `)
+      .in('id', groupIds)
       .order('last_message_at', { ascending: false, nullsFirst: false });
 
     if (groupsError) {
@@ -49,17 +67,10 @@ export const fetchUserGroupConversations = async (userId: string): Promise<Group
     // For each group, fetch the members with their profiles
     const enrichedGroups = await Promise.all(
       groupsData.map(async (group) => {
+        // Get members for this group
         const { data: membersData, error: membersError } = await supabase
           .from('group_conversation_members')
-          .select(`
-            role,
-            profiles!inner(
-              id,
-              username,
-              display_name,
-              avatar_url
-            )
-          `)
+          .select('user_id, role')
           .eq('group_id', group.id);
 
         if (membersError) {
@@ -71,18 +82,39 @@ export const fetchUserGroupConversations = async (userId: string): Promise<Group
           };
         }
 
-        const members = membersData?.map(member => ({
-          id: member.profiles.id,
-          username: member.profiles.username || 'unknown',
-          display_name: member.profiles.display_name || member.profiles.username || 'Unknown User',
-          avatar_url: member.profiles.avatar_url || '',
-          role: member.role
-        })) || [];
+        // Get profile info for each member
+        const memberProfiles = await Promise.all(
+          (membersData || []).map(async (member) => {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('id, username, display_name, avatar_url')
+              .eq('id', member.user_id)
+              .single();
+
+            if (profileError || !profileData) {
+              return {
+                id: member.user_id,
+                username: 'unknown',
+                display_name: 'Unknown User',
+                avatar_url: '',
+                role: member.role
+              };
+            }
+
+            return {
+              id: profileData.id,
+              username: profileData.username || 'unknown',
+              display_name: profileData.display_name || profileData.username || 'Unknown User',
+              avatar_url: profileData.avatar_url || '',
+              role: member.role
+            };
+          })
+        );
 
         return {
           ...group,
-          member_count: members.length,
-          members
+          member_count: memberProfiles.length,
+          members: memberProfiles
         };
       })
     );

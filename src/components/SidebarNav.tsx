@@ -1,3 +1,4 @@
+
 import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
@@ -63,18 +64,24 @@ const SidebarNav = () => {
         <div className="p-6 space-y-4">
           {/* Navigation */}
           <nav className="space-y-2">
-            {navigationItems.map((item) => (
-              <InteractiveHoverButton
-                key={item.label}
-                onClick={() => handleNavigation(item.path)}
-                text={item.label}
-                className={`w-full justify-start px-6 py-4 text-lg rounded-2xl transition-all duration-200 ${
-                  item.active 
-                    ? 'shadow-lg bg-[rgba(170,202,255,0.2)]' 
-                    : 'opacity-80 hover:opacity-100'
-                }`}
-              />
-            ))}
+            {navigationItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <Button
+                  key={item.label}
+                  onClick={() => handleNavigation(item.path)}
+                  variant="ghost"
+                  className={`w-full justify-start px-6 py-4 text-lg rounded-2xl transition-all duration-200 hover:bg-purple-100 dark:hover:bg-purple-900/20 ${
+                    item.active 
+                      ? 'shadow-lg bg-[rgba(170,202,255,0.2)] text-purple-700 dark:text-purple-300' 
+                      : 'opacity-80 hover:opacity-100'
+                  }`}
+                >
+                  <IconComponent className="w-6 h-6 mr-3" />
+                  {item.label}
+                </Button>
+              );
+            })}
           </nav>
 
           {/* Action Buttons */}
