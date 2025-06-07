@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,7 +24,7 @@ import { formatDistanceToNow } from "date-fns";
 import PostsList from "@/components/PostsList";
 import GalleryUpload from "@/components/GalleryUpload";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
-import { InteractiveBentoGallery } from "@/components/ui/interactive-bento-gallery";
+import InteractiveBentoGallery from "@/components/ui/interactive-bento-gallery";
 
 const Profile = () => {
   const { userId } = useParams();
