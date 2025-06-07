@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Home, Briefcase, TrendingUp } from 'lucide-react';
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
+import { FinancialSection } from '@/components/FinancialSection';
 
 interface HomeFeedNavProps {
   onFilterChange?: (filter: 'all' | 'professional' | 'trending') => void;
@@ -27,13 +28,16 @@ const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
   };
 
   return (
-    <div className="px-6 py-4 border-b border-purple-200 dark:border-purple-800">
-      <ExpandableTabs
-        tabs={tabs}
-        onChange={handleTabChange}
-        activeColor="text-purple-600 dark:text-purple-400"
-        className="border-purple-200 dark:border-purple-800 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm"
-      />
+    <div>
+      <div className="px-6 py-4 border-b border-purple-200 dark:border-purple-800">
+        <ExpandableTabs
+          tabs={tabs}
+          onChange={handleTabChange}
+          activeColor="text-purple-600 dark:text-purple-400"
+          className="border-purple-200 dark:border-purple-800 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm"
+        />
+      </div>
+      <FinancialSection />
     </div>
   );
 };

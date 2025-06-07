@@ -8,7 +8,6 @@ import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import { StoriesBar } from "@/components/StoriesBar";
 import HomeFeedNav from "@/components/HomeFeedNav";
-import { FinancialSection } from "@/components/FinancialSection";
 import PostComposer from "@/components/PostComposer";
 
 const Index = () => {
@@ -40,7 +39,6 @@ const Index = () => {
       <div className="flex-1 flex">
         <main className="flex-1 max-w-2xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
           <HomeFeedNav />
-          <FinancialSection />
           <StoriesBar />
           <PostComposer />
           <TweetComposer />
