@@ -2,7 +2,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
-import PostComposer from "@/components/PostComposer";
+import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import { StoriesBar } from "@/components/StoriesBar";
 
@@ -24,9 +24,9 @@ const Index = () => {
             <StoriesBar />
           </div>
 
-          {/* Post Composer */}
-          <div className="border-b border-purple-200 dark:border-purple-800 p-6">
-            <PostComposer />
+          {/* Tweet Composer */}
+          <div className="border-b border-purple-200 dark:border-purple-800">
+            <TweetComposer />
           </div>
 
           {/* Posts Feed */}
