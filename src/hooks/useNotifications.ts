@@ -29,9 +29,15 @@ export const useNotifications = () => {
   const { toast } = useToast();
 
   const fetchNotifications = async () => {
-    if (!user) return;
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setLoading(false);
+      return;
+    }
 
     try {
+      console.log('Fetching notifications for user:', user.id);
       setLoading(true);
       
       const { data: notificationsData, error } = await supabase
@@ -46,12 +52,15 @@ export const useNotifications = () => {
         return;
       }
 
+      console.log('Fetched notifications:', notificationsData?.length || 0);
+
       if (!notificationsData || notificationsData.length === 0) {
         setNotifications([]);
         setUnreadCount(0);
         return;
       }
 
+      // Get unique actor IDs
       const actorIds = [...new Set(notificationsData
         .map(n => n.actor_id)
         .filter(id => id !== null))] as string[];
@@ -59,6 +68,7 @@ export const useNotifications = () => {
       let profilesMap = new Map();
       
       if (actorIds.length > 0) {
+        console.log('Fetching profiles for actors:', actorIds);
         const { data: profilesData } = await supabase
           .from('profiles')
           .select('id, username, display_name, avatar_url')
@@ -84,8 +94,12 @@ export const useNotifications = () => {
         actor_profile: notification.actor_id ? profilesMap.get(notification.actor_id) || null : null
       }));
 
+      console.log('Enriched notifications:', enrichedNotifications.length);
       setNotifications(enrichedNotifications);
-      setUnreadCount(enrichedNotifications.filter(n => !n.read).length);
+      
+      const unread = enrichedNotifications.filter(n => !n.read).length;
+      console.log('Unread notifications count:', unread);
+      setUnreadCount(unread);
     } catch (error) {
       console.error('Error in fetchNotifications:', error);
     } finally {
@@ -97,6 +111,8 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
+      console.log('Marking notification as read:', notificationId);
+      
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
@@ -123,6 +139,8 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
+      console.log('Marking all notifications as read');
+      
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
@@ -149,34 +167,45 @@ export const useNotifications = () => {
   };
 
   useEffect(() => {
+    console.log('useNotifications effect running, user:', user?.id);
+    
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setLoading(false);
+      return;
+    }
+
     fetchNotifications();
 
-    if (user) {
-      const subscription = supabase
-        .channel('notifications')
-        .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        }, (payload) => {
-          console.log('New notification received:', payload);
-          fetchNotifications();
-          
-          // Show toast for new notification
-          const newNotification = payload.new as any;
-          toast({
-            title: "New notification",
-            description: newNotification.message || "You have a new notification",
-          });
-        })
-        .subscribe();
+    // Set up real-time subscription
+    const subscription = supabase
+      .channel('notifications')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('New notification received via real-time:', payload);
+        
+        // Refresh notifications to get the complete data with profiles
+        fetchNotifications();
+        
+        // Show toast for new notification
+        const newNotification = payload.new as any;
+        toast({
+          title: "New notification",
+          description: newNotification.message || "You have a new notification",
+        });
+      })
+      .subscribe();
 
-      return () => {
-        subscription.unsubscribe();
-      };
-    }
-  }, [user]);
+    return () => {
+      console.log('Cleaning up notifications subscription');
+      subscription.unsubscribe();
+    };
+  }, [user?.id]); // Only depend on user.id to prevent infinite loops
 
   return {
     notifications,

@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Bell, User, Heart, Repeat, UserCheck, MessageCircle, PhoneMissed, Phone, Video } from 'lucide-react';
+import { Bell, User, Heart, Repeat, UserCheck, MessageCircle, PhoneMissed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,8 +15,14 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 
 const NotificationDropdown = () => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+
+  console.log('NotificationDropdown render:', { 
+    notificationsCount: notifications.length, 
+    unreadCount, 
+    loading 
+  });
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -46,7 +52,13 @@ const NotificationDropdown = () => {
   };
 
   const handleNotificationClick = (notificationId: string) => {
+    console.log('Notification clicked:', notificationId);
     markAsRead(notificationId);
+  };
+
+  const handleMarkAllAsRead = () => {
+    console.log('Mark all as read clicked');
+    markAllAsRead();
   };
 
   return (
@@ -66,12 +78,14 @@ const NotificationDropdown = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="flex items-center justify-between p-2">
-          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+          <DropdownMenuLabel>
+            Notifications {loading && <span className="text-xs text-gray-500">(Loading...)</span>}
+          </DropdownMenuLabel>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={markAllAsRead}
+              onClick={handleMarkAllAsRead}
               className="text-xs"
             >
               Mark all as read
@@ -80,7 +94,11 @@ const NotificationDropdown = () => {
         </div>
         <DropdownMenuSeparator />
         <div className="max-h-80 overflow-y-auto">
-          {notifications.length === 0 ? (
+          {loading ? (
+            <div className="p-4 text-center text-sm text-gray-500">
+              Loading notifications...
+            </div>
+          ) : notifications.length === 0 ? (
             <div className="p-4 text-center text-sm text-gray-500">
               No notifications yet
             </div>
