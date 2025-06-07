@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,12 +32,12 @@ export const useStories = () => {
     try {
       setLoading(true);
       
-      // Fetch stories with user profiles
+      // Fetch stories with user profiles - using correct join syntax
       const { data: storiesData, error } = await supabase
         .from('stories')
         .select(`
           *,
-          profiles!stories_user_id_fkey (
+          profiles (
             username,
             display_name,
             avatar_url
@@ -60,17 +59,31 @@ export const useStories = () => {
 
         const viewedStoryIds = new Set(viewsData?.map(v => v.story_id) || []);
         
-        storiesWithViews = storiesData.map(story => ({
-          ...story,
-          content_type: story.content_type as 'image' | 'video',
-          user_viewed: viewedStoryIds.has(story.id)
-        })) as Story[];
+        storiesWithViews = storiesData
+          .filter(story => story.profiles) // Filter out stories without valid profile data
+          .map(story => ({
+            ...story,
+            content_type: story.content_type as 'image' | 'video',
+            user_viewed: viewedStoryIds.has(story.id),
+            profiles: {
+              username: story.profiles.username || 'Unknown',
+              display_name: story.profiles.display_name || 'Unknown User',
+              avatar_url: story.profiles.avatar_url || ''
+            }
+          })) as Story[];
       } else if (storiesData) {
-        storiesWithViews = storiesData.map(story => ({
-          ...story,
-          content_type: story.content_type as 'image' | 'video',
-          user_viewed: false
-        })) as Story[];
+        storiesWithViews = storiesData
+          .filter(story => story.profiles) // Filter out stories without valid profile data
+          .map(story => ({
+            ...story,
+            content_type: story.content_type as 'image' | 'video',
+            user_viewed: false,
+            profiles: {
+              username: story.profiles.username || 'Unknown',
+              display_name: story.profiles.display_name || 'Unknown User',
+              avatar_url: story.profiles.avatar_url || ''
+            }
+          })) as Story[];
       }
 
       setStories(storiesWithViews);
