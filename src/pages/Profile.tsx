@@ -3,11 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useVerifiedStatus } from "@/hooks/useVerifiedStatus";
+import { useGallery } from "@/hooks/useGallery";
 import { supabase } from "@/integrations/supabase/client";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
 import PostsList from "@/components/PostsList";
 import TweetComposer from "@/components/TweetComposer";
+import GalleryUpload from "@/components/GalleryUpload";
+import { InteractiveBentoGallery } from "@/components/ui/interactive-bento-gallery";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +29,8 @@ import {
   Edit,
   Trash2,
   Share,
-  MoreHorizontal
+  MoreHorizontal,
+  Images
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -53,7 +57,9 @@ const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { profile, loading, isFollowing, toggleFollow } = useProfile(userId);
+  const { galleryItems, transformToMediaItems } = useGallery(userId);
   const [businessPages, setBusinessPages] = useState<BusinessPage[]>([]);
+  const [activeTab, setActiveTab] = useState<'posts' | 'gallery'>('posts');
   const isVerified = useVerifiedStatus(profile);
   const isOwnProfile = user?.id === userId;
   const { toast } = useToast();
@@ -170,6 +176,8 @@ const Profile = () => {
       </div>
     );
   }
+
+  const mediaItems = transformToMediaItems(galleryItems);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -415,10 +423,64 @@ const Profile = () => {
               <TweetComposer />
             </div>
           )}
-          
-          {/* Posts */}
+
+          {/* Content Tabs */}
           <div className="border-t border-purple-200 dark:border-purple-800">
-            <PostsList userId={userId} />
+            <div className="flex border-b border-purple-200 dark:border-purple-800">
+              <button
+                onClick={() => setActiveTab('posts')}
+                className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'posts'
+                    ? 'text-purple-600 border-b-2 border-purple-600'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                }`}
+              >
+                Posts
+              </button>
+              <button
+                onClick={() => setActiveTab('gallery')}
+                className={`flex-1 px-6 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                  activeTab === 'gallery'
+                    ? 'text-purple-600 border-b-2 border-purple-600'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                }`}
+              >
+                <Images className="w-4 h-4" />
+                Gallery ({galleryItems.length})
+              </button>
+            </div>
+
+            {/* Content */}
+            {activeTab === 'posts' ? (
+              <PostsList userId={userId} />
+            ) : (
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    Media Gallery
+                  </h3>
+                  {isOwnProfile && <GalleryUpload />}
+                </div>
+                
+                {mediaItems.length > 0 ? (
+                  <InteractiveBentoGallery 
+                    mediaItems={mediaItems}
+                    className="w-full"
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <Images className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+                      No media yet
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-400 mb-4">
+                      {isOwnProfile ? "Upload your first image or video to get started!" : "This user hasn't shared any media yet."}
+                    </p>
+                    {isOwnProfile && <GalleryUpload />}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </main>
         

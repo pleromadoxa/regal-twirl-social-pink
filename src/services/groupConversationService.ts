@@ -46,7 +46,12 @@ export interface GroupMessage {
     display_name: string;
     avatar_url: string;
   };
-  reply_to?: GroupMessage;
+  reply_to?: {
+    id: string;
+    content: string;
+    created_at: string;
+    sender_name: string;
+  };
 }
 
 export const fetchUserGroupConversations = async (userId: string): Promise<GroupConversation[]> => {
@@ -133,6 +138,7 @@ export const fetchUserGroupConversations = async (userId: string): Promise<Group
             .select(`
               content,
               created_at,
+              sender_id,
               profiles!inner(
                 display_name,
                 username
@@ -158,7 +164,7 @@ export const fetchUserGroupConversations = async (userId: string): Promise<Group
             members: memberProfiles,
             last_message: lastMessageData ? {
               content: lastMessageData.content,
-              sender_name: lastMessageData.profiles.display_name || lastMessageData.profiles.username,
+              sender_name: lastMessageData.profiles?.display_name || lastMessageData.profiles?.username || 'Unknown',
               created_at: lastMessageData.created_at
             } : undefined
           };
@@ -194,8 +200,7 @@ export const createGroupConversation = async (
     console.log('Creating group conversation:', { name, description, createdBy, memberIds, isPrivate, maxMembers });
     
     // Generate invite code
-    const { data: inviteCodeData } = await supabase.rpc('generate_invite_code');
-    const inviteCode = inviteCodeData || Math.random().toString(36).substring(2, 10).toUpperCase();
+    const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     // Create the group conversation
     const { data: groupData, error: groupError } = await supabase
@@ -336,13 +341,7 @@ export const fetchGroupMessages = async (
         reply_to_id,
         edited_at,
         created_at,
-        updated_at,
-        profiles!inner(
-          id,
-          username,
-          display_name,
-          avatar_url
-        )
+        updated_at
       `)
       .eq('group_id', groupId)
       .order('created_at', { ascending: false })
@@ -352,29 +351,37 @@ export const fetchGroupMessages = async (
       throw error;
     }
 
-    // Process messages and handle replies
+    // Process messages and get sender profiles
     const messages = await Promise.all(
       (messagesData || []).map(async (msg: any) => {
+        // Get sender profile
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .eq('id', msg.sender_id)
+          .single();
+
         let replyTo = undefined;
         
         if (msg.reply_to_id) {
           const { data: replyData } = await supabase
             .from('group_messages')
-            .select(`
-              id,
-              content,
-              created_at,
-              profiles!inner(display_name, username)
-            `)
+            .select('id, content, created_at, sender_id')
             .eq('id', msg.reply_to_id)
             .single();
           
           if (replyData) {
+            const { data: replySenderProfile } = await supabase
+              .from('profiles')
+              .select('display_name, username')
+              .eq('id', replyData.sender_id)
+              .single();
+
             replyTo = {
               id: replyData.id,
               content: replyData.content,
               created_at: replyData.created_at,
-              sender_name: replyData.profiles.display_name || replyData.profiles.username
+              sender_name: replySenderProfile?.display_name || replySenderProfile?.username || 'Unknown'
             };
           }
         }
@@ -389,12 +396,12 @@ export const fetchGroupMessages = async (
           edited_at: msg.edited_at,
           created_at: msg.created_at,
           updated_at: msg.updated_at,
-          sender: {
-            id: msg.profiles.id,
-            username: msg.profiles.username,
-            display_name: msg.profiles.display_name || msg.profiles.username,
-            avatar_url: msg.profiles.avatar_url || ''
-          },
+          sender: senderProfile ? {
+            id: senderProfile.id,
+            username: senderProfile.username || 'unknown',
+            display_name: senderProfile.display_name || senderProfile.username || 'Unknown User',
+            avatar_url: senderProfile.avatar_url || ''
+          } : undefined,
           reply_to: replyTo
         };
       })
@@ -424,15 +431,7 @@ export const sendGroupMessage = async (
         message_type: messageType,
         reply_to_id: replyToId || null
       })
-      .select(`
-        *,
-        profiles!inner(
-          id,
-          username,
-          display_name,
-          avatar_url
-        )
-      `)
+      .select()
       .single();
 
     if (error) {
@@ -445,6 +444,13 @@ export const sendGroupMessage = async (
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', groupId);
 
+    // Get sender profile
+    const { data: senderProfile } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url')
+      .eq('id', senderId)
+      .single();
+
     return {
       id: messageData.id,
       group_id: messageData.group_id,
@@ -455,12 +461,12 @@ export const sendGroupMessage = async (
       edited_at: messageData.edited_at,
       created_at: messageData.created_at,
       updated_at: messageData.updated_at,
-      sender: {
-        id: messageData.profiles.id,
-        username: messageData.profiles.username,
-        display_name: messageData.profiles.display_name || messageData.profiles.username,
-        avatar_url: messageData.profiles.avatar_url || ''
-      }
+      sender: senderProfile ? {
+        id: senderProfile.id,
+        username: senderProfile.username || 'unknown',
+        display_name: senderProfile.display_name || senderProfile.username || 'Unknown User',
+        avatar_url: senderProfile.avatar_url || ''
+      } : undefined
     };
   } catch (error) {
     console.error('Error sending group message:', error);
