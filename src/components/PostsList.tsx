@@ -41,7 +41,8 @@ export const PostsList = ({
   }
 
   const onLike = externalOnLike || toggleLike;
-  const onRetweet = externalOnRetweet || async (postId: string) => {
+  
+  const handleRetweet = async (postId: string) => {
     if (!user) return;
     
     const post = posts.find(p => p.id === postId);
@@ -78,6 +79,8 @@ export const PostsList = ({
       console.error('Error handling repost:', error);
     }
   };
+
+  const onRetweet = externalOnRetweet || handleRetweet;
   const onPin = externalOnPin || togglePin;
   const onDelete = externalOnDelete || deletePost;
 
