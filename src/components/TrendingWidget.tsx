@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useFollow } from "@/hooks/useFollow";
 
 interface TrendingWidgetProps {
   onHashtagClick?: (hashtag: string) => void;
@@ -11,13 +12,19 @@ interface TrendingWidgetProps {
 
 const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
   const navigate = useNavigate();
+  const { followUser, loading: followLoading } = useFollow();
 
   const trends = [
-    { topic: "#ChristianLife", tweets: "125K", growth: "+12%", category: "Faith" },
+    { topic: "#rhapsodyTeeVo", tweets: "89K", growth: "+25%", category: "Faith" },
+    { topic: "#24hoursOPC", tweets: "125K", growth: "+32%", category: "Prayer" },
+    { topic: "#PastorChris", tweets: "156K", growth: "+18%", category: "Teaching" },
+    { topic: "#teensministry", tweets: "67K", growth: "+15%", category: "Youth" },
+    { topic: "#lovetap", tweets: "45K", growth: "+22%", category: "Love" },
+    { topic: "#LovetapTV", tweets: "78K", growth: "+28%", category: "Media" },
+    { topic: "#Rhapsody", tweets: "92K", growth: "+20%", category: "Worship" },
+    { topic: "#ChristianLife", tweets: "112K", growth: "+12%", category: "Faith" },
     { topic: "#Prayer", tweets: "89K", growth: "+8%", category: "Spiritual" },
     { topic: "#BibleStudy", tweets: "67K", growth: "+15%", category: "Scripture" },
-    { topic: "#Faith", tweets: "45K", growth: "+5%", category: "Spiritual" },
-    { topic: "#Worship", tweets: "32K", growth: "+20%", category: "Praise" },
   ];
 
   const whoToFollow = [
@@ -50,6 +57,9 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
   const handleTrendClick = (trend: string) => {
     if (onHashtagClick) {
       onHashtagClick(trend);
+    } else {
+      // Navigate to hashtag page
+      navigate(`/hashtag/${trend.replace('#', '')}`);
     }
   };
 
@@ -57,12 +67,21 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
     navigate(`/profile/${userId}`);
   };
 
+  const handleFollowClick = async (userId: string) => {
+    await followUser(userId);
+  };
+
   const getCategoryColor = (category: string) => {
     const colors = {
       Faith: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+      Prayer: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+      Teaching: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+      Youth: "bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300",
+      Love: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
+      Media: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
+      Worship: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300",
       Spiritual: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
       Scripture: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-      Praise: "bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300"
     };
     return colors[category as keyof typeof colors] || "bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300";
   };
@@ -78,7 +97,7 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {trends.map((trend, index) => (
+          {trends.slice(0, 5).map((trend, index) => (
             <div 
               key={index} 
               className="hover:bg-slate-50 dark:hover:bg-slate-700 p-4 rounded-xl cursor-pointer transition-all duration-200 group"
@@ -148,8 +167,10 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
                 size="sm" 
                 variant="outline" 
                 className="border-blue-300 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                onClick={() => handleFollowClick(user.userId)}
+                disabled={followLoading}
               >
-                Follow
+                {followLoading ? 'Following...' : 'Follow'}
               </Button>
             </div>
           ))}

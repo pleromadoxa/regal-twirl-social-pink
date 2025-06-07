@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
 import Explore from "./pages/Explore";
+import Hashtag from "./pages/Hashtag";
 import Pinned from "./pages/Pinned";
 import ProfessionalAccounts from "./pages/ProfessionalAccounts";
 import ProfessionalAccountProfile from "./pages/ProfessionalAccountProfile";
@@ -40,6 +40,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/explore" element={<Explore />} />
+              <Route path="/hashtag/:hashtag" element={<Hashtag />} />
               <Route path="/pinned" element={<Pinned />} />
               <Route path="/professional" element={<ProfessionalAccounts />} />
               <Route path="/professional/:pageId" element={<ProfessionalAccountProfile />} />

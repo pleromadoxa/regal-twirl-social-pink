@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import SidebarNav from "@/components/SidebarNav";
 import UserSearch from "@/components/UserSearch";
 import TrendingWidget from "@/components/TrendingWidget";
-import { Search, TrendingUp, Users, Crown } from "lucide-react";
+import { useFollow } from "@/hooks/useFollow";
+import { Search, TrendingUp, Users, Crown, Video, Heart, MessageCircle, Repeat2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,11 +23,33 @@ interface User {
   bio: string;
 }
 
+interface Post {
+  id: string;
+  content: string;
+  created_at: string;
+  likes_count: number;
+  retweets_count: number;
+  replies_count: number;
+  image_urls: string[];
+  user_id: string;
+  profiles: {
+    username: string;
+    display_name: string;
+    avatar_url: string;
+    is_verified: boolean;
+    followers_count: number;
+  };
+}
+
 const Explore = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { followUser, loading: followLoading } = useFollow();
   const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
+  const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
+  const [videoPosts, setVideoPosts] = useState<Post[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingPosts, setLoadingPosts] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -35,7 +58,11 @@ const Explore = () => {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    fetchSuggestedUsers();
+    if (user) {
+      fetchSuggestedUsers();
+      fetchTrendingPosts();
+      fetchVideoPosts();
+    }
   }, [user]);
 
   const fetchSuggestedUsers = async () => {
@@ -74,27 +101,81 @@ const Explore = () => {
     }
   };
 
+  const fetchTrendingPosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          content,
+          created_at,
+          likes_count,
+          retweets_count,
+          replies_count,
+          image_urls,
+          user_id,
+          profiles:user_id (
+            username,
+            display_name,
+            avatar_url,
+            is_verified,
+            followers_count
+          )
+        `)
+        .gt('likes_count', 10)
+        .order('likes_count', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setTrendingPosts(data || []);
+    } catch (error) {
+      console.error('Error fetching trending posts:', error);
+    }
+  };
+
+  const fetchVideoPosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          content,
+          created_at,
+          likes_count,
+          retweets_count,
+          replies_count,
+          image_urls,
+          user_id,
+          profiles:user_id (
+            username,
+            display_name,
+            avatar_url,
+            is_verified,
+            followers_count
+          )
+        `)
+        .not('image_urls', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(8);
+
+      if (error) throw error;
+      setVideoPosts(data || []);
+    } catch (error) {
+      console.error('Error fetching video posts:', error);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
   const handleHashtagClick = (hashtag: string) => {
-    navigate(`/explore?search=${encodeURIComponent(hashtag)}`);
+    navigate(`/hashtag/${hashtag.replace('#', '')}`);
   };
 
   const handleFollowUser = async (userId: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('follows')
-        .insert({
-          follower_id: user.id,
-          following_id: userId
-        });
-
-      if (error) throw error;
-
+    const success = await followUser(userId);
+    if (success) {
       // Remove user from suggested list
       setSuggestedUsers(prev => prev.filter(u => u.id !== userId));
-    } catch (error) {
-      console.error('Error following user:', error);
     }
   };
 
@@ -115,6 +196,54 @@ const Explore = () => {
     
     return false;
   };
+
+  const PostCard = ({ post }: { post: Post }) => (
+    <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700 hover:shadow-lg transition-all cursor-pointer"
+          onClick={() => navigate(`/profile/${post.user_id}`)}>
+      <CardContent className="p-4">
+        <div className="flex items-start space-x-3">
+          <Avatar className="w-10 h-10">
+            <AvatarImage src={post.profiles?.avatar_url || undefined} />
+            <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white text-sm">
+              {post.profiles?.display_name?.[0] || post.profiles?.username?.[0] || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">
+                {post.profiles?.display_name || post.profiles?.username}
+              </span>
+              {getVerifiedStatus(post.profiles as any) && (
+                <Crown className="w-3 h-3 text-blue-500" />
+              )}
+            </div>
+            <p className="text-slate-700 dark:text-slate-300 text-sm mb-2 line-clamp-2">
+              {post.content}
+            </p>
+            {post.image_urls && post.image_urls.length > 0 && (
+              <div className="w-full h-32 bg-slate-200 dark:bg-slate-700 rounded-lg mb-2 flex items-center justify-center">
+                <Video className="w-6 h-6 text-slate-400" />
+              </div>
+            )}
+            <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-1">
+                <Heart className="w-3 h-3" />
+                <span>{post.likes_count}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <MessageCircle className="w-3 h-3" />
+                <span>{post.replies_count}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Repeat2 className="w-3 h-3" />
+                <span>{post.retweets_count}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   if (loading) {
     return (
@@ -145,6 +274,60 @@ const Explore = () => {
 
           <div className="p-6">
             <div className="grid gap-6">
+              {/* Trending Posts */}
+              <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <TrendingUp className="w-6 h-6 text-purple-600" />
+                    Trending Posts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingPosts ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className="animate-pulse">
+                          <div className="h-32 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {trendingPosts.slice(0, 4).map((post) => (
+                        <PostCard key={post.id} post={post} />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Video Posts */}
+              <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Video className="w-6 h-6 text-purple-600" />
+                    Latest Media Posts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingPosts ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className="animate-pulse">
+                          <div className="h-32 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {videoPosts.slice(0, 6).map((post) => (
+                        <PostCard key={post.id} post={post} />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Trending Section */}
               <div className="bg-white/80 dark:bg-slate-800/80 rounded-2xl p-6 border border-purple-200 dark:border-purple-700">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
@@ -214,9 +397,10 @@ const Explore = () => {
                             </div>
                             <Button
                               onClick={() => handleFollowUser(suggestedUser.id)}
+                              disabled={followLoading}
                               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl"
                             >
-                              Follow
+                              {followLoading ? 'Following...' : 'Follow'}
                             </Button>
                           </div>
                         );
