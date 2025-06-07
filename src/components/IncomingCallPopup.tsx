@@ -108,9 +108,9 @@ const IncomingCallPopup = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
       style={{ 
-        zIndex: 2147483647,
+        zIndex: 999999999,
         position: 'fixed',
         top: 0,
         left: 0,

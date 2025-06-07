@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -199,11 +200,13 @@ const RealTimeCallManager = ({
   };
 
   // Enhanced incoming call popup
-  if (incomingCall) {
+  const renderIncomingCall = () => {
+    if (!incomingCall) return null;
+    
     const caller = participants.find(p => p.id === incomingCall.caller_id);
     
-    return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4" style={{ zIndex: 99999999 }}>
+    return createPortal(
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4" style={{ zIndex: 999999999 }}>
         <Card className="w-full max-w-sm bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-0 shadow-2xl">
           <CardContent className="p-8 text-center">
             {/* Caller avatar with enhanced pulse animation */}
@@ -274,18 +277,21 @@ const RealTimeCallManager = ({
             </p>
           </CardContent>
         </Card>
-      </div>
+      </div>,
+      document.body
     );
-  }
+  };
 
   // Enhanced active call interface
-  if (isInCall && activeCall) {
+  const renderActiveCall = () => {
+    if (!isInCall || !activeCall) return null;
+    
     const otherParticipants = participants.filter(p => 
       activeCall.participants.includes(p.id) || p.id === activeCall.caller_id
     ).filter(p => p.id !== user?.id);
 
-    return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4" style={{ zIndex: 99999999 }}>
+    return createPortal(
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4" style={{ zIndex: 999999999 }}>
         <Card className="w-full max-w-sm bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-0 shadow-2xl">
           <CardContent className="p-8 text-center">
             {/* Participants avatars */}
@@ -369,42 +375,49 @@ const RealTimeCallManager = ({
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div>,
+      document.body
     );
-  }
+  };
 
-  // Call initiation buttons
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => startCall('audio')}
-        className="text-slate-600 hover:text-purple-600 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-full transition-all duration-200"
-      >
-        <Phone className="w-5 h-5" />
-      </Button>
-      
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => startCall('video')}
-        className="text-slate-600 hover:text-purple-600 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-full transition-all duration-200"
-      >
-        <Video className="w-5 h-5" />
-      </Button>
-
-      {participants.length > 1 && (
+    <>
+      {/* Call initiation buttons */}
+      <div className="flex items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => startCall('group')}
+          onClick={() => startCall('audio')}
           className="text-slate-600 hover:text-purple-600 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-full transition-all duration-200"
         >
-          <Users className="w-5 h-5" />
+          <Phone className="w-5 h-5" />
         </Button>
-      )}
-    </div>
+        
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => startCall('video')}
+          className="text-slate-600 hover:text-purple-600 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-full transition-all duration-200"
+        >
+          <Video className="w-5 h-5" />
+        </Button>
+
+        {participants.length > 1 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => startCall('group')}
+            className="text-slate-600 hover:text-purple-600 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-full transition-all duration-200"
+          >
+            <Users className="w-5 h-5" />
+          </Button>
+        )}
+      </div>
+
+      {/* Render call interfaces using portals */}
+      {renderIncomingCall()}
+      {renderActiveCall()}
+    </>
   );
 };
 

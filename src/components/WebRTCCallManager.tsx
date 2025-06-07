@@ -1,5 +1,6 @@
 
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -180,9 +181,10 @@ const WebRTCCallManager = () => {
     }
   };
 
-  if (!incomingCall || !callerProfile) return null;
+  if (!incomingCall || !callerProfile || !showIncomingCall) return null;
 
-  return (
+  // Render the incoming call popup in a portal to ensure it's above everything
+  return createPortal(
     <IncomingCallPopup
       callId={incomingCall.id}
       callerId={incomingCall.caller_id}
@@ -192,7 +194,8 @@ const WebRTCCallManager = () => {
       onAccept={handleAcceptCall}
       onDecline={handleDeclineCall}
       isVisible={showIncomingCall}
-    />
+    />,
+    document.body
   );
 };
 

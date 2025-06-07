@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -63,13 +64,13 @@ const MinimizedCallWidget = ({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  return (
+  const widget = (
     <Card 
       className={`fixed bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 border-white/20 dark:border-slate-700/40 shadow-2xl cursor-grab ${isDragging ? 'cursor-grabbing' : ''}`}
       style={{ 
         left: position.x, 
         top: position.y,
-        zIndex: 2147483646,
+        zIndex: 999999998,
         minWidth: '280px'
       }}
     >
@@ -142,6 +143,9 @@ const MinimizedCallWidget = ({
       </CardContent>
     </Card>
   );
+
+  // Render the widget in a portal to ensure it's above everything
+  return createPortal(widget, document.body);
 };
 
 export default MinimizedCallWidget;
