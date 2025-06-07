@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -160,7 +159,10 @@ const ProfessionalUsersWidget = () => {
           <div className="space-y-4">
             {professionalAccounts.map((account) => (
               <div key={account.id} className="flex items-center justify-between p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors">
-                <div className="flex items-center space-x-3 flex-1 cursor-pointer" onClick={() => navigate(`/profile/${account.owner_id}`)}>
+                <div 
+                  className="flex items-center space-x-3 flex-1 cursor-pointer" 
+                  onClick={() => navigate(`/professional-account/${account.id}`)}
+                >
                   <Avatar className="w-12 h-12">
                     <AvatarImage src={account.avatar_url || undefined} />
                     <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white">
@@ -169,7 +171,7 @@ const ProfessionalUsersWidget = () => {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                      <p className="font-semibold text-slate-900 dark:text-slate-100 truncate hover:text-purple-600 transition-colors">
                         {account.page_name}
                       </p>
                       {account.is_verified && (
@@ -196,7 +198,10 @@ const ProfessionalUsersWidget = () => {
                   </div>
                 </div>
                 <Button
-                  onClick={() => handleFollow(account.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleFollow(account.id);
+                  }}
                   className={`rounded-xl ${
                     account.user_following
                       ? 'bg-slate-500 hover:bg-slate-600'

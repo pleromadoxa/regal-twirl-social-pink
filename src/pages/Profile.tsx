@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -321,11 +320,14 @@ const Profile = () => {
                   <Card key={page.id} className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                        <div 
+                          className="flex items-center gap-3 flex-1 cursor-pointer"
+                          onClick={() => navigate(`/professional-account/${page.id}`)}
+                        >
                           {getBusinessIcon(page.page_type)}
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                              <h3 className="font-semibold text-slate-900 dark:text-slate-100 hover:text-purple-600 transition-colors">
                                 {page.page_name}
                               </h3>
                               {page.is_verified && (
