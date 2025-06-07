@@ -12,11 +12,23 @@ export const calculateStreak = async (conversationId: string): Promise<number> =
   try {
     console.log('Calculating streak for conversation:', conversationId);
     
+    // First get the conversation details to find participants
+    const { data: conversation, error: convError } = await supabase
+      .from('conversations')
+      .select('participant_1, participant_2')
+      .eq('id', conversationId)
+      .single();
+
+    if (convError || !conversation) {
+      console.error('Error fetching conversation:', convError);
+      return 0;
+    }
+
     // Get all messages for this conversation, ordered by date
     const { data: messages, error } = await supabase
       .from('messages')
       .select('created_at, sender_id, recipient_id')
-      .or(`and(sender_id.in.(select participant_1 from conversations where id='${conversationId}'),recipient_id.in.(select participant_2 from conversations where id='${conversationId}')),and(sender_id.in.(select participant_2 from conversations where id='${conversationId}'),recipient_id.in.(select participant_1 from conversations where id='${conversationId}'))`)
+      .or(`and(sender_id.eq.${conversation.participant_1},recipient_id.eq.${conversation.participant_2}),and(sender_id.eq.${conversation.participant_2},recipient_id.eq.${conversation.participant_1})`)
       .order('created_at', { ascending: false });
 
     if (error) {
