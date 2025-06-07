@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import type { Conversation, Message } from '@/types/messages';
@@ -23,12 +23,19 @@ export const useEnhancedMessages = () => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [activeCall, setActiveCall] = useState<any>(null);
   const [typingUsers, setTypingUsers] = useState<{ [key: string]: boolean }>({});
+  const channelsRef = useRef<Set<any>>(new Set());
 
   const clearCache = useCallback(() => {
-    const channels = supabase.getChannels();
-    channels.forEach(channel => {
-      supabase.removeChannel(channel);
+    // Clean up all active channels
+    console.log('Clearing all Supabase channels');
+    channelsRef.current.forEach(channel => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (error) {
+        console.error('Error removing channel:', error);
+      }
     });
+    channelsRef.current.clear();
   }, []);
 
   const refetch = useCallback(async () => {
@@ -62,6 +69,13 @@ export const useEnhancedMessages = () => {
   useEffect(() => {
     refetch();
   }, [refetch]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      clearCache();
+    };
+  }, [clearCache]);
 
   const sendMessage = async (content: string) => {
     if (!user || !selectedConversation) {

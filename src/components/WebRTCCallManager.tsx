@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -26,15 +26,26 @@ const WebRTCCallManager = () => {
   const [incomingCall, setIncomingCall] = useState<ActiveCall | null>(null);
   const [callerProfile, setCallerProfile] = useState<CallerProfile | null>(null);
   const [showIncomingCall, setShowIncomingCall] = useState(false);
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (!user) return;
 
     console.log('Setting up WebRTC call manager for user:', user.id);
 
+    // Clean up any existing channel first
+    if (channelRef.current) {
+      console.log('Cleaning up existing channel');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    // Create a unique channel name to avoid conflicts
+    const channelName = `webrtc-calls-${user.id}-${Date.now()}`;
+    
     // Listen for incoming calls
     const callChannel = supabase
-      .channel('incoming-calls')
+      .channel(channelName)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -86,8 +97,15 @@ const WebRTCCallManager = () => {
           setIncomingCall(null);
           setCallerProfile(null);
         }
-      })
-      .subscribe();
+      });
+
+    // Store channel reference
+    channelRef.current = callChannel;
+
+    // Subscribe to the channel
+    callChannel.subscribe((status) => {
+      console.log('WebRTC call channel status:', status);
+    });
 
     // Request notification permission
     if (Notification.permission === 'default') {
@@ -96,7 +114,10 @@ const WebRTCCallManager = () => {
 
     return () => {
       console.log('Cleaning up WebRTC call manager');
-      supabase.removeChannel(callChannel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [user?.id]);
 

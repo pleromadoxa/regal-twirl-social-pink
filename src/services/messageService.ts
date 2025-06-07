@@ -1,7 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { Message } from '@/types/messages';
 import { updateConversationStreak } from './streakService';
+
+// Keep track of active channels to prevent duplicate subscriptions
+const activeChannels = new Map<string, any>();
 
 export const fetchMessages = async (userId: string, otherUserId: string): Promise<Message[]> => {
   const { data: messageData, error: messageError } = await supabase
@@ -92,8 +94,17 @@ export const subscribeToMessages = (
   otherUserId: string,
   onNewMessage: (message: Message) => void
 ) => {
+  // Create unique channel name to prevent conflicts
+  const channelName = `messages-${conversationId}-${Date.now()}`;
+  
+  // Check if channel already exists
+  if (activeChannels.has(channelName)) {
+    console.warn('Channel already exists:', channelName);
+    return () => {};
+  }
+
   const channel = supabase
-    .channel(`messages-${conversationId}`)
+    .channel(channelName)
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
@@ -118,7 +129,15 @@ export const subscribeToMessages = (
     })
     .subscribe();
 
-  return () => supabase.removeChannel(channel);
+  // Store the channel
+  activeChannels.set(channelName, channel);
+
+  return () => {
+    if (activeChannels.has(channelName)) {
+      supabase.removeChannel(activeChannels.get(channelName));
+      activeChannels.delete(channelName);
+    }
+  };
 };
 
 // Subscribe to typing indicators
@@ -127,8 +146,17 @@ export const subscribeToTyping = (
   userId: string,
   onTypingUpdate: (isTyping: boolean, userId: string) => void
 ) => {
+  // Create unique channel name to prevent conflicts
+  const channelName = `typing-${conversationId}-${Date.now()}`;
+  
+  // Check if channel already exists
+  if (activeChannels.has(channelName)) {
+    console.warn('Typing channel already exists:', channelName);
+    return { unsubscribe: () => {}, sendTypingIndicator: async () => {} };
+  }
+
   const channel = supabase
-    .channel(`typing-${conversationId}`)
+    .channel(channelName)
     .on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState();
       console.log('Typing state updated:', state);
@@ -145,6 +173,9 @@ export const subscribeToTyping = (
     })
     .subscribe();
 
+  // Store the channel
+  activeChannels.set(channelName, channel);
+
   const sendTypingIndicator = async (isTyping: boolean) => {
     await channel.track({
       user_id: userId,
@@ -154,7 +185,12 @@ export const subscribeToTyping = (
   };
 
   return {
-    unsubscribe: () => supabase.removeChannel(channel),
+    unsubscribe: () => {
+      if (activeChannels.has(channelName)) {
+        supabase.removeChannel(activeChannels.get(channelName));
+        activeChannels.delete(channelName);
+      }
+    },
     sendTypingIndicator
   };
 };
