@@ -242,23 +242,34 @@ export const createGroupConversation = async (
 
     console.log('Created group:', groupData);
 
-    // Add creator as admin and other members
-    const membersToAdd = [
-      { group_id: groupData.id, user_id: createdBy, role: 'admin' },
-      ...memberIds.filter(id => id !== createdBy).map(userId => ({ 
-        group_id: groupData.id, 
-        user_id: userId, 
-        role: 'member' 
-      }))
-    ];
-
-    const { error: membersError } = await supabase
+    // Add the creator as admin first
+    const { error: creatorError } = await supabase
       .from('group_conversation_members')
-      .insert(membersToAdd);
+      .insert({
+        group_id: groupData.id,
+        user_id: createdBy,
+        role: 'admin'
+      });
 
-    if (membersError) {
-      console.error('Error adding group members:', membersError);
-      throw membersError;
+    if (creatorError) {
+      console.error('Error adding group creator:', creatorError);
+      throw creatorError;
+    }
+
+    // Add other members one by one to avoid RLS issues
+    for (const memberId of memberIds.filter(id => id !== createdBy)) {
+      const { error: memberError } = await supabase
+        .from('group_conversation_members')
+        .insert({
+          group_id: groupData.id,
+          user_id: memberId,
+          role: 'member'
+        });
+
+      if (memberError) {
+        console.error('Error adding member:', memberId, memberError);
+        // Continue with other members even if one fails
+      }
     }
 
     console.log('Added members to group');
