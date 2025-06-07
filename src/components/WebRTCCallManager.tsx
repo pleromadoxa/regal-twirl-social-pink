@@ -29,12 +29,12 @@ const WebRTCCallManager = () => {
   const [showIncomingCall, setShowIncomingCall] = useState(false);
   const channelRef = useRef<any>(null);
 
-  // Don't render anything if auth is loading or user is not available
-  if (loading || !user) {
-    return null;
-  }
-
   useEffect(() => {
+    // Don't set up the channel if auth is loading or user is not available
+    if (loading || !user) {
+      return;
+    }
+
     console.log('Setting up WebRTC call manager for user:', user.id);
 
     // Clean up any existing channel first
@@ -123,7 +123,7 @@ const WebRTCCallManager = () => {
         channelRef.current = null;
       }
     };
-  }, [user.id, incomingCall?.id]);
+  }, [user?.id, loading, incomingCall?.id]);
 
   const handleAcceptCall = async () => {
     if (!incomingCall || !user) return;
@@ -183,6 +183,11 @@ const WebRTCCallManager = () => {
       console.error('Error declining call:', error);
     }
   };
+
+  // Don't render anything if auth is loading or user is not available
+  if (loading || !user) {
+    return null;
+  }
 
   if (!incomingCall || !callerProfile || !showIncomingCall) return null;
 
