@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,8 +32,8 @@ const Profile = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { profile, loading: profileLoading, isFollowing, toggleFollow } = useProfile(userId);
-  const { galleryItems, loading: galleryLoading } = useGallery(userId);
-  const [activeTab, setActiveTab] = useState('posts');
+  const { galleryItems, loading: galleryLoading, transformToMediaItems } = useGallery(userId);
+  const [activeTab, setActiveTab] = useState('gallery');
 
   const isOwnProfile = user?.id === userId;
 
@@ -284,7 +285,11 @@ const Profile = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
               </div>
             ) : galleryItems.length > 0 ? (
-              <InteractiveBentoGallery items={galleryItems} />
+              <InteractiveBentoGallery 
+                mediaItems={transformToMediaItems(galleryItems)}
+                title={`${profile.display_name || profile.username}'s Gallery`}
+                description="Collection of photos and videos"
+              />
             ) : (
               <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                 <p>No gallery items yet</p>
