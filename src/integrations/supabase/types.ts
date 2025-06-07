@@ -69,6 +69,233 @@ export type Database = {
         }
         Relationships: []
       }
+      business_earnings: {
+        Row: {
+          amount: number
+          business_page_id: string | null
+          created_at: string | null
+          currency: string
+          date: string | null
+          description: string | null
+          id: string
+          reference_id: string | null
+          source: string
+        }
+        Insert: {
+          amount: number
+          business_page_id?: string | null
+          created_at?: string | null
+          currency?: string
+          date?: string | null
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          source: string
+        }
+        Update: {
+          amount?: number
+          business_page_id?: string | null
+          created_at?: string | null
+          currency?: string
+          date?: string | null
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_earnings_business_page_id_fkey"
+            columns: ["business_page_id"]
+            isOneToOne: false
+            referencedRelation: "business_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_invoices: {
+        Row: {
+          business_page_id: string | null
+          client_address: string | null
+          client_email: string | null
+          client_name: string
+          created_at: string | null
+          currency: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          issued_date: string | null
+          items: Json
+          notes: string | null
+          status: string
+          subtotal: number
+          tax_amount: number | null
+          tax_rate: number | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          business_page_id?: string | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name: string
+          created_at?: string | null
+          currency?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          issued_date?: string | null
+          items?: Json
+          notes?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Update: {
+          business_page_id?: string | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string
+          created_at?: string | null
+          currency?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issued_date?: string | null
+          items?: Json
+          notes?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_invoices_business_page_id_fkey"
+            columns: ["business_page_id"]
+            isOneToOne: false
+            referencedRelation: "business_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_messages: {
+        Row: {
+          attachments: string[] | null
+          business_page_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          sender_type: string
+        }
+        Insert: {
+          attachments?: string[] | null
+          business_page_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          sender_type: string
+        }
+        Update: {
+          attachments?: string[] | null
+          business_page_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_messages_business_page_id_fkey"
+            columns: ["business_page_id"]
+            isOneToOne: false
+            referencedRelation: "business_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_orders: {
+        Row: {
+          business_page_id: string | null
+          created_at: string | null
+          currency: string
+          customer_address: string | null
+          customer_email: string
+          customer_id: string | null
+          customer_name: string
+          id: string
+          items: Json
+          notes: string | null
+          payment_status: string
+          shipping_amount: number | null
+          status: string
+          subtotal: number
+          tax_amount: number | null
+          total_amount: number
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_page_id?: string | null
+          created_at?: string | null
+          currency?: string
+          customer_address?: string | null
+          customer_email: string
+          customer_id?: string | null
+          customer_name: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          payment_status?: string
+          shipping_amount?: number | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number | null
+          total_amount?: number
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_page_id?: string | null
+          created_at?: string | null
+          currency?: string
+          customer_address?: string | null
+          customer_email?: string
+          customer_id?: string | null
+          customer_name?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          payment_status?: string
+          shipping_amount?: number | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number | null
+          total_amount?: number
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_orders_business_page_id_fkey"
+            columns: ["business_page_id"]
+            isOneToOne: false
+            referencedRelation: "business_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_page_follows: {
         Row: {
           created_at: string
@@ -103,7 +330,11 @@ export type Database = {
           address: string | null
           avatar_url: string | null
           banner_url: string | null
+          business_type:
+            | Database["public"]["Enums"]["business_type_enum"]
+            | null
           created_at: string
+          default_currency: string | null
           description: string | null
           email: string | null
           followers_count: number | null
@@ -120,7 +351,11 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           banner_url?: string | null
+          business_type?:
+            | Database["public"]["Enums"]["business_type_enum"]
+            | null
           created_at?: string
+          default_currency?: string | null
           description?: string | null
           email?: string | null
           followers_count?: number | null
@@ -137,7 +372,11 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           banner_url?: string | null
+          business_type?:
+            | Database["public"]["Enums"]["business_type_enum"]
+            | null
           created_at?: string
+          default_currency?: string | null
           description?: string | null
           email?: string | null
           followers_count?: number | null
@@ -151,6 +390,62 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      business_products: {
+        Row: {
+          business_page_id: string | null
+          category: string | null
+          created_at: string | null
+          currency: string
+          description: string | null
+          id: string
+          images: string[] | null
+          is_active: boolean | null
+          name: string
+          price: number
+          sku: string | null
+          stock_quantity: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_page_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          currency?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          name: string
+          price: number
+          sku?: string | null
+          stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_page_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          currency?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          sku?: string | null
+          stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_products_business_page_id_fkey"
+            columns: ["business_page_id"]
+            isOneToOne: false
+            referencedRelation: "business_pages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       call_history: {
         Row: {
@@ -223,6 +518,30 @@ export type Database = {
           participant_1?: string
           participant_2?: string
           streak_count?: number | null
+        }
+        Relationships: []
+      }
+      currencies: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          name: string
+          symbol: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          name: string
+          symbol: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          symbol?: string
         }
         Relationships: []
       }
@@ -1024,7 +1343,20 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      business_type_enum:
+        | "e-commerce"
+        | "it-services"
+        | "import-export"
+        | "p2p-trading"
+        | "consulting"
+        | "manufacturing"
+        | "retail"
+        | "restaurant"
+        | "real-estate"
+        | "healthcare"
+        | "education"
+        | "finance"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1139,6 +1471,22 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      business_type_enum: [
+        "e-commerce",
+        "it-services",
+        "import-export",
+        "p2p-trading",
+        "consulting",
+        "manufacturing",
+        "retail",
+        "restaurant",
+        "real-estate",
+        "healthcare",
+        "education",
+        "finance",
+        "other",
+      ],
+    },
   },
 } as const

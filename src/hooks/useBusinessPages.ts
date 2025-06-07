@@ -9,6 +9,8 @@ export interface BusinessPage {
   owner_id: string;
   page_name: string;
   page_type: 'business' | 'professional' | 'organization';
+  business_type?: string;
+  default_currency?: string;
   description: string | null;
   website: string | null;
   email: string | null;
@@ -87,6 +89,8 @@ export const useBusinessPages = () => {
   const createPage = async (pageData: {
     page_name: string;
     page_type: 'business' | 'professional' | 'organization';
+    business_type?: string;
+    default_currency?: string;
     description?: string;
     website?: string;
     email?: string;

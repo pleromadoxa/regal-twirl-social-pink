@@ -18,6 +18,7 @@ import Pinned from "./pages/Pinned";
 import ProfessionalAccounts from "./pages/ProfessionalAccounts";
 import ProfessionalAccountProfile from "./pages/ProfessionalAccountProfile";
 import EditProfessionalAccount from "./pages/EditProfessionalAccount";
+import BusinessDashboard from "./pages/BusinessDashboard";
 import NotFound from "./pages/NotFound";
 import WebRTCCallManager from "./components/WebRTCCallManager";
 
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/professional" element={<ProfessionalAccounts />} />
               <Route path="/professional/:pageId" element={<ProfessionalAccountProfile />} />
               <Route path="/professional/:pageId/edit" element={<EditProfessionalAccount />} />
+              <Route path="/business/:pageId" element={<BusinessDashboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <WebRTCCallManager />
