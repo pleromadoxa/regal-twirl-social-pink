@@ -169,26 +169,6 @@ const SidebarNav = () => {
       </ScrollArea>
     </aside>
   );
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
-
-  const handleNavigation = (path: string) => {
-    navigate(path);
-  };
-
-  const handleCreatePost = () => {
-    navigate('/home');
-    // Focus on the post composer if on home page
-    setTimeout(() => {
-      const postComposer = document.querySelector('textarea[placeholder*="What\'s happening"]');
-      if (postComposer) {
-        (postComposer as HTMLTextAreaElement).focus();
-      }
-    }, 100);
-  };
 };
 
 export default SidebarNav;
