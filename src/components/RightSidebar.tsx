@@ -1,140 +1,153 @@
 
-import { TrendingUp, Users, Sparkles } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import NotificationDropdown from './NotificationDropdown';
-import UserSearch from './UserSearch';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import TrendingWidget from "./TrendingWidget";
+import ProfessionalUsersWidget from "./ProfessionalUsersWidget";
+import NotificationDropdown from "./NotificationDropdown";
+import UserSearch from "./UserSearch";
+import PresenceIndicator from "./PresenceIndicator";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useFollow } from "@/hooks/useFollow";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const RightSidebar = () => {
   const { user } = useAuth();
+  const { followUser, loading: followLoading } = useFollow();
+  const [followingUsers, setFollowingUsers] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
-  const trendingTopics = [
-    { topic: '#TechNews', posts: '12.5k posts', trending: true },
-    { topic: '#WebDev', posts: '8.2k posts', trending: false },
-    { topic: '#AI', posts: '15.1k posts', trending: true },
-    { topic: '#Startup', posts: '6.7k posts', trending: false },
-    { topic: '#Design', posts: '9.3k posts', trending: true }
-  ];
+  // Fetch suggested users
+  const { data: suggestedUsers = [], isLoading } = useQuery({
+    queryKey: ['suggested-users', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
 
-  const suggestedUsers = [
-    { name: 'Tech Innovator', username: 'techinnovator', followers: '2.5k', verified: true },
-    { name: 'Design Guru', username: 'designguru', followers: '1.8k', verified: false },
-    { name: 'AI Researcher', username: 'airesearcher', followers: '3.2k', verified: true },
-  ];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, is_verified, followers_count')
+        .neq('id', user.id)
+        .order('followers_count', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching suggested users:', error);
+        return [];
+      }
+
+      return data || [];
+    },
+    enabled: !!user
+  });
+
+  const handleFollow = async (userId: string) => {
+    const success = await followUser(userId);
+    if (success) {
+      setFollowingUsers(prev => new Set([...prev, userId]));
+    }
+  };
+
+  const handleUserClick = (userId: string) => {
+    navigate(`/profile/${userId}`);
+  };
 
   return (
-    <aside className="w-80 p-6 space-y-6 bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900 border-l border-purple-200 dark:border-purple-800">
-      {/* Header with Notifications */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-          Discover
-        </h2>
-        {user && <NotificationDropdown />}
-      </div>
-
-      {/* Search Section */}
-      <Card className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Users className="w-5 h-5 text-purple-600" />
-            Find People
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <UserSearch />
-        </CardContent>
-      </Card>
-
-      {/* Trending Widget */}
-      <Card className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <TrendingUp className="w-5 h-5 text-purple-600" />
-            What's trending
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {trendingTopics.map((trend, index) => (
-            <div key={index} className="flex justify-between items-center hover:bg-purple-50 dark:hover:bg-purple-900/20 p-3 rounded-xl cursor-pointer transition-all duration-200 group">
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-sm group-hover:text-purple-600 transition-colors">
-                    {trend.topic}
-                  </p>
-                  {trend.trending && (
-                    <Sparkles className="w-3 h-3 text-orange-500" />
-                  )}
-                </div>
-                <p className="text-xs text-slate-500">{trend.posts}</p>
-              </div>
-            </div>
-          ))}
-          <Button variant="ghost" className="w-full text-purple-600 hover:text-purple-700 text-sm hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl">
-            Show more trends
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Suggested Users */}
-      <Card className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Who to follow</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {suggestedUsers.map((user, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">
-                    {user.name[0]}
-                  </span>
-                </div>
-                <div>
-                  <div className="flex items-center gap-1">
-                    <p className="font-medium text-sm">{user.name}</p>
-                    {user.verified && <span className="text-blue-500 text-xs">✓</span>}
-                  </div>
-                  <p className="text-xs text-slate-500">@{user.username}</p>
-                  <p className="text-xs text-slate-500">{user.followers} followers</p>
-                </div>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white border-none hover:from-purple-700 hover:to-pink-700"
-              >
-                Follow
-              </Button>
-            </div>
-          ))}
-          <Button 
-            variant="outline" 
-            className="w-full rounded-xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
-            onClick={() => navigate('/explore')}
-          >
-            Explore more people
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Premium Upgrade */}
-      <Card className="border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/50 dark:to-pink-900/50">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <Sparkles className="w-5 h-5 text-purple-600" />
-            <h3 className="font-semibold text-purple-900 dark:text-purple-100">Upgrade to Premium</h3>
+    <aside className="w-80 bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900 border-l border-purple-200 dark:border-purple-800 h-screen overflow-hidden">
+      <ScrollArea className="h-full">
+        <div className="p-6 space-y-6">
+          {/* Notifications */}
+          <div className="flex justify-end">
+            <NotificationDropdown />
           </div>
-          <p className="text-sm text-purple-700 dark:text-purple-300 mb-4">
-            Get exclusive features, verified badge, and priority support!
-          </p>
-          <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl">
-            Upgrade Now
-          </Button>
-        </CardContent>
-      </Card>
+
+          {/* Search */}
+          <UserSearch showMessageButton />
+
+          {/* Who to Follow */}
+          {user && (
+            <Card className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border-purple-200 dark:border-purple-800">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  Who to Follow
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center space-x-3 animate-pulse">
+                        <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+                        <div className="flex-1">
+                          <div className="w-24 h-4 bg-slate-200 dark:bg-slate-700 rounded mb-1"></div>
+                          <div className="w-16 h-3 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                        </div>
+                        <div className="w-16 h-8 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  suggestedUsers.map((suggestedUser) => (
+                    <div key={suggestedUser.id} className="flex items-center justify-between p-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors">
+                      <div 
+                        className="flex items-center space-x-3 flex-1 cursor-pointer"
+                        onClick={() => handleUserClick(suggestedUser.id)}
+                      >
+                        <div className="relative">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={suggestedUser.avatar_url || "/placeholder.svg"} />
+                            <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                              {suggestedUser.display_name?.[0]?.toUpperCase() || suggestedUser.username?.[0]?.toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="absolute -bottom-1 -right-1">
+                            <PresenceIndicator userId={suggestedUser.id} />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-1">
+                            <p className="font-semibold text-slate-900 dark:text-slate-100 truncate text-sm">
+                              {suggestedUser.display_name || suggestedUser.username}
+                            </p>
+                            {suggestedUser.is_verified && (
+                              <Badge className="bg-blue-500 text-white text-xs px-1 py-0">✓</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 truncate">@{suggestedUser.username}</p>
+                          <p className="text-xs text-slate-400">
+                            {suggestedUser.followers_count || 0} followers
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFollow(suggestedUser.id);
+                        }}
+                        disabled={followLoading || followingUsers.has(suggestedUser.id)}
+                        size="sm"
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs px-3 py-1"
+                      >
+                        {followingUsers.has(suggestedUser.id) ? 'Following' : 'Follow'}
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Trending */}
+          <TrendingWidget />
+
+          {/* Professional Users */}
+          <ProfessionalUsersWidget />
+        </div>
+      </ScrollArea>
     </aside>
   );
 };

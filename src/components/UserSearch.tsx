@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Search, UserPlus, UserCheck, MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -11,6 +10,7 @@ import { useFollow } from '@/hooks/useFollow';
 import { useNavigate } from 'react-router-dom';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useToast } from '@/hooks/use-toast';
+import PresenceIndicator from './PresenceIndicator';
 
 interface UserResult {
   id: string;
@@ -225,12 +225,17 @@ const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSear
                     className="flex items-center space-x-3 flex-1 cursor-pointer"
                     onClick={() => handleUserClick(userResult.id)}
                   >
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={userResult.avatar_url || "/placeholder.svg"} />
-                      <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                        {userResult.display_name?.[0]?.toUpperCase() || userResult.username?.[0]?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={userResult.avatar_url || "/placeholder.svg"} />
+                        <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                          {userResult.display_name?.[0]?.toUpperCase() || userResult.username?.[0]?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-1 -right-1">
+                        <PresenceIndicator userId={userResult.id} />
+                      </div>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-1">
                         <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">

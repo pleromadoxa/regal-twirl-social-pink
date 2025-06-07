@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageDock, Character } from '@/components/ui/message-dock';
@@ -12,11 +11,14 @@ import { Button } from '@/components/ui/button';
 import { MessageCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStreakEmoji } from '@/services/streakService';
+import PresenceIndicator from './PresenceIndicator';
+import { useUserPresence } from '@/hooks/useUserPresence';
 
 const ActiveChatBar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { getUserStatus, formatLastSeen } = useUserPresence();
   const { 
     conversations, 
     startDirectConversation, 
@@ -40,23 +42,27 @@ const ActiveChatBar = () => {
       const recentConversations = conversations.slice(0, 3);
       const updatedCharacters = [
         { emoji: "💬", name: "Messages", online: false },
-        ...recentConversations.map((conv, index) => ({
-          id: conv.id,
-          emoji: conv.other_user?.avatar_url ? "👤" : ["👤", "🌟", "💼"][index] || "👤",
-          name: `${conv.other_user?.display_name || conv.other_user?.username || "User"}${conv.streak_count > 0 ? ` ${getStreakEmoji(conv.streak_count)}${conv.streak_count}` : ''}`,
-          online: true,
-          backgroundColor: ["bg-blue-300", "bg-purple-300", "bg-pink-300"][index] || "bg-gray-300",
-          gradientColors: ["#93c5fd, #dbeafe", "#c084fc, #f3e8ff", "#f9a8d4, #fce7f3"][index] || "#d1d5db, #f3f4f6",
-          avatar: conv.other_user?.avatar_url,
-          username: conv.other_user?.username,
-          displayName: conv.other_user?.display_name,
-          streakCount: conv.streak_count
-        })),
+        ...recentConversations.map((conv, index) => {
+          const { isOnline } = getUserStatus(conv.other_user?.id || '');
+          return {
+            id: conv.id,
+            emoji: conv.other_user?.avatar_url ? "👤" : ["👤", "🌟", "💼"][index] || "👤",
+            name: `${conv.other_user?.display_name || conv.other_user?.username || "User"}${conv.streak_count > 0 ? ` ${getStreakEmoji(conv.streak_count)}${conv.streak_count}` : ''}`,
+            online: isOnline,
+            backgroundColor: ["bg-blue-300", "bg-purple-300", "bg-pink-300"][index] || "bg-gray-300",
+            gradientColors: ["#93c5fd, #dbeafe", "#c084fc, #f3e8ff", "#f9a8d4, #fce7f3"][index] || "#d1d5db, #f3f4f6",
+            avatar: conv.other_user?.avatar_url,
+            username: conv.other_user?.username,
+            displayName: conv.other_user?.display_name,
+            streakCount: conv.streak_count,
+            userId: conv.other_user?.id
+          };
+        }),
         { emoji: "📋", name: "Menu", online: false },
       ];
       setCharacters(updatedCharacters);
     }
-  }, [conversations]);
+  }, [conversations, getUserStatus]);
 
   const handleMessageSend = async (message: string, character: Character, characterIndex: number) => {
     if (!user) {
@@ -139,7 +145,7 @@ const ActiveChatBar = () => {
 
   // Don't show on auth or landing pages
   const currentPath = window.location.pathname;
-  if (currentPath === '/auth' || currentPath === '/landing') {
+  if (currentPath === '/auth' || currentPath === '/') {
     return null;
   }
 
@@ -201,22 +207,60 @@ const ActiveChatBar = () => {
                 </Tooltip>
               </div>
 
-              {/* MessageDock Component */}
-              <MessageDock 
-                characters={characters}
-                onMessageSend={handleMessageSend}
-                onCharacterSelect={handleCharacterSelect}
-                onDockToggle={handleDockToggle}
-                expandedWidth={400}
-                position="bottom"
-                placeholder={(name) => `Send a message to ${name}...`}
-                theme="light"
-                enableAnimations={true}
-                closeOnSend={false}
-                autoFocus={true}
-                className="static transform-none translate-x-0 z-30"
-                showTooltips={true}
-              />
+              {/* Enhanced MessageDock with Presence */}
+              <div className="relative">
+                <MessageDock 
+                  characters={characters.map(char => ({
+                    ...char,
+                    // Add hover card content for conversations
+                    hoverContent: char.userId ? (
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <div className="cursor-pointer">
+                            {char.avatar ? (
+                              <img src={char.avatar} alt={char.displayName || char.name} className="w-8 h-8 rounded-full" />
+                            ) : (
+                              <div className={`w-8 h-8 rounded-full ${char.backgroundColor} flex items-center justify-center text-white font-semibold`}>
+                                {char.emoji}
+                              </div>
+                            )}
+                            <div className="absolute -bottom-1 -right-1">
+                              <PresenceIndicator userId={char.userId} />
+                            </div>
+                          </div>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-80">
+                          <div className="flex justify-between space-x-4">
+                            <Avatar>
+                              <AvatarImage src={char.avatar} />
+                              <AvatarFallback>{char.displayName?.[0] || char.name[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="space-y-1 flex-1">
+                              <h4 className="text-sm font-semibold">{char.displayName || char.name}</h4>
+                              <p className="text-sm text-slate-500">@{char.username}</p>
+                              <div className="flex items-center pt-2">
+                                <PresenceIndicator userId={char.userId} showText />
+                              </div>
+                            </div>
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
+                    ) : undefined
+                  }))}
+                  onMessageSend={handleMessageSend}
+                  onCharacterSelect={handleCharacterSelect}
+                  onDockToggle={handleDockToggle}
+                  expandedWidth={400}
+                  position="bottom"
+                  placeholder={(name) => `Send a message to ${name}...`}
+                  theme="light"
+                  enableAnimations={true}
+                  closeOnSend={false}
+                  autoFocus={true}
+                  className="static transform-none translate-x-0 z-30"
+                  showTooltips={true}
+                />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

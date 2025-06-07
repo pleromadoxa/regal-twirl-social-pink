@@ -762,12 +762,40 @@ export type Database = {
         }
         Relationships: []
       }
+      user_presence: {
+        Row: {
+          id: string
+          is_online: boolean
+          last_seen: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_online?: boolean
+          last_seen?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_online?: boolean
+          last_seen?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       cleanup_expired_stories: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_stale_presence: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -779,6 +807,10 @@ export type Database = {
           post_id?: string
           message?: string
         }
+        Returns: undefined
+      }
+      update_user_presence: {
+        Args: { user_id: string; is_online: boolean }
         Returns: undefined
       }
     }
