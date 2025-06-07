@@ -105,10 +105,25 @@ const GroupCreationDialog = ({ onCreateGroup, trigger }: GroupCreationDialogProp
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to create a group",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       console.log('Creating group with participants:', participants.map(p => p.id));
       const participantIds = participants.map(p => p.id);
+      
+      // Add additional logging and validation
+      console.log('Current user ID:', user.id);
+      console.log('Group name:', groupName.trim());
+      console.log('Participant IDs:', participantIds);
+      
       const conversationId = await onCreateGroup(groupName.trim(), participantIds);
       
       if (conversationId) {
@@ -129,9 +144,22 @@ const GroupCreationDialog = ({ onCreateGroup, trigger }: GroupCreationDialogProp
       }
     } catch (error) {
       console.error('Error creating group:', error);
+      
+      // More detailed error handling
+      let errorMessage = "Something went wrong";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        // Check for specific database errors
+        if (error.message.includes('row-level security')) {
+          errorMessage = "Permission denied. Please try again or contact support.";
+        } else if (error.message.includes('infinite recursion')) {
+          errorMessage = "Database configuration issue. Please try again in a moment.";
+        }
+      }
+      
       toast({
         title: "Failed to create group",
-        description: error instanceof Error ? error.message : "Something went wrong",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

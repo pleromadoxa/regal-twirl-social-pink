@@ -945,6 +945,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      is_group_admin: {
+        Args: { group_id: string; user_id: string }
+        Returns: boolean
+      }
+      is_group_member: {
+        Args: { group_id: string; user_id: string }
+        Returns: boolean
+      }
       update_user_presence: {
         Args: { user_id: string; is_online: boolean }
         Returns: undefined
