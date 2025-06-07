@@ -6,10 +6,13 @@ import { MessageSquarePlus, Users, User } from 'lucide-react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import UserSearch from '@/components/UserSearch';
 import GroupCreationDialog from '@/components/GroupCreationDialog';
+import { createGroupConversation } from '@/services/groupConversationService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ConversationStarter = () => {
   const [open, setOpen] = useState(false);
-  const { startDirectConversation, createGroupConversation } = useEnhancedMessages();
+  const { user } = useAuth();
+  const { startDirectConversation } = useEnhancedMessages();
 
   const handleStartConversation = async (userId: string) => {
     await startDirectConversation(userId);
@@ -17,9 +20,23 @@ const ConversationStarter = () => {
   };
 
   const handleCreateGroup = async (groupName: string, participantIds: string[]) => {
-    await createGroupConversation(participantIds, groupName);
-    setOpen(false);
-    return groupName;
+    if (!user) return;
+    
+    try {
+      await createGroupConversation(
+        groupName,
+        null,
+        user.id,
+        participantIds,
+        false,
+        50
+      );
+      setOpen(false);
+      return groupName;
+    } catch (error) {
+      console.error('Error creating group:', error);
+      throw error;
+    }
   };
 
   return (

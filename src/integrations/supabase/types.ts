@@ -328,8 +328,12 @@ export type Database = {
           created_by: string
           description: string | null
           id: string
+          invite_code: string | null
+          is_private: boolean | null
           last_message_at: string | null
+          max_members: number | null
           name: string
+          settings: Json | null
           updated_at: string
         }
         Insert: {
@@ -338,8 +342,12 @@ export type Database = {
           created_by: string
           description?: string | null
           id?: string
+          invite_code?: string | null
+          is_private?: boolean | null
           last_message_at?: string | null
+          max_members?: number | null
           name: string
+          settings?: Json | null
           updated_at?: string
         }
         Update: {
@@ -348,11 +356,66 @@ export type Database = {
           created_by?: string
           description?: string | null
           id?: string
+          invite_code?: string | null
+          is_private?: boolean | null
           last_message_at?: string | null
+          max_members?: number | null
           name?: string
+          settings?: Json | null
           updated_at?: string
         }
         Relationships: []
+      }
+      group_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          edited_at: string | null
+          group_id: string | null
+          id: string
+          message_type: string | null
+          reply_to_id: string | null
+          sender_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          edited_at?: string | null
+          group_id?: string | null
+          id?: string
+          message_type?: string | null
+          reply_to_id?: string | null
+          sender_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          edited_at?: string | null
+          group_id?: string | null
+          id?: string
+          message_type?: string | null
+          reply_to_id?: string | null
+          sender_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "group_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       likes: {
         Row: {
@@ -873,6 +936,14 @@ export type Database = {
           message?: string
         }
         Returns: undefined
+      }
+      generate_invite_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       update_user_presence: {
         Args: { user_id: string; is_online: boolean }

@@ -14,13 +14,16 @@ import {
   Trash2,
   Download,
   RefreshCw,
-  Phone
+  Phone,
+  UserPlus
 } from "lucide-react";
 import { useEnhancedMessages } from "@/hooks/useEnhancedMessages";
 import ConversationStarter from "@/components/ConversationStarter";
 import MessageThread from "@/components/MessageThread";
 import CallHistorySection from "@/components/CallHistorySection";
 import GroupCallDialog from "@/components/GroupCallDialog";
+import GroupChatThread from "@/components/GroupChatThread";
+import GroupInviteDialog from "@/components/GroupInviteDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +57,7 @@ const Messages = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [groupChats, setGroupChats] = useState<GroupConversation[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<GroupConversation | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -94,10 +98,26 @@ const Messages = () => {
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
-  const handleGroupSelect = (groupId: string) => {
-    console.log('Group selected:', groupId);
-    // For now, just log the selection
-    // In a real implementation, you'd open the group chat
+  const handleGroupSelect = (group: GroupConversation) => {
+    console.log('Group selected:', group.id);
+    setSelectedGroup(group);
+    setSelectedConversation(null); // Clear direct message selection
+  };
+
+  const handleDirectMessageSelect = (conversationId: string) => {
+    setSelectedConversation(conversationId);
+    setSelectedGroup(null); // Clear group selection
+  };
+
+  const handleGroupJoined = () => {
+    if (activeTab === "groups") {
+      fetchGroupChats();
+    }
+  };
+
+  const handleLeaveGroup = () => {
+    setSelectedGroup(null);
+    fetchGroupChats();
   };
 
   if (loading) {
@@ -160,6 +180,7 @@ const Messages = () => {
         <div className="w-96 border-r border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl flex flex-col">
           {/* Header */}
           <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-4 z-10">
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
                 <MessageCircle className="w-6 h-6 text-purple-600" />
@@ -221,7 +242,17 @@ const Messages = () => {
             </div>
 
             {/* Quick Actions */}
-            <ConversationStarter />
+            <div className="flex items-center gap-2">
+              <ConversationStarter />
+              <GroupInviteDialog 
+                onGroupJoined={handleGroupJoined}
+                trigger={
+                  <Button variant="outline" size="sm" className="rounded-full">
+                    <UserPlus className="w-4 h-4" />
+                  </Button>
+                }
+              />
+            </div>
           </div>
 
           {/* Conversation Tabs */}
@@ -331,11 +362,15 @@ const Messages = () => {
                   filteredGroupChats.map((group) => (
                     <Card 
                       key={group.id} 
-                      className="hover:shadow-md transition-all cursor-pointer hover:bg-purple-50/50 dark:hover:bg-purple-900/10"
+                      className={`hover:shadow-md transition-all cursor-pointer ${
+                        selectedGroup?.id === group.id 
+                          ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' 
+                          : 'hover:bg-purple-50/50 dark:hover:bg-purple-900/10'
+                      }`}
                     >
                       <CardContent className="p-3">
                         <div
-                          onClick={() => handleGroupSelect(group.id)}
+                          onClick={() => handleGroupSelect(group)}
                           className="flex items-center space-x-3 w-full"
                         >
                           <div className="relative">
@@ -363,6 +398,11 @@ const Messages = () => {
                                 <Badge variant="secondary" className="text-xs">
                                   {group.member_count} members
                                 </Badge>
+                                {group.is_private && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Private
+                                  </Badge>
+                                )}
                               </div>
                               <span className="text-xs text-slate-500">
                                 {group.last_message_at 
@@ -376,6 +416,14 @@ const Messages = () => {
                                 {group.description}
                               </p>
                             )}
+                            <div className="flex items-center justify-between mt-1">
+                              <p className="text-xs text-slate-500 truncate flex-1">
+                                {group.last_message 
+                                  ? `${group.last_message.sender_name}: ${group.last_message.content}`
+                                  : "No messages yet"
+                                }
+                              </p>
+                            </div>
                             <div className="flex items-center gap-1 mt-1">
                               <span className="text-xs text-slate-500">Members:</span>
                               <div className="flex -space-x-1">
@@ -416,9 +464,18 @@ const Messages = () => {
                     <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
                       No group chats yet
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Create your first group chat to get started!
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                      Create your first group chat or join one with an invite code!
                     </p>
+                    <GroupInviteDialog 
+                      onGroupJoined={handleGroupJoined}
+                      trigger={
+                        <Button variant="outline" size="sm">
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Join with Code
+                        </Button>
+                      }
+                    />
                   </div>
                 )}
               </div>
@@ -446,7 +503,12 @@ const Messages = () => {
 
         {/* Main Chat Area */}
         <main className="flex-1 flex flex-col">
-          {selectedConversation ? (
+          {selectedGroup ? (
+            <GroupChatThread 
+              group={selectedGroup} 
+              onLeaveGroup={handleLeaveGroup}
+            />
+          ) : selectedConversation ? (
             <MessageThread conversationId={selectedConversation} />
           ) : (
             <div className="flex-1 flex items-center justify-center bg-white/40 dark:bg-slate-800/40">
@@ -462,6 +524,15 @@ const Messages = () => {
                 </p>
                 <div className="space-y-3">
                   <ConversationStarter />
+                  <GroupInviteDialog 
+                    onGroupJoined={handleGroupJoined}
+                    trigger={
+                      <Button variant="outline" className="w-full">
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Join Group with Code
+                      </Button>
+                    }
+                  />
                 </div>
               </div>
             </div>
