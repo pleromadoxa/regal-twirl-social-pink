@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -7,6 +6,8 @@ import RightSidebar from "@/components/RightSidebar";
 import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import HomeFeedNav from "@/components/HomeFeedNav";
+import StoriesBar from "@/components/StoriesBar";
+import FinancialNav from "@/components/FinancialNav";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePosts } from "@/hooks/usePosts";
 
@@ -15,6 +16,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { posts, loading: postsLoading, toggleLike, toggleRetweet, togglePin, deletePost, refetch } = usePosts();
   const [feedFilter, setFeedFilter] = useState<'all' | 'professional' | 'trending'>('all');
+  const [financialFilter, setFinancialFilter] = useState<'news' | 'stocks' | 'alerts' | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -57,24 +59,46 @@ const Index = () => {
   }
 
   const getFeedTitle = () => {
+    if (financialFilter) {
+      switch (financialFilter) {
+        case 'news':
+          return 'Financial News';
+        case 'stocks':
+          return 'Stock Market';
+        case 'alerts':
+          return 'Price Alerts';
+      }
+    }
+    
     switch (feedFilter) {
       case 'professional':
         return 'Professional Posts';
       case 'trending':
         return 'Trending Posts';
       default:
-        return 'Home Feed';
+        return 'Regal Global Network';
     }
   };
 
   const getFeedDescription = () => {
+    if (financialFilter) {
+      switch (financialFilter) {
+        case 'news':
+          return 'Latest financial news and market updates';
+        case 'stocks':
+          return 'Real-time stock prices and market data';
+        case 'alerts':
+          return 'Your personalized price alerts and notifications';
+      }
+    }
+    
     switch (feedFilter) {
       case 'professional':
         return 'Posts from verified professional accounts';
       case 'trending':
         return 'Popular posts with high engagement';
       default:
-        return 'Welcome back! See what\'s happening in your network.';
+        return 'Connect with the global professional network.';
     }
   };
 
@@ -93,15 +117,29 @@ const Index = () => {
           </p>
         </div>
         
+        {/* Stories Bar */}
+        <StoriesBar />
+        
+        {/* Financial Navigation */}
+        <FinancialNav onFilterChange={setFinancialFilter} />
+        
         <HomeFeedNav onFilterChange={setFeedFilter} />
         
         {/* Scrollable Content */}
         <ScrollArea className="flex-1">
           <div>
-            {feedFilter === 'all' && <TweetComposer />}
+            {feedFilter === 'all' && !financialFilter && <TweetComposer />}
             
             <div className="border-t border-purple-200 dark:border-purple-800">
-              {postsLoading ? (
+              {financialFilter ? (
+                <div className="p-8 text-center">
+                  <p className="text-slate-500 dark:text-slate-400">
+                    {financialFilter === 'news' && 'Financial news feed coming soon...'}
+                    {financialFilter === 'stocks' && 'Stock market data coming soon...'}
+                    {financialFilter === 'alerts' && 'Price alerts dashboard coming soon...'}
+                  </p>
+                </div>
+              ) : postsLoading ? (
                 <div className="p-8 text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
                   <p className="mt-4 text-slate-500">Loading your feed...</p>
