@@ -9,7 +9,7 @@ import { PostIndicators } from '@/components/PostIndicators';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVerifiedStatus } from '@/hooks/useVerifiedStatus';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Repeat } from 'lucide-react';
 
 interface PostsListProps {
   posts?: any[];
@@ -30,6 +30,7 @@ export const PostsList = ({
 }: PostsListProps = {}) => {
   const { posts: hookPosts, loading, toggleLike, toggleRetweet, togglePin, deletePost } = usePosts();
   const { user } = useAuth();
+  const [retweetedBy, setRetweetedBy] = useState<{[key: string]: any}>({});
 
   let posts = externalPosts || hookPosts;
   
@@ -41,6 +42,29 @@ export const PostsList = ({
   const onRetweet = externalOnRetweet || toggleRetweet;
   const onPin = externalOnPin || togglePin;
   const onDelete = externalOnDelete || deletePost;
+
+  useEffect(() => {
+    // Fetch retweet information for posts
+    const fetchRetweetInfo = async () => {
+      if (!posts || posts.length === 0) return;
+      
+      const retweetInfo: {[key: string]: any} = {};
+      
+      for (const post of posts) {
+        if (post.user_retweeted && user) {
+          // This post was retweeted by the current user
+          retweetInfo[post.id] = {
+            retweetedBy: user,
+            isCurrentUser: true
+          };
+        }
+      }
+      
+      setRetweetedBy(retweetInfo);
+    };
+
+    fetchRetweetInfo();
+  }, [posts, user]);
 
   const isThreadPost = (content: string) => {
     return content.includes('\n\n') || content.toLowerCase().includes('thread') || content.includes('🧵');
@@ -61,8 +85,22 @@ export const PostsList = ({
     return (
       <div className="relative">
         {/* Connecting line for threads */}
-        <div className="absolute left-4 top-8 bottom-8 w-0.5 bg-gradient-to-b from-purple-300 via-purple-200 to-purple-300 dark:from-purple-600 dark:via-purple-500 dark:to-purple-600 opacity-60"></div>
-        <div className="absolute left-4 top-8 bottom-8 w-0.5 bg-gradient-to-b from-transparent via-white to-transparent dark:via-slate-800 opacity-40"></div>
+        <div className="absolute left-4 top-8 w-0.5 bg-gradient-to-b from-purple-300 via-purple-200 to-purple-300 dark:from-purple-600 dark:via-purple-500 dark:to-purple-600 opacity-60" 
+             style={{ height: `${(threadLines.length - 1) * 60}px` }}></div>
+        <div className="absolute left-4 top-8 w-0.5 bg-gradient-to-b from-transparent via-white to-transparent dark:via-slate-800 opacity-40"
+             style={{ height: `${(threadLines.length - 1) * 60}px` }}></div>
+        
+        {/* Dotted connecting lines between thread points */}
+        {threadLines.map((_, index) => {
+          if (index === threadLines.length - 1) return null;
+          return (
+            <div 
+              key={`dot-${index}`}
+              className="absolute left-3.5 w-1 h-1 bg-purple-400 dark:bg-purple-500 rounded-full" 
+              style={{ top: `${40 + (index * 60)}px` }}
+            />
+          );
+        })}
         
         {threadLines.map((line, index) => (
           <div key={index} className="flex gap-3 mb-4 relative">
@@ -110,6 +148,7 @@ export const PostsList = ({
         const isVerified = getVerifiedStatus(post.profiles);
         const isThread = isThreadPost(post.content);
         const hasAudio = hasAudioContent(post.content);
+        const retweetInfo = retweetedBy[post.id];
         
         return (
           <Card 
@@ -121,6 +160,16 @@ export const PostsList = ({
             }`}
           >
             <CardContent className="p-6 relative z-30">
+              {/* Retweet indicator */}
+              {retweetInfo && (
+                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
+                  <Repeat className="w-4 h-4" />
+                  <span>
+                    {retweetInfo.isCurrentUser ? 'You' : `@${retweetInfo.retweetedBy.username}`} reshared
+                  </span>
+                </div>
+              )}
+              
               <PostIndicators 
                 isThread={isThread} 
                 hasAudio={hasAudio}

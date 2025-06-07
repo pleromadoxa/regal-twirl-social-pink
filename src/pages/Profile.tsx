@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 import { 
   MapPin, 
   Link as LinkIcon, 
@@ -22,8 +23,18 @@ import {
   Users as UsersIcon,
   User as UserIcon,
   Settings,
-  MessageCircle
+  MessageCircle,
+  Edit,
+  Trash2,
+  Share,
+  MoreHorizontal
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface BusinessPage {
   id: string;
@@ -32,6 +43,10 @@ interface BusinessPage {
   description: string;
   is_verified: boolean;
   followers_count: number;
+  website: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
 }
 
 const Profile = () => {
@@ -42,6 +57,7 @@ const Profile = () => {
   const [businessPages, setBusinessPages] = useState<BusinessPage[]>([]);
   const isVerified = useVerifiedStatus(profile);
   const isOwnProfile = user?.id === userId;
+  const { toast } = useToast();
 
   useEffect(() => {
     if (userId) {
@@ -55,13 +71,60 @@ const Profile = () => {
     try {
       const { data, error } = await supabase
         .from('business_pages')
-        .select('id, page_name, page_type, description, is_verified, followers_count')
+        .select('*')
         .eq('owner_id', userId);
 
       if (error) throw error;
       setBusinessPages(data || []);
     } catch (error) {
       console.error('Error fetching business pages:', error);
+    }
+  };
+
+  const handleDeleteBusinessPage = async (pageId: string) => {
+    if (!confirm('Are you sure you want to delete this professional account?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('business_pages')
+        .delete()
+        .eq('id', pageId)
+        .eq('owner_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Professional account deleted",
+        description: "The account has been removed successfully."
+      });
+
+      fetchBusinessPages();
+    } catch (error) {
+      console.error('Error deleting business page:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete professional account",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleShareBusinessPage = (page: BusinessPage) => {
+    const shareText = `Check out ${page.page_name} on our platform!`;
+    const shareUrl = `${window.location.origin}/profile/${userId}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: page.page_name,
+        text: shareText,
+        url: shareUrl,
+      });
+    } else {
+      navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+      toast({
+        title: "Link copied",
+        description: "Professional account link copied to clipboard"
+      });
     }
   };
 
@@ -280,12 +343,63 @@ const Profile = () => {
                             </div>
                           </div>
                         </div>
+                        
+                        {isOwnProfile && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => navigate(`/professional-accounts?edit=${page.id}`)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleShareBusinessPage(page)}>
+                                <Share className="w-4 h-4 mr-2" />
+                                Share
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteBusinessPage(page.id)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
+                      
                       {page.description && (
                         <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
                           {page.description}
                         </p>
                       )}
+                      
+                      {/* Additional business page details */}
+                      <div className="flex flex-wrap gap-4 text-xs text-slate-500 dark:text-slate-400 mt-2">
+                        {page.website && (
+                          <div className="flex items-center gap-1">
+                            <LinkIcon className="w-3 h-3" />
+                            <a 
+                              href={page.website} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-purple-600 hover:underline"
+                            >
+                              {page.website}
+                            </a>
+                          </div>
+                        )}
+                        {page.address && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {page.address}
+                          </div>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
