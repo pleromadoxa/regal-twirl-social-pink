@@ -19,7 +19,7 @@ interface Comment {
     username: string;
     display_name: string;
     avatar_url: string;
-  };
+  } | null;
 }
 
 interface PostCommentsProps {
@@ -48,8 +48,11 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
       const { data, error } = await supabase
         .from('replies')
         .select(`
-          *,
-          profiles (
+          id,
+          content,
+          created_at,
+          user_id,
+          profiles!replies_user_id_fkey (
             username,
             display_name,
             avatar_url

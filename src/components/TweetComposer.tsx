@@ -1,9 +1,7 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { X, Smile } from "lucide-react";
+import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePosts } from "@/hooks/usePosts";
 import { useAuth } from "@/contexts/AuthContext";
@@ -107,12 +105,10 @@ const TweetComposer = () => {
       let imageUrls: string[] = [];
       let audioUrl = "";
       
-      // Upload images if any are selected
       if (selectedImages.length > 0) {
         imageUrls = await uploadImages(selectedImages);
       }
 
-      // Upload audio if selected
       if (selectedAudio) {
         audioUrl = await uploadAudio(selectedAudio);
       }
@@ -122,7 +118,6 @@ const TweetComposer = () => {
         if (validTweets.length > 0) {
           let combinedContent = validTweets.join("\n\n");
           
-          // Add location and scheduled date if set
           if (location.trim()) {
             combinedContent += `\n📍 ${location}`;
           }
@@ -190,7 +185,6 @@ const TweetComposer = () => {
     setTweetText(text);
     setCursorPosition(position);
     
-    // Check for mentions
     const textBeforeCursor = text.slice(0, position);
     const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
     
@@ -217,7 +211,6 @@ const TweetComposer = () => {
       setShowMentions(false);
       setMentionQuery("");
       
-      // Focus back to textarea
       setTimeout(() => {
         if (textareaRef.current) {
           const newPosition = beforeMention.length + username.length + 2;
@@ -364,19 +357,10 @@ const TweetComposer = () => {
                 }}
               />
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
-              >
-                <Smile className="w-5 h-5" />
-              </Button>
-
               <CalendarPicker onDateSelect={handleDateSelect} />
             </div>
           </div>
 
-          {/* Location Picker */}
           <div className="relative">
             <LocationPicker
               onLocationSelect={handleLocationSelect}

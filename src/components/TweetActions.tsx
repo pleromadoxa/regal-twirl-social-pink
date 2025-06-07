@@ -1,5 +1,5 @@
 
-import { MapPin, Hash, AtSign, Smile, Calendar } from "lucide-react";
+import { MapPin, Hash, AtSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MediaUpload from "./MediaUpload";
 import AudioRecorder from "./AudioRecorder";
@@ -81,24 +81,6 @@ const TweetActions = ({
         className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
       >
         <AtSign className="w-5 h-5" />
-      </Button>
-
-      <Button 
-        type="button"
-        variant="ghost" 
-        size="sm" 
-        className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
-      >
-        <Smile className="w-5 h-5" />
-      </Button>
-
-      <Button 
-        type="button"
-        variant="ghost" 
-        size="sm" 
-        className="text-purple-500 dark:text-blue-400 hover:bg-purple-50 dark:hover:bg-blue-900/20 p-2 transition-all duration-300 hover:scale-125 hover:rotate-12 rounded-full"
-      >
-        <Calendar className="w-5 h-5" />
       </Button>
     </div>
   );
