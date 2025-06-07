@@ -14,7 +14,7 @@ import {
   sendMessage as sendMessageService, 
   markMessageAsRead 
 } from '@/services/messageService';
-import { createGroupConversation } from '@/services/groupConversationService';
+import { createGroupConversation as createGroupConversationService } from '@/services/groupConversationService';
 
 export const useEnhancedMessages = () => {
   const { user } = useAuth();
@@ -168,7 +168,7 @@ export const useEnhancedMessages = () => {
     try {
       console.log('Creating group conversation:', { groupName, participantIds, userId: user.id });
       
-      const newGroup = await createGroupConversation(
+      const newGroup = await createGroupConversationService(
         groupName,
         null, // description
         user.id,
