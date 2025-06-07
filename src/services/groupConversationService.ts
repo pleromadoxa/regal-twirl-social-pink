@@ -272,48 +272,30 @@ export const createGroupConversation = async (
       throw new Error('Failed to add creator to group');
     }
 
-    // Step 3: Add other members using a function call (bypasses RLS)
+    // Step 3: Add other members using individual inserts for now
     if (memberIds.length > 0) {
-      try {
-        // Use rpc to add members as the group creator
-        const { error: membersError } = await supabase.rpc('add_group_members', {
-          group_id: groupData.id,
-          member_ids: memberIds,
-          creator_id: createdBy
-        });
+      let successfullyAdded = 0;
+      
+      for (const memberId of memberIds) {
+        try {
+          const { error: memberError } = await supabase
+            .from('group_conversation_members')
+            .insert({
+              group_id: groupData.id,
+              user_id: memberId,
+              role: 'member'
+            });
 
-        if (membersError) {
-          console.error('Error adding members via RPC:', membersError);
-          // If RPC fails, fall back to individual inserts
-          console.log('Falling back to individual member inserts');
-          
-          let successfullyAdded = 0;
-          for (const memberId of memberIds) {
-            try {
-              const { error: memberError } = await supabase
-                .from('group_conversation_members')
-                .insert({
-                  group_id: groupData.id,
-                  user_id: memberId,
-                  role: 'member'
-                });
-
-              if (memberError) {
-                console.error(`Error adding member ${memberId}:`, memberError);
-              } else {
-                successfullyAdded++;
-              }
-            } catch (error) {
-              console.error(`Exception adding member ${memberId}:`, error);
-            }
+          if (memberError) {
+            console.error(`Error adding member ${memberId}:`, memberError);
+          } else {
+            successfullyAdded++;
           }
-          console.log(`Successfully added ${successfullyAdded} out of ${memberIds.length} members via fallback`);
-        } else {
-          console.log(`Successfully added all ${memberIds.length} members via RPC`);
+        } catch (error) {
+          console.error(`Exception adding member ${memberId}:`, error);
         }
-      } catch (error) {
-        console.error('Exception in member addition:', error);
       }
+      console.log(`Successfully added ${successfullyAdded} out of ${memberIds.length} members`);
     }
 
     // Step 4: Build and return the group object

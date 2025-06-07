@@ -980,6 +980,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_group_members: {
+        Args: { group_id: string; member_ids: string[]; creator_id: string }
+        Returns: undefined
+      }
       cleanup_expired_stories: {
         Args: Record<PropertyKey, never>
         Returns: undefined
