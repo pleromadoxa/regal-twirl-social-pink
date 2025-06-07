@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -89,19 +88,18 @@ const Auth = () => {
             <p className="text-white/80 text-lg mt-4 text-center">
               Welcome to the Christian Network
             </p>
-          </div>
-
-          {/* Right Side - Auth Form */}
-          <div className="w-full max-w-2xl">
-            {/* Centered Logo */}
-            <div className="flex justify-center mb-8">
+            {/* Moved Logo Here */}
+            <div className="flex justify-center mt-4">
               <img 
                 src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
                 alt="Network Logo" 
                 className="h-20 w-auto"
               />
             </div>
+          </div>
 
+          {/* Right Side - Auth Form */}
+          <div className="w-full max-w-2xl">
             {/* Centered Auth Form */}
             <Card className="w-full bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
               <CardHeader className="text-center">
