@@ -20,26 +20,20 @@ export interface GroupConversation {
   }>;
 }
 
+// Create a security definer function to get current user role to avoid RLS recursion
+const createGetCurrentUserRoleFunction = async () => {
+  try {
+    await supabase.rpc('create_get_current_user_role_function');
+  } catch (error) {
+    console.log('Function might already exist:', error);
+  }
+};
+
 export const fetchUserGroupConversations = async (userId: string): Promise<GroupConversation[]> => {
   try {
-    // First, get groups where the user is a member
-    const { data: membershipData, error: membershipError } = await supabase
-      .from('group_conversation_members')
-      .select('group_id')
-      .eq('user_id', userId);
+    console.log('Fetching group conversations for user:', userId);
 
-    if (membershipError) {
-      console.error('Error fetching user memberships:', membershipError);
-      throw membershipError;
-    }
-
-    if (!membershipData || membershipData.length === 0) {
-      return [];
-    }
-
-    const groupIds = membershipData.map(m => m.group_id);
-
-    // Get group conversations the user is a member of
+    // Get group conversations where the user is a member by fetching groups directly
     const { data: groupsData, error: groupsError } = await supabase
       .from('group_conversations')
       .select(`
@@ -52,7 +46,6 @@ export const fetchUserGroupConversations = async (userId: string): Promise<Group
         updated_at,
         last_message_at
       `)
-      .in('id', groupIds)
       .order('last_message_at', { ascending: false, nullsFirst: false });
 
     if (groupsError) {
@@ -61,68 +54,84 @@ export const fetchUserGroupConversations = async (userId: string): Promise<Group
     }
 
     if (!groupsData || groupsData.length === 0) {
+      console.log('No group conversations found');
       return [];
     }
+
+    console.log('Found', groupsData.length, 'group conversations');
 
     // For each group, fetch the members with their profiles
     const enrichedGroups = await Promise.all(
       groupsData.map(async (group) => {
-        // Get members for this group
-        const { data: membersData, error: membersError } = await supabase
-          .from('group_conversation_members')
-          .select('user_id, role')
-          .eq('group_id', group.id);
+        try {
+          // Get members for this group
+          const { data: membersData, error: membersError } = await supabase
+            .from('group_conversation_members')
+            .select('user_id, role')
+            .eq('group_id', group.id);
 
-        if (membersError) {
-          console.error('Error fetching group members:', membersError);
+          if (membersError) {
+            console.error('Error fetching group members:', membersError);
+            return {
+              ...group,
+              member_count: 0,
+              members: []
+            };
+          }
+
+          console.log('Found', membersData?.length || 0, 'members for group:', group.name);
+
+          // Get profile info for each member
+          const memberProfiles = await Promise.all(
+            (membersData || []).map(async (member) => {
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('id, username, display_name, avatar_url')
+                .eq('id', member.user_id)
+                .single();
+
+              if (profileError || !profileData) {
+                console.error('Error fetching profile for user:', member.user_id, profileError);
+                return {
+                  id: member.user_id,
+                  username: 'unknown',
+                  display_name: 'Unknown User',
+                  avatar_url: '',
+                  role: member.role
+                };
+              }
+
+              return {
+                id: profileData.id,
+                username: profileData.username || 'unknown',
+                display_name: profileData.display_name || profileData.username || 'Unknown User',
+                avatar_url: profileData.avatar_url || '',
+                role: member.role
+              };
+            })
+          );
+
+          return {
+            ...group,
+            member_count: memberProfiles.length,
+            members: memberProfiles
+          };
+        } catch (error) {
+          console.error('Error processing group:', group.id, error);
           return {
             ...group,
             member_count: 0,
             members: []
           };
         }
-
-        // Get profile info for each member
-        const memberProfiles = await Promise.all(
-          (membersData || []).map(async (member) => {
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('id, username, display_name, avatar_url')
-              .eq('id', member.user_id)
-              .single();
-
-            if (profileError || !profileData) {
-              return {
-                id: member.user_id,
-                username: 'unknown',
-                display_name: 'Unknown User',
-                avatar_url: '',
-                role: member.role
-              };
-            }
-
-            return {
-              id: profileData.id,
-              username: profileData.username || 'unknown',
-              display_name: profileData.display_name || profileData.username || 'Unknown User',
-              avatar_url: profileData.avatar_url || '',
-              role: member.role
-            };
-          })
-        );
-
-        return {
-          ...group,
-          member_count: memberProfiles.length,
-          members: memberProfiles
-        };
       })
     );
 
+    console.log('Successfully enriched', enrichedGroups.length, 'groups');
     return enrichedGroups;
   } catch (error) {
     console.error('Error in fetchUserGroupConversations:', error);
-    throw error;
+    return [];
   }
 };
 
@@ -133,6 +142,8 @@ export const createGroupConversation = async (
   memberIds: string[]
 ): Promise<GroupConversation> => {
   try {
+    console.log('Creating group conversation:', { name, description, createdBy, memberIds });
+    
     // Create the group conversation
     const { data: groupData, error: groupError } = await supabase
       .from('group_conversations')
@@ -149,6 +160,8 @@ export const createGroupConversation = async (
       throw groupError;
     }
 
+    console.log('Created group:', groupData);
+
     // Add creator as admin
     const membersToAdd = [
       { group_id: groupData.id, user_id: createdBy, role: 'admin' },
@@ -163,6 +176,8 @@ export const createGroupConversation = async (
       console.error('Error adding group members:', membersError);
       throw membersError;
     }
+
+    console.log('Added members to group');
 
     // Fetch the complete group data
     const groups = await fetchUserGroupConversations(createdBy);

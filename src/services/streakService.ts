@@ -10,19 +10,26 @@ export interface StreakData {
 
 export const calculateStreak = async (conversationId: string): Promise<number> => {
   try {
+    console.log('Calculating streak for conversation:', conversationId);
+    
     // Get all messages for this conversation, ordered by date
     const { data: messages, error } = await supabase
       .from('messages')
-      .select('created_at, sender_id')
-      .or(`recipient_id.eq.${conversationId.split('-')[0]},recipient_id.eq.${conversationId.split('-')[1]}`)
+      .select('created_at, sender_id, recipient_id')
+      .or(`and(sender_id.in.(select participant_1 from conversations where id='${conversationId}'),recipient_id.in.(select participant_2 from conversations where id='${conversationId}')),and(sender_id.in.(select participant_2 from conversations where id='${conversationId}'),recipient_id.in.(select participant_1 from conversations where id='${conversationId}'))`)
       .order('created_at', { ascending: false });
 
-    if (error || !messages) {
+    if (error) {
       console.error('Error fetching messages for streak calculation:', error);
       return 0;
     }
 
-    if (messages.length === 0) return 0;
+    if (!messages || messages.length === 0) {
+      console.log('No messages found for conversation:', conversationId);
+      return 0;
+    }
+
+    console.log('Found', messages.length, 'messages for streak calculation');
 
     // Group messages by UTC date
     const messagesByDate = new Map<string, boolean>();
@@ -30,6 +37,8 @@ export const calculateStreak = async (conversationId: string): Promise<number> =
       const utcDate = new Date(message.created_at).toISOString().split('T')[0];
       messagesByDate.set(utcDate, true);
     });
+
+    console.log('Messages grouped by date:', Array.from(messagesByDate.keys()));
 
     // Calculate current streak
     let currentStreak = 0;
@@ -59,6 +68,7 @@ export const calculateStreak = async (conversationId: string): Promise<number> =
       }
     }
 
+    console.log('Calculated streak:', currentStreak, 'for conversation:', conversationId);
     return currentStreak;
   } catch (error) {
     console.error('Error calculating streak:', error);
@@ -70,13 +80,19 @@ export const updateConversationStreak = async (conversationId: string): Promise<
   try {
     const streak = await calculateStreak(conversationId);
     
-    await supabase
+    const { error } = await supabase
       .from('conversations')
       .update({ 
         streak_count: streak,
         last_message_at: new Date().toISOString()
       })
       .eq('id', conversationId);
+
+    if (error) {
+      console.error('Error updating conversation streak:', error);
+    } else {
+      console.log('Updated conversation streak to:', streak);
+    }
   } catch (error) {
     console.error('Error updating conversation streak:', error);
   }
