@@ -107,7 +107,17 @@ const IncomingCallPopup = ({
   if (!isVisible || !isRinging) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center"
+      style={{ 
+        zIndex: 2147483647,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+      }}
+    >
       <Card className="w-96 bg-white dark:bg-slate-800 shadow-2xl animate-in zoom-in-95 duration-300">
         <CardContent className="p-8">
           <div className="text-center space-y-6">

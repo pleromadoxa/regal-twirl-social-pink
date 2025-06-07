@@ -7,13 +7,15 @@ import {
   MicOff, 
   PhoneOff,
   Volume2,
-  VolumeX
+  VolumeX,
+  Minimize2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCallSounds } from '@/hooks/useCallSounds';
 import { useCallHistory } from '@/hooks/useCallHistory';
+import MinimizedCallWidget from './MinimizedCallWidget';
 
 interface AudioCallProps {
   conversationId: string;
@@ -36,6 +38,7 @@ const AudioCall = ({
   const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(false);
   const [callStatus, setCallStatus] = useState<'connecting' | 'connected' | 'ended'>('connecting');
   const [callDuration, setCallDuration] = useState(0);
+  const [isMinimized, setIsMinimized] = useState(false);
   
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -297,11 +300,29 @@ const AudioCall = ({
     };
   }, []);
 
+  // Render minimized widget if minimized
+  if (isMinimized) {
+    return (
+      <MinimizedCallWidget
+        otherUserName={otherUserName}
+        otherUserAvatar={otherUserAvatar}
+        callType="audio"
+        duration={formatCallDuration(callDuration)}
+        isAudioEnabled={isAudioEnabled}
+        isVideoEnabled={false}
+        onMaximize={() => setIsMinimized(false)}
+        onEndCall={handleEndCall}
+        onToggleAudio={toggleAudio}
+        onToggleVideo={() => {}}
+      />
+    );
+  }
+
   return (
     <div 
       className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black flex flex-col items-center justify-center"
       style={{ 
-        zIndex: 99999999,
+        zIndex: 2147483647,
         position: 'fixed',
         top: 0,
         left: 0,
@@ -313,7 +334,17 @@ const AudioCall = ({
       <audio ref={remoteAudioRef} autoPlay />
       
       {/* Call interface */}
-      <div className="text-center text-white space-y-8 relative" style={{ zIndex: 100000000 }}>
+      <div className="text-center text-white space-y-8 relative">
+        {/* Minimize button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsMinimized(true)}
+          className="absolute -top-12 right-0 text-white/70 hover:text-white hover:bg-white/10 rounded-full w-10 h-10 p-0"
+        >
+          <Minimize2 className="w-5 h-5" />
+        </Button>
+
         {/* User avatar */}
         <div className="relative">
           <Avatar className="w-32 h-32 mx-auto border-4 border-white/20">
@@ -375,7 +406,7 @@ const AudioCall = ({
       </div>
 
       {/* Call status indicator */}
-      <div className="absolute top-8 left-1/2 transform -translate-x-1/2" style={{ zIndex: 100000000 }}>
+      <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
         <div className="flex items-center space-x-2 text-white/75">
           <div className={`w-2 h-2 rounded-full ${
             callStatus === 'connected' ? 'bg-green-400' :

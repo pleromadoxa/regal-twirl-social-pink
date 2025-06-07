@@ -8,13 +8,15 @@ import {
   MicOff, 
   PhoneOff,
   Monitor,
-  MonitorOff
+  MonitorOff,
+  Minimize2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCallSounds } from '@/hooks/useCallSounds';
 import { useCallHistory } from '@/hooks/useCallHistory';
+import MinimizedCallWidget from './MinimizedCallWidget';
 
 interface VideoCallProps {
   conversationId: string;
@@ -28,6 +30,8 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [callStatus, setCallStatus] = useState<'connecting' | 'connected' | 'ended'>('connecting');
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [callDuration, setCallDuration] = useState(0);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -47,6 +51,12 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' }
     ]
+  };
+
+  const formatCallDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const initializePeerConnection = () => {
@@ -303,6 +313,22 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
     }
   };
 
+  // Call duration timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (callStatus === 'connected' && callStartTimeRef.current) {
+      interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - callStartTimeRef.current!) / 1000);
+        setCallDuration(elapsed);
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [callStatus]);
+
   useEffect(() => {
     startCall();
     
@@ -311,11 +337,29 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
     };
   }, []);
 
+  // Render minimized widget if minimized
+  if (isMinimized) {
+    return (
+      <MinimizedCallWidget
+        otherUserName="Video Call"
+        otherUserAvatar=""
+        callType="video"
+        duration={formatCallDuration(callDuration)}
+        isAudioEnabled={isAudioEnabled}
+        isVideoEnabled={isVideoEnabled}
+        onMaximize={() => setIsMinimized(false)}
+        onEndCall={handleEndCall}
+        onToggleAudio={toggleAudio}
+        onToggleVideo={toggleVideo}
+      />
+    );
+  }
+
   return (
     <div 
       className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black flex flex-col"
       style={{ 
-        zIndex: 99999999,
+        zIndex: 2147483647,
         position: 'fixed',
         top: 0,
         left: 0,
@@ -334,7 +378,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
         
         {/* Connecting overlay */}
         {callStatus === 'connecting' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm" style={{ zIndex: 100000000 }}>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm">
             <Card className="bg-black/60 border-white/20 text-white backdrop-blur-lg">
               <CardContent className="p-8 text-center">
                 <div className="relative mb-6">
@@ -349,7 +393,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       </div>
 
       {/* Local video */}
-      <div className="absolute top-6 right-6 w-40 h-30 bg-black/80 rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl" style={{ zIndex: 100000000 }}>
+      <div className="absolute top-6 right-6 w-40 h-30 bg-black/80 rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl">
         <video
           ref={localVideoRef}
           autoPlay
@@ -364,22 +408,25 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
         )}
       </div>
 
+      {/* Minimize button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsMinimized(true)}
+        className="absolute top-6 left-6 text-white/70 hover:text-white hover:bg-white/10 rounded-full w-10 h-10 p-0"
+        style={{ zIndex: 2147483648 }}
+      >
+        <Minimize2 className="w-5 h-5" />
+      </Button>
+
       {/* Call controls */}
-      <Card className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/60 border-white/20 backdrop-blur-lg" style={{ zIndex: 100000000 }}>
+      <Card className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/60 border-white/20 backdrop-blur-lg">
         <CardContent className="p-4">
           <div className="flex items-center space-x-4">
             <Button
               variant={isAudioEnabled ? "default" : "destructive"}
               size="lg"
-              onClick={() => {
-                if (localStreamRef.current) {
-                  const audioTrack = localStreamRef.current.getAudioTracks()[0];
-                  if (audioTrack) {
-                    audioTrack.enabled = !isAudioEnabled;
-                    setIsAudioEnabled(!isAudioEnabled);
-                  }
-                }
-              }}
+              onClick={toggleAudio}
               className="rounded-full w-14 h-14 p-0"
             >
               {isAudioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
@@ -388,15 +435,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
             <Button
               variant={isVideoEnabled ? "default" : "destructive"}
               size="lg"
-              onClick={() => {
-                if (localStreamRef.current) {
-                  const videoTrack = localStreamRef.current.getVideoTracks()[0];
-                  if (videoTrack) {
-                    videoTrack.enabled = !isVideoEnabled;
-                    setIsVideoEnabled(!isVideoEnabled);
-                  }
-                }
-              }}
+              onClick={toggleVideo}
               className="rounded-full w-14 h-14 p-0"
             >
               {isVideoEnabled ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
@@ -405,41 +444,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
             <Button
               variant={isScreenSharing ? "secondary" : "outline"}
               size="lg"
-              onClick={async () => {
-                try {
-                  if (!isScreenSharing) {
-                    const screenStream = await navigator.mediaDevices.getDisplayMedia({
-                      video: true,
-                      audio: true
-                    });
-                    
-                    if (peerConnectionRef.current && localStreamRef.current) {
-                      const sender = peerConnectionRef.current.getSenders().find(s => 
-                        s.track && s.track.kind === 'video'
-                      );
-                      
-                      if (sender) {
-                        await sender.replaceTrack(screenStream.getVideoTracks()[0]);
-                      }
-                    }
-                    
-                    setIsScreenSharing(true);
-                    
-                    screenStream.getVideoTracks()[0].addEventListener('ended', () => {
-                      setIsScreenSharing(false);
-                    });
-                  } else {
-                    setIsScreenSharing(false);
-                  }
-                } catch (error) {
-                  console.error('Error toggling screen share:', error);
-                  toast({
-                    title: "Screen share error",
-                    description: "Could not start screen sharing",
-                    variant: "destructive"
-                  });
-                }
-              }}
+              onClick={toggleScreenShare}
               className="rounded-full w-14 h-14 p-0"
             >
               {isScreenSharing ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
@@ -458,7 +463,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       </Card>
 
       {/* Call status */}
-      <div className="absolute top-6 left-6 text-white" style={{ zIndex: 100000000 }}>
+      <div className="absolute top-6 left-1/2 transform -translate-x-1/2 text-white">
         <div className="flex items-center space-x-3 bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
           <div className={`w-3 h-3 rounded-full ${
             callStatus === 'connected' ? 'bg-green-400 animate-pulse' :
@@ -467,7 +472,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
           }`}></div>
           <span className="text-sm font-medium">
             {callStatus === 'connecting' && 'Connecting...'}
-            {callStatus === 'connected' && 'Connected'}
+            {callStatus === 'connected' && formatCallDuration(callDuration)}
             {callStatus === 'ended' && 'Call ended'}
           </span>
         </div>
