@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { WavyBackground } from '@/components/ui/wavy-background';
 import { AppleHelloEnglishEffect } from '@/components/ui/apple-hello-effect';
+import { GlobeDemo } from '@/components/GlobeDemo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -80,14 +81,11 @@ const Auth = () => {
         className="flex items-center justify-center"
       >
         <div className="w-full max-w-6xl flex items-center justify-center gap-12">
-          {/* Left Side - Apple Hello Effect */}
+          {/* Left Side - Globe Demo */}
           <div className="hidden lg:flex flex-col items-center justify-center flex-1">
-            <AppleHelloEnglishEffect 
-              className="h-32 w-auto text-white stroke-white" 
-              speed={1.2}
-            />
+            <GlobeDemo />
             <p className="text-white/80 text-lg mt-4 text-center">
-              Welcome to the Christian Network
+              Join the Global Christian Network
             </p>
           </div>
 
