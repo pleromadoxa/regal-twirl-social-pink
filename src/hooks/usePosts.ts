@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -212,15 +211,6 @@ export const usePosts = () => {
     
     // Add the new post to the beginning of the posts array
     setPosts(prevPosts => [enrichedPost, ...prevPosts]);
-    
-    // Show a toast notification for new posts (optional, only if not from current user)
-    if (user && newPost.user_id !== user.id) {
-      toast({
-        title: "New post",
-        description: `@${profileData?.username || 'someone'} just posted`,
-        duration: 3000,
-      });
-    }
   };
 
   // Handle real-time post updates (likes, retweets, etc.)
@@ -286,7 +276,7 @@ export const usePosts = () => {
         description: "Your post has been published successfully."
       });
 
-      // Note: We don't need to manually refresh posts here anymore since real-time will handle it
+      // Note: The real-time subscription will handle adding the new post to the list
     } catch (error) {
       console.error('Error in createPost:', error);
       toast({
@@ -465,12 +455,9 @@ export const usePosts = () => {
   useEffect(() => {
     fetchPosts();
 
-    // Create a unique channel name to avoid conflicts
-    const channelName = `posts-realtime-${Date.now()}-${Math.random()}`;
-    
-    // Set up real-time subscription for posts
+    // Set up real-time subscription for posts with a more specific channel
     const channel = supabase
-      .channel(channelName)
+      .channel('posts-realtime-updates')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -486,7 +473,9 @@ export const usePosts = () => {
         schema: 'public',
         table: 'posts'
       }, handlePostDelete)
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Posts real-time subscription status:', status);
+      });
 
     // Cleanup subscription on unmount
     return () => {
