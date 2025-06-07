@@ -5,7 +5,6 @@ import RightSidebar from "@/components/RightSidebar";
 import PostComposer from "@/components/PostComposer";
 import PostsList from "@/components/PostsList";
 import { StoriesBar } from "@/components/StoriesBar";
-import { WorldMapDemo } from "@/components/WorldMapDemo";
 
 const Index = () => {
   const { user } = useAuth();
@@ -20,11 +19,6 @@ const Index = () => {
       
       <div className="flex-1 flex gap-6">
         <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
-          {/* World Map Section */}
-          <div className="border-b border-purple-200 dark:border-purple-800">
-            <WorldMapDemo />
-          </div>
-
           {/* Stories Bar */}
           <div className="border-b border-purple-200 dark:border-purple-800 p-4">
             <StoriesBar />
