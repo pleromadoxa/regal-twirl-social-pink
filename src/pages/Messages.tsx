@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -86,6 +85,34 @@ const Messages = () => {
       conv.other_user?.username?.toLowerCase().includes(searchLower)
     );
   });
+
+  // Mock group chats data for now - in a real app this would come from the database
+  const groupChats = [
+    {
+      id: "group-1",
+      name: "Family Group",
+      members: 4,
+      lastMessage: "Hey everyone! How's it going?",
+      lastMessageTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      avatar: null
+    },
+    {
+      id: "group-2", 
+      name: "Work Team",
+      members: 8,
+      lastMessage: "The project deadline is next Friday",
+      lastMessageTime: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+      avatar: null
+    },
+    {
+      id: "group-3",
+      name: "Book Club",
+      members: 12,
+      lastMessage: "What did everyone think of chapter 5?",
+      lastMessageTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+      avatar: null
+    }
+  ];
 
   // Get all conversation participants for group calls
   const allParticipants = conversations.map(conv => conv.other_user).filter(Boolean) as Array<{
@@ -187,8 +214,9 @@ const Messages = () => {
 
           {/* Conversation Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-4 mx-4 mt-2">
+            <TabsList className="grid w-full grid-cols-5 mx-4 mt-2">
               <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+              <TabsTrigger value="groups" className="text-xs">Groups</TabsTrigger>
               <TabsTrigger value="calls" className="text-xs">Calls</TabsTrigger>
               <TabsTrigger value="unread" className="text-xs">Unread</TabsTrigger>
               <TabsTrigger value="archived" className="text-xs">Archive</TabsTrigger>
@@ -273,6 +301,66 @@ const Messages = () => {
                     </h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       Start your first conversation!
+                    </p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="groups" className="flex-1 overflow-hidden">
+              {/* Group Chats List */}
+              <div className="p-4 space-y-2 overflow-y-auto h-full">
+                {groupChats.length > 0 ? (
+                  groupChats.map((group) => (
+                    <Card 
+                      key={group.id} 
+                      className="hover:shadow-md transition-all cursor-pointer hover:bg-purple-50/50 dark:hover:bg-purple-900/10"
+                    >
+                      <CardContent className="p-3">
+                        <div
+                          onClick={() => console.log('Group selected:', group.id)}
+                          className="flex items-center space-x-3 w-full"
+                        >
+                          <div className="relative">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
+                              <Users className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-blue-400 border-2 border-white dark:border-slate-800 rounded-full flex items-center justify-center">
+                              <span className="text-xs text-white font-bold">{group.members}</span>
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                                  {group.name}
+                                </h3>
+                                <Badge variant="secondary" className="text-xs">
+                                  {group.members} members
+                                </Badge>
+                              </div>
+                              <span className="text-xs text-slate-500">
+                                {formatDistanceToNow(group.lastMessageTime, { addSuffix: true })}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 truncate flex-1 mt-1">
+                              {group.lastMessage}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Users className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                      No group chats yet
+                    </h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Create your first group chat to get started!
                     </p>
                   </div>
                 )}
