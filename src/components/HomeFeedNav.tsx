@@ -23,11 +23,7 @@ const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
   ];
 
   const handleTabChange = (index: number | null) => {
-    if (index === null) {
-      setActiveFilter('all');
-      onFilterChange?.('all');
-      return;
-    }
+    if (index === null) return;
     
     const filters: ('all' | 'professional' | 'trending' | 'news' | 'stocks' | 'alerts')[] = 
       ['all', 'professional', 'trending', 'news', 'stocks', 'alerts'];
@@ -50,7 +46,7 @@ const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
       case 'alerts':
         return <PriceAlertsWidget />;
       default:
-        return null; // For 'all', 'professional', 'trending' - content is handled by parent component
+        return null;
     }
   };
 
@@ -62,7 +58,6 @@ const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
           onChange={handleTabChange}
           activeColor="text-purple-600 dark:text-purple-400"
           className="border-purple-200 dark:border-purple-800 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm"
-          defaultSelected={0}
         />
       </div>
       
