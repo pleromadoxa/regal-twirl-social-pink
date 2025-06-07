@@ -55,9 +55,6 @@ const ProfessionalAccountProfile = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Check if current user owns this professional account
-  const isOwnPage = user && businessPage && user.id === businessPage.owner_id;
-
   useEffect(() => {
     if (pageId) {
       fetchBusinessPage();
@@ -235,28 +232,24 @@ const ProfessionalAccountProfile = () => {
                 </Avatar>
                 
                 <div className="flex gap-2 mt-16">
-                  {!isOwnPage && (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={handleMessage}
-                        className="rounded-xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
-                      >
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Message
-                      </Button>
-                      <Button
-                        onClick={handleFollow}
-                        className={`rounded-xl ${
-                          isFollowing
-                            ? 'bg-slate-500 hover:bg-slate-600'
-                            : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
-                        } text-white`}
-                      >
-                        {isFollowing ? 'Following' : 'Follow'}
-                      </Button>
-                    </>
-                  )}
+                  <Button
+                    variant="outline"
+                    onClick={handleMessage}
+                    className="rounded-xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Message
+                  </Button>
+                  <Button
+                    onClick={handleFollow}
+                    className={`rounded-xl ${
+                      isFollowing
+                        ? 'bg-slate-500 hover:bg-slate-600'
+                        : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
+                    } text-white`}
+                  >
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </Button>
                 </div>
               </div>
               
