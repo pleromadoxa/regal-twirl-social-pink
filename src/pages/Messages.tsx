@@ -270,14 +270,6 @@ const Messages = () => {
             {/* Quick Actions */}
             <div className="flex items-center gap-2">
               <ConversationStarter />
-              <GroupCreationDialog 
-                onCreateGroup={handleCreateGroup}
-                trigger={
-                  <Button variant="outline" size="sm" className="rounded-full">
-                    <Users className="w-4 h-4" />
-                  </Button>
-                }
-              />
               <GroupInviteDialog 
                 onGroupJoined={handleGroupJoined}
                 trigger={
