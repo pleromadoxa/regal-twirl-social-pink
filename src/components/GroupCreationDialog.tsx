@@ -107,15 +107,33 @@ const GroupCreationDialog = ({ onCreateGroup, trigger }: GroupCreationDialogProp
 
     setLoading(true);
     try {
+      console.log('Creating group with participants:', participants.map(p => p.id));
       const participantIds = participants.map(p => p.id);
       const conversationId = await onCreateGroup(groupName.trim(), participantIds);
+      
       if (conversationId) {
+        console.log('Group created successfully:', conversationId);
+        toast({
+          title: "Group created!",
+          description: `Successfully created "${groupName}" with ${participants.length} members`,
+        });
+        
+        // Reset form and close dialog
         setOpen(false);
         setGroupName('');
         setParticipants([]);
         setSearchQuery('');
         setSearchResults([]);
+      } else {
+        throw new Error('Failed to create group - no conversation ID returned');
       }
+    } catch (error) {
+      console.error('Error creating group:', error);
+      toast({
+        title: "Failed to create group",
+        description: error instanceof Error ? error.message : "Something went wrong",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
