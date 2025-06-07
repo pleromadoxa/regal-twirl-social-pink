@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -86,7 +87,7 @@ const Auth = () => {
               speed={1.2}
             />
             <p className="text-white/80 text-lg mt-4 text-center">
-              Welcome to the Network
+              Welcome to the Christian Network
             </p>
           </div>
 
