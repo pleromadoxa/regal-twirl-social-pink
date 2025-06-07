@@ -10,7 +10,7 @@ import RightSidebar from "@/components/RightSidebar";
 import PostsList from "@/components/PostsList";
 import TweetComposer from "@/components/TweetComposer";
 import GalleryUpload from "@/components/GalleryUpload";
-import { InteractiveBentoGallery } from "@/components/ui/interactive-bento-gallery";
+import InteractiveBentoGallery from "@/components/ui/interactive-bento-gallery";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -465,7 +465,8 @@ const Profile = () => {
                 {mediaItems.length > 0 ? (
                   <InteractiveBentoGallery 
                     mediaItems={mediaItems}
-                    className="w-full"
+                    title=""
+                    description=""
                   />
                 ) : (
                   <div className="text-center py-12">

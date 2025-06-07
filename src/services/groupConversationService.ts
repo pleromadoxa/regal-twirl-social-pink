@@ -118,13 +118,7 @@ export const fetchUserGroupConversations = async (userId: string): Promise<Group
             .select(`
               user_id,
               role,
-              joined_at,
-              profiles!inner(
-                id,
-                username,
-                display_name,
-                avatar_url
-              )
+              joined_at
             `)
             .eq('group_id', group.id);
 
@@ -132,41 +126,61 @@ export const fetchUserGroupConversations = async (userId: string): Promise<Group
             console.error('Error fetching group members:', membersError);
           }
 
+          // Get profiles for the members
+          const memberProfiles = [];
+          if (membersData && membersData.length > 0) {
+            const memberIds = membersData.map(m => m.user_id);
+            const { data: profilesData } = await supabase
+              .from('profiles')
+              .select('id, username, display_name, avatar_url')
+              .in('id', memberIds);
+
+            if (profilesData) {
+              for (const member of membersData) {
+                const profile = profilesData.find(p => p.id === member.user_id);
+                if (profile) {
+                  memberProfiles.push({
+                    id: profile.id,
+                    username: profile.username || 'unknown',
+                    display_name: profile.display_name || profile.username || 'Unknown User',
+                    avatar_url: profile.avatar_url || '',
+                    role: member.role,
+                    joined_at: member.joined_at
+                  });
+                }
+              }
+            }
+          }
+
           // Get last message
           const { data: lastMessageData } = await supabase
             .from('group_messages')
-            .select(`
-              content,
-              created_at,
-              sender_id,
-              profiles!inner(
-                display_name,
-                username
-              )
-            `)
+            .select('content, created_at, sender_id')
             .eq('group_id', group.id)
             .order('created_at', { ascending: false })
             .limit(1)
             .single();
 
-          const memberProfiles = (membersData || []).map((member: any) => ({
-            id: member.profiles.id,
-            username: member.profiles.username || 'unknown',
-            display_name: member.profiles.display_name || member.profiles.username || 'Unknown User',
-            avatar_url: member.profiles.avatar_url || '',
-            role: member.role,
-            joined_at: member.joined_at
-          }));
+          let lastMessage = undefined;
+          if (lastMessageData) {
+            const { data: senderProfile } = await supabase
+              .from('profiles')
+              .select('display_name, username')
+              .eq('id', lastMessageData.sender_id)
+              .single();
+
+            lastMessage = {
+              content: lastMessageData.content,
+              sender_name: senderProfile?.display_name || senderProfile?.username || 'Unknown',
+              created_at: lastMessageData.created_at
+            };
+          }
 
           return {
             ...group,
             member_count: memberProfiles.length,
             members: memberProfiles,
-            last_message: lastMessageData ? {
-              content: lastMessageData.content,
-              sender_name: lastMessageData.profiles?.display_name || lastMessageData.profiles?.username || 'Unknown',
-              created_at: lastMessageData.created_at
-            } : undefined
+            last_message: lastMessage
           };
         } catch (error) {
           console.error('Error processing group:', group.id, error);
