@@ -1,14 +1,16 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
-import TweetComposer from "@/components/TweetComposer";
+import AIPostComposer from "@/components/AIPostComposer";
 import PostsList from "@/components/PostsList";
 import HomeFeedNav from "@/components/HomeFeedNav";
 import { StoriesBar } from "@/components/StoriesBar";
 import { FinancialNav } from "@/components/FinancialNav";
+import { FinancialNewsFeed } from "@/components/FinancialNewsFeed";
+import { StockMarketWidget } from "@/components/StockMarketWidget";
+import { PriceAlertsWidget } from "@/components/PriceAlertsWidget";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePosts } from "@/hooks/usePosts";
 
@@ -103,6 +105,19 @@ const Index = () => {
     }
   };
 
+  const renderFinancialContent = () => {
+    switch (financialFilter) {
+      case 'news':
+        return <FinancialNewsFeed />;
+      case 'stocks':
+        return <StockMarketWidget />;
+      case 'alerts':
+        return <PriceAlertsWidget />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex h-screen">
       <SidebarNav />
@@ -129,45 +144,43 @@ const Index = () => {
         {/* Scrollable Content */}
         <ScrollArea className="flex-1">
           <div>
-            {feedFilter === 'all' && !financialFilter && <TweetComposer />}
-            
-            <div className="border-t border-purple-200 dark:border-purple-800">
-              {financialFilter ? (
-                <div className="p-8 text-center">
-                  <p className="text-slate-500 dark:text-slate-400">
-                    {financialFilter === 'news' && 'Financial news feed coming soon...'}
-                    {financialFilter === 'stocks' && 'Stock market data coming soon...'}
-                    {financialFilter === 'alerts' && 'Price alerts dashboard coming soon...'}
-                  </p>
-                </div>
-              ) : postsLoading ? (
-                <div className="p-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-                  <p className="mt-4 text-slate-500">Loading your feed...</p>
-                </div>
-              ) : filteredPosts.length > 0 ? (
-                <PostsList 
-                  posts={filteredPosts}
-                  onLike={toggleLike}
-                  onRetweet={toggleRetweet}
-                  onPin={togglePin}
-                  onDelete={deletePost}
-                />
-              ) : (
-                <div className="p-8 text-center">
-                  <p className="text-slate-500 dark:text-slate-400">
-                    {feedFilter === 'professional' && 'No professional posts to show yet.'}
-                    {feedFilter === 'trending' && 'No trending posts at the moment.'}
-                    {feedFilter === 'all' && 'No posts to show yet.'}
-                  </p>
-                  {feedFilter !== 'all' && (
-                    <p className="text-sm text-slate-400 dark:text-slate-500 mt-2">
-                      Try switching to "All Posts" to see more content.
-                    </p>
+            {financialFilter ? (
+              renderFinancialContent()
+            ) : (
+              <>
+                {feedFilter === 'all' && <AIPostComposer />}
+                
+                <div className="border-t border-purple-200 dark:border-purple-800">
+                  {postsLoading ? (
+                    <div className="p-8 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                      <p className="mt-4 text-slate-500">Loading your feed...</p>
+                    </div>
+                  ) : filteredPosts.length > 0 ? (
+                    <PostsList 
+                      posts={filteredPosts}
+                      onLike={toggleLike}
+                      onRetweet={toggleRetweet}
+                      onPin={togglePin}
+                      onDelete={deletePost}
+                    />
+                  ) : (
+                    <div className="p-8 text-center">
+                      <p className="text-slate-500 dark:text-slate-400">
+                        {feedFilter === 'professional' && 'No professional posts to show yet.'}
+                        {feedFilter === 'trending' && 'No trending posts at the moment.'}
+                        {feedFilter === 'all' && 'No posts to show yet.'}
+                      </p>
+                      {feedFilter !== 'all' && (
+                        <p className="text-sm text-slate-400 dark:text-slate-500 mt-2">
+                          Try switching to "All Posts" to see more content.
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </ScrollArea>
       </main>
