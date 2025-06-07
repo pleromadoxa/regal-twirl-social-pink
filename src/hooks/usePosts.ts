@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +32,8 @@ export const usePosts = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const enrichPostWithUserData = async (post: any, profilesMap: Map<string, any>) => {
     let userLiked = false;
@@ -455,32 +458,48 @@ export const usePosts = () => {
   useEffect(() => {
     fetchPosts();
 
-    // Set up real-time subscription for posts with a more specific channel
-    const channel = supabase
-      .channel('posts-realtime-updates')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'posts'
-      }, handleNewPost)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'posts'
-      }, handlePostUpdate)
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'posts'
-      }, handlePostDelete)
-      .subscribe((status) => {
+    // Clean up existing subscription before creating a new one
+    if (channelRef.current && isSubscribedRef.current) {
+      console.log('Cleaning up existing posts channel subscription');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+      isSubscribedRef.current = false;
+    }
+
+    // Only set up real-time subscription if we don't already have one
+    if (!isSubscribedRef.current) {
+      channelRef.current = supabase
+        .channel(`posts-realtime-updates-${Date.now()}`) // Use unique channel name
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'posts'
+        }, handleNewPost)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'posts'
+        }, handlePostUpdate)
+        .on('postgres_changes', {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'posts'
+        }, handlePostDelete);
+
+      channelRef.current.subscribe((status: string) => {
         console.log('Posts real-time subscription status:', status);
+        isSubscribedRef.current = status === 'SUBSCRIBED';
       });
+    }
 
     // Cleanup subscription on unmount
     return () => {
-      console.log('Cleaning up posts channel subscription');
-      supabase.removeChannel(channel);
+      if (channelRef.current && isSubscribedRef.current) {
+        console.log('Cleaning up posts channel subscription');
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        isSubscribedRef.current = false;
+      }
     };
   }, [user?.id]); // Only depend on user.id to prevent unnecessary re-subscriptions
 
