@@ -50,7 +50,7 @@ export const useStories = () => {
       if (error) throw error;
 
       // Check which stories the current user has viewed
-      let storiesWithViews = storiesData || [];
+      let storiesWithViews: Story[] = [];
       if (user && storiesData?.length) {
         const { data: viewsData } = await supabase
           .from('story_views')
@@ -64,7 +64,13 @@ export const useStories = () => {
           ...story,
           content_type: story.content_type as 'image' | 'video',
           user_viewed: viewedStoryIds.has(story.id)
-        }));
+        })) as Story[];
+      } else if (storiesData) {
+        storiesWithViews = storiesData.map(story => ({
+          ...story,
+          content_type: story.content_type as 'image' | 'video',
+          user_viewed: false
+        })) as Story[];
       }
 
       setStories(storiesWithViews);
@@ -147,7 +153,7 @@ export const useStories = () => {
           ? { ...story, user_viewed: true, view_count: story.view_count + 1 }
           : story
       ));
-    } catch (error) {
+    } catch (error: any) {
       // Ignore duplicate key errors
       if (!error.message?.includes('duplicate key')) {
         console.error('Error viewing story:', error);
@@ -186,9 +192,9 @@ export const useStories = () => {
   useEffect(() => {
     fetchStories();
 
-    // Set up real-time subscription
+    // Set up real-time subscription with proper cleanup
     const channel = supabase
-      .channel('stories-changes')
+      .channel(`stories-changes-${Date.now()}`) // Use unique channel name
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -199,9 +205,10 @@ export const useStories = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      // Proper cleanup
+      channel.unsubscribe();
     };
-  }, [user]);
+  }, [user?.id]); // Add user.id to dependencies
 
   return {
     stories,
