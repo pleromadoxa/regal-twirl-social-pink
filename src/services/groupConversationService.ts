@@ -222,7 +222,7 @@ export const createGroupConversation = async (
     // Generate invite code
     const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    // Create the group conversation first
+    // Step 1: Create the group conversation first
     const { data: groupData, error: groupError } = await supabase
       .from('group_conversations')
       .insert({
@@ -248,71 +248,80 @@ export const createGroupConversation = async (
 
     console.log('Successfully created group:', groupData.id);
 
-    // Add the creator as admin
-    const { error: creatorError } = await supabase
-      .from('group_conversation_members')
-      .insert({
-        group_id: groupData.id,
-        user_id: createdBy,
-        role: 'admin'
-      });
+    // Step 2: Use a timeout to ensure the group exists before adding members
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-    if (creatorError) {
-      console.error('Error adding group creator as admin:', creatorError);
-      // Try to clean up the group if we can't add the creator
-      await supabase.from('group_conversations').delete().eq('id', groupData.id);
-      throw new Error(`Failed to add creator to group: ${creatorError.message}`);
-    }
-
-    console.log('Successfully added creator as admin');
-
-    // Add other members
-    if (memberIds.length > 0) {
-      const memberInserts = memberIds.map(memberId => ({
-        group_id: groupData.id,
-        user_id: memberId,
-        role: 'member'
-      }));
-
-      const { error: membersError } = await supabase
+    // Step 3: Add the creator as admin first (one by one to avoid RLS issues)
+    try {
+      const { error: creatorError } = await supabase
         .from('group_conversation_members')
-        .insert(memberInserts);
+        .insert({
+          group_id: groupData.id,
+          user_id: createdBy,
+          role: 'admin'
+        });
 
-      if (membersError) {
-        console.error('Error adding members to group:', membersError);
-        // Continue even if some members fail to be added
-      } else {
-        console.log('Successfully added', memberIds.length, 'members to group');
+      if (creatorError) {
+        console.error('Error adding group creator as admin:', creatorError);
+        // Clean up the group if we can't add the creator
+        await supabase.from('group_conversations').delete().eq('id', groupData.id);
+        throw new Error(`Failed to add creator to group: ${creatorError.message}`);
       }
+
+      console.log('Successfully added creator as admin');
+    } catch (error) {
+      console.error('Exception adding creator:', error);
+      await supabase.from('group_conversations').delete().eq('id', groupData.id);
+      throw new Error('Failed to add creator to group');
     }
 
-    // Fetch the complete group data by getting all groups for the creator
-    const groups = await fetchUserGroupConversations(createdBy);
-    const createdGroup = groups.find(g => g.id === groupData.id);
-    
-    if (!createdGroup) {
-      console.error('Could not find created group in user groups');
-      // Return a basic group object if we can't fetch the enriched data
-      return {
-        id: groupData.id,
-        name: groupData.name,
-        description: groupData.description,
-        avatar_url: groupData.avatar_url,
-        created_by: groupData.created_by,
-        created_at: groupData.created_at,
-        updated_at: groupData.updated_at,
-        last_message_at: groupData.last_message_at,
-        is_private: groupData.is_private,
-        max_members: groupData.max_members,
-        invite_code: groupData.invite_code,
-        settings: groupData.settings,
-        member_count: memberIds.length + 1, // +1 for creator
-        members: [],
-        last_message: undefined
-      };
+    // Step 4: Add other members one by one with error handling
+    if (memberIds.length > 0) {
+      let successfullyAdded = 0;
+      
+      for (const memberId of memberIds) {
+        try {
+          const { error: memberError } = await supabase
+            .from('group_conversation_members')
+            .insert({
+              group_id: groupData.id,
+              user_id: memberId,
+              role: 'member'
+            });
+
+          if (memberError) {
+            console.error(`Error adding member ${memberId}:`, memberError);
+          } else {
+            successfullyAdded++;
+          }
+        } catch (error) {
+          console.error(`Exception adding member ${memberId}:`, error);
+        }
+      }
+
+      console.log(`Successfully added ${successfullyAdded} out of ${memberIds.length} members to group`);
     }
 
-    console.log('Successfully created and fetched group:', createdGroup.id);
+    // Step 5: Build and return the group object manually to avoid fetching issues
+    const createdGroup: GroupConversation = {
+      id: groupData.id,
+      name: groupData.name,
+      description: groupData.description,
+      avatar_url: groupData.avatar_url,
+      created_by: groupData.created_by,
+      created_at: groupData.created_at,
+      updated_at: groupData.updated_at,
+      last_message_at: groupData.last_message_at,
+      is_private: groupData.is_private,
+      max_members: groupData.max_members,
+      invite_code: groupData.invite_code,
+      settings: groupData.settings,
+      member_count: memberIds.length + 1, // +1 for creator
+      members: [], // Will be populated when the group is fetched later
+      last_message: undefined
+    };
+
+    console.log('Successfully created and returning group:', createdGroup.id);
     return createdGroup;
   } catch (error) {
     console.error('Error in createGroupConversation:', error);
