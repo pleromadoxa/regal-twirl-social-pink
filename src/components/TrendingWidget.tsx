@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,7 +57,6 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
     if (onHashtagClick) {
       onHashtagClick(trend);
     } else {
-      // Navigate to hashtag page
       navigate(`/hashtag/${trend.replace('#', '')}`);
     }
   };

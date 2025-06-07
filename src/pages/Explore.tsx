@@ -7,11 +7,13 @@ import SidebarNav from "@/components/SidebarNav";
 import UserSearch from "@/components/UserSearch";
 import TrendingWidget from "@/components/TrendingWidget";
 import { useFollow } from "@/hooks/useFollow";
-import { Search, TrendingUp, Users, Crown, Video, Heart, MessageCircle, Repeat2 } from "lucide-react";
+import { fetchRandomVerse } from "@/services/bibleService";
+import { Search, TrendingUp, Users, Crown, Video, Heart, MessageCircle, Repeat2, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface User {
   id: string;
@@ -41,6 +43,12 @@ interface Post {
   };
 }
 
+interface BibleVerse {
+  reference: string;
+  text: string;
+  translation: string;
+}
+
 const Explore = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -48,8 +56,13 @@ const Explore = () => {
   const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
   const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
   const [videoPosts, setVideoPosts] = useState<Post[]>([]);
+  const [dailyVerse, setDailyVerse] = useState<BibleVerse | null>(null);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [loadingVerse, setLoadingVerse] = useState(true);
+  const [trendingOpen, setTrendingOpen] = useState(true);
+  const [mediaOpen, setMediaOpen] = useState(true);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -62,8 +75,21 @@ const Explore = () => {
       fetchSuggestedUsers();
       fetchTrendingPosts();
       fetchVideoPosts();
+      fetchDailyVerse();
     }
   }, [user]);
+
+  const fetchDailyVerse = async () => {
+    try {
+      setLoadingVerse(true);
+      const verse = await fetchRandomVerse();
+      setDailyVerse(verse);
+    } catch (error) {
+      console.error('Error fetching daily verse:', error);
+    } finally {
+      setLoadingVerse(false);
+    }
+  };
 
   const fetchSuggestedUsers = async () => {
     if (!user) return;
@@ -71,7 +97,6 @@ const Explore = () => {
     try {
       setLoadingUsers(true);
       
-      // Get users that the current user is not following and exclude self
       const { data: following } = await supabase
         .from('follows')
         .select('following_id')
@@ -80,7 +105,6 @@ const Explore = () => {
       const followingIds = following?.map(f => f.following_id) || [];
       const excludeIds = [...followingIds, user.id];
       
-      // Build the query to exclude followed users and self
       let query = supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url, followers_count, is_verified, bio')
@@ -91,7 +115,6 @@ const Explore = () => {
 
       if (error) throw error;
 
-      // Randomly shuffle and take 5 users
       const shuffledUsers = allUsers?.sort(() => Math.random() - 0.5).slice(0, 5) || [];
       setSuggestedUsers(shuffledUsers);
     } catch (error) {
@@ -113,21 +136,35 @@ const Explore = () => {
           retweets_count,
           replies_count,
           image_urls,
-          user_id,
-          profiles:user_id (
-            username,
-            display_name,
-            avatar_url,
-            is_verified,
-            followers_count
-          )
+          user_id
         `)
         .gt('likes_count', 10)
         .order('likes_count', { ascending: false })
         .limit(10);
 
       if (error) throw error;
-      setTrendingPosts(data || []);
+
+      // Fetch profiles separately
+      const userIds = [...new Set(data?.map(post => post.user_id) || [])];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, is_verified, followers_count')
+        .in('id', userIds);
+
+      const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
+
+      const enrichedPosts = data?.map(post => ({
+        ...post,
+        profiles: profilesMap.get(post.user_id) || {
+          username: 'unknown',
+          display_name: 'Unknown User',
+          avatar_url: '',
+          is_verified: false,
+          followers_count: 0
+        }
+      })) || [];
+
+      setTrendingPosts(enrichedPosts);
     } catch (error) {
       console.error('Error fetching trending posts:', error);
     }
@@ -145,21 +182,36 @@ const Explore = () => {
           retweets_count,
           replies_count,
           image_urls,
-          user_id,
-          profiles:user_id (
-            username,
-            display_name,
-            avatar_url,
-            is_verified,
-            followers_count
-          )
+          user_id
         `)
         .not('image_urls', 'is', null)
+        .neq('image_urls', '{}')
         .order('created_at', { ascending: false })
         .limit(8);
 
       if (error) throw error;
-      setVideoPosts(data || []);
+
+      // Fetch profiles separately
+      const userIds = [...new Set(data?.map(post => post.user_id) || [])];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, is_verified, followers_count')
+        .in('id', userIds);
+
+      const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
+
+      const enrichedPosts = data?.map(post => ({
+        ...post,
+        profiles: profilesMap.get(post.user_id) || {
+          username: 'unknown',
+          display_name: 'Unknown User',
+          avatar_url: '',
+          is_verified: false,
+          followers_count: 0
+        }
+      })) || [];
+
+      setVideoPosts(enrichedPosts);
     } catch (error) {
       console.error('Error fetching video posts:', error);
     } finally {
@@ -174,7 +226,6 @@ const Explore = () => {
   const handleFollowUser = async (userId: string) => {
     const success = await followUser(userId);
     if (success) {
-      // Remove user from suggested list
       setSuggestedUsers(prev => prev.filter(u => u.id !== userId));
     }
   };
@@ -221,8 +272,24 @@ const Explore = () => {
               {post.content}
             </p>
             {post.image_urls && post.image_urls.length > 0 && (
-              <div className="w-full h-32 bg-slate-200 dark:bg-slate-700 rounded-lg mb-2 flex items-center justify-center">
-                <Video className="w-6 h-6 text-slate-400" />
+              <div className="grid grid-cols-1 gap-2 mb-2">
+                {post.image_urls.slice(0, 2).map((url, index) => (
+                  <div key={index} className="relative">
+                    <img 
+                      src={url} 
+                      alt="" 
+                      className="w-full h-32 object-cover rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                ))}
+                {post.image_urls.length > 2 && (
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    +{post.image_urls.length - 2} more
+                  </div>
+                )}
               </div>
             )}
             <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
@@ -274,59 +341,110 @@ const Explore = () => {
 
           <div className="p-6">
             <div className="grid gap-6">
-              {/* Trending Posts */}
+              {/* Daily Bible Verse */}
               <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    <TrendingUp className="w-6 h-6 text-purple-600" />
-                    Trending Posts
+                    <BookOpen className="w-6 h-6 text-purple-600" />
+                    Daily Verse
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {loadingPosts ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[...Array(4)].map((_, i) => (
-                        <div key={i} className="animate-pulse">
-                          <div className="h-32 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
-                        </div>
-                      ))}
+                  {loadingVerse ? (
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded mb-2"></div>
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                    </div>
+                  ) : dailyVerse ? (
+                    <div className="text-center">
+                      <p className="text-slate-700 dark:text-slate-300 mb-3 italic text-lg leading-relaxed">
+                        "{dailyVerse.text}"
+                      </p>
+                      <p className="text-sm text-purple-600 dark:text-purple-400 font-semibold">
+                        {dailyVerse.reference} ({dailyVerse.translation})
+                      </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {trendingPosts.slice(0, 4).map((post) => (
-                        <PostCard key={post.id} post={post} />
-                      ))}
+                    <div className="text-center text-slate-500 dark:text-slate-400">
+                      <BookOpen className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Daily verse not available</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Video Posts */}
-              <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    <Video className="w-6 h-6 text-purple-600" />
-                    Latest Media Posts
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loadingPosts ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {[...Array(6)].map((_, i) => (
-                        <div key={i} className="animate-pulse">
-                          <div className="h-32 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+              {/* Trending Posts */}
+              <Collapsible open={trendingOpen} onOpenChange={setTrendingOpen}>
+                <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="pb-3 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                      <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-6 h-6 text-purple-600" />
+                          Trending Posts
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {videoPosts.slice(0, 6).map((post) => (
-                        <PostCard key={post.id} post={post} />
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                        {trendingOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent>
+                      {loadingPosts ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[...Array(4)].map((_, i) => (
+                            <div key={i} className="animate-pulse">
+                              <div className="h-32 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {trendingPosts.slice(0, 4).map((post) => (
+                            <PostCard key={post.id} post={post} />
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+
+              {/* Media Posts */}
+              <Collapsible open={mediaOpen} onOpenChange={setMediaOpen}>
+                <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="pb-3 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                      <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Video className="w-6 h-6 text-purple-600" />
+                          Latest Media Posts
+                        </div>
+                        {mediaOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent>
+                      {loadingPosts ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {[...Array(6)].map((_, i) => (
+                            <div key={i} className="animate-pulse">
+                              <div className="h-32 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {videoPosts.slice(0, 6).map((post) => (
+                            <PostCard key={post.id} post={post} />
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
 
               {/* Trending Section */}
               <div className="bg-white/80 dark:bg-slate-800/80 rounded-2xl p-6 border border-purple-200 dark:border-purple-700">
@@ -337,94 +455,103 @@ const Explore = () => {
                 <TrendingWidget onHashtagClick={handleHashtagClick} />
               </div>
 
-              {/* Who to Follow - Real Data */}
-              <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    <Users className="w-6 h-6 text-purple-600" />
-                    Who to Follow
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loadingUsers ? (
-                    <div className="space-y-4">
-                      {[...Array(3)].map((_, i) => (
-                        <div key={i} className="flex items-center space-x-3 animate-pulse">
-                          <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
-                          <div className="flex-1">
-                            <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
-                            <div className="h-3 bg-slate-200 rounded w-1/2"></div>
-                          </div>
+              {/* Who to Follow */}
+              <Collapsible open={suggestionsOpen} onOpenChange={setSuggestionsOpen}>
+                <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="pb-3 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                      <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-6 h-6 text-purple-600" />
+                          Who to Follow
                         </div>
-                      ))}
-                    </div>
-                  ) : suggestedUsers.length > 0 ? (
-                    <div className="space-y-4">
-                      {suggestedUsers.map((suggestedUser) => {
-                        const isVerified = getVerifiedStatus(suggestedUser);
-                        return (
-                          <div key={suggestedUser.id} className="flex items-center justify-between p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors">
-                            <div className="flex items-center space-x-3 flex-1 cursor-pointer" onClick={() => navigate(`/profile/${suggestedUser.id}`)}>
-                              <Avatar className="w-12 h-12">
-                                <AvatarImage src={suggestedUser.avatar_url || undefined} />
-                                <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white">
-                                  {suggestedUser.display_name?.[0] || suggestedUser.username?.[0] || 'U'}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                                    {suggestedUser.display_name || suggestedUser.username}
-                                  </p>
-                                  {isVerified && (
-                                    <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-1.5 py-0.5">
-                                      <Crown className="w-3 h-3" />
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-sm text-slate-600 dark:text-slate-400">
-                                  @{suggestedUser.username}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-500">
-                                  {suggestedUser.followers_count || 0} followers
-                                </p>
-                                {suggestedUser.bio && (
-                                  <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-1">
-                                    {suggestedUser.bio}
-                                  </p>
-                                )}
+                        {suggestionsOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent>
+                      {loadingUsers ? (
+                        <div className="space-y-4">
+                          {[...Array(3)].map((_, i) => (
+                            <div key={i} className="flex items-center space-x-3 animate-pulse">
+                              <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
+                              <div className="flex-1">
+                                <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                                <div className="h-3 bg-slate-200 rounded w-1/2"></div>
                               </div>
                             </div>
-                            <Button
-                              onClick={() => handleFollowUser(suggestedUser.id)}
-                              disabled={followLoading}
-                              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl"
-                            >
-                              {followLoading ? 'Following...' : 'Follow'}
-                            </Button>
+                          ))}
+                        </div>
+                      ) : suggestedUsers.length > 0 ? (
+                        <div className="space-y-4">
+                          {suggestedUsers.map((suggestedUser) => {
+                            const isVerified = getVerifiedStatus(suggestedUser);
+                            return (
+                              <div key={suggestedUser.id} className="flex items-center justify-between p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors">
+                                <div className="flex items-center space-x-3 flex-1 cursor-pointer" onClick={() => navigate(`/profile/${suggestedUser.id}`)}>
+                                  <Avatar className="w-12 h-12">
+                                    <AvatarImage src={suggestedUser.avatar_url || undefined} />
+                                    <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white">
+                                      {suggestedUser.display_name?.[0] || suggestedUser.username?.[0] || 'U'}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                                        {suggestedUser.display_name || suggestedUser.username}
+                                      </p>
+                                      {isVerified && (
+                                        <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-1.5 py-0.5">
+                                          <Crown className="w-3 h-3" />
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                                      @{suggestedUser.username}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-500">
+                                      {suggestedUser.followers_count || 0} followers
+                                    </p>
+                                    {suggestedUser.bio && (
+                                      <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-1">
+                                        {suggestedUser.bio}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  onClick={() => handleFollowUser(suggestedUser.id)}
+                                  disabled={followLoading}
+                                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl"
+                                >
+                                  {followLoading ? 'Following...' : 'Follow'}
+                                </Button>
+                              </div>
+                            );
+                          })}
+                          <Button
+                            variant="outline"
+                            className="w-full rounded-xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
+                            onClick={() => fetchSuggestedUsers()}
+                          >
+                            Refresh suggestions
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Users className="w-8 h-8 text-purple-400" />
                           </div>
-                        );
-                      })}
-                      <Button
-                        variant="outline"
-                        className="w-full rounded-xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
-                        onClick={() => fetchSuggestedUsers()}
-                      >
-                        Refresh suggestions
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Users className="w-8 h-8 text-purple-400" />
-                      </div>
-                      <p className="text-slate-500 dark:text-slate-400">
-                        No new users to follow
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                          <p className="text-slate-500 dark:text-slate-400">
+                            No new users to follow
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
             </div>
           </div>
         </main>

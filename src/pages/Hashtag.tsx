@@ -4,10 +4,9 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import SidebarNav from "@/components/SidebarNav";
-import PostsList from "@/components/PostsList";
 import { Button } from "@/components/ui/button";
 import { Hash, ArrowLeft, TrendingUp } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface HashtagPost {
   id: string;
@@ -65,14 +64,7 @@ const Hashtag = () => {
           retweets_count,
           replies_count,
           user_id,
-          image_urls,
-          profiles:user_id (
-            username,
-            display_name,
-            avatar_url,
-            is_verified,
-            followers_count
-          )
+          image_urls
         `)
         .ilike('content', `%${formattedHashtag}%`)
         .order('created_at', { ascending: false })
@@ -80,8 +72,34 @@ const Hashtag = () => {
 
       if (error) throw error;
 
-      setPosts(data || []);
-      setPostCount(data?.length || 0);
+      if (!data || data.length === 0) {
+        setPosts([]);
+        setPostCount(0);
+        return;
+      }
+
+      // Fetch profiles separately
+      const userIds = [...new Set(data.map(post => post.user_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, is_verified, followers_count')
+        .in('id', userIds);
+
+      const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
+
+      const enrichedPosts = data.map(post => ({
+        ...post,
+        profiles: profilesMap.get(post.user_id) || {
+          username: 'unknown',
+          display_name: 'Unknown User',
+          avatar_url: '',
+          is_verified: false,
+          followers_count: 0
+        }
+      }));
+
+      setPosts(enrichedPosts);
+      setPostCount(enrichedPosts.length);
     } catch (error) {
       console.error('Error fetching hashtag posts:', error);
     } finally {
@@ -164,6 +182,27 @@ const Hashtag = () => {
                         <p className="text-slate-700 dark:text-slate-300 mb-3">
                           {post.content}
                         </p>
+                        {post.image_urls && post.image_urls.length > 0 && (
+                          <div className="grid grid-cols-1 gap-2 mb-3">
+                            {post.image_urls.slice(0, 2).map((url, index) => (
+                              <div key={index} className="relative">
+                                <img 
+                                  src={url} 
+                                  alt="" 
+                                  className="w-full h-48 object-cover rounded-lg"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            ))}
+                            {post.image_urls.length > 2 && (
+                              <div className="text-sm text-slate-500 dark:text-slate-400">
+                                +{post.image_urls.length - 2} more images
+                              </div>
+                            )}
+                          </div>
+                        )}
                         <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
                           <span>{post.likes_count} likes</span>
                           <span>{post.retweets_count} retweets</span>
