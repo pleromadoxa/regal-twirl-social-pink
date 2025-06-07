@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,21 +33,40 @@ export const useStories = () => {
     try {
       setLoading(true);
       
-      // Fetch stories with user profiles - using correct join syntax
-      const { data: storiesData, error } = await supabase
+      // First fetch stories
+      const { data: storiesData, error: storiesError } = await supabase
         .from('stories')
-        .select(`
-          *,
-          profiles (
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (storiesError) throw storiesError;
+
+      if (!storiesData || storiesData.length === 0) {
+        setStories([]);
+        return;
+      }
+
+      // Get unique user IDs from stories
+      const userIds = [...new Set(storiesData.map(story => story.user_id))];
+
+      // Fetch profiles for these users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      // Create a map of user_id to profile
+      const profilesMap = new Map();
+      if (profilesData) {
+        profilesData.forEach(profile => {
+          profilesMap.set(profile.id, profile);
+        });
+      }
 
       // Check which stories the current user has viewed
       let storiesWithViews: Story[] = [];
@@ -59,31 +79,33 @@ export const useStories = () => {
 
         const viewedStoryIds = new Set(viewsData?.map(v => v.story_id) || []);
         
-        storiesWithViews = storiesData
-          .filter(story => story.profiles) // Filter out stories without valid profile data
-          .map(story => ({
+        storiesWithViews = storiesData.map(story => {
+          const profile = profilesMap.get(story.user_id);
+          return {
             ...story,
             content_type: story.content_type as 'image' | 'video',
             user_viewed: viewedStoryIds.has(story.id),
             profiles: {
-              username: story.profiles.username || 'Unknown',
-              display_name: story.profiles.display_name || 'Unknown User',
-              avatar_url: story.profiles.avatar_url || ''
+              username: profile?.username || 'Unknown',
+              display_name: profile?.display_name || 'Unknown User',
+              avatar_url: profile?.avatar_url || ''
             }
-          })) as Story[];
+          };
+        }) as Story[];
       } else if (storiesData) {
-        storiesWithViews = storiesData
-          .filter(story => story.profiles) // Filter out stories without valid profile data
-          .map(story => ({
+        storiesWithViews = storiesData.map(story => {
+          const profile = profilesMap.get(story.user_id);
+          return {
             ...story,
             content_type: story.content_type as 'image' | 'video',
             user_viewed: false,
             profiles: {
-              username: story.profiles.username || 'Unknown',
-              display_name: story.profiles.display_name || 'Unknown User',
-              avatar_url: story.profiles.avatar_url || ''
+              username: profile?.username || 'Unknown',
+              display_name: profile?.display_name || 'Unknown User',
+              avatar_url: profile?.avatar_url || ''
             }
-          })) as Story[];
+          };
+        }) as Story[];
       }
 
       setStories(storiesWithViews);
