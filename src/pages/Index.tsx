@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -6,8 +7,8 @@ import RightSidebar from "@/components/RightSidebar";
 import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import HomeFeedNav from "@/components/HomeFeedNav";
-import StoriesBar from "@/components/StoriesBar";
-import FinancialNav from "@/components/FinancialNav";
+import { StoriesBar } from "@/components/StoriesBar";
+import { FinancialNav } from "@/components/FinancialNav";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePosts } from "@/hooks/usePosts";
 

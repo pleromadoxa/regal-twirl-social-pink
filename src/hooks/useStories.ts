@@ -62,6 +62,7 @@ export const useStories = () => {
         
         storiesWithViews = storiesData.map(story => ({
           ...story,
+          content_type: story.content_type as 'image' | 'video',
           user_viewed: viewedStoryIds.has(story.id)
         }));
       }
