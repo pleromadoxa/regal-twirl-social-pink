@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -310,14 +311,14 @@ export const PostsList = ({
               }`}
             >
               <CardContent className="p-6 relative z-30">
-                {/* Retweet indicator */}
+                {/* Enhanced Retweet indicator */}
                 {retweetInfo && (
-                  <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
-                    <Repeat className="w-4 h-4" />
-                    <span>
+                  <div className="flex items-center gap-2 text-sm mb-3 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700/50">
+                    <Repeat className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <span className="text-green-700 dark:text-green-300 font-medium">
                       {retweetInfo.isCurrentUser 
-                        ? 'You reposted' 
-                        : `@${retweetInfo.retweetedBy?.username || retweetInfo.retweetedBy?.display_name || 'someone'} reposted`
+                        ? 'You reshared this post' 
+                        : `@${retweetInfo.retweetedBy?.username || retweetInfo.retweetedBy?.display_name || 'someone'} reshared this post`
                       }
                     </span>
                   </div>
