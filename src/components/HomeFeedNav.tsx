@@ -12,7 +12,6 @@ interface HomeFeedNavProps {
 
 const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'professional' | 'trending' | 'news' | 'stocks' | 'alerts'>('all');
-  const [selectedTabIndex, setSelectedTabIndex] = useState<number>(0); // Set All Posts as active
 
   const allTabs = [
     { title: "All Posts", icon: Home },
@@ -24,14 +23,17 @@ const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
   ];
 
   const handleTabChange = (index: number | null) => {
-    if (index === null) return;
+    if (index === null) {
+      setActiveFilter('all');
+      onFilterChange?.('all');
+      return;
+    }
     
     const filters: ('all' | 'professional' | 'trending' | 'news' | 'stocks' | 'alerts')[] = 
       ['all', 'professional', 'trending', 'news', 'stocks', 'alerts'];
     const newFilter = filters[index];
     
     setActiveFilter(newFilter);
-    setSelectedTabIndex(index);
     
     // Only call onFilterChange for the main feed filters
     if (['all', 'professional', 'trending'].includes(newFilter)) {
@@ -48,7 +50,7 @@ const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
       case 'alerts':
         return <PriceAlertsWidget />;
       default:
-        return null;
+        return null; // For 'all', 'professional', 'trending' - content is handled by parent component
     }
   };
 
