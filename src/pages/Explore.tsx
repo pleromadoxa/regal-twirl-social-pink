@@ -185,7 +185,7 @@ const Explore = () => {
           user_id
         `)
         .not('image_urls', 'is', null)
-        .neq('image_urls', '{}')
+        .gt('array_length(image_urls, 1)', 0)
         .order('created_at', { ascending: false })
         .limit(8);
 
