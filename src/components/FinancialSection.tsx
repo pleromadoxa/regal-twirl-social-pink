@@ -6,7 +6,7 @@ import { StockMarketWidget } from './StockMarketWidget';
 import { PriceAlertsWidget } from './PriceAlertsWidget';
 
 export const FinancialSection = () => {
-  const [activeFilter, setActiveFilter] = useState<'news' | 'stocks' | 'alerts' | null>('news');
+  const [activeFilter, setActiveFilter] = useState<'news' | 'stocks' | 'alerts' | null>(null);
 
   const renderContent = () => {
     switch (activeFilter) {
@@ -17,7 +17,7 @@ export const FinancialSection = () => {
       case 'alerts':
         return <PriceAlertsWidget />;
       default:
-        return <FinancialNewsFeed />; // Show news by default
+        return null; // Show nothing by default
     }
   };
 
