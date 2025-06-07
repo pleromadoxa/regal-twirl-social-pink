@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +28,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTheme } from '@/contexts/ThemeContext';
+import ImageUpload from '@/components/ImageUpload';
 
 const Settings = () => {
   const { user, loading } = useAuth();
@@ -43,7 +43,8 @@ const Settings = () => {
     bio: '',
     location: '',
     website: '',
-    avatar_url: ''
+    avatar_url: '',
+    banner_url: ''
   });
   
   // Notification settings
@@ -97,7 +98,8 @@ const Settings = () => {
           bio: data.bio || '',
           location: data.location || '',
           website: data.website || '',
-          avatar_url: data.avatar_url || ''
+          avatar_url: data.avatar_url || '',
+          banner_url: data.banner_url || ''
         });
       }
     } catch (error) {
@@ -150,6 +152,8 @@ const Settings = () => {
           bio: profile.bio,
           location: profile.location,
           website: profile.website,
+          avatar_url: profile.avatar_url,
+          banner_url: profile.banner_url,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -234,29 +238,12 @@ const Settings = () => {
     }
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
+  const handleAvatarUpload = (url: string) => {
+    setProfile(prev => ({ ...prev, avatar_url: url }));
+  };
 
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      // Note: This would require setting up Supabase Storage
-      // For now, we'll just show a message
-      toast({
-        title: "Feature coming soon",
-        description: "Avatar upload will be available soon!",
-      });
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast({
-        title: "Error uploading avatar",
-        description: "Please try again later.",
-        variant: "destructive"
-      });
-    }
+  const handleBannerUpload = (url: string) => {
+    setProfile(prev => ({ ...prev, banner_url: url }));
   };
 
   const handleThemeChange = (newTheme: string) => {
@@ -317,6 +304,25 @@ const Settings = () => {
           <TabsContent value="profile" className="space-y-6">
             <Card>
               <CardHeader>
+                <CardTitle>Banner Image</CardTitle>
+                <CardDescription>
+                  Update your profile banner
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImageUpload
+                  currentImageUrl={profile.banner_url}
+                  onImageUpload={handleBannerUpload}
+                  bucketName="user-banners"
+                  folder="banners"
+                  className="w-full"
+                  isAvatar={false}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Profile Information</CardTitle>
                 <CardDescription>
                   Update your personal information and how others see you
@@ -331,16 +337,14 @@ const Settings = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <Button variant="outline" className="relative">
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Photo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarUpload}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                      />
-                    </Button>
+                    <ImageUpload
+                      currentImageUrl={profile.avatar_url}
+                      onImageUpload={handleAvatarUpload}
+                      bucketName="user-avatars"
+                      folder="avatars"
+                      className="flex justify-center"
+                      isAvatar={true}
+                    />
                     <p className="text-sm text-slate-500 mt-1">
                       JPG, PNG up to 2MB
                     </p>
