@@ -337,6 +337,13 @@ export const PostsList = ({
         
         return (
           <div key={post.id}>
+            {/* Comments displayed above the post when opened */}
+            <PostComments
+              postId={post.id}
+              isOpen={commentsOpen[post.id] || false}
+              onClose={() => closeComments(post.id)}
+            />
+
             <Card 
               className={`hover:shadow-xl transition-all duration-500 relative z-20 border border-slate-200 dark:border-slate-700 ${
                 isThread 
@@ -464,12 +471,6 @@ export const PostsList = ({
                 </div>
               </CardContent>
             </Card>
-
-            <PostComments
-              postId={post.id}
-              isOpen={commentsOpen[post.id] || false}
-              onClose={() => closeComments(post.id)}
-            />
           </div>
         );
       })}
