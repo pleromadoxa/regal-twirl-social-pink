@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Repeat } from 'lucide-react';
 import PostComments from './PostComments';
+import MediaPreview from './MediaPreview';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -35,6 +36,15 @@ export const PostsList = ({
   const [retweetedBy, setRetweetedBy] = useState<{[key: string]: any}>({});
   const [commentsOpen, setCommentsOpen] = useState<{[key: string]: boolean}>({});
   const [newPostNotification, setNewPostNotification] = useState<string | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<{
+    isOpen: boolean;
+    images: string[];
+    initialIndex: number;
+  }>({
+    isOpen: false,
+    images: [],
+    initialIndex: 0
+  });
 
   let posts = externalPosts || hookPosts;
   
@@ -179,6 +189,22 @@ export const PostsList = ({
 
   const closeComments = (postId: string) => {
     setCommentsOpen(prev => ({ ...prev, [postId]: false }));
+  };
+
+  const handleImageClick = (images: string[], index: number) => {
+    setMediaPreview({
+      isOpen: true,
+      images,
+      initialIndex: index
+    });
+  };
+
+  const closeMediaPreview = () => {
+    setMediaPreview({
+      isOpen: false,
+      images: [],
+      initialIndex: 0
+    });
   };
 
   const isThreadPost = (content: string) => {
@@ -338,7 +364,7 @@ export const PostsList = ({
                       </p>
                     )}
                     
-                    {/* Display images if available */}
+                    {/* Display images with preview functionality */}
                     {post.image_urls && post.image_urls.length > 0 && (
                       <div className={`grid gap-2 mb-3 rounded-lg overflow-hidden ${
                         post.image_urls.length === 1 ? 'grid-cols-1' : 
@@ -348,16 +374,21 @@ export const PostsList = ({
                         {post.image_urls.map((imageUrl: string, index: number) => (
                           <div 
                             key={index} 
-                            className={`relative ${
+                            className={`relative cursor-pointer group ${
                               post.image_urls.length === 3 && index === 0 ? 'col-span-2' : ''
                             }`}
+                            onClick={() => handleImageClick(post.image_urls, index)}
                           >
                             <img
                               src={imageUrl}
                               alt={`Post image ${index + 1}`}
-                              className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
-                              onClick={() => window.open(imageUrl, '_blank')}
+                              className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-all duration-300 group-hover:scale-[1.02]"
                             />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-full px-3 py-1 text-sm font-medium">
+                                Click to view
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -394,6 +425,14 @@ export const PostsList = ({
           </div>
         );
       })}
+
+      {/* Media Preview Modal */}
+      <MediaPreview
+        images={mediaPreview.images}
+        initialIndex={mediaPreview.initialIndex}
+        isOpen={mediaPreview.isOpen}
+        onClose={closeMediaPreview}
+      />
     </div>
   );
 };
