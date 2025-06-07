@@ -253,25 +253,34 @@ export const createGroupConversation = async (
 
     if (creatorError) {
       console.error('Error adding group creator:', creatorError);
-      throw creatorError;
+      // Don't throw here, continue with other members
     }
 
     // Add other members one by one to avoid RLS issues
-    for (const memberId of memberIds.filter(id => id !== createdBy)) {
-      const { error: memberError } = await supabase
-        .from('group_conversation_members')
-        .insert({
-          group_id: groupData.id,
-          user_id: memberId,
-          role: 'member'
-        });
+    const memberPromises = memberIds
+      .filter(id => id !== createdBy)
+      .map(async (memberId) => {
+        try {
+          const { error: memberError } = await supabase
+            .from('group_conversation_members')
+            .insert({
+              group_id: groupData.id,
+              user_id: memberId,
+              role: 'member'
+            });
 
-      if (memberError) {
-        console.error('Error adding member:', memberId, memberError);
-        // Continue with other members even if one fails
-      }
-    }
+          if (memberError) {
+            console.error('Error adding member:', memberId, memberError);
+            return null;
+          }
+          return memberId;
+        } catch (error) {
+          console.error('Exception adding member:', memberId, error);
+          return null;
+        }
+      });
 
+    await Promise.allSettled(memberPromises);
     console.log('Added members to group');
 
     // Fetch the complete group data

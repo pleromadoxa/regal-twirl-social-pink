@@ -14,6 +14,7 @@ import {
   sendMessage as sendMessageService, 
   markMessageAsRead 
 } from '@/services/messageService';
+import { createGroupConversation } from '@/services/groupConversationService';
 
 export const useEnhancedMessages = () => {
   const { user } = useAuth();
@@ -158,16 +159,30 @@ export const useEnhancedMessages = () => {
     }
   };
 
-  const createGroupConversation = async (participantIds: string[], groupName?: string) => {
+  const createGroupConversation = async (groupName: string, participantIds: string[]) => {
+    if (!user) {
+      console.error('No authenticated user');
+      throw new Error('Authentication required');
+    }
+
     try {
-      console.log('Creating group conversation with participants:', participantIds);
+      console.log('Creating group conversation:', { groupName, participantIds, userId: user.id });
       
-      // For now, just create a simple conversation with the first participant
-      if (participantIds.length > 0) {
-        return await startDirectConversation(participantIds[0]);
-      }
+      const newGroup = await createGroupConversation(
+        groupName,
+        null, // description
+        user.id,
+        participantIds,
+        false, // isPrivate
+        50 // maxMembers
+      );
       
-      throw new Error('No participants provided');
+      console.log('Group created successfully:', newGroup.id);
+      
+      // Refresh conversations to include the new group
+      await refetch();
+      
+      return newGroup.id;
     } catch (error) {
       console.error('Error creating group conversation:', error);
       throw error;
