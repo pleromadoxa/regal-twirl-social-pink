@@ -4,7 +4,7 @@ import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
 import PostComposer from "@/components/PostComposer";
 import PostsList from "@/components/PostsList";
-import StoriesBar from "@/components/StoriesBar";
+import { StoriesBar } from "@/components/StoriesBar";
 import { WorldMapDemo } from "@/components/WorldMapDemo";
 
 const Index = () => {
