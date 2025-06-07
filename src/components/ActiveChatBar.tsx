@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageDock, Character } from '@/components/ui/message-dock';
@@ -14,6 +15,14 @@ import { getStreakEmoji } from '@/services/streakService';
 import PresenceIndicator from './PresenceIndicator';
 import { useUserPresence } from '@/hooks/useUserPresence';
 
+interface ConversationCharacter extends Character {
+  userId?: string;
+  username?: string;
+  displayName?: string;
+  streakCount?: number;
+  avatar?: string;
+}
+
 const ActiveChatBar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -28,7 +37,7 @@ const ActiveChatBar = () => {
   } = useEnhancedMessages();
   
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [characters, setCharacters] = useState<Character[]>([
+  const [characters, setCharacters] = useState<ConversationCharacter[]>([
     { emoji: "💬", name: "Messages", online: false },
     { emoji: "👤", name: "Recent", online: true, backgroundColor: "bg-blue-300", gradientColors: "#93c5fd, #dbeafe" },
     { emoji: "🔔", name: "Active", online: true, backgroundColor: "bg-green-300", gradientColors: "#86efac, #dcfce7" },
@@ -40,7 +49,7 @@ const ActiveChatBar = () => {
   useEffect(() => {
     if (conversations.length > 0) {
       const recentConversations = conversations.slice(0, 3);
-      const updatedCharacters = [
+      const updatedCharacters: ConversationCharacter[] = [
         { emoji: "💬", name: "Messages", online: false },
         ...recentConversations.map((conv, index) => {
           const { isOnline } = getUserStatus(conv.other_user?.id || '');
@@ -64,7 +73,7 @@ const ActiveChatBar = () => {
     }
   }, [conversations, getUserStatus]);
 
-  const handleMessageSend = async (message: string, character: Character, characterIndex: number) => {
+  const handleMessageSend = async (message: string, character: ConversationCharacter, characterIndex: number) => {
     if (!user) {
       toast({
         title: "Authentication required",
@@ -130,7 +139,7 @@ const ActiveChatBar = () => {
     }
   };
 
-  const handleCharacterSelect = (character: Character, characterIndex: number) => {
+  const handleCharacterSelect = (character: ConversationCharacter, characterIndex: number) => {
     console.log('Character selected:', character.name);
     
     // If it's a conversation, select it
