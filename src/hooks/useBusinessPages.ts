@@ -25,6 +25,8 @@ export interface BusinessPage {
   user_following?: boolean;
 }
 
+type BusinessType = 'e-commerce' | 'it-services' | 'import-export' | 'p2p-trading' | 'consulting' | 'manufacturing' | 'retail' | 'restaurant' | 'real-estate' | 'healthcare' | 'education' | 'finance' | 'other';
+
 export const useBusinessPages = () => {
   const [pages, setPages] = useState<BusinessPage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -109,12 +111,18 @@ export const useBusinessPages = () => {
     try {
       const { error } = await supabase
         .from('business_pages')
-        .insert([
-          {
-            owner_id: user.id,
-            ...pageData,
-          }
-        ]);
+        .insert({
+          owner_id: user.id,
+          page_name: pageData.page_name,
+          page_type: pageData.page_type,
+          business_type: pageData.business_type as BusinessType,
+          default_currency: pageData.default_currency,
+          description: pageData.description,
+          website: pageData.website,
+          email: pageData.email,
+          phone: pageData.phone,
+          address: pageData.address,
+        });
 
       if (error) {
         console.error('Error creating page:', error);

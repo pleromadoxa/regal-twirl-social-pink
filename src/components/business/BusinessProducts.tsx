@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -361,7 +360,6 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
                       <Switch
                         checked={product.is_active}
                         onCheckedChange={() => toggleProductStatus(product)}
-                        size="sm"
                       />
                     </div>
                     

@@ -12,12 +12,18 @@ interface BusinessOrdersProps {
   businessPage: any;
 }
 
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
 interface Order {
   id: string;
   customer_name: string;
   customer_email: string;
   customer_address: string;
-  items: any[];
+  items: OrderItem[];
   total_amount: number;
   currency: string;
   status: string;
@@ -52,7 +58,14 @@ const BusinessOrders = ({ businessPage }: BusinessOrdersProps) => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setOrders(data || []);
+      
+      // Map the data to ensure items is properly typed
+      const mappedOrders = data?.map(order => ({
+        ...order,
+        items: Array.isArray(order.items) ? order.items : []
+      })) || [];
+      
+      setOrders(mappedOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast({
@@ -253,7 +266,7 @@ const BusinessOrders = ({ businessPage }: BusinessOrdersProps) => {
                       <h4 className="font-semibold mb-2">Items Ordered</h4>
                       <div className="text-sm space-y-1">
                         {order.items && order.items.length > 0 ? (
-                          order.items.map((item: any, index: number) => (
+                          order.items.map((item: OrderItem, index: number) => (
                             <p key={index}>
                               {item.quantity}x {item.name} - {formatCurrency(item.price)}
                             </p>

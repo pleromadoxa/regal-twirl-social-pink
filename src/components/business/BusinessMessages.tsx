@@ -127,16 +127,27 @@ const BusinessMessages = ({ businessPage }: BusinessMessagesProps) => {
     try {
       const { data, error } = await supabase
         .from('business_messages')
-        .select(`
-          *,
-          customer_profile:profiles(username, display_name, avatar_url)
-        `)
+        .select('*')
         .eq('business_page_id', businessPage.id)
         .eq('customer_id', customerId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      // Get customer profile separately
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('username, display_name, avatar_url')
+        .eq('id', customerId)
+        .single();
+
+      const messagesWithProfile = data?.map(msg => ({
+        ...msg,
+        sender_type: msg.sender_type as 'business' | 'customer',
+        customer_profile: profileData
+      })) || [];
+
+      setMessages(messagesWithProfile);
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast({
