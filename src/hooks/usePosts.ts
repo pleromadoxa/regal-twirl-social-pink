@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -26,13 +26,11 @@ export interface Post {
   };
 }
 
-export const usePosts = (userId?: string) => {
+export const usePosts = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
-  const channelRef = useRef<any>(null);
-  const mountedRef = useRef(true);
 
   const enrichPostWithUserData = async (post: any, profilesMap: Map<string, any>) => {
     let userLiked = false;
@@ -84,23 +82,14 @@ export const usePosts = (userId?: string) => {
   };
 
   const fetchPosts = async () => {
-    if (!mountedRef.current) return;
-    
     try {
       setLoading(true);
       
-      // Build query based on whether we're filtering by userId
-      let query = supabase
+      // First, get all posts including the new image_urls column
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false });
-
-      // If userId is provided, filter by that user
-      if (userId) {
-        query = query.eq('user_id', userId);
-      }
-
-      const { data: postsData, error: postsError } = await query;
 
       if (postsError) {
         console.error('Error fetching posts:', postsError);
@@ -108,9 +97,7 @@ export const usePosts = (userId?: string) => {
       }
 
       if (!postsData || postsData.length === 0) {
-        if (mountedRef.current) {
-          setPosts([]);
-        }
+        setPosts([]);
         return;
       }
 
@@ -132,7 +119,7 @@ export const usePosts = (userId?: string) => {
         (profilesData || []).map(profile => [profile.id, profile])
       );
 
-      if (user && mountedRef.current) {
+      if (user) {
         // Get user likes, retweets, and pinned posts
         const postIds = postsData.map(post => post.id);
         
@@ -176,9 +163,7 @@ export const usePosts = (userId?: string) => {
           }
         }));
 
-        if (mountedRef.current) {
-          setPosts(enrichedPosts);
-        }
+        setPosts(enrichedPosts);
       } else {
         const enrichedPosts: Post[] = postsData.map(post => ({
           ...post,
@@ -195,30 +180,19 @@ export const usePosts = (userId?: string) => {
           }
         }));
         
-        if (mountedRef.current) {
-          setPosts(enrichedPosts);
-        }
+        setPosts(enrichedPosts);
       }
     } catch (error) {
       console.error('Error in fetchPosts:', error);
     } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
   // Handle real-time new posts
   const handleNewPost = async (payload: any) => {
-    if (!mountedRef.current) return;
-    
     console.log('New post received:', payload);
     const newPost = payload.new;
-    
-    // If we're filtering by userId and this post isn't from that user, ignore it
-    if (userId && newPost.user_id !== userId) {
-      return;
-    }
     
     // Fetch the profile for the new post author
     const { data: profileData } = await supabase
@@ -236,39 +210,29 @@ export const usePosts = (userId?: string) => {
     const enrichedPost = await enrichPostWithUserData(newPost, profilesMap);
     
     // Add the new post to the beginning of the posts array
-    if (mountedRef.current) {
-      setPosts(prevPosts => [enrichedPost, ...prevPosts]);
-    }
+    setPosts(prevPosts => [enrichedPost, ...prevPosts]);
   };
 
   // Handle real-time post updates (likes, retweets, etc.)
   const handlePostUpdate = async (payload: any) => {
-    if (!mountedRef.current) return;
-    
     console.log('Post updated:', payload);
     const updatedPost = payload.new;
     
-    if (mountedRef.current) {
-      setPosts(prevPosts => 
-        prevPosts.map(post => 
-          post.id === updatedPost.id 
-            ? { ...post, ...updatedPost }
-            : post
-        )
-      );
-    }
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === updatedPost.id 
+          ? { ...post, ...updatedPost }
+          : post
+      )
+    );
   };
 
   // Handle real-time post deletions
   const handlePostDelete = (payload: any) => {
-    if (!mountedRef.current) return;
-    
     console.log('Post deleted:', payload);
     const deletedPostId = payload.old.id;
     
-    if (mountedRef.current) {
-      setPosts(prevPosts => prevPosts.filter(post => post.id !== deletedPostId));
-    }
+    setPosts(prevPosts => prevPosts.filter(post => post.id !== deletedPostId));
   };
 
   const createPost = async (content: string, imageUrls: string[] = [], selectedAccount: 'personal' | string = 'personal') => {
@@ -489,20 +453,11 @@ export const usePosts = (userId?: string) => {
   };
 
   useEffect(() => {
-    mountedRef.current = true;
     fetchPosts();
 
-    // Create a truly unique channel name that includes component context
-    const contextId = userId ? `profile-${userId}` : 'home';
-    const channelName = `posts-${contextId}-${user?.id || 'anon'}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    console.log('Creating new channel:', channelName);
-    
-    // Create the channel
-    channelRef.current = supabase.channel(channelName);
-    
-    // Set up event listeners
-    channelRef.current
+    // Set up real-time subscription for posts with a more specific channel
+    const channel = supabase
+      .channel('posts-realtime-updates')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -517,23 +472,17 @@ export const usePosts = (userId?: string) => {
         event: 'DELETE',
         schema: 'public',
         table: 'posts'
-      }, handlePostDelete);
+      }, handlePostDelete)
+      .subscribe((status) => {
+        console.log('Posts real-time subscription status:', status);
+      });
 
-    // Subscribe to the channel
-    channelRef.current.subscribe((status: string) => {
-      console.log('Posts real-time subscription status:', status);
-    });
-
-    // Cleanup function
+    // Cleanup subscription on unmount
     return () => {
-      mountedRef.current = false;
-      if (channelRef.current) {
-        console.log('Cleaning up posts channel subscription on unmount');
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      console.log('Cleaning up posts channel subscription');
+      supabase.removeChannel(channel);
     };
-  }, [user?.id, userId]); // Include userId in dependencies
+  }, [user?.id]); // Only depend on user.id to prevent unnecessary re-subscriptions
 
   return {
     posts,

@@ -52,7 +52,12 @@ const Pinned = () => {
             <p className="ml-4 text-slate-500">Loading pinned posts...</p>
           </div>
         ) : pinnedPosts.length > 0 ? (
-          <PostsList />
+          <PostsList 
+            posts={pinnedPosts.map(post => ({ ...post, user_pinned: true }))}
+            onLike={() => {}} // Pinned posts don't need like functionality
+            onRetweet={() => {}} // Pinned posts don't need retweet functionality
+            onPin={togglePin}
+          />
         ) : (
           <div className="flex items-center justify-center h-[calc(100vh-200px)]">
             <div className="text-center">
