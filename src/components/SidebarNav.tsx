@@ -1,5 +1,5 @@
 
-import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown, Settings } from "lucide-react";
+import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown, Settings, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,12 +9,17 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import BusinessPageDialog from "./BusinessPageDialog";
 import PremiumDialog from "./PremiumDialog";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useBusinessPages } from "@/hooks/useBusinessPages";
 
 const SidebarNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { theme } = useTheme();
+  const { myPages } = useBusinessPages();
+
+  // Check if user has any professional accounts
+  const hasBusinessAccounts = myPages.length > 0;
 
   const navigationItems = [
     { icon: Home, label: "Home", path: "/home", active: location.pathname === "/home" },
@@ -22,6 +27,8 @@ const SidebarNav = () => {
     { icon: MessageCircle, label: "Messages", path: "/messages", active: location.pathname === "/messages" },
     { icon: Pin, label: "Pinned", path: "/pinned", active: location.pathname === "/pinned" },
     { icon: User, label: "Profile", path: `/profile/${user?.id}`, active: location.pathname.startsWith("/profile") },
+    // Conditionally add Business menu item
+    ...(hasBusinessAccounts ? [{ icon: Building, label: "Business", path: "/business", active: location.pathname === "/business" }] : []),
     { icon: Settings, label: "Settings", path: "/settings", active: location.pathname === "/settings" }
   ];
 
@@ -162,6 +169,26 @@ const SidebarNav = () => {
       </ScrollArea>
     </aside>
   );
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
+
+  const handleCreatePost = () => {
+    navigate('/home');
+    // Focus on the post composer if on home page
+    setTimeout(() => {
+      const postComposer = document.querySelector('textarea[placeholder*="What\'s happening"]');
+      if (postComposer) {
+        (postComposer as HTMLTextAreaElement).focus();
+      }
+    }, 100);
+  };
 };
 
 export default SidebarNav;
