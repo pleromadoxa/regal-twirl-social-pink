@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,7 +31,6 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <WebRTCCallManager />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -47,6 +47,7 @@ const App = () => (
               <Route path="/professional/:pageId/edit" element={<EditProfessionalAccount />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <WebRTCCallManager />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

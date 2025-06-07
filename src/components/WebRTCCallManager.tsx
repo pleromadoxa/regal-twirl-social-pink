@@ -22,16 +22,19 @@ interface CallerProfile {
 }
 
 const WebRTCCallManager = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const [incomingCall, setIncomingCall] = useState<ActiveCall | null>(null);
   const [callerProfile, setCallerProfile] = useState<CallerProfile | null>(null);
   const [showIncomingCall, setShowIncomingCall] = useState(false);
   const channelRef = useRef<any>(null);
 
-  useEffect(() => {
-    if (!user) return;
+  // Don't render anything if auth is loading or user is not available
+  if (loading || !user) {
+    return null;
+  }
 
+  useEffect(() => {
     console.log('Setting up WebRTC call manager for user:', user.id);
 
     // Clean up any existing channel first
@@ -120,7 +123,7 @@ const WebRTCCallManager = () => {
         channelRef.current = null;
       }
     };
-  }, [user?.id]);
+  }, [user.id, incomingCall?.id]);
 
   const handleAcceptCall = async () => {
     if (!incomingCall || !user) return;
