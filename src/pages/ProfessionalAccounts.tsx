@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Search, Building, Users, User, Crown, Plus, Eye, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -102,7 +103,6 @@ const ProfessionalAccounts = () => {
             </TabsList>
 
             <TabsContent value="search" className="space-y-6">
-              {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                 <Input
@@ -113,7 +113,6 @@ const ProfessionalAccounts = () => {
                 />
               </div>
 
-              {/* Search Results */}
               <div className="space-y-4">
                 {isSearching ? (
                   <div className="flex justify-center py-12">

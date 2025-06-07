@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -9,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Repeat } from 'lucide-react';
 import PostComments from './PostComments';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PostsListProps {
   posts?: any[];
@@ -39,25 +41,85 @@ export const PostsList = ({
   }
 
   const onLike = externalOnLike || toggleLike;
-  const onRetweet = externalOnRetweet || toggleRetweet;
+  const onRetweet = externalOnRetweet || async (postId: string) => {
+    if (!user) return;
+    
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    try {
+      // Check if already retweeted
+      const { data: existingRetweet } = await supabase
+        .from('retweets')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('post_id', postId)
+        .single();
+
+      if (existingRetweet) {
+        // Remove retweet
+        await supabase
+          .from('retweets')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', postId);
+      } else {
+        // Create repost entry
+        await supabase
+          .from('retweets')
+          .insert([{ user_id: user.id, post_id: postId }]);
+      }
+
+      // Call the original retweet function to update counts
+      if (toggleRetweet) {
+        toggleRetweet(postId);
+      }
+    } catch (error) {
+      console.error('Error handling repost:', error);
+    }
+  };
   const onPin = externalOnPin || togglePin;
   const onDelete = externalOnDelete || deletePost;
 
   useEffect(() => {
     // Fetch retweet information for posts
     const fetchRetweetInfo = async () => {
-      if (!posts || posts.length === 0) return;
+      if (!posts || posts.length === 0 || !user) return;
       
       const retweetInfo: {[key: string]: any} = {};
+      const postIds = posts.map(post => post.id);
       
-      for (const post of posts) {
-        if (post.user_retweeted && user) {
-          // This post was retweeted by the current user
-          retweetInfo[post.id] = {
-            retweetedBy: user,
-            isCurrentUser: true
-          };
+      try {
+        // Get all retweets for these posts
+        const { data: retweetsData } = await supabase
+          .from('retweets')
+          .select(`
+            post_id,
+            user_id,
+            profiles:user_id (
+              username,
+              display_name
+            )
+          `)
+          .in('post_id', postIds);
+
+        if (retweetsData) {
+          retweetsData.forEach(retweet => {
+            if (retweet.user_id === user.id) {
+              retweetInfo[retweet.post_id] = {
+                retweetedBy: user,
+                isCurrentUser: true
+              };
+            } else if (!retweetInfo[retweet.post_id]) {
+              retweetInfo[retweet.post_id] = {
+                retweetedBy: retweet.profiles,
+                isCurrentUser: false
+              };
+            }
+          });
         }
+      } catch (error) {
+        console.error('Error fetching retweet info:', error);
       }
       
       setRetweetedBy(retweetInfo);
@@ -173,7 +235,10 @@ export const PostsList = ({
                   <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
                     <Repeat className="w-4 h-4" />
                     <span>
-                      {retweetInfo.isCurrentUser ? 'You' : `@${retweetInfo.retweetedBy.username}`} reshared
+                      {retweetInfo.isCurrentUser 
+                        ? 'You reposted' 
+                        : `@${retweetInfo.retweetedBy?.username || retweetInfo.retweetedBy?.display_name || 'someone'} reposted`
+                      }
                     </span>
                   </div>
                 )}
