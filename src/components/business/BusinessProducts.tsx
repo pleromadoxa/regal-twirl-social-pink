@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Package, Edit2, Trash2, Image } from 'lucide-react';
+import { Plus, Package, Edit2, Trash2, Image, Percent } from 'lucide-react';
 
 interface BusinessProductsProps {
   businessPage: any;
@@ -25,6 +27,9 @@ interface Product {
   images: string[];
   category: string;
   is_active: boolean;
+  discount_percentage: number;
+  discount_start_date: string;
+  discount_end_date: string;
   created_at: string;
 }
 
@@ -42,7 +47,10 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
     sku: '',
     stock_quantity: '0',
     category: '',
-    is_active: true
+    is_active: true,
+    discount_percentage: '0',
+    discount_start_date: '',
+    discount_end_date: ''
   });
 
   useEffect(() => {
@@ -58,7 +66,10 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
         sku: editingProduct.sku || '',
         stock_quantity: editingProduct.stock_quantity.toString(),
         category: editingProduct.category || '',
-        is_active: editingProduct.is_active
+        is_active: editingProduct.is_active,
+        discount_percentage: editingProduct.discount_percentage?.toString() || '0',
+        discount_start_date: editingProduct.discount_start_date || '',
+        discount_end_date: editingProduct.discount_end_date || ''
       });
     } else {
       setFormData({
@@ -68,7 +79,10 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
         sku: '',
         stock_quantity: '0',
         category: '',
-        is_active: true
+        is_active: true,
+        discount_percentage: '0',
+        discount_start_date: '',
+        discount_end_date: ''
       });
     }
   }, [editingProduct]);
@@ -110,7 +124,10 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
         sku: formData.sku,
         stock_quantity: parseInt(formData.stock_quantity) || 0,
         category: formData.category,
-        is_active: formData.is_active
+        is_active: formData.is_active,
+        discount_percentage: parseFloat(formData.discount_percentage) || 0,
+        discount_start_date: formData.discount_start_date || null,
+        discount_end_date: formData.discount_end_date || null
       };
 
       if (editingProduct) {
@@ -198,6 +215,26 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
     return `${getCurrencySymbol()}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const getDiscountedPrice = (product: Product) => {
+    if (!product.discount_percentage || product.discount_percentage <= 0) return product.price;
+    
+    const currentDate = new Date().toISOString().split('T')[0];
+    const isDiscountActive = (!product.discount_start_date || currentDate >= product.discount_start_date) &&
+                           (!product.discount_end_date || currentDate <= product.discount_end_date);
+    
+    if (!isDiscountActive) return product.price;
+    
+    return product.price * (1 - product.discount_percentage / 100);
+  };
+
+  const isDiscountActive = (product: Product) => {
+    if (!product.discount_percentage || product.discount_percentage <= 0) return false;
+    
+    const currentDate = new Date().toISOString().split('T')[0];
+    return (!product.discount_start_date || currentDate >= product.discount_start_date) &&
+           (!product.discount_end_date || currentDate <= product.discount_end_date);
+  };
+
   const openDialog = (product?: Product) => {
     setEditingProduct(product || null);
     setDialogOpen(true);
@@ -208,7 +245,7 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Product Management</h2>
-          <p className="text-muted-foreground">Manage your e-commerce products and inventory</p>
+          <p className="text-muted-foreground">Manage your e-commerce products, pricing, and discounts</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -220,7 +257,7 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
               Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
@@ -291,6 +328,46 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
                 </div>
               </div>
 
+              {/* Discount Section */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Percent className="w-5 h-5" />
+                  Discount Settings
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="discount_percentage">Discount (%)</Label>
+                    <Input
+                      id="discount_percentage"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={formData.discount_percentage}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discount_percentage: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="discount_start_date">Start Date</Label>
+                    <Input
+                      id="discount_start_date"
+                      type="date"
+                      value={formData.discount_start_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discount_start_date: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="discount_end_date">End Date</Label>
+                    <Input
+                      id="discount_end_date"
+                      type="date"
+                      value={formData.discount_end_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discount_end_date: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center space-x-2">
                 <Switch
                   id="is_active"
@@ -322,68 +399,91 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
             No products added yet. Create your first product above.
           </div>
         ) : (
-          products.map((product) => (
-            <Card key={product.id} className={`${!product.is_active ? 'opacity-50' : ''}`}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{product.name}</CardTitle>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openDialog(product)}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteProduct(product.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+          products.map((product) => {
+            const discountedPrice = getDiscountedPrice(product);
+            const hasActiveDiscount = isDiscountActive(product);
+            
+            return (
+              <Card key={product.id} className={`${!product.is_active ? 'opacity-50' : ''}`}>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{product.name}</CardTitle>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openDialog(product)}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteProduct(product.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-                    <Image className="w-12 h-12 text-gray-400" />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-green-600">
-                        {formatCurrency(product.price)}
-                      </span>
-                      <Switch
-                        checked={product.is_active}
-                        onCheckedChange={() => toggleProductStatus(product)}
-                      />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                      <Image className="w-12 h-12 text-gray-400" />
                     </div>
                     
-                    {product.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {product.description}
-                      </p>
-                    )}
-                    
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Stock: {product.stock_quantity}</span>
-                      {product.sku && <span>SKU: {product.sku}</span>}
-                    </div>
-                    
-                    {product.category && (
-                      <div className="inline-block bg-purple-100 dark:bg-purple-900/30 px-2 py-1 rounded text-xs">
-                        {product.category}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          {hasActiveDiscount ? (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg font-bold text-green-600">
+                                  {formatCurrency(discountedPrice)}
+                                </span>
+                                <Badge variant="secondary" className="bg-red-100 text-red-800">
+                                  -{product.discount_percentage}%
+                                </Badge>
+                              </div>
+                              <span className="text-sm text-gray-500 line-through">
+                                {formatCurrency(product.price)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-2xl font-bold text-green-600">
+                              {formatCurrency(product.price)}
+                            </span>
+                          )}
+                        </div>
+                        <Switch
+                          checked={product.is_active}
+                          onCheckedChange={() => toggleProductStatus(product)}
+                        />
                       </div>
-                    )}
+                      
+                      {product.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {product.description}
+                        </p>
+                      )}
+                      
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Stock: {product.stock_quantity}</span>
+                        {product.sku && <span>SKU: {product.sku}</span>}
+                      </div>
+                      
+                      {product.category && (
+                        <div className="inline-block bg-purple-100 dark:bg-purple-900/30 px-2 py-1 rounded text-xs">
+                          {product.category}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>

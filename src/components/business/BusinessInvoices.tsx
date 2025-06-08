@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -180,6 +179,53 @@ const BusinessInvoices = ({ businessPage }: BusinessInvoicesProps) => {
       toast({
         title: "Error",
         description: "Failed to delete invoice",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const downloadInvoice = async (invoice: Invoice) => {
+    try {
+      // Get business page details
+      const { data: businessData } = await supabase
+        .from('business_pages')
+        .select('*')
+        .eq('id', businessPage.id)
+        .single();
+
+      const invoiceData = {
+        id: invoice.id,
+        invoice_number: invoice.invoice_number,
+        business_page: {
+          page_name: businessData?.page_name || businessPage.page_name,
+          email: businessData?.email,
+          phone: businessData?.phone,
+          address: businessData?.address
+        },
+        client_name: invoice.client_name,
+        client_email: invoice.client_email,
+        client_address: invoice.client_address,
+        items: invoice.items || [],
+        subtotal: invoice.subtotal,
+        tax_rate: invoice.tax_rate,
+        tax_amount: invoice.tax_amount,
+        total_amount: invoice.total_amount,
+        currency: invoice.currency,
+        due_date: invoice.due_date,
+        issued_date: invoice.issued_date || invoice.created_at,
+        notes: invoice.notes
+      };
+
+      // Generate and download PDF
+      import('../../utils/invoiceGenerator').then(({ generateInvoicePDF }) => {
+        generateInvoicePDF(invoiceData);
+      });
+
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      toast({
+        title: "Error",
+        description: "Failed to download invoice",
         variant: "destructive"
       });
     }
@@ -412,10 +458,11 @@ const BusinessInvoices = ({ businessPage }: BusinessInvoicesProps) => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => downloadInvoice(invoice)}
+                    >
                       <Download className="w-4 h-4" />
                     </Button>
                     <Button

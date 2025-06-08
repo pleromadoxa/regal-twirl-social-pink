@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart, Package, Truck, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import OrderCreationDialog from './OrderCreationDialog';
 
 interface BusinessOrdersProps {
   businessPage: any;
@@ -207,19 +209,25 @@ const BusinessOrders = ({ businessPage }: BusinessOrdersProps) => {
           <h2 className="text-2xl font-bold">Order Management</h2>
           <p className="text-muted-foreground">Track and manage your e-commerce orders</p>
         </div>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter orders" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Orders</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="processing">Processing</SelectItem>
-            <SelectItem value="shipped">Shipped</SelectItem>
-            <SelectItem value="delivered">Delivered</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <OrderCreationDialog 
+            businessPage={businessPage} 
+            onOrderCreated={fetchOrders}
+          />
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filter orders" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Orders</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Orders List */}
@@ -231,7 +239,7 @@ const BusinessOrders = ({ businessPage }: BusinessOrdersProps) => {
             <CardContent className="text-center py-8">
               <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">
-                {filter === 'all' ? 'No orders received yet.' : `No ${filter} orders found.`}
+                {filter === 'all' ? 'No orders received yet. Create your first order above.' : `No ${filter} orders found.`}
               </p>
             </CardContent>
           </Card>

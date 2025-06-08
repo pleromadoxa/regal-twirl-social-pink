@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, DollarSign, Calendar, Trash2 } from 'lucide-react';
+import { Plus, DollarSign, TrendingUp, Calendar } from 'lucide-react';
 
 interface BusinessEarningsProps {
   businessPage: any;
@@ -33,7 +33,7 @@ const BusinessEarnings = ({ businessPage }: BusinessEarningsProps) => {
 
   const [formData, setFormData] = useState({
     amount: '',
-    source: '',
+    source: 'manual',
     description: '',
     date: new Date().toISOString().split('T')[0]
   });
@@ -67,7 +67,7 @@ const BusinessEarnings = ({ businessPage }: BusinessEarningsProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.amount || !formData.source) return;
+    if (!formData.amount || !formData.description) return;
 
     try {
       const { error } = await supabase
@@ -90,7 +90,7 @@ const BusinessEarnings = ({ businessPage }: BusinessEarningsProps) => {
 
       setFormData({
         amount: '',
-        source: '',
+        source: 'manual',
         description: '',
         date: new Date().toISOString().split('T')[0]
       });
@@ -101,30 +101,6 @@ const BusinessEarnings = ({ businessPage }: BusinessEarningsProps) => {
       toast({
         title: "Error",
         description: "Failed to add earning record",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const deleteEarning = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('business_earnings')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Earning record deleted"
-      });
-      fetchEarnings();
-    } catch (error) {
-      console.error('Error deleting earning:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete earning record",
         variant: "destructive"
       });
     }
@@ -143,13 +119,17 @@ const BusinessEarnings = ({ businessPage }: BusinessEarningsProps) => {
   };
 
   const totalEarnings = earnings.reduce((sum, earning) => sum + Number(earning.amount), 0);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthlyEarnings = earnings
+    .filter(earning => earning.date.startsWith(currentMonth))
+    .reduce((sum, earning) => sum + Number(earning.amount), 0);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Earnings Management</h2>
-          <p className="text-muted-foreground">Track your business income in {businessPage.default_currency}</p>
+          <p className="text-muted-foreground">Track your business revenue and income</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -160,56 +140,63 @@ const BusinessEarnings = ({ businessPage }: BusinessEarningsProps) => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Earning</DialogTitle>
+              <DialogTitle>Add Earning Record</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="amount">Amount ({businessPage.default_currency})</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  value={formData.amount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                  placeholder="0.00"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="amount">Amount ({businessPage.default_currency}) *</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="date">Date *</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                    required
+                  />
+                </div>
               </div>
+
               <div>
                 <Label htmlFor="source">Source</Label>
-                <Select value={formData.source} onValueChange={(value) => setFormData(prev => ({ ...prev, source: value }))}>
+                <Select
+                  value={formData.source}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, source: value }))}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select earning source" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="invoice">Invoice Payment</SelectItem>
-                    <SelectItem value="order">Product Sale</SelectItem>
+                    <SelectItem value="manual">Manual Entry</SelectItem>
+                    <SelectItem value="order">Product Order</SelectItem>
                     <SelectItem value="service">Service Payment</SelectItem>
-                    <SelectItem value="consulting">Consulting Fee</SelectItem>
-                    <SelectItem value="subscription">Subscription</SelectItem>
+                    <SelectItem value="invoice">Invoice Payment</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Brief description of the earning..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                  placeholder="Describe the source of this earning..."
                   required
                 />
               </div>
+
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">
                   Cancel
@@ -221,26 +208,46 @@ const BusinessEarnings = ({ businessPage }: BusinessEarningsProps) => {
         </Dialog>
       </div>
 
-      {/* Total Earnings Card */}
-      <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
-            <DollarSign className="w-5 h-5" />
-            Total Earnings
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold text-green-600">
-            {formatCurrency(totalEarnings)}
-          </div>
-          <p className="text-sm text-green-600/80">All time earnings</p>
-        </CardContent>
-      </Card>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {formatCurrency(totalEarnings)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              All time revenue
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">This Month</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {formatCurrency(monthlyEarnings)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Current month revenue
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Earnings List */}
       <Card>
         <CardHeader>
-          <CardTitle>Earnings History</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            Earnings History
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -252,32 +259,23 @@ const BusinessEarnings = ({ businessPage }: BusinessEarningsProps) => {
           ) : (
             <div className="space-y-4">
               {earnings.map((earning) => (
-                <div key={earning.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={earning.id} className="flex justify-between items-center p-4 border rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center gap-4">
-                      <div className="font-semibold text-lg text-green-600">
-                        {formatCurrency(earning.amount)}
+                      <div className="font-semibold text-green-600">
+                        {formatCurrency(Number(earning.amount))}
+                      </div>
+                      <div className="text-sm text-muted-foreground capitalize">
+                        {earning.source.replace('_', ' ')}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        <Calendar className="w-4 h-4 inline mr-1" />
                         {new Date(earning.date).toLocaleDateString()}
                       </div>
-                      <div className="text-sm bg-purple-100 dark:bg-purple-900/30 px-2 py-1 rounded">
-                        {earning.source}
-                      </div>
                     </div>
-                    {earning.description && (
-                      <p className="text-sm text-muted-foreground mt-1">{earning.description}</p>
-                    )}
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {earning.description}
+                    </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteEarning(earning.id)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
               ))}
             </div>
