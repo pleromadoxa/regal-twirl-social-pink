@@ -19,7 +19,7 @@ interface ImageUploadProps {
 const ImageUpload = ({ 
   currentImageUrl, 
   onImageUpload, 
-  bucketName = 'profile-images', 
+  bucketName, 
   folder, 
   className = "",
   isAvatar = false 
@@ -27,6 +27,9 @@ const ImageUpload = ({
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Use the correct bucket names based on folder type
+  const actualBucketName = folder === 'avatars' ? 'user-avatars' : 'user-banners';
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -69,11 +72,11 @@ const ImageUpload = ({
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${user.id}/${folder}/${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       // Upload file to Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from(bucketName)
+        .from(actualBucketName)
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -86,7 +89,7 @@ const ImageUpload = ({
 
       // Get public URL
       const { data } = supabase.storage
-        .from(bucketName)
+        .from(actualBucketName)
         .getPublicUrl(filePath);
 
       onImageUpload(data.publicUrl);
@@ -117,10 +120,10 @@ const ImageUpload = ({
       if (currentImageUrl && currentImageUrl.includes('supabase')) {
         const urlParts = currentImageUrl.split('/');
         const fileName = urlParts[urlParts.length - 1];
-        const filePath = `${user?.id}/${folder}/${fileName}`;
+        const filePath = `${user?.id}/${fileName}`;
         
         await supabase.storage
-          .from(bucketName)
+          .from(actualBucketName)
           .remove([filePath]);
       }
 
