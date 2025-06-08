@@ -96,12 +96,13 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
       // Map data to include default values for discount fields
-      const mappedData = (data || []).map(product => ({
+      const mappedData = (data || []).map((product: any) => ({
         ...product,
-        discount_percentage: product.discount_percentage || 0,
-        discount_start_date: product.discount_start_date || '',
-        discount_end_date: product.discount_end_date || ''
+        discount_percentage: product.discount_percentage ?? 0,
+        discount_start_date: product.discount_start_date ?? '',
+        discount_end_date: product.discount_end_date ?? ''
       }));
       setProducts(mappedData);
     } catch (error) {

@@ -63,7 +63,14 @@ const BusinessInvoices = ({ businessPage }: BusinessInvoicesProps) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setInvoices(data || []);
+      
+      // Map the database data to our Invoice interface
+      const mappedInvoices = (data || []).map(invoice => ({
+        ...invoice,
+        items: Array.isArray(invoice.items) ? invoice.items : []
+      }));
+      
+      setInvoices(mappedInvoices);
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast({
