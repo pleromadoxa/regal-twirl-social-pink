@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+  [key: string]: any; // Add index signature for Json compatibility
 }
 
 const OrderCreationDialog = ({ businessPage, onOrderCreated }: OrderCreationDialogProps) => {
@@ -74,12 +74,12 @@ const OrderCreationDialog = ({ businessPage, onOrderCreated }: OrderCreationDial
 
       const { error } = await supabase
         .from('business_orders')
-        .insert([{
+        .insert({
           business_page_id: businessPage.id,
           customer_name: formData.customer_name,
           customer_email: formData.customer_email,
           customer_address: formData.customer_address,
-          items: formData.items,
+          items: formData.items as any, // Cast to Json type
           subtotal,
           shipping_amount: formData.shipping_amount,
           total_amount: total,
@@ -87,7 +87,7 @@ const OrderCreationDialog = ({ businessPage, onOrderCreated }: OrderCreationDial
           status: 'pending',
           payment_status: 'pending',
           notes: formData.notes
-        }]);
+        });
 
       if (error) throw error;
 

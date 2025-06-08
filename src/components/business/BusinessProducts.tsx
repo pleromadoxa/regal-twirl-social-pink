@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,9 +26,9 @@ interface Product {
   images: string[];
   category: string;
   is_active: boolean;
-  discount_percentage: number;
-  discount_start_date: string;
-  discount_end_date: string;
+  discount_percentage?: number;
+  discount_start_date?: string;
+  discount_end_date?: string;
   created_at: string;
 }
 
@@ -97,7 +96,14 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProducts(data || []);
+      // Map data to include default values for discount fields
+      const mappedData = (data || []).map(product => ({
+        ...product,
+        discount_percentage: product.discount_percentage || 0,
+        discount_start_date: product.discount_start_date || '',
+        discount_end_date: product.discount_end_date || ''
+      }));
+      setProducts(mappedData);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast({

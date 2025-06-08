@@ -18,10 +18,18 @@ interface Invoice {
   id: string;
   invoice_number: string;
   client_name: string;
-  client_email: string;
+  client_email?: string;
+  client_address?: string;
+  items?: any[];
+  subtotal?: number;
+  tax_rate?: number;
+  tax_amount?: number;
   total_amount: number;
+  currency?: string;
   status: string;
-  due_date: string;
+  due_date?: string;
+  issued_date?: string;
+  notes?: string;
   created_at: string;
 }
 
@@ -203,17 +211,17 @@ const BusinessInvoices = ({ businessPage }: BusinessInvoicesProps) => {
           address: businessData?.address
         },
         client_name: invoice.client_name,
-        client_email: invoice.client_email,
-        client_address: invoice.client_address,
+        client_email: invoice.client_email || '',
+        client_address: invoice.client_address || '',
         items: invoice.items || [],
-        subtotal: invoice.subtotal,
-        tax_rate: invoice.tax_rate,
-        tax_amount: invoice.tax_amount,
+        subtotal: invoice.subtotal || 0,
+        tax_rate: invoice.tax_rate || 0,
+        tax_amount: invoice.tax_amount || 0,
         total_amount: invoice.total_amount,
-        currency: invoice.currency,
-        due_date: invoice.due_date,
+        currency: invoice.currency || businessPage.default_currency,
+        due_date: invoice.due_date || '',
         issued_date: invoice.issued_date || invoice.created_at,
-        notes: invoice.notes
+        notes: invoice.notes || ''
       };
 
       // Generate and download PDF
