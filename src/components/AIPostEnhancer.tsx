@@ -94,7 +94,7 @@ const AIPostEnhancer = ({ onTextGenerated, currentText }: AIPostEnhancerProps) =
           className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
         >
           <Sparkles className="w-4 h-4 mr-2" />
-          AI Generate
+          Regal Assistant
         </Button>
 
         <Button

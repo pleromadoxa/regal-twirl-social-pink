@@ -365,8 +365,8 @@ const TweetComposer = () => {
       <div className="flex space-x-4">
         <div className="w-12">
           <Avatar className="ring-2 ring-purple-300 dark:ring-purple-500 transition-all duration-500 hover:ring-pink-400 dark:hover:ring-pink-400 shadow-lg hover:scale-110 hover:shadow-2xl">
-            <AvatarImage src="/placeholder.svg" />
-            <AvatarFallback className="bg-gradient-to-br from-purple-500 via-blue-500 to-pink-500 text-white font-semibold animate-pulse">
+            <AvatarImage src={user.user_metadata?.avatar_url || "/placeholder.svg"} />
+            <AvatarFallback className="bg-gradient-to-br from-purple-500 via-blue-500 to-pink-500 text-white font-semibold">
               {user.email?.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -378,7 +378,6 @@ const TweetComposer = () => {
             onAccountChange={setSelectedAccount}
           />
 
-          {/* AI Post Enhancer */}
           <AIPostEnhancer
             onTextGenerated={handleAITextGenerated}
             currentText={isThreadMode ? threadTweets[threadTweets.length - 1] : tweetText}
@@ -489,6 +488,8 @@ const TweetComposer = () => {
                     src={URL.createObjectURL(video)}
                     className="w-full h-48 object-cover rounded-lg"
                     controls
+                    playsInline
+                    preload="metadata"
                   />
                   <Button
                     variant="ghost"
@@ -567,7 +568,7 @@ const TweetComposer = () => {
                 disabled={isUploading || (isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() && selectedImages.length === 0 && selectedVideos.length === 0 && !selectedAudio) || tweetText.length > maxLength)}
                 onClick={handleTweetSubmit}
                 text={isUploading ? 'Posting...' : (isThreadMode ? 'Post Thread' : 'Post')}
-                className="w-auto px-6"
+                className="w-auto px-8 py-3 text-lg scale-110"
               />
             </div>
           </div>
