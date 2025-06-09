@@ -1,0 +1,69 @@
+
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { prompt, type } = await req.json();
+
+    let systemMessage = '';
+    switch (type) {
+      case 'generate':
+        systemMessage = 'You are a creative social media content creator. Generate engaging, original posts based on the user prompt. Keep it concise, engaging, and appropriate for social media. Include relevant hashtags and emojis when appropriate.';
+        break;
+      case 'enhance':
+        systemMessage = 'You are a social media enhancement specialist. Improve the given text by making it more engaging, adding relevant hashtags, emojis, and improving the overall appeal while maintaining the original message and tone.';
+        break;
+      default:
+        systemMessage = 'You are a helpful social media assistant.';
+    }
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openRouterApiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://your-app-url.com',
+        'X-Title': 'Social Media AI Assistant',
+      },
+      body: JSON.stringify({
+        model: 'deepseek/deepseek-r1-0528-qwen3-8b:free',
+        messages: [
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(data.error.message || 'OpenRouter API error');
+    }
+
+    const generatedText = data.choices[0].message.content;
+
+    return new Response(JSON.stringify({ generatedText }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error in openrouter-ai function:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Search, TrendingUp, Users, Video, Hash } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -94,10 +93,7 @@ const Explore = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <UserSearch 
-                      showMessageButton 
-                      initialQuery={searchQuery}
-                    />
+                    <UserSearch showMessageButton />
                   </CardContent>
                 </Card>
 

@@ -15,6 +15,7 @@ import UserMentions from "./UserMentions";
 import LocationPicker from "./LocationPicker";
 import CalendarPicker from "./CalendarPicker";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
+import AIPostEnhancer from "./AIPostEnhancer";
 
 const TweetComposer = () => {
   const [tweetText, setTweetText] = useState("");
@@ -348,6 +349,15 @@ const TweetComposer = () => {
     });
   };
 
+  const handleAITextGenerated = (generatedText: string) => {
+    if (isThreadMode) {
+      const currentIndex = threadTweets.length - 1;
+      updateThreadTweet(currentIndex, generatedText);
+    } else {
+      setTweetText(generatedText);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -366,6 +376,12 @@ const TweetComposer = () => {
           <AccountSwitcher 
             selectedAccount={selectedAccount}
             onAccountChange={setSelectedAccount}
+          />
+
+          {/* AI Post Enhancer */}
+          <AIPostEnhancer
+            onTextGenerated={handleAITextGenerated}
+            currentText={isThreadMode ? threadTweets[threadTweets.length - 1] : tweetText}
           />
 
           {isThreadMode ? (
