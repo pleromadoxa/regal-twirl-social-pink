@@ -7,22 +7,15 @@ import { useReels } from '@/hooks/useReels';
 import { useAuth } from '@/contexts/AuthContext';
 import ReelCard from './ReelCard';
 import ReelUpload from './ReelUpload';
-import { type Reel } from '@/services/reelsService';
 
 const ReelsSection = () => {
   const [showUpload, setShowUpload] = useState(false);
-  const [selectedReel, setSelectedReel] = useState<Reel | null>(null);
   const { reels, loading, hasMore, toggleLike, recordView, loadMore, refresh } = useReels();
   const { user } = useAuth();
 
   const handleUploadComplete = () => {
     setShowUpload(false);
     refresh();
-  };
-
-  const handleComment = (reel: Reel) => {
-    setSelectedReel(reel);
-    // TODO: Implement comments modal
   };
 
   if (loading && reels.length === 0) {
@@ -86,13 +79,13 @@ const ReelsSection = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {reels.map((reel) => (
+            {reels.map((reel, index) => (
               <ReelCard
                 key={reel.id}
                 reel={reel}
+                isActive={index === 0}
                 onLike={toggleLike}
                 onView={recordView}
-                onComment={handleComment}
               />
             ))}
           </div>
