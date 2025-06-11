@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import SidebarNav from '@/components/SidebarNav';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   BarChart3, 
@@ -16,7 +15,8 @@ import {
   Package,
   Users,
   TrendingUp,
-  ArrowLeft
+  ArrowLeft,
+  Megaphone
 } from 'lucide-react';
 import BusinessInvoices from '@/components/business/BusinessInvoices';
 import BusinessProducts from '@/components/business/BusinessProducts';
@@ -24,6 +24,10 @@ import BusinessOrders from '@/components/business/BusinessOrders';
 import BusinessMessages from '@/components/business/BusinessMessages';
 import BusinessEarnings from '@/components/business/BusinessEarnings';
 import BusinessOverview from '@/components/business/BusinessOverview';
+import BusinessAdsManager from '@/components/business/BusinessAdsManager';
+import EcommerceDashboard from '@/components/business/EcommerceDashboard';
+import ITServicesDashboard from '@/components/business/ITServicesDashboard';
+import ImportExportDashboard from '@/components/business/ImportExportDashboard';
 
 const BusinessDashboard = () => {
   const { pageId } = useParams();
@@ -57,10 +61,10 @@ const BusinessDashboard = () => {
   }
 
   const getBusinessTools = () => {
-    const tools = ['overview', 'earnings', 'invoices', 'messages'];
+    const tools = ['overview', 'earnings', 'invoices', 'ads', 'messages'];
     
-    if (currentPage.business_type === 'e-commerce') {
-      tools.push('products', 'orders');
+    if (currentPage.business_type === 'ecommerce') {
+      tools.splice(3, 0, 'products', 'orders');
     }
     
     return tools;
@@ -72,7 +76,7 @@ const BusinessDashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
       
-      <div className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+      <div className="flex-1 ml-80 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
         {/* Header */}
         <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
           <div className="flex items-center gap-4">
@@ -110,7 +114,7 @@ const BusinessDashboard = () => {
                 <FileText className="w-4 h-4" />
                 Invoices
               </TabsTrigger>
-              {currentPage.business_type === 'e-commerce' && (
+              {currentPage.business_type === 'ecommerce' && (
                 <>
                   <TabsTrigger value="products" className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
@@ -122,6 +126,10 @@ const BusinessDashboard = () => {
                   </TabsTrigger>
                 </>
               )}
+              <TabsTrigger value="ads" className="flex items-center gap-2">
+                <Megaphone className="w-4 h-4" />
+                Ads
+              </TabsTrigger>
               <TabsTrigger value="messages" className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
                 Messages
@@ -129,7 +137,15 @@ const BusinessDashboard = () => {
             </TabsList>
 
             <TabsContent value="overview">
-              <BusinessOverview businessPage={currentPage} />
+              {currentPage.business_type === 'ecommerce' ? (
+                <EcommerceDashboard businessPage={currentPage} />
+              ) : currentPage.business_type === 'it_services' ? (
+                <ITServicesDashboard businessPage={currentPage} />
+              ) : currentPage.business_type === 'import_export' ? (
+                <ImportExportDashboard businessPage={currentPage} />
+              ) : (
+                <BusinessOverview businessPage={currentPage} />
+              )}
             </TabsContent>
 
             <TabsContent value="earnings">
@@ -140,7 +156,7 @@ const BusinessDashboard = () => {
               <BusinessInvoices businessPage={currentPage} />
             </TabsContent>
 
-            {currentPage.business_type === 'e-commerce' && (
+            {currentPage.business_type === 'ecommerce' && (
               <>
                 <TabsContent value="products">
                   <BusinessProducts businessPage={currentPage} />
@@ -151,6 +167,10 @@ const BusinessDashboard = () => {
                 </TabsContent>
               </>
             )}
+
+            <TabsContent value="ads">
+              <BusinessAdsManager businessPage={currentPage} />
+            </TabsContent>
 
             <TabsContent value="messages">
               <BusinessMessages businessPage={currentPage} />

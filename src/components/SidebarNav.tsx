@@ -1,173 +1,196 @@
 
-import { Home, Search, MessageCircle, Pin, User, MoreHorizontal, LogOut, UserCheck, Briefcase, Star, TrendingUp, Crown, Settings, Building } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import BusinessPageDialog from "./BusinessPageDialog";
-import PremiumDialog from "./PremiumDialog";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useBusinessPages } from "@/hooks/useBusinessPages";
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useBusinessPages } from '@/hooks/useBusinessPages';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
+import { 
+  Home, 
+  Bell, 
+  Mail, 
+  User, 
+  Search, 
+  Settings, 
+  Briefcase,
+  Building,
+  Menu,
+  X,
+  Bookmark,
+  Hash,
+  Users,
+  Video,
+  TrendingUp,
+  Megaphone
+} from 'lucide-react';
+import AccountSwitcher from './AccountSwitcher';
 
 const SidebarNav = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const { theme } = useTheme();
+  const { user } = useAuth();
   const { myPages } = useBusinessPages();
+  const location = useLocation();
+  const [isExpanded, setIsExpanded] = useState(true);
 
-  // Check if user has any professional accounts
-  const hasBusinessAccounts = myPages.length > 0;
-
-  const navigationItems = [
-    { icon: Home, label: "Home", path: "/home", active: location.pathname === "/home" },
-    { icon: Search, label: "Explore", path: "/explore", active: location.pathname === "/explore" },
-    { icon: MessageCircle, label: "Messages", path: "/messages", active: location.pathname === "/messages" },
-    { icon: Pin, label: "Pinned", path: "/pinned", active: location.pathname === "/pinned" },
-    { icon: User, label: "Profile", path: `/profile/${user?.id}`, active: location.pathname.startsWith("/profile") },
-    // Conditionally add Business menu item
-    ...(hasBusinessAccounts ? [{ icon: Building, label: "Business", path: "/business", active: location.pathname === "/business" }] : []),
-    { icon: Settings, label: "Settings", path: "/settings", active: location.pathname === "/settings" }
+  const navigation = [
+    { icon: Home, label: 'Home', href: '/' },
+    { icon: Search, label: 'Explore', href: '/explore' },
+    { icon: Bell, label: 'Notifications', href: '/notifications' },
+    { icon: Mail, label: 'Messages', href: '/messages' },
+    { icon: Bookmark, label: 'Pinned', href: '/pinned' },
+    { icon: Video, label: 'Reels', href: '/?tab=reels' },
+    { icon: Hash, label: 'Hashtags', href: '/explore?type=hashtags' },
+    { icon: User, label: 'Profile', href: `/profile/${user?.id}` },
+    { icon: Settings, label: 'Settings', href: '/settings' },
   ];
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
+  const businessNavigation = [
+    { icon: Building, label: 'My Businesses', href: '/professional' },
+    { icon: TrendingUp, label: 'Analytics', href: '/business-analytics' },
+    { icon: Megaphone, label: 'Ads Manager', href: '/ads-manager' },
+    { icon: Users, label: 'Directory', href: '/professional-accounts' },
+  ];
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
-  };
-
-  const handleCreatePost = () => {
-    navigate('/home');
-    // Focus on the post composer if on home page
-    setTimeout(() => {
-      const postComposer = document.querySelector('textarea[placeholder*="What\'s happening"]');
-      if (postComposer) {
-        (postComposer as HTMLTextAreaElement).focus();
-      }
-    }, 100);
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return location.pathname === '/' && !location.search.includes('tab=reels');
+    }
+    if (href === '/?tab=reels') {
+      return location.pathname === '/' && location.search.includes('tab=reels');
+    }
+    return location.pathname.startsWith(href);
   };
 
   return (
-    <aside className="w-72 bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900 border-r border-purple-200 dark:border-purple-800 flex flex-col h-screen">
-      {/* Fixed Logo Header */}
-      <div className="px-6 py-6 flex items-center justify-between border-b border-purple-200 dark:border-purple-800">
-        <div className="flex items-center space-x-3">
-          <img 
-            src="/lovable-uploads/630c36d5-5341-4bdf-bab8-ba3bd2bdc8b6.png"
-            alt="Regal Network" 
-            className="h-24 w-auto"
-          />
-        </div>
-        <ThemeToggle />
-      </div>
-
-      {/* Scrollable Content */}
-      <ScrollArea className="flex-1">
-        <div className="p-6 space-y-4">
-          {/* Navigation */}
-          <nav className="space-y-2">
-            {navigationItems.map((item) => {
-              const IconComponent = item.icon;
-              return (
-                <Button
-                  key={item.label}
-                  onClick={() => handleNavigation(item.path)}
-                  variant="ghost"
-                  className={`w-full justify-start px-6 py-4 text-lg rounded-2xl transition-all duration-200 hover:bg-purple-100 dark:hover:bg-purple-900/20 ${
-                    item.active 
-                      ? 'shadow-lg bg-[rgba(170,202,255,0.2)] text-purple-700 dark:text-purple-300' 
-                      : 'opacity-80 hover:opacity-100'
-                  }`}
-                >
-                  <IconComponent className="w-6 h-6 mr-3" />
-                  {item.label}
-                </Button>
-              );
-            })}
-          </nav>
-
-          {/* Action Buttons */}
-          <div className="pt-6 space-y-3">
-            {user ? (
-              <>
-                <InteractiveHoverButton 
-                  onClick={handleCreatePost}
-                  text="Create Post"
-                  className="w-full py-4 text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200"
-                />
-                
-                {/* Premium Subscription */}
-                <PremiumDialog
-                  trigger={
-                    <Button 
-                      variant="outline"
-                      className="w-full py-3 text-sm font-medium rounded-2xl border-amber-200 hover:bg-amber-50 text-amber-600 dark:border-amber-800 dark:hover:bg-amber-900/20 dark:text-amber-400 transition-all duration-200"
-                    >
-                      <Crown className="w-4 h-4 mr-2" />
-                      Upgrade to Premium
-                    </Button>
-                  }
-                />
-                
-                {/* Professional Account Creation */}
-                <BusinessPageDialog
-                  trigger={
-                    <Button 
-                      variant="outline"
-                      className="w-full py-3 text-sm font-medium rounded-2xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/50 transition-all duration-200"
-                    >
-                      <Briefcase className="w-4 h-4 mr-2" />
-                      Create Professional Account
-                    </Button>
-                  }
-                />
-                
-                <Button 
-                  onClick={handleSignOut}
-                  variant="outline"
-                  className="w-full py-3 text-sm font-medium rounded-2xl border-red-200 hover:bg-red-50 text-red-600 dark:border-red-800 dark:hover:bg-red-900/20 dark:text-red-400 transition-all duration-200"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <InteractiveHoverButton 
-                onClick={() => navigate('/auth')}
-                text="Sign In"
-                className="w-full py-4 text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200"
-              />
-            )}
-          </div>
-
-          {/* User Card */}
-          {user && (
-            <div className="mt-8 p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-purple-200 dark:border-purple-800">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">
-                    {user.email?.[0]?.toUpperCase() || 'U'}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                    Welcome back!
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                    {user.email}
-                  </p>
-                </div>
+    <div className={`${isExpanded ? 'w-80' : 'w-20'} transition-all duration-300 ease-in-out fixed left-0 top-0 h-screen bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-r border-purple-200 dark:border-purple-800 z-40 overflow-y-auto`}>
+      <div className="p-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          {isExpanded && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">L</span>
               </div>
+              <span className="font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Lovable
+              </span>
             </div>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-2"
+          >
+            {isExpanded ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
         </div>
-      </ScrollArea>
-    </aside>
+
+        {/* Account Switcher */}
+        {isExpanded && user && (
+          <div className="mb-6">
+            <AccountSwitcher />
+          </div>
+        )}
+
+        {/* Main Navigation */}
+        <nav className="space-y-2 mb-6">
+          {navigation.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
+            
+            return (
+              <Link key={item.href} to={item.href}>
+                <Button
+                  variant={active ? "default" : "ghost"}
+                  className={`w-full justify-start gap-3 transition-colors ${
+                    active 
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700' 
+                      : 'hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                  } ${!isExpanded ? 'px-3' : ''}`}
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {isExpanded && <span>{item.label}</span>}
+                </Button>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {isExpanded && <Separator className="my-6" />}
+
+        {/* Business Navigation */}
+        {isExpanded && (
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-3">Business</h3>
+            <nav className="space-y-2">
+              {businessNavigation.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.href);
+                
+                return (
+                  <Link key={item.href} to={item.href}>
+                    <Button
+                      variant={active ? "default" : "ghost"}
+                      className={`w-full justify-start gap-3 transition-colors ${
+                        active 
+                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700' 
+                          : 'hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      <span>{item.label}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        )}
+
+        {/* My Business Pages */}
+        {isExpanded && myPages.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground mb-3">My Pages</h3>
+            <div className="space-y-2">
+              {myPages.slice(0, 3).map((page) => (
+                <Link key={page.id} to={`/business/${page.id}`}>
+                  <Card className="hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors cursor-pointer">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Briefcase className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">{page.page_name}</p>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {page.business_type || page.page_type}
+                          </p>
+                          {page.shop_status && (
+                            <Badge variant="outline" className="mt-1 text-xs">
+                              {page.shop_status}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+              
+              {myPages.length > 3 && (
+                <Link to="/professional">
+                  <Button variant="ghost" className="w-full text-sm text-muted-foreground">
+                    View all {myPages.length} pages
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
