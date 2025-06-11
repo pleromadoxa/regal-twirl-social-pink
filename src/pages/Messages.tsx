@@ -11,7 +11,7 @@ import SidebarNav from '@/components/SidebarNav';
 import CallHistorySection from '@/components/CallHistorySection';
 import GroupMessagesSection from '@/components/GroupMessagesSection';
 import { MessagesNavigationDock } from '@/components/MessagesNavigationDock';
-import { MessageCircle, Users, Bell, Search, Archive, Settings } from 'lucide-react';
+import { MessageCircle, Users, Bell } from 'lucide-react';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -102,9 +102,10 @@ const Messages = () => {
                   </div>
                 ) : (
                   filteredConversations.map((conversation) => {
+                    // Get the other participant
                     const otherParticipant = conversation.participant_1 === user?.id 
-                      ? (conversation.participant_2_profile || conversation.profiles_participant_2)
-                      : (conversation.participant_1_profile || conversation.profiles_participant_1);
+                      ? conversation.participant_2_profile
+                      : conversation.participant_1_profile;
                     
                     const isUnread = conversation.last_message && 
                                    !conversation.last_message.read_at && 
@@ -122,7 +123,7 @@ const Messages = () => {
                           <div className="flex items-center gap-3">
                             <div className="relative">
                               <Avatar className="w-12 h-12">
-                                <AvatarImage src={otherParticipant?.avatar_url} />
+                                <AvatarImage src={otherParticipant?.avatar_url || ''} />
                                 <AvatarFallback className="bg-purple-500 text-white">
                                   {otherParticipant?.display_name?.charAt(0) || 
                                    otherParticipant?.username?.charAt(0) || '?'}
@@ -135,7 +136,7 @@ const Messages = () => {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <p className="font-medium truncate">
-                                  {otherParticipant?.display_name || otherParticipant?.username || 'Unknown'}
+                                  {otherParticipant?.display_name || otherParticipant?.username || 'Unknown User'}
                                 </p>
                                 {conversation.last_message && (
                                   <span className="text-xs text-muted-foreground">

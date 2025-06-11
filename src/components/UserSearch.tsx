@@ -131,6 +131,14 @@ const UserSearch = ({ showMessageButton = false }: UserSearchProps) => {
     }
   };
 
+  const handleResultClick = (result: UserSearchResult) => {
+    if (result.type === 'business') {
+      navigate(`/professional/${result.id}`);
+    } else {
+      navigate(`/profile/${result.id}`);
+    }
+  };
+
   return (
     <Card>
       <CardContent className="p-4">
@@ -155,7 +163,11 @@ const UserSearch = ({ showMessageButton = false }: UserSearchProps) => {
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Search Results</p>
               {searchResults.map((result) => (
-                <div key={`${result.type}-${result.id}`} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+                <div 
+                  key={`${result.type}-${result.id}`} 
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
+                  onClick={() => handleResultClick(result)}
+                >
                   <div className="flex items-center gap-3">
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={result.avatar_url} />
@@ -188,7 +200,10 @@ const UserSearch = ({ showMessageButton = false }: UserSearchProps) => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleMessageUser(result.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMessageUser(result.id);
+                      }}
                     >
                       <MessageCircle className="w-3 h-3 mr-1" />
                       Message

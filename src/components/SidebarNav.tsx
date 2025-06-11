@@ -26,6 +26,7 @@ import {
   Megaphone
 } from 'lucide-react';
 import AccountSwitcher from './AccountSwitcher';
+import ThemeToggle from './ThemeToggle';
 
 const SidebarNav = () => {
   const { user } = useAuth();
@@ -50,7 +51,7 @@ const SidebarNav = () => {
     { icon: Building, label: 'My Businesses', href: '/professional' },
     { icon: TrendingUp, label: 'Analytics', href: '/business-analytics' },
     { icon: Megaphone, label: 'Ads Manager', href: '/ads-manager' },
-    { icon: Users, label: 'Directory', href: '/professional-accounts' },
+    { icon: Users, label: 'Directory', href: '/professional-directory' },
   ];
 
   const isActive = (href: string) => {
@@ -66,16 +67,27 @@ const SidebarNav = () => {
   return (
     <div className={`${isExpanded ? 'w-80' : 'w-20'} transition-all duration-300 ease-in-out fixed left-0 top-0 h-screen bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-r border-purple-200 dark:border-purple-800 z-50 overflow-y-auto`}>
       <div className="p-4">
-        {/* Header */}
+        {/* Header with Logo and Theme Toggle */}
         <div className="flex items-center justify-between mb-6">
           {isExpanded && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">L</span>
-              </div>
+            <div className="flex items-center gap-3">
+              <img 
+                src="/lovable-uploads/d2cf9ddb-740e-4a22-af28-03c3fdd1ffe6.png"
+                alt="Regal Network Logo" 
+                className="w-8 h-8"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = document.createElement('div');
+                  fallback.className = 'w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center';
+                  fallback.innerHTML = '<span class="text-white font-bold text-sm">R</span>';
+                  target.parentNode?.appendChild(fallback);
+                }}
+              />
               <span className="font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Lovable
+                Regal Network
               </span>
+              <ThemeToggle />
             </div>
           )}
           <Button
@@ -171,9 +183,9 @@ const SidebarNav = () => {
                           <p className="text-xs text-muted-foreground capitalize">
                             {page.business_type || page.page_type}
                           </p>
-                          {page.shop_settings && (
+                          {page.shop_settings && page.shop_status && (
                             <Badge variant="outline" className="mt-1 text-xs">
-                              {page.shop_status || 'active'}
+                              {page.shop_status}
                             </Badge>
                           )}
                         </div>

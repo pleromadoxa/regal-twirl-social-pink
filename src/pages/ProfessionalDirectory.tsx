@@ -1,184 +1,175 @@
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import SidebarNav from '@/components/SidebarNav';
+import RightSidebar from '@/components/RightSidebar';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Search,
-  Building,
-  Users,
-  MapPin,
-  Star,
-  Phone,
-  Mail,
-  Globe,
-  Filter
-} from 'lucide-react';
-import SidebarNav from '@/components/SidebarNav';
+import { Badge } from '@/components/ui/badge';
+import { Building, Search, Crown, Users as UsersIcon, User as UserIcon } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 
 const ProfessionalDirectory = () => {
-  const { pages, loading } = useBusinessPages();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const { pages, loading, searchPages } = useBusinessPages();
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const navigate = useNavigate();
 
-  const categories = [
-    { id: 'all', name: 'All Categories' },
-    { id: 'e-commerce', name: 'E-commerce' },
-    { id: 'it-services', name: 'IT Services' },
-    { id: 'consulting', name: 'Consulting' },
-    { id: 'manufacturing', name: 'Manufacturing' },
-    { id: 'retail', name: 'Retail' },
-    { id: 'restaurant', name: 'Restaurant' },
-    { id: 'healthcare', name: 'Healthcare' },
-    { id: 'education', name: 'Education' },
-    { id: 'finance', name: 'Finance' }
-  ];
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim()) {
+      setIsSearching(true);
+      const results = await searchPages(query);
+      setSearchResults(results);
+      setIsSearching(false);
+    } else {
+      setSearchResults([]);
+    }
+  };
 
-  const filteredPages = pages.filter(page => {
-    const matchesSearch = page.page_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         page.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || page.business_type === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const getBusinessIcon = (type: string) => {
+    switch (type) {
+      case 'business':
+        return <Building className="w-4 h-4 text-purple-600" />;
+      case 'organization':
+        return <UsersIcon className="w-4 h-4 text-blue-600" />;
+      case 'professional':
+        return <UserIcon className="w-4 h-4 text-green-600" />;
+      default:
+        return <UserIcon className="w-4 h-4 text-gray-600" />;
+    }
+  };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-        <SidebarNav />
-        <div className="flex-1 ml-80 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-        </div>
-      </div>
-    );
-  }
+  const displayPages = searchQuery ? searchResults : pages;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
       <SidebarNav />
       
-      <div className="flex-1 ml-80 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Professional Directory
-            </h1>
-          </div>
-
-          {/* Search and Filter */}
-          <div className="flex gap-4 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search businesses, services, or professionals..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button variant="outline">
-              <Filter className="w-4 h-4 mr-2" />
-              Filters
-            </Button>
-          </div>
-
-          <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
-              {categories.map((category) => (
-                <TabsTrigger key={category.id} value={category.id} className="text-xs">
-                  {category.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            <TabsContent value={selectedCategory} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredPages.map((page) => (
-                  <Card key={page.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-12 h-12">
-                            <AvatarImage src={page.avatar_url || ''} />
-                            <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                              <Building className="w-6 h-6" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <CardTitle className="text-lg">{page.page_name}</CardTitle>
-                            <p className="text-sm text-muted-foreground capitalize">
-                              {page.business_type || page.page_type}
-                            </p>
-                          </div>
-                        </div>
-                        {page.is_verified && (
-                          <Badge variant="secondary" className="text-xs">
-                            <Star className="w-3 h-3 mr-1" />
-                            Verified
-                          </Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-4">
-                      {page.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {page.description}
-                        </p>
-                      )}
-                      
-                      <div className="space-y-2">
-                        {page.address && (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <MapPin className="w-3 h-3" />
-                            {page.address}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Users className="w-3 h-3" />
-                          {page.followers_count} followers
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 pt-2">
-                        {page.phone && (
-                          <Button size="sm" variant="outline" className="flex-1">
-                            <Phone className="w-3 h-3 mr-1" />
-                            Call
-                          </Button>
-                        )}
-                        {page.email && (
-                          <Button size="sm" variant="outline" className="flex-1">
-                            <Mail className="w-3 h-3 mr-1" />
-                            Email
-                          </Button>
-                        )}
-                        {page.website && (
-                          <Button size="sm" variant="outline" className="flex-1">
-                            <Globe className="w-3 h-3 mr-1" />
-                            Visit
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+      <div className="flex-1 flex gap-6 ml-80">
+        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+          {/* Header */}
+          <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  Professional Directory
+                </h1>
+                <p className="text-slate-600 dark:text-slate-400 mt-2">
+                  Discover and connect with professionals and businesses
+                </p>
               </div>
               
-              {filteredPages.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Building className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-lg font-medium">No businesses found</p>
-                  <p className="text-sm">Try adjusting your search criteria</p>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search professional accounts..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10 rounded-xl border-purple-200 focus:border-purple-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {/* Professional Accounts */}
+            <div>
+              <h2 className="text-xl font-bold mb-4 text-slate-900 dark:text-slate-100">
+                {searchQuery ? `Search Results (${displayPages.length})` : 'All Professional Accounts'}
+              </h2>
+              
+              {loading || isSearching ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                </div>
+              ) : displayPages.length === 0 ? (
+                <div className="text-center py-12">
+                  <Building className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-400 mb-2">
+                    {searchQuery ? 'No accounts found' : 'No professional accounts yet'}
+                  </h3>
+                  <p className="text-slate-500 dark:text-slate-500">
+                    {searchQuery ? 'Try a different search term' : 'Be the first to create a professional account'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {displayPages.map((page) => (
+                    <Card 
+                      key={page.id} 
+                      className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm hover:shadow-lg transition-all duration-300 cursor-pointer" 
+                      onClick={() => navigate(`/professional/${page.id}`)}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-12 h-12">
+                              <AvatarImage src={page.avatar_url || undefined} />
+                              <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white">
+                                {page.page_name[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                                  {page.page_name}
+                                </h3>
+                                {page.is_verified && (
+                                  <Crown className="w-4 h-4 text-yellow-500" />
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {getBusinessIcon(page.page_type)}
+                                <span className="text-xs text-slate-600 dark:text-slate-400 capitalize">
+                                  {page.page_type}
+                                </span>
+                                {page.business_type && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {page.business_type}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        {page.description && (
+                          <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mt-2">
+                            {page.description}
+                          </p>
+                        )}
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400 mb-4">
+                          <span>{page.followers_count} followers</span>
+                          {page.default_currency && (
+                            <span>Currency: {page.default_currency}</span>
+                          )}
+                        </div>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/professional/${page.id}`);
+                          }}
+                          className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                          size="sm"
+                        >
+                          View Profile
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
-            </TabsContent>
-          </Tabs>
-        </div>
+            </div>
+          </div>
+        </main>
+        
+        <RightSidebar />
       </div>
     </div>
   );
