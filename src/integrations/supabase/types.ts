@@ -42,47 +42,6 @@ export type Database = {
         }
         Relationships: []
       }
-      ad_analytics: {
-        Row: {
-          ad_id: string | null
-          clicks: number | null
-          conversions: number | null
-          created_at: string | null
-          date: string | null
-          id: string
-          impressions: number | null
-          spent_amount: number | null
-        }
-        Insert: {
-          ad_id?: string | null
-          clicks?: number | null
-          conversions?: number | null
-          created_at?: string | null
-          date?: string | null
-          id?: string
-          impressions?: number | null
-          spent_amount?: number | null
-        }
-        Update: {
-          ad_id?: string | null
-          clicks?: number | null
-          conversions?: number | null
-          created_at?: string | null
-          date?: string | null
-          id?: string
-          impressions?: number | null
-          spent_amount?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ad_analytics_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "business_ads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       ai_generations: {
         Row: {
           created_at: string
@@ -109,159 +68,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      business_ads: {
-        Row: {
-          ad_type: string
-          budget_amount: number
-          budget_currency: string | null
-          business_page_id: string | null
-          clicks: number | null
-          conversions: number | null
-          created_at: string | null
-          description: string | null
-          duration_days: number
-          ends_at: string | null
-          id: string
-          impressions: number | null
-          spent_amount: number | null
-          starts_at: string | null
-          status: string | null
-          target_countries: string[] | null
-          target_product_id: string | null
-          target_regions: string[] | null
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          ad_type: string
-          budget_amount: number
-          budget_currency?: string | null
-          business_page_id?: string | null
-          clicks?: number | null
-          conversions?: number | null
-          created_at?: string | null
-          description?: string | null
-          duration_days: number
-          ends_at?: string | null
-          id?: string
-          impressions?: number | null
-          spent_amount?: number | null
-          starts_at?: string | null
-          status?: string | null
-          target_countries?: string[] | null
-          target_product_id?: string | null
-          target_regions?: string[] | null
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          ad_type?: string
-          budget_amount?: number
-          budget_currency?: string | null
-          business_page_id?: string | null
-          clicks?: number | null
-          conversions?: number | null
-          created_at?: string | null
-          description?: string | null
-          duration_days?: number
-          ends_at?: string | null
-          id?: string
-          impressions?: number | null
-          spent_amount?: number | null
-          starts_at?: string | null
-          status?: string | null
-          target_countries?: string[] | null
-          target_product_id?: string | null
-          target_regions?: string[] | null
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "business_ads_business_page_id_fkey"
-            columns: ["business_page_id"]
-            isOneToOne: false
-            referencedRelation: "business_pages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      business_bookings: {
-        Row: {
-          booking_date: string
-          business_page_id: string | null
-          created_at: string | null
-          currency: string | null
-          customer_email: string
-          customer_id: string | null
-          customer_name: string
-          customer_phone: string | null
-          duration_minutes: number
-          id: string
-          notes: string | null
-          service_id: string | null
-          status: string | null
-          total_amount: number
-          updated_at: string | null
-        }
-        Insert: {
-          booking_date: string
-          business_page_id?: string | null
-          created_at?: string | null
-          currency?: string | null
-          customer_email: string
-          customer_id?: string | null
-          customer_name: string
-          customer_phone?: string | null
-          duration_minutes: number
-          id?: string
-          notes?: string | null
-          service_id?: string | null
-          status?: string | null
-          total_amount: number
-          updated_at?: string | null
-        }
-        Update: {
-          booking_date?: string
-          business_page_id?: string | null
-          created_at?: string | null
-          currency?: string | null
-          customer_email?: string
-          customer_id?: string | null
-          customer_name?: string
-          customer_phone?: string | null
-          duration_minutes?: number
-          id?: string
-          notes?: string | null
-          service_id?: string | null
-          status?: string | null
-          total_amount?: number
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "business_bookings_business_page_id_fkey"
-            columns: ["business_page_id"]
-            isOneToOne: false
-            referencedRelation: "business_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "business_bookings_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "business_bookings_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "business_services"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       business_earnings: {
         Row: {
@@ -531,7 +337,6 @@ export type Database = {
           default_currency: string | null
           description: string | null
           email: string | null
-          featured_products: Json | null
           followers_count: number | null
           id: string
           is_verified: boolean | null
@@ -539,9 +344,6 @@ export type Database = {
           page_name: string
           page_type: string
           phone: string | null
-          shop_active: boolean | null
-          shop_settings: Json | null
-          shop_status: string | null
           updated_at: string
           website: string | null
         }
@@ -556,7 +358,6 @@ export type Database = {
           default_currency?: string | null
           description?: string | null
           email?: string | null
-          featured_products?: Json | null
           followers_count?: number | null
           id?: string
           is_verified?: boolean | null
@@ -564,9 +365,6 @@ export type Database = {
           page_name: string
           page_type: string
           phone?: string | null
-          shop_active?: boolean | null
-          shop_settings?: Json | null
-          shop_status?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -581,7 +379,6 @@ export type Database = {
           default_currency?: string | null
           description?: string | null
           email?: string | null
-          featured_products?: Json | null
           followers_count?: number | null
           id?: string
           is_verified?: boolean | null
@@ -589,9 +386,6 @@ export type Database = {
           page_name?: string
           page_type?: string
           phone?: string | null
-          shop_active?: boolean | null
-          shop_settings?: Json | null
-          shop_status?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -646,59 +440,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "business_products_business_page_id_fkey"
-            columns: ["business_page_id"]
-            isOneToOne: false
-            referencedRelation: "business_pages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      business_services: {
-        Row: {
-          booking_settings: Json | null
-          business_page_id: string | null
-          category: string | null
-          created_at: string | null
-          currency: string | null
-          description: string | null
-          duration_minutes: number | null
-          id: string
-          is_active: boolean | null
-          name: string
-          price: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          booking_settings?: Json | null
-          business_page_id?: string | null
-          category?: string | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          duration_minutes?: number | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          price?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          booking_settings?: Json | null
-          business_page_id?: string | null
-          category?: string | null
-          created_at?: string | null
-          currency?: string | null
-          description?: string | null
-          duration_minutes?: number | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          price?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "business_services_business_page_id_fkey"
             columns: ["business_page_id"]
             isOneToOne: false
             referencedRelation: "business_pages"
@@ -1178,7 +919,6 @@ export type Database = {
       }
       posts: {
         Row: {
-          audio_url: string | null
           content: string
           created_at: string
           id: string
@@ -1191,7 +931,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          audio_url?: string | null
           content: string
           created_at?: string
           id?: string
@@ -1204,7 +943,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          audio_url?: string | null
           content?: string
           created_at?: string
           id?: string

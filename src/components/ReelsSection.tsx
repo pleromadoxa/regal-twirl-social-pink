@@ -37,14 +37,14 @@ const ReelsSection = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-purple-800 dark:text-purple-300">
+          <h2 className="text-2xl font-bold text-purple-800 dark:text-purple-300">
             Short Video Reels
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-gray-600 dark:text-gray-400">
             Discover amazing short videos from the community
           </p>
         </div>
@@ -52,8 +52,8 @@ const ReelsSection = () => {
         {user && (
           <Dialog open={showUpload} onOpenChange={setShowUpload}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg px-6 py-3">
-                <Plus className="w-5 h-5 mr-2" />
+              <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                <Plus className="w-4 h-4 mr-2" />
                 Create Reel
               </Button>
             </DialogTrigger>
@@ -69,23 +69,23 @@ const ReelsSection = () => {
 
       {/* Reels Grid */}
       {reels.length === 0 ? (
-        <div className="text-center py-16">
-          <Video className="w-20 h-20 mx-auto text-gray-400 mb-6" />
-          <h3 className="text-2xl font-semibold text-gray-600 mb-4">No reels yet</h3>
-          <p className="text-gray-500 mb-6 text-lg">Be the first to share a short video!</p>
+        <div className="text-center py-12">
+          <Video className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-600 mb-2">No reels yet</h3>
+          <p className="text-gray-500 mb-4">Be the first to share a short video!</p>
           {user && (
             <Button
               onClick={() => setShowUpload(true)}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg px-8 py-4"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
             >
-              <Plus className="w-5 h-5 mr-2" />
+              <Plus className="w-4 h-4 mr-2" />
               Create First Reel
             </Button>
           )}
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {reels.map((reel) => (
               <ReelCard
                 key={reel.id}
@@ -99,12 +99,12 @@ const ReelsSection = () => {
 
           {/* Load More */}
           {hasMore && (
-            <div className="text-center pt-8">
+            <div className="text-center pt-6">
               <Button
                 onClick={loadMore}
                 variant="outline"
                 disabled={loading}
-                className="min-w-40 py-3 text-lg"
+                className="min-w-32"
               >
                 {loading ? 'Loading...' : 'Load More'}
               </Button>

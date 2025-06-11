@@ -29,13 +29,12 @@ export interface Reel {
 
 interface ReelCardProps {
   reel: Reel;
-  isActive?: boolean;
+  isActive: boolean;
   onLike: (reelId: string) => void;
   onView: (reelId: string) => void;
-  onComment?: (reel: Reel) => void;
 }
 
-const ReelCard = ({ reel, isActive = false, onLike, onView, onComment }: ReelCardProps) => {
+const ReelCard = ({ reel, isActive, onLike, onView }: ReelCardProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [hasViewed, setHasViewed] = useState(false);
@@ -45,6 +44,7 @@ const ReelCard = ({ reel, isActive = false, onLike, onView, onComment }: ReelCar
   useEffect(() => {
     if (videoRef.current) {
       if (isActive && !hasViewed) {
+        // Record view when video becomes active
         onView(reel.id);
         setHasViewed(true);
       }
@@ -82,14 +82,8 @@ const ReelCard = ({ reel, isActive = false, onLike, onView, onComment }: ReelCar
     }
   };
 
-  const handleComment = () => {
-    if (onComment) {
-      onComment(reel);
-    }
-  };
-
   return (
-    <div className="relative w-full h-[600px] bg-black rounded-xl overflow-hidden group shadow-2xl">
+    <div className="relative w-full h-full bg-black rounded-lg overflow-hidden group">
       <video
         ref={videoRef}
         src={reel.video_url}
@@ -103,7 +97,7 @@ const ReelCard = ({ reel, isActive = false, onLike, onView, onComment }: ReelCar
       />
       
       {/* Maximize button */}
-      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <MaximizedReelViewer videoUrl={reel.video_url} title={reel.title} />
       </div>
 
@@ -118,7 +112,7 @@ const ReelCard = ({ reel, isActive = false, onLike, onView, onComment }: ReelCar
             isPlaying ? "opacity-0" : "opacity-100"
           )}
         >
-          {isPlaying ? <Pause className="w-12 h-12" /> : <Play className="w-12 h-12" />}
+          {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
         </Button>
       </div>
 
@@ -129,90 +123,77 @@ const ReelCard = ({ reel, isActive = false, onLike, onView, onComment }: ReelCar
         onClick={toggleMute}
         className="absolute top-4 left-4 text-white bg-black/50 hover:bg-black/70 rounded-full"
       >
-        {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+        {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
       </Button>
 
       {/* User info and actions */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
         <div className="flex items-end justify-between">
           {/* User info */}
           <div className="flex-1">
-            <div className="flex items-center space-x-3 mb-3">
-              <Avatar className="w-12 h-12 border-2 border-white">
+            <div className="flex items-center space-x-3 mb-2">
+              <Avatar className="w-8 h-8 border-2 border-white">
                 <AvatarImage src={reel.profiles?.avatar_url} />
-                <AvatarFallback className="bg-purple-500 text-white">
+                <AvatarFallback className="bg-purple-500 text-white text-xs">
                   {reel.profiles?.username?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-white font-semibold text-lg">
+                <p className="text-white font-semibold text-sm">
                   {reel.profiles?.display_name || reel.profiles?.username || 'Unknown User'}
                 </p>
-                <p className="text-white/80 text-sm">
+                <p className="text-white/80 text-xs">
                   @{reel.profiles?.username || 'unknown'}
                 </p>
               </div>
             </div>
             
-            {reel.title && (
-              <h3 className="text-white font-semibold text-lg mb-2">
-                {reel.title}
-              </h3>
-            )}
-            
             {reel.description && (
-              <p className="text-white text-sm mb-2 line-clamp-2">
+              <p className="text-white text-sm mb-1 line-clamp-2">
                 {reel.description}
               </p>
             )}
-
-            <div className="flex items-center space-x-4 text-white/80 text-sm">
-              <span>{reel.views_count} views</span>
-              <span>•</span>
-              <span>{new Date(reel.created_at).toLocaleDateString()}</span>
-            </div>
           </div>
 
           {/* Action buttons */}
-          <div className="flex flex-col items-center space-y-4 ml-6">
+          <div className="flex flex-col items-center space-y-3 ml-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleLike}
               className={cn(
-                "text-white hover:bg-white/20 rounded-full p-3",
+                "text-white hover:bg-white/20 rounded-full p-2",
                 reel.user_liked && "text-red-500"
               )}
             >
               <Heart 
                 className={cn(
-                  "w-7 h-7",
+                  "w-6 h-6",
                   reel.user_liked && "fill-current"
                 )} 
               />
             </Button>
-            <span className="text-white text-sm font-semibold">
+            <span className="text-white text-xs font-semibold">
               {reel.likes_count}
             </span>
 
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleComment}
-              className="text-white hover:bg-white/20 rounded-full p-3"
+              className="text-white hover:bg-white/20 rounded-full p-2"
             >
-              <MessageCircle className="w-7 h-7" />
+              <MessageCircle className="w-6 h-6" />
             </Button>
-            <span className="text-white text-sm font-semibold">
+            <span className="text-white text-xs font-semibold">
               {reel.comments_count}
             </span>
 
             <Button
               variant="ghost"
               size="sm"
-              className="text-white hover:bg-white/20 rounded-full p-3"
+              className="text-white hover:bg-white/20 rounded-full p-2"
             >
-              <Share className="w-7 h-7" />
+              <Share className="w-6 h-6" />
             </Button>
           </div>
         </div>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -30,7 +31,7 @@ export const PostsList = ({
   onDelete: externalOnDelete,
   userId: filterUserId
 }: PostsListProps = {}) => {
-  const { posts: hookPosts, isLoading, likePost, retweetPost, deletePost } = usePosts();
+  const { posts: hookPosts, loading, toggleLike, toggleRetweet, togglePin, deletePost } = usePosts();
   const { user } = useAuth();
   const { toast } = useToast();
   const [retweetedBy, setRetweetedBy] = useState<{[key: string]: any}>({});
@@ -53,7 +54,7 @@ export const PostsList = ({
     posts = posts.filter(post => post.user_id === filterUserId);
   }
 
-  const onLike = externalOnLike || likePost;
+  const onLike = externalOnLike || toggleLike;
   
   const handleRetweet = async (postId: string) => {
     if (!user) return;
@@ -85,8 +86,8 @@ export const PostsList = ({
       }
 
       // Call the original retweet function to update counts
-      if (retweetPost) {
-        retweetPost(postId);
+      if (toggleRetweet) {
+        toggleRetweet(postId);
       }
     } catch (error) {
       console.error('Error handling repost:', error);
@@ -94,7 +95,7 @@ export const PostsList = ({
   };
 
   const onRetweet = externalOnRetweet || handleRetweet;
-  const onPin = externalOnPin || (() => {}); // Placeholder for pin functionality
+  const onPin = externalOnPin || togglePin;
   const onDelete = externalOnDelete || deletePost;
 
   // Fetch business page information for posts made as professional accounts
@@ -309,7 +310,7 @@ export const PostsList = ({
     return false;
   };
 
-  if (isLoading && !externalPosts) {
+  if (loading && !externalPosts) {
     return (
       <div className="flex items-center justify-center py-8 relative z-10">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -439,22 +440,6 @@ export const PostsList = ({
                             </div>
                           </div>
                         ))}
-                      </div>
-                    )}
-                    
-                    {/* Display audio player if audio_url exists */}
-                    {post.audio_url && (
-                      <div className="mb-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
-                        <audio 
-                          controls 
-                          className="w-full"
-                          preload="metadata"
-                        >
-                          <source src={post.audio_url} type="audio/mpeg" />
-                          <source src={post.audio_url} type="audio/wav" />
-                          <source src={post.audio_url} type="audio/ogg" />
-                          Your browser does not support the audio element.
-                        </audio>
                       </div>
                     )}
                     

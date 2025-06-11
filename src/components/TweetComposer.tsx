@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -185,7 +184,7 @@ const TweetComposer = () => {
             combinedContent += `\n🎵 Audio message attached`;
           }
           
-          await createPost(combinedContent, mediaUrls, selectedAccount, audioUrl);
+          await createPost(combinedContent, mediaUrls, selectedAccount);
           setThreadTweets([""]);
           setIsThreadMode(false);
           resetForm();
@@ -204,7 +203,7 @@ const TweetComposer = () => {
             finalContent += `\n🎵 Audio message attached`;
           }
           
-          await createPost(finalContent, mediaUrls, selectedAccount, audioUrl);
+          await createPost(finalContent, mediaUrls, selectedAccount);
           resetForm();
         }
       }
@@ -366,9 +365,9 @@ const TweetComposer = () => {
       <div className="flex space-x-4">
         <div className="w-12">
           <Avatar className="ring-2 ring-purple-300 dark:ring-purple-500 transition-all duration-500 hover:ring-pink-400 dark:hover:ring-pink-400 shadow-lg hover:scale-110 hover:shadow-2xl">
-            <AvatarImage src={user?.user_metadata?.avatar_url || "/placeholder.svg"} />
+            <AvatarImage src={user.user_metadata?.avatar_url || "/placeholder.svg"} />
             <AvatarFallback className="bg-gradient-to-br from-purple-500 via-blue-500 to-pink-500 text-white font-semibold">
-              {user?.email?.charAt(0).toUpperCase() || user?.user_metadata?.username?.charAt(0).toUpperCase() || 'U'}
+              {user.email?.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
         </div>
