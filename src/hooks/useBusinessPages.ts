@@ -68,7 +68,7 @@ export const useBusinessPages = () => {
           is_verified: page.is_verified || false,
           shop_settings: page.shop_settings || {},
           shop_status: page.shop_status || 'open',
-          featured_products: page.featured_products || []
+          featured_products: Array.isArray(page.featured_products) ? page.featured_products : []
         })) || [];
 
         setPages(enrichedPages);
@@ -84,7 +84,7 @@ export const useBusinessPages = () => {
           is_verified: page.is_verified || false,
           shop_settings: page.shop_settings || {},
           shop_status: page.shop_status || 'open',
-          featured_products: page.featured_products || []
+          featured_products: Array.isArray(page.featured_products) ? page.featured_products : []
         })) || [];
         
         setPages(mappedPages);
@@ -221,7 +221,7 @@ export const useBusinessPages = () => {
         is_verified: page.is_verified || false,
         shop_settings: page.shop_settings || {},
         shop_status: page.shop_status || 'open',
-        featured_products: page.featured_products || []
+        featured_products: Array.isArray(page.featured_products) ? page.featured_products : []
       })) || [];
     } catch (error) {
       console.error('Error in searchPages:', error);

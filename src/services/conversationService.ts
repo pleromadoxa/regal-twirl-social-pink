@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { Conversation, UserProfile } from '@/types/messages';
 import { calculateStreak } from './streakService';
@@ -52,6 +51,8 @@ export const fetchConversations = async (userId: string): Promise<Conversation[]
         ...conv,
         participant_1_profile: participant1Profile || null,
         participant_2_profile: participant2Profile || null,
+        profiles_participant_1: participant1Profile || null,
+        profiles_participant_2: participant2Profile || null,
         other_user: otherUser || null,
         last_message: null,
         streak_count: streakCount
