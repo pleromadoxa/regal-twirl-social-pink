@@ -64,7 +64,7 @@ const SidebarNav = () => {
   };
 
   return (
-    <div className={`${isExpanded ? 'w-80' : 'w-20'} transition-all duration-300 ease-in-out fixed left-0 top-0 h-screen bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-r border-purple-200 dark:border-purple-800 z-40 overflow-y-auto`}>
+    <div className={`${isExpanded ? 'w-80' : 'w-20'} transition-all duration-300 ease-in-out fixed left-0 top-0 h-screen bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-r border-purple-200 dark:border-purple-800 z-50 overflow-y-auto`}>
       <div className="p-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -173,7 +173,7 @@ const SidebarNav = () => {
                           </p>
                           {page.shop_settings && (
                             <Badge variant="outline" className="mt-1 text-xs">
-                              {(page.shop_settings as any)?.status || 'active'}
+                              {page.shop_status || 'active'}
                             </Badge>
                           )}
                         </div>

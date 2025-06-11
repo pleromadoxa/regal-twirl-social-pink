@@ -1,315 +1,212 @@
-import { useState, useEffect, useRef } from 'react';
-import { Search, UserPlus, UserCheck, MessageCircle } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useFollow } from '@/hooks/useFollow';
-import { useNavigate } from 'react-router-dom';
-import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
-import { useToast } from '@/hooks/use-toast';
-import PresenceIndicator from './PresenceIndicator';
 
-interface UserResult {
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Search, MessageCircle, Star, Building } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { findExistingConversation, createConversation } from "@/services/conversationService";
+import { useToast } from "@/hooks/use-toast";
+
+interface UserSearchResult {
   id: string;
   username: string;
   display_name: string;
   avatar_url: string;
   is_verified: boolean;
-  followers_count: number;
-  bio: string;
+  type: 'user' | 'business';
+  business_type?: string;
 }
 
 interface UserSearchProps {
-  onStartConversation?: (userId: string) => void;
   showMessageButton?: boolean;
 }
 
-const UserSearch = ({ onStartConversation, showMessageButton = false }: UserSearchProps) => {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<UserResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
-  const searchRef = useRef<HTMLDivElement>(null);
+const UserSearch = ({ showMessageButton = false }: UserSearchProps) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const { user } = useAuth();
-  const { followUser, unfollowUser, checkFollowStatus, loading: followLoading } = useFollow();
-  const { startDirectConversation } = useEnhancedMessages();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const searchUsers = async () => {
-      if (query.length < 1) {
-        setResults([]);
-        setShowResults(false);
+  const searchUsers = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Search regular users
+      const { data: userResults, error: userError } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, is_verified')
+        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+        .limit(5);
+
+      // Search business pages
+      const { data: businessResults, error: businessError } = await supabase
+        .from('business_pages')
+        .select('id, page_name, avatar_url, is_verified, business_type')
+        .or(`page_name.ilike.%${query}%,description.ilike.%${query}%`)
+        .limit(5);
+
+      if (userError || businessError) {
+        console.error('Search error:', userError || businessError);
         return;
       }
 
-      setLoading(true);
-      setShowResults(true);
-      
-      try {
-        console.log('Searching for users with query:', query);
-        
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, username, display_name, avatar_url, is_verified, followers_count, bio')
-          .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
-          .neq('id', user?.id || '')
-          .limit(10);
+      // Combine and format results
+      const formattedResults: UserSearchResult[] = [
+        ...(userResults || []).map(user => ({
+          id: user.id,
+          username: user.username || '',
+          display_name: user.display_name || user.username || 'Unknown User',
+          avatar_url: user.avatar_url || '',
+          is_verified: user.is_verified || false,
+          type: 'user' as const
+        })),
+        ...(businessResults || []).map(business => ({
+          id: business.id,
+          username: business.page_name,
+          display_name: business.page_name,
+          avatar_url: business.avatar_url || '',
+          is_verified: business.is_verified || false,
+          type: 'business' as const,
+          business_type: business.business_type
+        }))
+      ];
 
-        if (error) {
-          console.error('Search error:', error);
-          throw error;
-        }
-
-        console.log('Search results:', data);
-        const users = data || [];
-        setResults(users);
-
-        // Check follow status for each user
-        if (user && users.length > 0) {
-          const statusPromises = users.map(async (searchUser) => {
-            try {
-              const isFollowing = await checkFollowStatus(searchUser.id);
-              return { userId: searchUser.id, isFollowing };
-            } catch (error) {
-              console.error('Error checking follow status:', error);
-              return { userId: searchUser.id, isFollowing: false };
-            }
-          });
-
-          const statuses = await Promise.all(statusPromises);
-          const statusMap = statuses.reduce((acc, { userId, isFollowing }) => {
-            acc[userId] = isFollowing;
-            return acc;
-          }, {} as Record<string, boolean>);
-
-          setFollowingStatus(statusMap);
-        }
-      } catch (error) {
-        console.error('Error searching users:', error);
-        setResults([]);
-        toast({
-          title: "Search error",
-          description: "Failed to search for users. Please try again.",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Immediate search without debounce for better UX
-    searchUsers();
-  }, [query, user, checkFollowStatus, toast]);
+      setSearchResults(formattedResults);
+    } catch (error) {
+      console.error('Error searching users:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowResults(false);
+    const delayedSearch = setTimeout(() => {
+      if (searchTerm) {
+        searchUsers(searchTerm);
       }
-    };
+    }, 300);
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    return () => clearTimeout(delayedSearch);
+  }, [searchTerm]);
 
-  const handleFollow = async (userId: string) => {
+  const handleMessageUser = async (targetUserId: string) => {
     if (!user) {
       toast({
         title: "Authentication required",
-        description: "Please sign in to follow users",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const isCurrentlyFollowing = followingStatus[userId];
-    
-    try {
-      if (isCurrentlyFollowing) {
-        const success = await unfollowUser(userId);
-        if (success) {
-          setFollowingStatus(prev => ({ ...prev, [userId]: false }));
-        }
-      } else {
-        const success = await followUser(userId);
-        if (success) {
-          setFollowingStatus(prev => ({ ...prev, [userId]: true }));
-        }
-      }
-    } catch (error) {
-      console.error('Error updating follow status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update follow status. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleUserClick = (userId: string) => {
-    navigate(`/profile/${userId}`);
-    setShowResults(false);
-    setQuery('');
-  };
-
-  const handleStartConversation = async (userId: string) => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to start a conversation",
+        description: "Please sign in to send messages",
         variant: "destructive"
       });
       return;
     }
 
     try {
-      console.log('Starting conversation with user:', userId);
-      await startDirectConversation(userId);
-      navigate('/messages');
-      setShowResults(false);
-      setQuery('');
+      // Check if conversation already exists
+      let conversation = await findExistingConversation(user.id, targetUserId);
       
-      if (onStartConversation) {
-        onStartConversation(userId);
+      if (!conversation) {
+        // Create new conversation
+        conversation = await createConversation(user.id, targetUserId);
       }
-
-      toast({
-        title: "Conversation started",
-        description: "You can now start messaging this user.",
-      });
+      
+      // Navigate to messages with the conversation
+      navigate('/messages');
     } catch (error) {
-      console.error('Error starting conversation:', error);
+      console.error('Error creating conversation:', error);
       toast({
         title: "Error",
-        description: "Failed to start conversation. Please try again.",
+        description: "Failed to start conversation",
         variant: "destructive"
       });
     }
   };
 
   return (
-    <div ref={searchRef} className="relative">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <Input
-          type="text"
-          placeholder="Search users..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setShowResults(results.length > 0 || query.length > 0)}
-          className="pl-10 bg-slate-100 dark:bg-slate-800 border-0 rounded-full focus:ring-2 focus:ring-purple-500 transition-all"
-        />
-      </div>
-
-      {showResults && (
-        <div className="absolute top-full mt-2 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 max-h-96 overflow-y-auto">
-          {loading ? (
-            <div className="p-4 text-center text-slate-500">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto mb-2"></div>
-              <p className="text-sm">Searching users...</p>
+    <Card>
+      <CardContent className="p-4">
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search users and businesses..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          {isSearching && (
+            <div className="text-center text-sm text-muted-foreground">
+              Searching...
             </div>
-          ) : results.length > 0 ? (
-            <div className="p-2">
-              {results.map((userResult) => (
-                <div
-                  key={userResult.id}
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors"
-                >
-                  <div 
-                    className="flex items-center space-x-3 flex-1 cursor-pointer"
-                    onClick={() => handleUserClick(userResult.id)}
-                  >
-                    <div className="relative">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={userResult.avatar_url || "/placeholder.svg"} />
-                        <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                          {userResult.display_name?.[0]?.toUpperCase() || userResult.username?.[0]?.toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="absolute -bottom-1 -right-1">
-                        <PresenceIndicator userId={userResult.id} />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-1">
-                        <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                          {userResult.display_name || userResult.username}
-                        </p>
-                        {userResult.is_verified && (
-                          <Badge className="bg-blue-500 text-white text-xs px-1 py-0">✓</Badge>
+          )}
+          
+          {searchResults.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">Search Results</p>
+              {searchResults.map((result) => (
+                <div key={`${result.type}-${result.id}`} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={result.avatar_url} />
+                      <AvatarFallback className="bg-purple-500 text-white">
+                        {result.type === 'business' ? (
+                          <Building className="w-5 h-5" />
+                        ) : (
+                          result.display_name?.charAt(0) || '?'
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{result.display_name}</p>
+                        {result.is_verified && (
+                          <Star className="w-3 h-3 text-yellow-500" />
+                        )}
+                        {result.type === 'business' && (
+                          <Badge variant="secondary" className="text-xs">
+                            Business
+                          </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-slate-500 truncate">@{userResult.username}</p>
-                      {userResult.bio && (
-                        <p className="text-xs text-slate-400 truncate mt-1">{userResult.bio}</p>
-                      )}
-                      <p className="text-xs text-slate-400">
-                        {userResult.followers_count || 0} followers
+                      <p className="text-xs text-muted-foreground">
+                        {result.type === 'business' ? result.business_type : result.username}
                       </p>
                     </div>
                   </div>
-                  
-                  {user && user.id !== userResult.id && (
-                    <div className="flex items-center gap-2">
-                      {showMessageButton && (
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartConversation(userResult.id);
-                          }}
-                          variant="outline"
-                          size="sm"
-                          className="border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                        </Button>
-                      )}
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleFollow(userResult.id);
-                        }}
-                        variant={followingStatus[userResult.id] ? "outline" : "default"}
-                        size="sm"
-                        disabled={followLoading}
-                        className={
-                          followingStatus[userResult.id]
-                            ? "border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                            : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                        }
-                      >
-                        {followingStatus[userResult.id] ? (
-                          <>
-                            <UserCheck className="w-4 h-4 mr-1" />
-                            Following
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="w-4 h-4 mr-1" />
-                            Follow
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                  {showMessageButton && result.type === 'user' && result.id !== user?.id && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleMessageUser(result.id)}
+                    >
+                      <MessageCircle className="w-3 h-3 mr-1" />
+                      Message
+                    </Button>
                   )}
                 </div>
               ))}
             </div>
-          ) : query.length > 0 ? (
-            <div className="p-4 text-center text-slate-500">
-              <Search className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-              <p>No users found for "{query}"</p>
+          )}
+          
+          {searchTerm && !isSearching && searchResults.length === 0 && (
+            <div className="text-center text-sm text-muted-foreground">
+              No users or businesses found
             </div>
-          ) : null}
+          )}
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

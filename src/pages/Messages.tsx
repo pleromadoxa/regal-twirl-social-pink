@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import MessageThread from '@/components/MessageThread';
 import SidebarNav from '@/components/SidebarNav';
 import CallHistorySection from '@/components/CallHistorySection';
@@ -104,8 +103,8 @@ const Messages = () => {
                 ) : (
                   filteredConversations.map((conversation) => {
                     const otherParticipant = conversation.participant_1 === user?.id 
-                      ? (conversation.profiles_participant_2 || conversation.participant_2_profile)
-                      : (conversation.profiles_participant_1 || conversation.participant_1_profile);
+                      ? (conversation.participant_2_profile || conversation.profiles_participant_2)
+                      : (conversation.participant_1_profile || conversation.profiles_participant_1);
                     
                     const isUnread = conversation.last_message && 
                                    !conversation.last_message.read_at && 
