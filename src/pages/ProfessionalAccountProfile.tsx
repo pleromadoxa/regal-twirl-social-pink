@@ -1,84 +1,82 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import SidebarNav from "@/components/SidebarNav";
-import RightSidebar from "@/components/RightSidebar";
-import PostsList from "@/components/PostsList";
-import { WorldMap } from "@/components/ui/world-map";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/hooks/use-toast";
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import EcommerceDashboard from '@/components/business/EcommerceDashboard';
+import ITServicesDashboard from '@/components/business/ITServicesDashboard';
+import ImportExportDashboard from '@/components/business/ImportExportDashboard';
 import { 
   MapPin, 
-  Link as LinkIcon, 
-  Calendar, 
-  Crown, 
-  Building,
-  Users as UsersIcon,
-  User as UserIcon,
-  MessageCircle,
-  Share,
-  TrendingUp,
-  Eye,
+  Globe, 
+  Mail, 
+  Phone, 
+  Star, 
+  Users, 
+  ShoppingCart,
+  Package,
   Heart,
-  BarChart3,
-  Star,
-  Globe
-} from "lucide-react";
-
-interface BusinessPage {
-  id: string;
-  page_name: string;
-  page_type: string;
-  description: string;
-  is_verified: boolean;
-  followers_count: number;
-  website: string | null;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  avatar_url: string | null;
-  banner_url: string | null;
-  created_at: string;
-  owner_id: string;
-}
+  MessageCircle,
+  Share2,
+  ExternalLink,
+  Award,
+  TrendingUp
+} from 'lucide-react';
 
 const ProfessionalAccountProfile = () => {
   const { pageId } = useParams();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [businessPage, setBusinessPage] = useState<BusinessPage | null>(null);
+  const [businessPage, setBusinessPage] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (pageId) {
       fetchBusinessPage();
-      checkFollowStatus();
+      checkFollowing();
     }
-  }, [pageId, user]);
+  }, [pageId]);
 
   const fetchBusinessPage = async () => {
-    if (!pageId) return;
-
     try {
       const { data, error } = await supabase
         .from('business_pages')
-        .select('*')
+        .select(`
+          *,
+          profiles!business_pages_owner_id_fkey(
+            username,
+            display_name,
+            avatar_url
+          )
+        `)
         .eq('id', pageId)
         .single();
 
       if (error) throw error;
       setBusinessPage(data);
+
+      // Fetch products for the shop
+      const { data: productsData } = await supabase
+        .from('business_products')
+        .select('*')
+        .eq('business_page_id', pageId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      setProducts(productsData || []);
     } catch (error) {
       console.error('Error fetching business page:', error);
       toast({
         title: "Error",
-        description: "Failed to load professional account",
+        description: "Failed to load business page",
         variant: "destructive"
       });
     } finally {
@@ -86,24 +84,25 @@ const ProfessionalAccountProfile = () => {
     }
   };
 
-  const checkFollowStatus = async () => {
+  const checkFollowing = async () => {
     if (!user || !pageId) return;
 
     try {
       const { data } = await supabase
         .from('business_page_follows')
         .select('id')
-        .eq('user_id', user.id)
         .eq('page_id', pageId)
+        .eq('user_id', user.id)
         .single();
 
       setIsFollowing(!!data);
     } catch (error) {
-      console.error('Error checking follow status:', error);
+      // User is not following
+      setIsFollowing(false);
     }
   };
 
-  const handleFollow = async () => {
+  const toggleFollow = async () => {
     if (!user || !pageId) return;
 
     try {
@@ -111,21 +110,27 @@ const ProfessionalAccountProfile = () => {
         await supabase
           .from('business_page_follows')
           .delete()
-          .eq('user_id', user.id)
-          .eq('page_id', pageId);
-
+          .eq('page_id', pageId)
+          .eq('user_id', user.id);
+        
         setIsFollowing(false);
-        setBusinessPage(prev => prev ? { ...prev, followers_count: prev.followers_count - 1 } : null);
+        toast({
+          title: "Unfollowed",
+          description: "You have unfollowed this business."
+        });
       } else {
         await supabase
           .from('business_page_follows')
           .insert({
-            user_id: user.id,
-            page_id: pageId
+            page_id: pageId,
+            user_id: user.id
           });
-
+        
         setIsFollowing(true);
-        setBusinessPage(prev => prev ? { ...prev, followers_count: prev.followers_count + 1 } : null);
+        toast({
+          title: "Following",
+          description: "You are now following this business."
+        });
       }
     } catch (error) {
       console.error('Error toggling follow:', error);
@@ -137,31 +142,26 @@ const ProfessionalAccountProfile = () => {
     }
   };
 
-  const handleMessage = () => {
-    if (businessPage?.owner_id) {
-      navigate(`/messages?user=${businessPage.owner_id}`);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open': return 'bg-green-500 text-white';
+      case 'away': return 'bg-yellow-500 text-white';
+      case 'break': return 'bg-orange-500 text-white';
+      case 'closed': return 'bg-red-500 text-white';
+      default: return 'bg-gray-500 text-white';
     }
   };
 
-  const getBusinessIcon = (type: string) => {
-    switch (type) {
-      case 'business':
-        return <Building className="w-4 h-4 text-purple-600" />;
-      case 'organization':
-        return <UsersIcon className="w-4 h-4 text-blue-600" />;
-      case 'professional':
-        return <UserIcon className="w-4 h-4 text-green-600" />;
-      default:
-        return <UserIcon className="w-4 h-4 text-gray-600" />;
-    }
-  };
+  const featuredProducts = products.filter(p => 
+    businessPage?.featured_products?.includes(p.id)
+  ).slice(0, 6);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-        <SidebarNav />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading business profile...</p>
         </div>
       </div>
     );
@@ -169,258 +169,330 @@ const ProfessionalAccountProfile = () => {
 
   if (!businessPage) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-        <SidebarNav />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">Professional Account not found</h1>
-            <p className="text-slate-600 dark:text-slate-400">The professional account you're looking for doesn't exist.</p>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-600 mb-2">Business Not Found</h2>
+          <p className="text-gray-500">The business page you're looking for doesn't exist.</p>
         </div>
       </div>
     );
   }
 
+  const isOwner = user?.id === businessPage.owner_id;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      {/* World Map Background */}
-      <div className="absolute inset-0 opacity-10 z-0">
-        <WorldMap
-          dots={[
-            {
-              start: { lat: 40.7128, lng: -74.0060 }, // New York
-              end: { lat: 51.5074, lng: -0.1278 }, // London
-            },
-            {
-              start: { lat: 35.6762, lng: 139.6503 }, // Tokyo
-              end: { lat: -33.8688, lng: 151.2093 }, // Sydney
-            },
-            {
-              start: { lat: 37.7749, lng: -122.4194 }, // San Francisco
-              end: { lat: 55.7558, lng: 37.6176 }, // Moscow
-            }
-          ]}
-          lineColor="#9333ea"
-        />
-      </div>
-      
-      <SidebarNav />
-      
-      <div className="flex-1 flex gap-6 relative z-10">
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
-          {/* Profile Header */}
-          <div className="relative">
-            {/* Banner */}
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Business Header */}
+        <div className="relative mb-8">
+          {/* Banner */}
+          <div className="h-48 md:h-64 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg overflow-hidden">
             {businessPage.banner_url ? (
               <img 
                 src={businessPage.banner_url} 
-                alt="Professional account banner"
-                className="w-full h-48 object-cover"
+                alt="Business Banner"
+                className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-48 bg-gradient-to-r from-purple-600 to-pink-600"></div>
-            )}
-            
-            {/* Profile Info */}
-            <div className="px-6 pb-6">
-              <div className="flex justify-between items-start -mt-16 mb-4">
-                <Avatar className="w-32 h-32 border-4 border-white dark:border-slate-800 shadow-lg">
-                  <AvatarImage src={businessPage.avatar_url || undefined} />
-                  <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white text-3xl font-bold">
-                    {businessPage.page_name[0]}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex gap-2 mt-16">
-                  <Button
-                    variant="outline"
-                    onClick={handleMessage}
-                    className="rounded-xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Message
-                  </Button>
-                  <Button
-                    onClick={handleFollow}
-                    className={`rounded-xl ${
-                      isFollowing
-                        ? 'bg-slate-500 hover:bg-slate-600'
-                        : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
-                    } text-white`}
-                  >
-                    {isFollowing ? 'Following' : 'Follow'}
-                  </Button>
-                </div>
+              <div className="w-full h-full flex items-center justify-center">
+                <Award className="w-16 h-16 text-white/50" />
               </div>
-              
-              <div className="space-y-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                      {businessPage.page_name}
-                    </h1>
-                    {businessPage.is_verified && (
-                      <Badge variant="verified" className="flex items-center gap-1">
-                        <Crown className="w-4 h-4" />
-                        Verified
-                      </Badge>
-                    )}
-                    <div className="flex items-center gap-1">
-                      {getBusinessIcon(businessPage.page_type)}
-                      <Badge variant="outline" className="text-xs">
-                        {businessPage.page_type.charAt(0).toUpperCase() + businessPage.page_type.slice(1)}
-                      </Badge>
+            )}
+          </div>
+
+          {/* Profile Info */}
+          <div className="absolute -bottom-16 left-8 flex items-end gap-6">
+            <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
+              <AvatarImage src={businessPage.avatar_url} />
+              <AvatarFallback className="bg-purple-500 text-white text-2xl">
+                {businessPage.page_name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-lg mb-4">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl font-bold">{businessPage.page_name}</h1>
+                {businessPage.is_verified && (
+                  <Badge className="bg-blue-500 text-white">
+                    <Award className="w-3 h-3 mr-1" />
+                    Verified
+                  </Badge>
+                )}
+                <Badge className={getStatusColor(businessPage.shop_status || 'open')}>
+                  {businessPage.shop_status || 'open'}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground capitalize">
+                {businessPage.business_type || businessPage.page_type} Business
+              </p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="absolute top-4 right-4 flex gap-2">
+            <Button variant="outline" size="sm">
+              <Share2 className="w-4 h-4 mr-2" />
+              Share
+            </Button>
+            {!isOwner && (
+              <Button 
+                onClick={toggleFollow}
+                variant={isFollowing ? 'outline' : 'default'}
+                size="sm"
+              >
+                <Heart className={`w-4 h-4 mr-2 ${isFollowing ? 'fill-current text-red-500' : ''}`} />
+                {isFollowing ? 'Following' : 'Follow'}
+              </Button>
+            )}
+            {isOwner && (
+              <Button size="sm">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Manage
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Business Info */}
+        <div className="mt-20 mb-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="font-semibold mb-3">About</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {businessPage.description || 'No description available.'}
+                    </p>
+                    
+                    <div className="space-y-2">
+                      {businessPage.address && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <MapPin className="w-4 h-4 text-muted-foreground" />
+                          <span>{businessPage.address}</span>
+                        </div>
+                      )}
+                      {businessPage.website && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Globe className="w-4 h-4 text-muted-foreground" />
+                          <a 
+                            href={businessPage.website} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-purple-600 hover:underline flex items-center gap-1"
+                          >
+                            {businessPage.website}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+                      {businessPage.email && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <a 
+                            href={`mailto:${businessPage.email}`}
+                            className="text-purple-600 hover:underline"
+                          >
+                            {businessPage.email}
+                          </a>
+                        </div>
+                      )}
+                      {businessPage.phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="w-4 h-4 text-muted-foreground" />
+                          <a 
+                            href={`tel:${businessPage.phone}`}
+                            className="text-purple-600 hover:underline"
+                          >
+                            {businessPage.phone}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-3">Statistics</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                        <Users className="w-6 h-6 mx-auto mb-2 text-purple-600" />
+                        <div className="text-2xl font-bold">{businessPage.followers_count || 0}</div>
+                        <div className="text-xs text-muted-foreground">Followers</div>
+                      </div>
+                      <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <Package className="w-6 h-6 mx-auto mb-2 text-green-600" />
+                        <div className="text-2xl font-bold">{products.length}</div>
+                        <div className="text-xs text-muted-foreground">Products</div>
+                      </div>
                     </div>
                   </div>
                 </div>
-                
-                {businessPage.description && (
-                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                    {businessPage.description}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-500" />
+                  Featured Products
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {featuredProducts.length > 0 ? (
+                  <div className="space-y-3">
+                    {featuredProducts.slice(0, 3).map((product) => (
+                      <div key={product.id} className="flex items-center gap-3 p-2 border rounded-lg">
+                        <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                          <Package className="w-6 h-6 text-gray-400" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm">{product.name}</h4>
+                          <p className="text-xs text-muted-foreground">
+                            ${product.price}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No featured products yet
                   </p>
                 )}
-                
-                <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
-                  {businessPage.address && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" />
-                      {businessPage.address}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="shop" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="shop">Shop</TabsTrigger>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="services">Services</TabsTrigger>
+            <TabsTrigger value="about">About</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="shop">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5" />
+                  Online Store
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {products.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {products.map((product) => (
+                      <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                        <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                          <Package className="w-12 h-12 text-gray-400" />
+                        </div>
+                        <CardContent className="p-4">
+                          <h4 className="font-semibold mb-1">{product.name}</h4>
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                            {product.description}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-bold text-green-600">
+                              ${product.price}
+                            </span>
+                            {product.stock_quantity && (
+                              <span className="text-xs text-muted-foreground">
+                                {product.stock_quantity} in stock
+                              </span>
+                            )}
+                          </div>
+                          <Button className="w-full mt-3" size="sm">
+                            Add to Cart
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <ShoppingCart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">No products yet</h3>
+                    <p className="text-gray-500">Check back later for new products!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="dashboard">
+            {isOwner ? (
+              businessPage.business_type === 'ecommerce' ? (
+                <EcommerceDashboard businessPage={businessPage} />
+              ) : businessPage.business_type === 'it_services' ? (
+                <ITServicesDashboard businessPage={businessPage} />
+              ) : businessPage.business_type === 'import_export' ? (
+                <ImportExportDashboard businessPage={businessPage} />
+              ) : (
+                <EcommerceDashboard businessPage={businessPage} />
+              )
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <TrendingUp className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-600 mb-2">Access Restricted</h3>
+                  <p className="text-gray-500">Only business owners can view the dashboard.</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="services">
+            <Card>
+              <CardHeader>
+                <CardTitle>Services & Offerings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Award className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-600 mb-2">Services Coming Soon</h3>
+                  <p className="text-gray-500">Detailed service listings will be available here.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="about">
+            <Card>
+              <CardHeader>
+                <CardTitle>About This Business</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="prose max-w-none">
+                  <p className="text-muted-foreground mb-4">
+                    {businessPage.description || 'No detailed description available.'}
+                  </p>
+                  
+                  <h4 className="font-semibold mb-2">Business Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Type:</span>
+                      <span className="ml-2 capitalize">{businessPage.business_type || businessPage.page_type}</span>
                     </div>
-                  )}
-                  {businessPage.website && (
-                    <div className="flex items-center gap-1">
-                      <LinkIcon className="w-4 h-4" />
-                      <a 
-                        href={businessPage.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-purple-600 hover:underline"
-                      >
-                        {businessPage.website}
-                      </a>
+                    <div>
+                      <span className="font-medium">Status:</span>
+                      <span className="ml-2 capitalize">{businessPage.shop_status || 'Open'}</span>
                     </div>
-                  )}
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    Joined {new Date(businessPage.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    {businessPage.default_currency && (
+                      <div>
+                        <span className="font-medium">Currency:</span>
+                        <span className="ml-2">{businessPage.default_currency}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Statistics Cards */}
-          <div className="border-t border-purple-200 dark:border-purple-800 p-6">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-purple-600" />
-              Statistics
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Followers */}
-              <Card className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                    <UsersIcon className="w-4 h-4 text-blue-600" />
-                    Followers
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    {businessPage.followers_count.toLocaleString()}
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Total followers</p>
-                </CardContent>
-              </Card>
-
-              {/* Engagement Rate */}
-              <Card className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-red-600" />
-                    Engagement Rate
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    {Math.floor(Math.random() * 10 + 5)}%
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Average engagement</p>
-                </CardContent>
-              </Card>
-
-              {/* Profile Views */}
-              <Card className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                    <Eye className="w-4 h-4 text-green-600" />
-                    Profile Views
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    {(businessPage.followers_count * 2.5 + Math.floor(Math.random() * 1000)).toLocaleString()}
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">This month</p>
-                </CardContent>
-              </Card>
-
-              {/* Growth Rate */}
-              <Card className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-purple-600" />
-                    Growth Rate
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    +{Math.floor(Math.random() * 50 + 10)}%
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Past 30 days</p>
-                </CardContent>
-              </Card>
-
-              {/* Rating */}
-              <Card className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                    <Star className="w-4 h-4 text-yellow-600" />
-                    Rating
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    {(4.2 + Math.random() * 0.7).toFixed(1)}
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Customer rating</p>
-                </CardContent>
-              </Card>
-
-              {/* Reach */}
-              <Card className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-indigo-600" />
-                    Reach
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    {(businessPage.followers_count * 3.2 + Math.floor(Math.random() * 5000)).toLocaleString()}
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">People reached</p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Posts */}
-          <div className="border-t border-purple-200 dark:border-purple-800">
-            <PostsList userId={businessPage.owner_id} />
-          </div>
-        </main>
-        
-        <RightSidebar />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

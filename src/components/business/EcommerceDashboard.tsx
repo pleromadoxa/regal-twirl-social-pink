@@ -36,8 +36,8 @@ const EcommerceDashboard = ({ businessPage }: EcommerceDashboardProps) => {
   const [orders, setOrders] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<any>({});
   const [shopSettings, setShopSettings] = useState({
-    status: 'open',
-    featured_products: [],
+    status: businessPage?.shop_status || 'open',
+    featured_products: businessPage?.featured_products || [],
     discount_banner: '',
     shipping_info: '',
     return_policy: ''
