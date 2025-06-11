@@ -32,6 +32,7 @@ const SidebarNav = () => {
   const { myPages } = useBusinessPages();
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [selectedAccount, setSelectedAccount] = useState<'personal' | string>('personal');
 
   const navigation = [
     { icon: Home, label: 'Home', href: '/' },
@@ -90,7 +91,10 @@ const SidebarNav = () => {
         {/* Account Switcher */}
         {isExpanded && user && (
           <div className="mb-6">
-            <AccountSwitcher />
+            <AccountSwitcher 
+              selectedAccount={selectedAccount}
+              onAccountChange={setSelectedAccount}
+            />
           </div>
         )}
 
@@ -167,9 +171,9 @@ const SidebarNav = () => {
                           <p className="text-xs text-muted-foreground capitalize">
                             {page.business_type || page.page_type}
                           </p>
-                          {page.shop_status && (
+                          {page.shop_settings && (
                             <Badge variant="outline" className="mt-1 text-xs">
-                              {page.shop_status}
+                              {(page.shop_settings as any)?.status || 'active'}
                             </Badge>
                           )}
                         </div>

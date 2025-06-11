@@ -104,8 +104,8 @@ const Messages = () => {
                 ) : (
                   filteredConversations.map((conversation) => {
                     const otherParticipant = conversation.participant_1 === user?.id 
-                      ? conversation.profiles_participant_2 
-                      : conversation.profiles_participant_1;
+                      ? (conversation.profiles_participant_2 || conversation.participant_2_profile)
+                      : (conversation.profiles_participant_1 || conversation.participant_1_profile);
                     
                     const isUnread = conversation.last_message && 
                                    !conversation.last_message.read_at && 
@@ -150,7 +150,7 @@ const Messages = () => {
                                 </p>
                               )}
                               <div className="flex items-center gap-2 mt-1">
-                                {conversation.streak_count > 0 && (
+                                {conversation.streak_count && conversation.streak_count > 0 && (
                                   <Badge variant="secondary" className="text-xs">
                                     🔥 {conversation.streak_count}
                                   </Badge>
@@ -176,7 +176,7 @@ const Messages = () => {
         {/* Message Thread */}
         <div className="flex-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
           {selectedConversation && activeTab === 'all' ? (
-            <MessageThread conversation={selectedConversation} />
+            <MessageThread conversationId={selectedConversation.id} />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <div className="text-center">

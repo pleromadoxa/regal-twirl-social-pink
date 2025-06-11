@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +22,9 @@ export interface BusinessPage {
   created_at: string;
   updated_at: string;
   user_following?: boolean;
+  shop_settings?: any;
+  shop_status?: string;
+  featured_products?: any[];
 }
 
 type BusinessType = 'e-commerce' | 'it-services' | 'import-export' | 'p2p-trading' | 'consulting' | 'manufacturing' | 'retail' | 'restaurant' | 'real-estate' | 'healthcare' | 'education' | 'finance' | 'other';
@@ -63,7 +65,10 @@ export const useBusinessPages = () => {
           page_type: page.page_type as 'business' | 'professional' | 'organization',
           user_following: followedPageIds.has(page.id),
           followers_count: page.followers_count || 0,
-          is_verified: page.is_verified || false
+          is_verified: page.is_verified || false,
+          shop_settings: page.shop_settings || {},
+          shop_status: page.shop_status || 'open',
+          featured_products: page.featured_products || []
         })) || [];
 
         setPages(enrichedPages);
@@ -76,7 +81,10 @@ export const useBusinessPages = () => {
           ...page,
           page_type: page.page_type as 'business' | 'professional' | 'organization',
           followers_count: page.followers_count || 0,
-          is_verified: page.is_verified || false
+          is_verified: page.is_verified || false,
+          shop_settings: page.shop_settings || {},
+          shop_status: page.shop_status || 'open',
+          featured_products: page.featured_products || []
         })) || [];
         
         setPages(mappedPages);
@@ -210,7 +218,10 @@ export const useBusinessPages = () => {
         ...page,
         page_type: page.page_type as 'business' | 'professional' | 'organization',
         followers_count: page.followers_count || 0,
-        is_verified: page.is_verified || false
+        is_verified: page.is_verified || false,
+        shop_settings: page.shop_settings || {},
+        shop_status: page.shop_status || 'open',
+        featured_products: page.featured_products || []
       })) || [];
     } catch (error) {
       console.error('Error in searchPages:', error);

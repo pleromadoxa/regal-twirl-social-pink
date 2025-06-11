@@ -24,6 +24,8 @@ export interface Conversation {
   last_message_at: string | null;
   participant_1_profile: UserProfile | null;
   participant_2_profile: UserProfile | null;
+  profiles_participant_1: UserProfile | null;
+  profiles_participant_2: UserProfile | null;
   other_user: UserProfile | null;
   last_message: Message | null;
   streak_count: number;
