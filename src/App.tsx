@@ -4,27 +4,27 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
-import Auth from "./pages/Auth";
-import Index from "./pages/Index";
-import Landing from "./pages/Landing";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import Messages from "./pages/Messages";
-import Explore from "./pages/Explore";
-import Notifications from "./pages/Notifications";
-import Hashtag from "./pages/Hashtag";
-import Pinned from "./pages/Pinned";
-import ProfessionalAccounts from "./pages/ProfessionalAccounts";
-import EditProfessionalAccount from "./pages/EditProfessionalAccount";
-import ProfessionalAccountProfile from "./pages/ProfessionalAccountProfile";
-import BusinessManagement from "./pages/BusinessManagement";
-import BusinessDashboard from "./pages/BusinessDashboard";
-import BusinessAnalytics from "./pages/BusinessAnalytics";
-import AdsManager from "./pages/AdsManager";
-import ProfessionalDirectory from "./pages/ProfessionalDirectory";
-import NotFound from "./pages/NotFound";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import Landing from "@/pages/Landing";
+import Auth from "@/pages/Auth";
+import Index from "@/pages/Index";
+import Profile from "@/pages/Profile";
+import Messages from "@/pages/Messages";
+import Settings from "@/pages/Settings";
+import Explore from "@/pages/Explore";
+import Notifications from "@/pages/Notifications";
+import Pinned from "@/pages/Pinned";
+import Hashtag from "@/pages/Hashtag";
+import BusinessDashboard from "@/pages/BusinessDashboard";
+import BusinessManagement from "@/pages/BusinessManagement";
+import ProfessionalAccounts from "@/pages/ProfessionalAccounts";
+import ProfessionalAccountProfile from "@/pages/ProfessionalAccountProfile";
+import EditProfessionalAccount from "@/pages/EditProfessionalAccount";
+import BusinessAnalytics from "@/pages/BusinessAnalytics";
+import AdsManager from "@/pages/AdsManager";
+import ProfessionalDirectory from "@/pages/ProfessionalDirectory";
+import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -34,33 +34,31 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <TooltipProvider>
-            <div className="w-full">
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/landing" element={<Landing />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/" element={<Index />} />
-                  <Route path="/profile/:id" element={<Profile />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/messages" element={<Messages />} />
-                  <Route path="/explore" element={<Explore />} />
-                  <Route path="/notifications" element={<Notifications />} />
-                  <Route path="/hashtag/:hashtag" element={<Hashtag />} />
-                  <Route path="/pinned" element={<Pinned />} />
-                  <Route path="/professional" element={<ProfessionalAccounts />} />
-                  <Route path="/professional-accounts" element={<ProfessionalDirectory />} />
-                  <Route path="/professional/:id/edit" element={<EditProfessionalAccount />} />
-                  <Route path="/professional/:id" element={<ProfessionalAccountProfile />} />
-                  <Route path="/business" element={<BusinessManagement />} />
-                  <Route path="/business/:id" element={<BusinessDashboard />} />
-                  <Route path="/business-analytics" element={<BusinessAnalytics />} />
-                  <Route path="/ads-manager" element={<AdsManager />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-            </div>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/landing" element={<Landing />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/profile/:userId" element={<Profile />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/pinned" element={<Pinned />} />
+                <Route path="/hashtag/:tag" element={<Hashtag />} />
+                <Route path="/business/:businessId" element={<BusinessDashboard />} />
+                <Route path="/business-management" element={<BusinessManagement />} />
+                <Route path="/professional" element={<ProfessionalAccounts />} />
+                <Route path="/professional/:pageId" element={<ProfessionalAccountProfile />} />
+                <Route path="/edit-professional/:pageId" element={<EditProfessionalAccount />} />
+                <Route path="/business-analytics" element={<BusinessAnalytics />} />
+                <Route path="/ads-manager" element={<AdsManager />} />
+                <Route path="/professional-directory" element={<ProfessionalDirectory />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>

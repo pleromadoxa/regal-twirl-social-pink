@@ -74,12 +74,12 @@ const SidebarNav = () => {
               <img 
                 src="/lovable-uploads/d2cf9ddb-740e-4a22-af28-03c3fdd1ffe6.png"
                 alt="Regal Network Logo" 
-                className="w-12 h-12"
+                className="w-16 h-16"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   const fallback = document.createElement('div');
-                  fallback.className = 'w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center';
+                  fallback.className = 'w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center';
                   fallback.innerHTML = '<span class="text-white font-bold text-lg">R</span>';
                   target.parentNode?.appendChild(fallback);
                 }}
@@ -168,7 +168,7 @@ const SidebarNav = () => {
             <h3 className="text-sm font-semibold text-muted-foreground mb-3">My Pages</h3>
             <div className="space-y-2">
               {myPages.slice(0, 3).map((page) => (
-                <Link key={page.id} to={`/business/${page.id}`}>
+                <Link key={page.id} to={`/professional/${page.id}`}>
                   <Card className="hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors cursor-pointer">
                     <CardContent className="p-3">
                       <div className="flex items-center gap-3">

@@ -1,4 +1,11 @@
 
+export interface UserProfile {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string;
+}
+
 export interface Conversation {
   id: string;
   participant_1: string;
@@ -12,21 +19,12 @@ export interface Conversation {
     created_at: string;
     read_at?: string;
   };
-  participant_1_profile?: {
-    id: string;
-    username: string;
-    display_name: string;
-    avatar_url: string;
-  };
-  participant_2_profile?: {
-    id: string;
-    username: string;
-    display_name: string;
-    avatar_url: string;
-  };
+  participant_1_profile?: UserProfile;
+  participant_2_profile?: UserProfile;
   streak_count?: number;
   is_pinned?: boolean;
   is_archived?: boolean;
+  other_user?: UserProfile;
 }
 
 export interface Message {
@@ -45,4 +43,5 @@ export interface Message {
     display_name: string;
     avatar_url: string;
   };
+  sender_profile?: UserProfile;
 }

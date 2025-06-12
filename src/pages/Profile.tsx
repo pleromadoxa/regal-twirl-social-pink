@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useGallery } from "@/hooks/useGallery";
 import SidebarNav from "@/components/SidebarNav";
+import ProfileActions from "@/components/ProfileActions";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -14,12 +15,7 @@ import {
   Globe, 
   Calendar, 
   CheckCircle, 
-  Settings,
-  UserPlus,
-  UserCheck,
-  MessageCircle,
-  Phone,
-  Video
+  Settings
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import PostsList from "@/components/PostsList";
@@ -47,27 +43,11 @@ const Profile = () => {
     navigate('/settings');
   };
 
-  const handleMessageUser = () => {
-    if (userId) {
-      navigate(`/messages?user=${userId}`);
-    }
-  };
-
-  const handleAudioCall = async () => {
-    // Implement audio call logic
-    console.log('Starting audio call with user:', userId);
-  };
-
-  const handleVideoCall = async () => {
-    // Implement video call logic
-    console.log('Starting video call with user:', userId);
-  };
-
   if (loading || profileLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 pl-80 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
         </div>
       </div>
@@ -78,7 +58,7 @@ const Profile = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 pl-80 flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-300">User not found</h2>
             <p className="text-slate-500 dark:text-slate-400">The profile you're looking for doesn't exist.</p>
@@ -94,7 +74,7 @@ const Profile = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
       
-      <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+      <main className="flex-1 pl-80 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
         {/* Profile Header */}
         <div className="relative">
           {/* Banner */}
@@ -133,45 +113,15 @@ const Profile = () => {
                     <Settings className="w-4 h-4 mr-2" />
                     Edit Profile
                   </Button>
-                ) : (
-                  <>
-                    <Button
-                      onClick={handleMessageUser}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full border-2 border-purple-300 hover:bg-purple-50 hover:border-purple-500 transition-all duration-300"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      onClick={handleAudioCall}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full border-2 border-green-300 hover:bg-green-50 hover:border-green-500 transition-all duration-300"
-                    >
-                      <Phone className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      onClick={handleVideoCall}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full border-2 border-blue-300 hover:bg-blue-50 hover:border-blue-500 transition-all duration-300"
-                    >
-                      <Video className="w-4 h-4" />
-                    </Button>
-                    <InteractiveHoverButton
-                      text={isFollowing ? "Following" : "Follow"}
-                      onClick={toggleFollow}
-                      className={`rounded-full transition-all duration-300 ${
-                        isFollowing 
-                          ? 'bg-purple-600 hover:bg-red-500 text-white' 
-                          : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
-                      }`}
-                    >
-                      {isFollowing ? <UserCheck className="w-4 h-4 mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-                    </InteractiveHoverButton>
-                  </>
-                )}
+                ) : null}
+                
+                <ProfileActions
+                  userId={userId || ''}
+                  username={profile.username || profile.display_name || ''}
+                  isOwnProfile={isOwnProfile}
+                  isFollowing={isFollowing}
+                  onFollowToggle={toggleFollow}
+                />
               </div>
             </div>
 
