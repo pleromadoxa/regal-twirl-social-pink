@@ -23,10 +23,10 @@ import {
   Users,
   Video,
   TrendingUp,
-  Megaphone
+  Megaphone,
+  Gamepad
 } from 'lucide-react';
 import AccountSwitcher from './AccountSwitcher';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const SidebarNav = () => {
   const { user } = useAuth();
@@ -43,6 +43,7 @@ const SidebarNav = () => {
     { icon: Bookmark, label: 'Pinned', href: '/pinned' },
     { icon: Video, label: 'Reels', href: '/?tab=reels' },
     { icon: Hash, label: 'Hashtags', href: '/explore?type=hashtags' },
+    { icon: Gamepad, label: 'Games', href: '/games' },
     { icon: User, label: 'Profile', href: `/profile/${user?.id}` },
     { icon: Settings, label: 'Settings', href: '/settings' },
   ];
@@ -67,24 +68,23 @@ const SidebarNav = () => {
   return (
     <div className={`${isExpanded ? 'w-80' : 'w-20'} transition-all duration-300 ease-in-out fixed left-0 top-0 h-screen bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-r border-purple-200 dark:border-purple-800 z-50 overflow-y-auto`}>
       <div className="p-4">
-        {/* Header with Logo and Theme Toggle */}
+        {/* Header with Logo */}
         <div className="flex items-center justify-between mb-6">
           {isExpanded && (
             <div className="flex items-center gap-4">
               <img 
                 src="/lovable-uploads/d2cf9ddb-740e-4a22-af28-03c3fdd1ffe6.png"
                 alt="Regal Network Logo" 
-                className="w-16 h-16"
+                className="w-24 h-24"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   const fallback = document.createElement('div');
-                  fallback.className = 'w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center';
+                  fallback.className = 'w-24 h-24 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center';
                   fallback.innerHTML = '<span class="text-white font-bold text-lg">R</span>';
                   target.parentNode?.appendChild(fallback);
                 }}
               />
-              <ThemeToggle />
             </div>
           )}
           <Button

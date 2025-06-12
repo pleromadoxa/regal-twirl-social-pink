@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { Message } from '@/types/messages';
 import { updateConversationStreak } from './streakService';
@@ -35,6 +36,8 @@ export const fetchMessages = async (userId: string, otherUserId: string): Promis
 
   return messageData.map(msg => ({
     ...msg,
+    conversation_id: '',
+    message_type: 'text' as const,
     sender_profile: profilesMap.get(msg.sender_id) || null
   }));
 };
@@ -76,8 +79,23 @@ export const sendMessage = async (senderId: string, recipientId: string, content
 
   return {
     ...newMessage,
+    conversation_id: conversation?.id || '',
+    message_type: 'text' as const,
     sender_profile: senderProfile || null
   };
+};
+
+export const deleteMessage = async (messageId: string, userId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('messages')
+    .delete()
+    .eq('id', messageId)
+    .eq('sender_id', userId);
+
+  if (error) {
+    console.error("Error deleting message:", error);
+    throw error;
+  }
 };
 
 export const markMessageAsRead = async (messageId: string) => {
@@ -122,6 +140,8 @@ export const subscribeToMessages = (
 
       const messageWithProfile = {
         ...payload.new,
+        conversation_id: conversationId,
+        message_type: 'text' as const,
         sender_profile: senderProfile || null
       } as Message;
 
@@ -140,7 +160,6 @@ export const subscribeToMessages = (
   };
 };
 
-// Subscribe to typing indicators
 export const subscribeToTyping = (
   conversationId: string,
   userId: string,

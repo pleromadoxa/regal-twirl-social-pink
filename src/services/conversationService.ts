@@ -1,95 +1,59 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import type { Conversation, UserProfile } from '@/types/messages';
-import { calculateStreak } from './streakService';
+import type { Conversation } from '@/types/messages';
 
 export const fetchConversations = async (userId: string): Promise<Conversation[]> => {
-  const { data: conversationData, error: conversationError } = await supabase
+  const { data: conversationsData, error } = await supabase
     .from('conversations')
-    .select('*')
+    .select(`
+      *,
+      participant_1_profile:participant_1(id, username, display_name, avatar_url),
+      participant_2_profile:participant_2(id, username, display_name, avatar_url)
+    `)
     .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
-    .order('last_message_at', { ascending: false, nullsFirst: false });
+    .order('last_message_at', { ascending: false });
 
-  if (conversationError) {
-    console.error("Error fetching conversations:", conversationError);
-    throw conversationError;
+  if (error) {
+    console.error('Error fetching conversations:', error);
+    throw error;
   }
 
-  if (!conversationData) return [];
+  if (!conversationsData) return [];
 
-  // Fetch profiles for all participants
-  const participantIds = new Set<string>();
-  conversationData.forEach(conv => {
-    participantIds.add(conv.participant_1);
-    participantIds.add(conv.participant_2);
-  });
-
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('id, username, display_name, avatar_url')
-    .in('id', Array.from(participantIds));
-
-  if (profilesError) {
-    console.error("Error fetching profiles:", profilesError);
-    throw profilesError;
-  }
-
-  const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
-
-  // Calculate streaks for each conversation
-  const conversationsWithStreaks = await Promise.all(
-    conversationData.map(async (conv) => {
-      const participant1Profile = profilesMap.get(conv.participant_1);
-      const participant2Profile = profilesMap.get(conv.participant_2);
-      const otherUser = conv.participant_1 === userId 
-        ? participant2Profile 
-        : participant1Profile;
-      
-      // Calculate current streak
-      const streakCount = await calculateStreak(conv.id);
-      
-      return {
-        ...conv,
-        participant_1_profile: participant1Profile || null,
-        participant_2_profile: participant2Profile || null,
-        profiles_participant_1: participant1Profile || null,
-        profiles_participant_2: participant2Profile || null,
-        other_user: otherUser || null,
-        last_message: null,
-        streak_count: streakCount
-      };
-    })
-  );
-
-  return conversationsWithStreaks;
+  // Add updated_at field and determine other_user
+  return conversationsData.map(conv => ({
+    ...conv,
+    updated_at: conv.last_message_at || conv.created_at,
+    other_user: conv.participant_1 === userId 
+      ? conv.participant_2_profile 
+      : conv.participant_1_profile
+  }));
 };
 
-export const createConversation = async (participant1Id: string, participant2Id: string) => {
-  const { data: newConversation, error } = await supabase
+export const findExistingConversation = async (userId1: string, userId2: string) => {
+  const { data } = await supabase
+    .from('conversations')
+    .select('*')
+    .or(`and(participant_1.eq.${userId1},participant_2.eq.${userId2}),and(participant_1.eq.${userId2},participant_2.eq.${userId1})`)
+    .single();
+  
+  return data;
+};
+
+export const createConversation = async (userId1: string, userId2: string) => {
+  const { data, error } = await supabase
     .from('conversations')
     .insert({
-      participant_1: participant1Id,
-      participant_2: participant2Id
+      participant_1: userId1,
+      participant_2: userId2
     })
-    .select()
+    .select('*')
     .single();
 
-  if (error) throw error;
-  return newConversation;
-};
+  if (error) {
+    console.error('Error creating conversation:', error);
+    throw error;
+  }
 
-export const findExistingConversation = async (userId: string, otherUserId: string) => {
-  const { data: existingConversation } = await supabase
-    .from('conversations')
-    .select('*')
-    .or(`and(participant_1.eq.${userId},participant_2.eq.${otherUserId}),and(participant_1.eq.${otherUserId},participant_2.eq.${userId})`)
-    .maybeSingle();
-
-  return existingConversation;
-};
-
-export const updateConversationLastMessage = async (conversationId: string) => {
-  await supabase
-    .from('conversations')
-    .update({ last_message_at: new Date().toISOString() })
-    .eq('id', conversationId);
+  return data;
 };

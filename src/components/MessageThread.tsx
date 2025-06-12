@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, Trash2, Reply } from 'lucide-react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,9 +11,16 @@ import EnhancedMessageComposer from '@/components/EnhancedMessageComposer';
 import MessageAttachments from '@/components/MessageAttachments';
 import RealTimeCallManager from '@/components/RealTimeCallManager';
 import { uploadMessageAttachment, createMessageAttachment } from '@/services/attachmentService';
+import { deleteMessage } from '@/services/messageService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -32,6 +39,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   } = useEnhancedMessages();
 
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [deletingMessage, setDeletingMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -72,6 +80,14 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           filter: `or(and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id}))`
         }, () => {
           console.log('New message received, refreshing...');
+          refetch();
+        })
+        .on('postgres_changes', {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'messages'
+        }, () => {
+          console.log('Message deleted, refreshing...');
           refetch();
         })
         .subscribe();
@@ -140,6 +156,29 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       });
     } finally {
       setSendingMessage(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!user) return;
+    
+    setDeletingMessage(messageId);
+    try {
+      await deleteMessage(messageId, user.id);
+      toast({
+        title: "Message deleted",
+        description: "The message has been deleted successfully.",
+      });
+      refetch();
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast({
+        title: "Error deleting message",
+        description: "You can only delete your own messages.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingMessage(null);
     }
   };
 
@@ -229,12 +268,39 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
                 )}
                 
                 <div className={`max-w-xs lg:max-w-md ${isOwn ? 'order-1' : ''}`}>
-                  <div className={`px-4 py-2 rounded-2xl ${
+                  <div className={`relative group px-4 py-2 rounded-2xl ${
                     isOwn 
                       ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' 
                       : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white'
                   }`}>
                     <p className="text-sm break-words">{message.content}</p>
+                    
+                    {/* Message controls for own messages */}
+                    {isOwn && (
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-white/70 hover:text-white hover:bg-white/20"
+                            >
+                              <MoreVertical className="w-3 h-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteMessage(message.id)}
+                              disabled={deletingMessage === message.id}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              {deletingMessage === message.id ? 'Deleting...' : 'Delete'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Message Attachments */}
