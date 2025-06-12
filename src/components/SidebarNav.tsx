@@ -26,7 +26,7 @@ import {
   Megaphone
 } from 'lucide-react';
 import AccountSwitcher from './AccountSwitcher';
-import ThemeToggle from './ThemeToggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const SidebarNav = () => {
   const { user } = useAuth();
@@ -70,23 +70,20 @@ const SidebarNav = () => {
         {/* Header with Logo and Theme Toggle */}
         <div className="flex items-center justify-between mb-6">
           {isExpanded && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <img 
                 src="/lovable-uploads/d2cf9ddb-740e-4a22-af28-03c3fdd1ffe6.png"
                 alt="Regal Network Logo" 
-                className="w-8 h-8"
+                className="w-12 h-12"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   const fallback = document.createElement('div');
-                  fallback.className = 'w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center';
-                  fallback.innerHTML = '<span class="text-white font-bold text-sm">R</span>';
+                  fallback.className = 'w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center';
+                  fallback.innerHTML = '<span class="text-white font-bold text-lg">R</span>';
                   target.parentNode?.appendChild(fallback);
                 }}
               />
-              <span className="font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Regal Network
-              </span>
               <ThemeToggle />
             </div>
           )}

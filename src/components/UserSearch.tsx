@@ -24,9 +24,10 @@ interface UserSearchResult {
 
 interface UserSearchProps {
   showMessageButton?: boolean;
+  onStartConversation?: (userId: string) => Promise<void>;
 }
 
-const UserSearch = ({ showMessageButton = false }: UserSearchProps) => {
+const UserSearch = ({ showMessageButton = false, onStartConversation }: UserSearchProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -111,16 +112,20 @@ const UserSearch = ({ showMessageButton = false }: UserSearchProps) => {
     }
 
     try {
-      // Check if conversation already exists
-      let conversation = await findExistingConversation(user.id, targetUserId);
-      
-      if (!conversation) {
-        // Create new conversation
-        conversation = await createConversation(user.id, targetUserId);
+      if (onStartConversation) {
+        await onStartConversation(targetUserId);
+      } else {
+        // Check if conversation already exists
+        let conversation = await findExistingConversation(user.id, targetUserId);
+        
+        if (!conversation) {
+          // Create new conversation
+          conversation = await createConversation(user.id, targetUserId);
+        }
+        
+        // Navigate to messages with the conversation
+        navigate('/messages');
       }
-      
-      // Navigate to messages with the conversation
-      navigate('/messages');
     } catch (error) {
       console.error('Error creating conversation:', error);
       toast({
