@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,7 +42,17 @@ export const useMessages = () => {
         return;
       }
 
-      setMessages(messagesData || []);
+      // Transform the data to match the Message interface
+      const formattedMessages: Message[] = (messagesData || []).map(msg => ({
+        ...msg,
+        conversation_id: conversationId,
+        message_type: 'text' as const,
+        attachments: [],
+        profiles: undefined,
+        sender_profile: undefined
+      }));
+
+      setMessages(formattedMessages);
     } catch (error) {
       console.error('Error in fetchMessages:', error);
     }
