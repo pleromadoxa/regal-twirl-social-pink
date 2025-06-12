@@ -13,6 +13,7 @@ export interface Conversation {
   created_at: string;
   updated_at: string;
   last_message_at?: string;
+  streak_count?: number;
   last_message?: {
     id: string;
     content: string;
@@ -22,7 +23,6 @@ export interface Conversation {
   };
   participant_1_profile?: UserProfile;
   participant_2_profile?: UserProfile;
-  streak_count?: number;
   is_pinned?: boolean;
   is_archived?: boolean;
   other_user?: UserProfile;

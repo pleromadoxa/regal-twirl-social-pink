@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
-import { supabase } from '@/integrations/supabase/client';
 
 interface GameScore {
   id: string;
@@ -40,10 +39,9 @@ interface GameSave {
 
 const Games = () => {
   const { user } = useAuth();
-  const [scores, setScores] = useState<GameScore[]>([]);
-  const [saves, setSaves] = useState<GameSave[]>([]);
+  const [scores] = useState<GameScore[]>([]);
+  const [saves] = useState<GameSave[]>([]);
   const [currentGame, setCurrentGame] = useState<string | null>(null);
-  const [gameStates, setGameStates] = useState<{[key: string]: any}>({});
 
   // Snake Game State
   const [snakeGame, setSnakeGame] = useState({
@@ -71,66 +69,6 @@ const Games = () => {
     moves: 0,
     isCompleted: false
   });
-
-  useEffect(() => {
-    if (user) {
-      loadGameData();
-    }
-  }, [user]);
-
-  const loadGameData = async () => {
-    if (!user) return;
-
-    // Load high scores
-    const { data: scoresData } = await supabase
-      .from('game_scores')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('score', { ascending: false });
-
-    // Load saved games
-    const { data: savesData } = await supabase
-      .from('game_saves')
-      .select('*')
-      .eq('user_id', user.id);
-
-    if (scoresData) setScores(scoresData);
-    if (savesData) setSaves(savesData);
-  };
-
-  const saveGameState = async (gameType: string, saveData: any) => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('game_saves')
-      .upsert({
-        user_id: user.id,
-        game_type: gameType,
-        save_data: saveData
-      });
-
-    if (!error) {
-      loadGameData();
-    }
-  };
-
-  const saveScore = async (gameType: string, score: number, level: number = 1, data: any = {}) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('game_scores')
-      .insert({
-        user_id: user.id,
-        game_type: gameType,
-        score,
-        level,
-        data
-      });
-
-    if (!error) {
-      loadGameData();
-    }
-  };
 
   const initializeMemoryGame = () => {
     const cards = [];
@@ -313,11 +251,6 @@ const Games = () => {
                                     ? 'bg-blue-500 text-white'
                                     : 'bg-slate-200 hover:bg-slate-300'
                                 }`}
-                                onClick={() => {
-                                  if (!card.flipped && !card.matched && memoryGame.flippedCards.length < 2) {
-                                    // Handle card flip logic here
-                                  }
-                                }}
                               >
                                 {card.flipped || card.matched ? card.value : '?'}
                               </div>
@@ -346,9 +279,6 @@ const Games = () => {
                                     ? 'bg-slate-100'
                                     : 'bg-blue-500 text-white hover:bg-blue-600'
                                 }`}
-                                onClick={() => {
-                                  // Handle tile move logic here
-                                }}
                               >
                                 {tile === 0 ? '' : tile}
                               </div>

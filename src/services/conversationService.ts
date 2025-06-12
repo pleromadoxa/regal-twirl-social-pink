@@ -7,8 +7,8 @@ export const fetchConversations = async (userId: string): Promise<Conversation[]
     .from('conversations')
     .select(`
       *,
-      participant_1_profile:participant_1(id, username, display_name, avatar_url),
-      participant_2_profile:participant_2(id, username, display_name, avatar_url)
+      participant_1_profile:profiles!participant_1(id, username, display_name, avatar_url),
+      participant_2_profile:profiles!participant_2(id, username, display_name, avatar_url)
     `)
     .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
     .order('last_message_at', { ascending: false });
@@ -56,4 +56,16 @@ export const createConversation = async (userId1: string, userId2: string) => {
   }
 
   return data;
+};
+
+export const updateConversationLastMessage = async (conversationId: string) => {
+  const { error } = await supabase
+    .from('conversations')
+    .update({ last_message_at: new Date().toISOString() })
+    .eq('id', conversationId);
+
+  if (error) {
+    console.error('Error updating conversation last message:', error);
+    throw error;
+  }
 };
