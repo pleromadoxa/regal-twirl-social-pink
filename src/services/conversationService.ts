@@ -5,11 +5,7 @@ import type { Conversation } from '@/types/messages';
 export const fetchConversations = async (userId: string): Promise<Conversation[]> => {
   const { data: conversationsData, error } = await supabase
     .from('conversations')
-    .select(`
-      *,
-      participant_1_profile:profiles!participant_1(id, username, display_name, avatar_url),
-      participant_2_profile:profiles!participant_2(id, username, display_name, avatar_url)
-    `)
+    .select('*')
     .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
     .order('last_message_at', { ascending: false });
 
@@ -20,13 +16,29 @@ export const fetchConversations = async (userId: string): Promise<Conversation[]
 
   if (!conversationsData) return [];
 
-  // Add updated_at field and determine other_user
+  // Fetch profiles for all participants
+  const participantIds = Array.from(new Set(
+    conversationsData.flatMap(conv => [conv.participant_1, conv.participant_2])
+  ));
+
+  const { data: profilesData } = await supabase
+    .from('profiles')
+    .select('id, username, display_name, avatar_url')
+    .in('id', participantIds);
+
+  const profilesMap = new Map(
+    profilesData?.map(profile => [profile.id, profile]) || []
+  );
+
+  // Add updated_at field and determine other_user and profiles
   return conversationsData.map(conv => ({
     ...conv,
     updated_at: conv.last_message_at || conv.created_at,
+    participant_1_profile: profilesMap.get(conv.participant_1),
+    participant_2_profile: profilesMap.get(conv.participant_2),
     other_user: conv.participant_1 === userId 
-      ? conv.participant_2_profile 
-      : conv.participant_1_profile
+      ? profilesMap.get(conv.participant_2)
+      : profilesMap.get(conv.participant_1)
   }));
 };
 

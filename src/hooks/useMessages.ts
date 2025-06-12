@@ -3,40 +3,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-
-export interface Message {
-  id: string;
-  sender_id: string;
-  recipient_id: string;
-  content: string;
-  created_at: string;
-  read_at: string | null;
-  sender_profile?: {
-    username: string;
-    display_name: string;
-    avatar_url: string;
-  };
-  recipient_profile?: {
-    username: string;
-    display_name: string;
-    avatar_url: string;
-  };
-}
-
-export interface Conversation {
-  id: string;
-  participant_1: string;
-  participant_2: string;
-  last_message_at: string;
-  created_at: string;
-  other_user?: {
-    id: string;
-    username: string;
-    display_name: string;
-    avatar_url: string;
-  };
-  last_message?: Message;
-}
+import { fetchConversations } from '@/services/conversationService';
+import type { Conversation, Message } from '@/types/messages';
 
 export const useMessages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -46,42 +14,13 @@ export const useMessages = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchConversations = async () => {
+  const fetchConversationsData = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
-      
-      const { data: conversationsData, error } = await supabase
-        .from('conversations')
-        .select('*')
-        .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
-        .order('last_message_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching conversations:', error);
-        return;
-      }
-
-      // Get other user profiles for each conversation
-      const enrichedConversations = await Promise.all(
-        conversationsData.map(async (conv) => {
-          const otherUserId = conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1;
-          
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('id, username, display_name, avatar_url')
-            .eq('id', otherUserId)
-            .single();
-
-          return {
-            ...conv,
-            other_user: profileData
-          };
-        })
-      );
-
-      setConversations(enrichedConversations);
+      const conversationsData = await fetchConversations(user.id);
+      setConversations(conversationsData);
     } catch (error) {
       console.error('Error in fetchConversations:', error);
     } finally {
@@ -179,7 +118,7 @@ export const useMessages = () => {
       });
 
       // Refresh conversations and messages
-      fetchConversations();
+      fetchConversationsData();
       if (selectedConversation) {
         fetchMessages(selectedConversation);
       }
@@ -194,7 +133,7 @@ export const useMessages = () => {
   };
 
   useEffect(() => {
-    fetchConversations();
+    fetchConversationsData();
   }, [user]);
 
   useEffect(() => {
@@ -210,6 +149,6 @@ export const useMessages = () => {
     selectedConversation,
     setSelectedConversation,
     sendMessage,
-    refetch: fetchConversations
+    refetch: fetchConversationsData
   };
 };
