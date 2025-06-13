@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -279,7 +278,7 @@ const Music = () => {
                   <CardContent>
                     {loading ? (
                       <div className="text-center py-12">
-                        <MusicIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                        <MusicIcon className="w-16 h-16 mx-auto text-gray-300 mb-4 animate-pulse" />
                         <p className="text-gray-500">Loading tracks...</p>
                       </div>
                     ) : tracks.length === 0 ? (
@@ -289,63 +288,68 @@ const Music = () => {
                         <p className="text-gray-500">Be the first to upload music!</p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {tracks.map((track) => (
-                          <div key={track.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-                            <div className="relative w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-md flex items-center justify-center">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="absolute inset-0 w-full h-full bg-black/30 hover:bg-black/50 text-white opacity-80 hover:opacity-100 transition-opacity"
-                                onClick={() => handlePlayTrack(track)}
-                              >
-                                <Play className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-medium">{track.title}</h4>
-                                {track.profiles?.is_verified && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    Verified
+                          <Card key={track.id} className="group hover:shadow-lg transition-all duration-300 hover:scale-105">
+                            <CardContent className="p-4">
+                              <div className="relative mb-4">
+                                <div className="w-full h-32 bg-gradient-to-r from-purple-400 to-pink-400 rounded-lg flex items-center justify-center relative overflow-hidden">
+                                  <MusicIcon className="w-12 h-12 text-white opacity-50" />
+                                  <Button
+                                    size="lg"
+                                    className="absolute inset-0 w-full h-full bg-black/30 hover:bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-all duration-300"
+                                    onClick={() => handlePlayTrack(track)}
+                                  >
+                                    <Play className="w-8 h-8" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-semibold text-lg truncate">{track.title}</h4>
+                                  {track.profiles?.is_verified && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      ✓ Verified
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-muted-foreground">{track.artist}</p>
+                                {track.album && (
+                                  <p className="text-sm text-muted-foreground">{track.album}</p>
+                                )}
+                                {track.genre && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {track.genre}
                                   </Badge>
                                 )}
+                                
+                                <div className="flex items-center justify-between pt-2">
+                                  <span className="text-sm text-muted-foreground">
+                                    {formatDuration(track.duration)}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost"
+                                      onClick={() => handleLikeTrack(track.id)}
+                                      className={likedTracks.has(track.id) ? 'text-red-500' : ''}
+                                    >
+                                      <Heart className={`w-4 h-4 ${likedTracks.has(track.id) ? 'fill-current' : ''}`} />
+                                      <span className="text-xs ml-1">{track.likes_count}</span>
+                                    </Button>
+                                    <Button size="sm" variant="ghost">
+                                      <Share2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                
+                                <div className="text-xs text-muted-foreground">
+                                  {track.plays_count} plays
+                                </div>
                               </div>
-                              <p className="text-sm text-muted-foreground">{track.artist}</p>
-                              {track.album && (
-                                <p className="text-xs text-muted-foreground">{track.album}</p>
-                              )}
-                              {track.genre && (
-                                <Badge variant="outline" className="text-xs mt-1">
-                                  {track.genre}
-                                </Badge>
-                              )}
-                            </div>
-                            
-                            <div className="text-right">
-                              <p className="text-sm font-medium">{formatDuration(track.duration)}</p>
-                              <p className="text-xs text-muted-foreground">{track.plays_count} plays</p>
-                            </div>
-                            
-                            <div className="flex items-center gap-1">
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={() => handleLikeTrack(track.id)}
-                                className={likedTracks.has(track.id) ? 'text-red-500' : ''}
-                              >
-                                <Heart className={`w-4 h-4 ${likedTracks.has(track.id) ? 'fill-current' : ''}`} />
-                                <span className="text-xs ml-1">{track.likes_count}</span>
-                              </Button>
-                              <Button size="sm" variant="ghost">
-                                <Share2 className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="ghost">
-                                <Download className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
+                            </CardContent>
+                          </Card>
                         ))}
                       </div>
                     )}
@@ -377,24 +381,10 @@ const Music = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {trendingPlaylists.map((playlist) => (
-                        <Card key={playlist.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                          <CardContent className="p-4">
-                            <img 
-                              src={playlist.image} 
-                              alt={playlist.name}
-                              className="w-full h-32 object-cover rounded-md mb-3"
-                            />
-                            <h4 className="font-medium mb-1">{playlist.name}</h4>
-                            <p className="text-sm text-muted-foreground mb-2">by {playlist.creator}</p>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>{playlist.tracks} tracks</span>
-                              <span>{playlist.followers} followers</span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                    <div className="text-center py-12">
+                      <Disc className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-600 mb-2">Playlists</h3>
+                      <p className="text-gray-500">Create and discover amazing playlists!</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -417,24 +407,27 @@ const Music = () => {
             </Tabs>
           </div>
 
-          {/* Music Player */}
+          {/* Enhanced Music Player */}
           {currentTrack && (
-            <div className="fixed bottom-0 left-80 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-t border-purple-200 dark:border-purple-800 p-4">
+            <div className="fixed bottom-0 left-80 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-t border-purple-200 dark:border-purple-800 p-4 shadow-lg">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-md flex items-center justify-center">
-                  <MusicIcon className="w-6 h-6 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-lg flex items-center justify-center">
+                  <MusicIcon className="w-8 h-8 text-white" />
                 </div>
                 
                 <div className="flex-1">
-                  <h4 className="font-medium">{currentTrack.title}</h4>
+                  <h4 className="font-semibold">{currentTrack.title}</h4>
                   <p className="text-sm text-muted-foreground">{currentTrack.artist}</p>
+                  <div className="text-xs text-muted-foreground">
+                    {currentTrack.plays_count} plays • {formatDuration(currentTrack.duration)}
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-2">
                   <Button size="sm" variant="ghost">
                     <SkipBack className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" onClick={togglePlayPause}>
+                  <Button size="sm" onClick={togglePlayPause} className="bg-purple-600 hover:bg-purple-700">
                     {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   </Button>
                   <Button size="sm" variant="ghost">
@@ -457,17 +450,25 @@ const Music = () => {
                   <Button size="sm" variant="ghost">
                     <Share2 className="w-4 h-4" />
                   </Button>
+                  <Button size="sm" variant="ghost">
+                    <Download className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
               
-              {/* Audio element for actual playback */}
+              {/* Enhanced Audio element */}
               {currentTrack.file_url && (
-                <audio
-                  src={currentTrack.file_url}
-                  autoPlay={isPlaying}
-                  onEnded={() => setIsPlaying(false)}
-                  className="hidden"
-                />
+                <div className="mt-3">
+                  <audio
+                    src={currentTrack.file_url}
+                    autoPlay={isPlaying}
+                    onEnded={() => setIsPlaying(false)}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    controls
+                    className="w-full"
+                  />
+                </div>
               )}
             </div>
           )}

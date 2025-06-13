@@ -1,20 +1,20 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MoreVertical, Trash2, Reply } from 'lucide-react';
+import { MoreVertical, Trash2 } from 'lucide-react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
-import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import CallHistoryDialog from '@/components/CallHistoryDialog';
 import EnhancedMessageComposer from '@/components/EnhancedMessageComposer';
-import MessageAttachments from '@/components/MessageAttachments';
 import RealTimeCallManager from '@/components/RealTimeCallManager';
+import EnhancedChatBubble from '@/components/EnhancedChatBubble';
 import { uploadMessageAttachment, createMessageAttachment } from '@/services/attachmentService';
 import { deleteMessage } from '@/services/messageService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { motion, AnimatePresence } from 'framer-motion';
+import PresenceIndicator from './PresenceIndicator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -209,23 +209,41 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   ].filter(p => p.id !== user?.id);
 
   return (
-    <div className="flex-1 flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-purple-200 dark:border-purple-800 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-        <div className="flex items-center gap-3">
-          <Avatar className="w-10 h-10">
-            <AvatarImage src={otherUser?.avatar_url || ''} />
-            <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-              {otherUser?.display_name?.[0] || otherUser?.username?.[0] || '?'}
-            </AvatarFallback>
-          </Avatar>
+    <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-white/80 to-purple-50/30 dark:from-slate-800/80 dark:to-purple-900/30">
+      {/* Enhanced Header */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between p-6 border-b border-purple-200/50 dark:border-purple-800/50 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-sm"
+      >
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Avatar className="w-12 h-12 ring-2 ring-purple-200 dark:ring-purple-800">
+              <AvatarImage src={otherUser?.avatar_url || ''} />
+              <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                {otherUser?.display_name?.[0] || otherUser?.username?.[0] || '?'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute -bottom-1 -right-1">
+              <PresenceIndicator userId={otherUser?.id || ''} />
+            </div>
+          </div>
           <div>
-            <h3 className="font-semibold text-slate-900 dark:text-white">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-lg">
               {otherUser?.display_name || otherUser?.username || 'Unknown User'}
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {typingUsers[conversationId] ? 'Typing...' : 'Online'}
-            </p>
+            <div className="flex items-center gap-2">
+              <PresenceIndicator userId={otherUser?.id || ''} showText />
+              {typingUsers[conversationId] && (
+                <motion.span 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm text-purple-600 dark:text-purple-400"
+                >
+                  is typing...
+                </motion.span>
+              )}
+            </div>
           </div>
         </div>
         
@@ -238,105 +256,56 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="text-slate-600 hover:text-purple-600 dark:text-slate-400"
+            className="text-slate-600 hover:text-purple-600 dark:text-slate-400 hover:bg-purple-100 dark:hover:bg-purple-900/20"
           >
             <MoreVertical className="w-5 h-5" />
           </Button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Messages */}
+      {/* Enhanced Messages Area */}
       <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.map((message) => {
-            const isOwn = message.sender_id !== otherUser?.id;
-            const sender = message.sender_profile;
-            
-            return (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${isOwn ? 'justify-end' : 'justify-start'}`}
-                onMouseEnter={() => !message.read_at && markAsRead(message.id)}
-              >
-                {!isOwn && (
-                  <Avatar className="w-8 h-8 flex-shrink-0">
-                    <AvatarImage src={sender?.avatar_url || ''} />
-                    <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
-                      {sender?.display_name?.[0] || sender?.username?.[0] || '?'}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                
-                <div className={`max-w-xs lg:max-w-md ${isOwn ? 'order-1' : ''}`}>
-                  <div className={`relative group px-4 py-2 rounded-2xl ${
-                    isOwn 
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' 
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white'
-                  }`}>
-                    <p className="text-sm break-words">{message.content}</p>
-                    
-                    {/* Message controls for own messages */}
-                    {isOwn && (
-                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 text-white/70 hover:text-white hover:bg-white/20"
-                            >
-                              <MoreVertical className="w-3 h-3" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteMessage(message.id)}
-                              disabled={deletingMessage === message.id}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              {deletingMessage === message.id ? 'Deleting...' : 'Delete'}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Message Attachments */}
-                  <MessageAttachments messageId={message.id} />
-                  
-                  <p className={`text-xs text-slate-500 dark:text-slate-400 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-                    {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                    {isOwn && message.read_at && (
-                      <span className="ml-1 text-purple-500">✓✓</span>
-                    )}
-                  </p>
-                </div>
-
-                {isOwn && (
-                  <Avatar className="w-8 h-8 flex-shrink-0 order-2">
-                    <AvatarImage src={sender?.avatar_url || ''} />
-                    <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
-                      {sender?.display_name?.[0] || sender?.username?.[0] || '?'}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            );
-          })}
+        <div className="space-y-6 max-w-4xl mx-auto">
+          <AnimatePresence>
+            {messages.map((message) => {
+              const isOwn = message.sender_id !== otherUser?.id;
+              
+              return (
+                <EnhancedChatBubble
+                  key={message.id}
+                  message={message}
+                  isOwn={isOwn}
+                  onReply={() => {
+                    // Handle reply functionality
+                    console.log('Reply to message:', message.id);
+                  }}
+                  onMore={() => {
+                    if (isOwn) {
+                      handleDeleteMessage(message.id);
+                    }
+                  }}
+                />
+              );
+            })}
+          </AnimatePresence>
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
       {/* Enhanced Message Input */}
-      <div className="p-4 border-t border-purple-200 dark:border-purple-800 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-        <EnhancedMessageComposer
-          onSendMessage={handleSendMessage}
-          disabled={sendingMessage}
-          placeholder="Type a message..."
-        />
-      </div>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-4 border-t border-purple-200/50 dark:border-purple-800/50 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl"
+      >
+        <div className="max-w-4xl mx-auto">
+          <EnhancedMessageComposer
+            onSendMessage={handleSendMessage}
+            disabled={sendingMessage}
+            placeholder="Type a message..."
+          />
+        </div>
+      </motion.div>
     </div>
   );
 };
