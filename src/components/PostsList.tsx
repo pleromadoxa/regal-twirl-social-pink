@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -8,7 +9,7 @@ import { PostIndicators } from '@/components/PostIndicators';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Repeat } from 'lucide-react';
-import { useVerifiedStatus } from '@/hooks/useVerifiedStatus';
+import { VerificationLevel } from '@/hooks/useVerifiedStatus';
 import VerificationBadge from '@/components/VerificationBadge';
 import InlineComments from './InlineComments';
 import MediaPreview from './MediaPreview';
@@ -23,6 +24,38 @@ interface PostsListProps {
   onDelete?: (postId: string) => void;
   userId?: string;
 }
+
+// Helper function to calculate verification status without using hooks
+const getVerificationLevel = (user: any): VerificationLevel => {
+  if (!user) return null;
+  
+  // Special case for VIP user
+  if (user.email === 'pleromadoxa@gmail.com' || user.username === 'pleromadoxa') {
+    return 'vip';
+  }
+  
+  // Business verification (for business accounts)
+  if (user.premium_tier === 'business') {
+    return 'business';
+  }
+  
+  // Professional verification (for professional accounts)
+  if (user.premium_tier === 'professional') {
+    return 'professional';
+  }
+  
+  // Check if manually verified
+  if (user.is_verified) {
+    return 'verified';
+  }
+  
+  // Check if has 100+ followers
+  if (user.followers_count && user.followers_count >= 100) {
+    return 'verified';
+  }
+  
+  return null;
+};
 
 export const PostsList = ({ 
   posts: externalPosts, 
@@ -331,7 +364,7 @@ export const PostsList = ({
       )}
 
       {posts.map((post) => {
-        const { verificationLevel } = useVerifiedStatus(post.profiles);
+        const verificationLevel = getVerificationLevel(post.profiles);
         const isThread = isThreadPost(post.content);
         const hasAudio = hasAudioContent(post.content);
         const retweetInfo = retweetedBy[post.id];
