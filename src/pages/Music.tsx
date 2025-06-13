@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import SidebarNav from '@/components/SidebarNav';
 import { 
-  Music, 
+  Music as MusicIcon, 
   Upload, 
   Play, 
   Pause, 
@@ -266,7 +266,7 @@ const Music = () => {
         <div className="flex-1 pl-80 flex items-center justify-center">
           <Card className="max-w-md text-center">
             <CardContent className="p-8">
-              <Music className="w-16 h-16 mx-auto text-red-500 mb-4" />
+              <MusicIcon className="w-16 h-16 mx-auto text-red-500 mb-4" />
               <h2 className="text-xl font-bold mb-2">Access Denied</h2>
               <p className="text-muted-foreground">Only administrators can access the music management page.</p>
             </CardContent>
