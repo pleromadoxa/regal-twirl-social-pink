@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,7 +80,7 @@ const Music = () => {
           likes_count,
           created_at,
           user_id,
-          profiles!music_tracks_user_id_fkey (
+          profiles (
             username,
             display_name,
             is_verified
@@ -102,14 +101,7 @@ const Music = () => {
       }
 
       console.log('Fetched tracks:', data);
-
-      // Transform the data to match our interface
-      const transformedTracks: MusicTrack[] = (data || []).map(track => ({
-        ...track,
-        profiles: Array.isArray(track.profiles) ? track.profiles[0] : track.profiles
-      }));
-
-      setTracks(transformedTracks);
+      setTracks(data || []);
     } catch (error) {
       console.error('Error in fetchTracks:', error);
       toast({
@@ -329,7 +321,7 @@ const Music = () => {
                                 <div className="flex items-center gap-2">
                                   <h4 className="font-semibold text-lg truncate">{track.title}</h4>
                                   {track.profiles?.is_verified && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge variant="verified" className="text-xs">
                                       ✓ Verified
                                     </Badge>
                                   )}

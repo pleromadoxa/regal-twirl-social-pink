@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,6 +38,7 @@ interface MusicTrack {
     username: string;
     display_name: string;
     avatar_url?: string;
+    is_verified: boolean;
   };
 }
 
@@ -57,14 +57,16 @@ const AdminMusicSection = () => {
   const fetchAllTracks = async () => {
     console.log('Fetching all music tracks...');
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('music_tracks')
         .select(`
           *,
-          profiles!music_tracks_user_id_fkey (
+          profiles (
             username,
             display_name,
-            avatar_url
+            avatar_url,
+            is_verified
           )
         `)
         .order('created_at', { ascending: false });
@@ -80,13 +82,7 @@ const AdminMusicSection = () => {
       }
 
       console.log('Fetched tracks:', data);
-
-      const transformedTracks: MusicTrack[] = (data || []).map(track => ({
-        ...track,
-        profiles: Array.isArray(track.profiles) ? track.profiles[0] : track.profiles
-      }));
-
-      setTracks(transformedTracks);
+      setTracks(data || []);
     } catch (error) {
       console.error('Error in fetchAllTracks:', error);
       toast({
@@ -251,7 +247,7 @@ const AdminMusicSection = () => {
                 className="pl-10"
               />
             </div>
-            <Button onClick={fetchAllTracks} variant="outline">
+            <Button onClick={fetchAllTracks} variant="outline" disabled={loading}>
               Refresh
             </Button>
           </div>
@@ -300,6 +296,9 @@ const AdminMusicSection = () => {
                         </Badge>
                         {track.genre && (
                           <Badge variant="outline">{track.genre}</Badge>
+                        )}
+                        {track.profiles?.is_verified && (
+                          <Badge variant="verified">✓ Verified</Badge>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground mb-2">
