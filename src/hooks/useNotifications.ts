@@ -28,7 +28,7 @@ export const useNotifications = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef(false);
+  const isInitializedRef = useRef(false);
 
   const fetchNotifications = async () => {
     if (!user) {
@@ -169,22 +169,30 @@ export const useNotifications = () => {
   };
 
   useEffect(() => {
-    console.log('useNotifications effect running, user:', user?.id);
+    console.log('useNotifications effect running, user:', user?.id, 'initialized:', isInitializedRef.current);
     
     if (!user) {
       setNotifications([]);
       setUnreadCount(0);
       setLoading(false);
+      // Clean up channel if user is logged out
+      if (channelRef.current) {
+        console.log('Cleaning up channel on logout');
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        isInitializedRef.current = false;
+      }
       return;
     }
 
-    // Clean up existing channel first
-    if (channelRef.current && isSubscribedRef.current) {
-      console.log('Cleaning up existing channel');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-      isSubscribedRef.current = false;
+    // Prevent multiple initializations for the same user
+    if (isInitializedRef.current) {
+      console.log('Already initialized, skipping');
+      return;
     }
+
+    // Mark as initialized immediately to prevent race conditions
+    isInitializedRef.current = true;
 
     fetchNotifications();
 
@@ -215,17 +223,16 @@ export const useNotifications = () => {
       .subscribe();
 
     channelRef.current = subscription;
-    isSubscribedRef.current = true;
 
     return () => {
       console.log('Cleaning up notifications subscription');
-      if (channelRef.current && isSubscribedRef.current) {
+      if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
-        isSubscribedRef.current = false;
       }
+      isInitializedRef.current = false;
     };
-  }, [user?.id]);
+  }, [user?.id]); // Only depend on user.id
 
   return {
     notifications,
