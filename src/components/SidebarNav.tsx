@@ -60,15 +60,46 @@ const SidebarNav = () => {
     { icon: Gamepad2, label: 'Games', path: '/games', gradient: 'from-indigo-500 to-purple-500' },
     { icon: Building2, label: 'Business', path: '/business-management', gradient: 'from-emerald-500 to-teal-500' },
     { icon: Users, label: 'Professional', path: '/professional', gradient: 'from-violet-500 to-purple-500' },
+    { icon: Music, label: 'Music', path: '/music', gradient: 'from-pink-500 to-rose-500' },
   ];
 
   const quickActions = [
-    { icon: TrendingUp, label: 'Trending', gradient: 'from-orange-400 to-red-500' },
-    { icon: Calendar, label: 'Events', gradient: 'from-blue-400 to-purple-500' },
-    { icon: MapPin, label: 'Places', gradient: 'from-green-400 to-blue-500' },
-    { icon: Camera, label: 'Photos', gradient: 'from-pink-400 to-rose-500' },
-    { icon: Music, label: 'Music', gradient: 'from-purple-400 to-pink-500' },
-    { icon: Video, label: 'Videos', gradient: 'from-red-400 to-pink-500' },
+    { 
+      icon: TrendingUp, 
+      label: 'Trending', 
+      gradient: 'from-orange-400 to-red-500',
+      action: () => navigate('/explore?tab=trending')
+    },
+    { 
+      icon: Calendar, 
+      label: 'Events', 
+      gradient: 'from-blue-400 to-purple-500',
+      action: () => navigate('/explore?tab=events')
+    },
+    { 
+      icon: MapPin, 
+      label: 'Places', 
+      gradient: 'from-green-400 to-blue-500',
+      action: () => navigate('/explore?tab=places')
+    },
+    { 
+      icon: Camera, 
+      label: 'Photos', 
+      gradient: 'from-pink-400 to-rose-500',
+      action: () => navigate('/explore?tab=photos')
+    },
+    { 
+      icon: Music, 
+      label: 'Music', 
+      gradient: 'from-purple-400 to-pink-500',
+      action: () => navigate('/music')
+    },
+    { 
+      icon: Video, 
+      label: 'Videos', 
+      gradient: 'from-red-400 to-pink-500',
+      action: () => navigate('/explore?tab=videos')
+    },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -76,7 +107,7 @@ const SidebarNav = () => {
   if (!user) return null;
 
   return (
-    <div className={`fixed left-0 top-0 h-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border-r border-purple-200/50 dark:border-purple-800/50 shadow-2xl transition-all duration-300 z-40 ${isCollapsed ? 'w-20' : 'w-80'}`}>
+    <div className={`fixed left-0 top-0 h-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-r border-purple-200/50 dark:border-purple-800/50 shadow-2xl transition-all duration-300 z-50 ${isCollapsed ? 'w-20' : 'w-80'}`}>
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="p-6 border-b border-purple-200/50 dark:border-purple-800/50">
@@ -89,7 +120,7 @@ const SidebarNav = () => {
                 <img 
                   src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
                   alt="Regal Network" 
-                  className="h-12 w-auto transition-transform group-hover:scale-110"
+                  className="h-12 w-auto transition-transform group-hover:scale-110 filter drop-shadow-lg"
                 />
                 <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
               </div>
@@ -160,9 +191,10 @@ const SidebarNav = () => {
                     key={index}
                     variant="ghost"
                     size="sm"
-                    className="h-16 flex-col gap-1 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 group"
+                    onClick={action.action}
+                    className="h-16 flex-col gap-1 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 group transition-all duration-300"
                   >
-                    <div className={`p-2 rounded-lg bg-gradient-to-r ${action.gradient} bg-opacity-10 group-hover:scale-110 transition-transform`}>
+                    <div className={`p-2 rounded-lg bg-gradient-to-r ${action.gradient} group-hover:scale-110 transition-transform shadow-lg`}>
                       <action.icon className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-xs font-medium">{action.label}</span>
@@ -177,7 +209,7 @@ const SidebarNav = () => {
         <div className="p-4 border-t border-purple-200/50 dark:border-purple-800/50 space-y-3">
           {/* User Profile */}
           <Link to={`/profile/${user.id}`}>
-            <Button variant="ghost" className="w-full justify-start gap-3 h-auto p-3 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20">
+            <Button variant="ghost" className="w-full justify-start gap-3 h-auto p-3 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 transition-all duration-300">
               <div className="relative">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
                   {user.email?.charAt(0).toUpperCase()}
@@ -199,7 +231,7 @@ const SidebarNav = () => {
               <Button 
                 variant="ghost" 
                 size={isCollapsed ? "icon" : "default"}
-                className="w-full hover:bg-purple-100 dark:hover:bg-purple-900/20"
+                className="w-full hover:bg-purple-100 dark:hover:bg-purple-900/20 transition-colors"
               >
                 <Settings className="w-5 h-5" />
                 {!isCollapsed && <span className="ml-2">Settings</span>}
@@ -212,7 +244,7 @@ const SidebarNav = () => {
               variant="ghost" 
               size="icon"
               onClick={handleSignOut}
-              className="hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
+              className="hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
             >
               <LogOut className="w-5 h-5" />
             </Button>
@@ -220,7 +252,7 @@ const SidebarNav = () => {
 
           {/* Premium Badge */}
           {!isCollapsed && (
-            <div className="p-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-white text-center relative overflow-hidden">
+            <div className="p-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-white text-center relative overflow-hidden shadow-lg">
               <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
               <div className="relative z-10">
                 <div className="flex items-center justify-center gap-2 mb-1">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +28,8 @@ import {
   Share2,
   ExternalLink,
   Award,
-  TrendingUp
+  TrendingUp,
+  Sparkles
 } from 'lucide-react';
 
 const ProfessionalAccountProfile = () => {
@@ -198,12 +200,12 @@ const ProfessionalAccountProfile = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
       
-      <div className="flex-1 pl-80">
+      <div className="flex-1 pl-80 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Business Header */}
           <div className="relative mb-8">
             {/* Banner */}
-            <div className="h-48 md:h-64 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg overflow-hidden">
+            <div className="h-48 md:h-64 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg overflow-hidden shadow-2xl">
               {businessPage.banner_url ? (
                 <img 
                   src={businessPage.banner_url} 
@@ -211,34 +213,38 @@ const ProfessionalAccountProfile = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
+                <div className="w-full h-full flex items-center justify-center relative">
                   <Award className="w-16 h-16 text-white/50" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20"></div>
                 </div>
               )}
             </div>
 
             {/* Profile Info */}
             <div className="absolute -bottom-16 left-8 flex items-end gap-6">
-              <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
+              <Avatar className="w-32 h-32 border-4 border-white shadow-2xl">
                 <AvatarImage src={businessPage.avatar_url} />
-                <AvatarFallback className="bg-purple-500 text-white text-2xl">
+                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl">
                   {businessPage.page_name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-lg mb-4">
+              <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-lg p-4 shadow-2xl mb-4 border border-purple-200/50 dark:border-purple-800/50">
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-bold">{businessPage.page_name}</h1>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    {businessPage.page_name}
+                  </h1>
                   {businessPage.is_verified && (
-                    <Badge className="bg-blue-500 text-white">
+                    <Badge className="bg-blue-500 text-white shadow-lg">
                       <Award className="w-3 h-3 mr-1" />
                       Verified
                     </Badge>
                   )}
-                  <Badge className={getStatusColor(businessPage.shop_status || 'open')}>
+                  <Badge className={`${getStatusColor(businessPage.shop_status || 'open')} shadow-lg`}>
+                    <Sparkles className="w-3 h-3 mr-1" />
                     {businessPage.shop_status || 'open'}
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground capitalize">
+                <p className="text-sm text-muted-foreground capitalize font-medium">
                   {businessPage.business_type || businessPage.page_type} Business
                 </p>
               </div>
@@ -246,7 +252,7 @@ const ProfessionalAccountProfile = () => {
 
             {/* Action Buttons */}
             <div className="absolute top-4 right-4 flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-lg">
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
@@ -256,6 +262,10 @@ const ProfessionalAccountProfile = () => {
                     onClick={toggleFollow}
                     variant={isFollowing ? 'outline' : 'default'}
                     size="sm"
+                    className={`shadow-lg ${isFollowing 
+                      ? 'bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl' 
+                      : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                    }`}
                   >
                     <Heart className={`w-4 h-4 mr-2 ${isFollowing ? 'fill-current text-red-500' : ''}`} />
                     {isFollowing ? 'Following' : 'Follow'}
@@ -267,7 +277,10 @@ const ProfessionalAccountProfile = () => {
                 </>
               )}
               {isOwner && (
-                <Button size="sm">
+                <Button 
+                  size="sm"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg"
+                >
                   <MessageCircle className="w-4 h-4 mr-2" />
                   Manage
                 </Button>
@@ -278,7 +291,7 @@ const ProfessionalAccountProfile = () => {
           {/* Business Info */}
           <div className="mt-20 mb-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <Card>
+              <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50 shadow-xl">
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -354,7 +367,7 @@ const ProfessionalAccountProfile = () => {
             </div>
 
             <div>
-              <Card>
+              <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50 shadow-xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Star className="w-5 h-5 text-yellow-500" />
@@ -390,7 +403,7 @@ const ProfessionalAccountProfile = () => {
 
           {/* Main Content Tabs */}
           <Tabs defaultValue="shop" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl shadow-lg">
               <TabsTrigger value="shop">Shop</TabsTrigger>
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="services">Services</TabsTrigger>

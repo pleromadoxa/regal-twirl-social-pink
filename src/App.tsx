@@ -17,6 +17,7 @@ import Notifications from "@/pages/Notifications";
 import Pinned from "@/pages/Pinned";
 import Hashtag from "@/pages/Hashtag";
 import Games from "@/pages/Games";
+import Music from "@/pages/Music";
 import BusinessDashboard from "@/pages/BusinessDashboard";
 import BusinessManagement from "@/pages/BusinessManagement";
 import ProfessionalAccounts from "@/pages/ProfessionalAccounts";
@@ -50,6 +51,7 @@ function App() {
                 <Route path="/pinned" element={<Pinned />} />
                 <Route path="/hashtag/:hashtag" element={<Hashtag />} />
                 <Route path="/games" element={<Games />} />
+                <Route path="/music" element={<Music />} />
                 <Route path="/business/:businessId" element={<BusinessDashboard />} />
                 <Route path="/business-management" element={<BusinessManagement />} />
                 <Route path="/professional" element={<ProfessionalAccounts />} />
