@@ -1,66 +1,62 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import EcommerceDashboard from '@/components/business/EcommerceDashboard';
+import ITServicesDashboard from '@/components/business/ITServicesDashboard';
+import ImportExportDashboard from '@/components/business/ImportExportDashboard';
+import ProfileActions from '@/components/ProfileActions';
 import SidebarNav from '@/components/SidebarNav';
-import RightSidebar from '@/components/RightSidebar';
 import { 
-  Building2, 
   MapPin, 
   Globe, 
-  Phone, 
   Mail, 
-  Calendar,
-  Users,
-  Star,
-  MessageCircle,
-  UserPlus,
-  ArrowLeft,
-  ExternalLink,
-  Clock,
-  Award,
-  Briefcase,
-  Target,
-  TrendingUp,
+  Phone, 
+  Star, 
+  Users, 
+  ShoppingCart,
+  Package,
   Heart,
-  Share2
+  MessageCircle,
+  Share2,
+  ExternalLink,
+  Award,
+  TrendingUp,
+  Sparkles
 } from 'lucide-react';
 
 const ProfessionalAccountProfile = () => {
   const { pageId } = useParams();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [businessPage, setBusinessPage] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [posts, setPosts] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
-  const [reviews, setReviews] = useState<any[]>([]);
 
   useEffect(() => {
     if (pageId) {
       fetchBusinessPage();
-      fetchBusinessPosts();
-      fetchBusinessServices();
-      fetchBusinessReviews();
+      checkFollowing();
     }
   }, [pageId]);
 
   const fetchBusinessPage = async () => {
     try {
+      console.log('Fetching business page for ID:', pageId);
+      
       const { data, error } = await supabase
         .from('business_pages')
         .select(`
           *,
-          profiles:user_id (
+          profiles!business_pages_owner_id_fkey(
             username,
             display_name,
             avatar_url
@@ -69,20 +65,23 @@ const ProfessionalAccountProfile = () => {
         .eq('id', pageId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching business page:', error);
+        throw error;
+      }
+      
+      console.log('Fetched business page:', data);
       setBusinessPage(data);
 
-      // Check if user is following this business
-      if (user) {
-        const { data: followData } = await supabase
-          .from('business_follows')
-          .select('id')
-          .eq('follower_id', user.id)
-          .eq('business_page_id', pageId)
-          .single();
+      // Fetch products for the shop
+      const { data: productsData } = await supabase
+        .from('business_products')
+        .select('*')
+        .eq('business_page_id', pageId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
 
-        setIsFollowing(!!followData);
-      }
+      setProducts(productsData || []);
     } catch (error) {
       console.error('Error fetching business page:', error);
       toast({
@@ -95,110 +94,56 @@ const ProfessionalAccountProfile = () => {
     }
   };
 
-  const fetchBusinessPosts = async () => {
+  const checkFollowing = async () => {
+    if (!user || !pageId) return;
+
     try {
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('user_id', pageId)
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const { data } = await supabase
+        .from('business_page_follows')
+        .select('id')
+        .eq('page_id', pageId)
+        .eq('user_id', user.id)
+        .single();
 
-      if (error) throw error;
-      setPosts(data || []);
+      setIsFollowing(!!data);
     } catch (error) {
-      console.error('Error fetching business posts:', error);
+      // User is not following
+      setIsFollowing(false);
     }
   };
 
-  const fetchBusinessServices = async () => {
-    // Mock services data for demonstration
-    setServices([
-      {
-        id: 1,
-        name: "Website Development",
-        description: "Custom website development with modern technologies",
-        price: "$2,000 - $10,000",
-        duration: "4-8 weeks"
-      },
-      {
-        id: 2,
-        name: "Digital Marketing",
-        description: "Comprehensive digital marketing strategy and execution",
-        price: "$500 - $2,000/month",
-        duration: "Ongoing"
-      },
-      {
-        id: 3,
-        name: "Business Consultation",
-        description: "Strategic business consultation and planning",
-        price: "$150/hour",
-        duration: "1-2 hours"
-      }
-    ]);
-  };
-
-  const fetchBusinessReviews = async () => {
-    // Mock reviews data for demonstration
-    setReviews([
-      {
-        id: 1,
-        reviewer_name: "John Smith",
-        rating: 5,
-        comment: "Excellent service! Highly professional and delivered on time.",
-        created_at: "2024-01-15"
-      },
-      {
-        id: 2,
-        reviewer_name: "Sarah Johnson",
-        rating: 4,
-        comment: "Great experience working with this team. Would recommend!",
-        created_at: "2024-01-10"
-      }
-    ]);
-  };
-
-  const handleFollow = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to follow businesses",
-        variant: "destructive"
-      });
-      return;
-    }
+  const toggleFollow = async () => {
+    if (!user || !pageId) return;
 
     try {
       if (isFollowing) {
-        const { error } = await supabase
-          .from('business_follows')
+        await supabase
+          .from('business_page_follows')
           .delete()
-          .eq('follower_id', user.id)
-          .eq('business_page_id', pageId);
-
-        if (error) throw error;
+          .eq('page_id', pageId)
+          .eq('user_id', user.id);
+        
         setIsFollowing(false);
         toast({
           title: "Unfollowed",
-          description: `You are no longer following ${businessPage?.page_name}`
+          description: "You have unfollowed this business."
         });
       } else {
-        const { error } = await supabase
-          .from('business_follows')
+        await supabase
+          .from('business_page_follows')
           .insert({
-            follower_id: user.id,
-            business_page_id: pageId
+            page_id: pageId,
+            user_id: user.id
           });
-
-        if (error) throw error;
+        
         setIsFollowing(true);
         toast({
           title: "Following",
-          description: `You are now following ${businessPage?.page_name}`
+          description: "You are now following this business."
         });
       }
     } catch (error) {
-      console.error('Error updating follow status:', error);
+      console.error('Error toggling follow:', error);
       toast({
         title: "Error",
         description: "Failed to update follow status",
@@ -207,58 +152,29 @@ const ProfessionalAccountProfile = () => {
     }
   };
 
-  const handleMessage = () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to send messages",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    navigate('/messages');
-  };
-
-  const formatBusinessType = (type: string) => {
-    return type.split('_').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
-  };
-
-  const getBusinessTypeIcon = (type: string) => {
-    switch (type) {
-      case 'restaurant': return '🍽️';
-      case 'retail': return '🛍️';
-      case 'healthcare': return '🏥';
-      case 'education': return '🎓';
-      case 'technology': return '💻';
-      case 'consulting': return '📊';
-      case 'finance': return '💰';
-      case 'real_estate': return '🏠';
-      case 'entertainment': return '🎭';
-      case 'fitness': return '💪';
-      case 'beauty': return '💄';
-      case 'automotive': return '🚗';
-      case 'legal': return '⚖️';
-      case 'construction': return '🏗️';
-      case 'marketing': return '📢';
-      case 'photography': return '📸';
-      case 'travel': return '✈️';
-      case 'nonprofit': return '❤️';
-      case 'ecommerce': return '🛒';
-      case 'it_services': return '🔧';
-      case 'import_export': return '🚢';
-      default: return '🏢';
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open': return 'bg-green-500 text-white';
+      case 'away': return 'bg-yellow-500 text-white';
+      case 'break': return 'bg-orange-500 text-white';
+      case 'closed': return 'bg-red-500 text-white';
+      default: return 'bg-gray-500 text-white';
     }
   };
+
+  const featuredProducts = products.filter(p => 
+    businessPage?.featured_products?.includes(p.id)
+  ).slice(0, 6);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
         <div className="flex-1 pl-80 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading business profile...</p>
+          </div>
         </div>
       </div>
     );
@@ -269,350 +185,351 @@ const ProfessionalAccountProfile = () => {
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
         <div className="flex-1 pl-80 flex items-center justify-center">
-          <Card className="p-8 text-center">
-            <Building2 className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Business Page Not Found</h3>
-            <p className="text-slate-600 mb-4">The business page you're looking for doesn't exist.</p>
-            <Button onClick={() => navigate('/professional')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Directory
-            </Button>
-          </Card>
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-600 mb-2">Business Not Found</h2>
+            <p className="text-gray-500">The business page you're looking for doesn't exist.</p>
+          </div>
         </div>
       </div>
     );
   }
 
+  const isOwner = user?.id === businessPage.owner_id;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
       
-      <div className="flex-1 flex gap-6 pl-80">
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
-          {/* Header */}
-          <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/professional')}
-                className="p-2"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  {businessPage.page_name}
-                </h1>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">
-                  {getBusinessTypeIcon(businessPage.business_type)} {formatBusinessType(businessPage.business_type)}
+      <div className="flex-1 pl-80 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Business Header */}
+          <div className="relative mb-8">
+            {/* Banner */}
+            <div className="h-48 md:h-64 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg overflow-hidden shadow-2xl">
+              {businessPage.banner_url ? (
+                <img 
+                  src={businessPage.banner_url} 
+                  alt="Business Banner"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center relative">
+                  <Award className="w-16 h-16 text-white/50" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20"></div>
+                </div>
+              )}
+            </div>
+
+            {/* Profile Info */}
+            <div className="absolute -bottom-16 left-8 flex items-end gap-6">
+              <Avatar className="w-32 h-32 border-4 border-white shadow-2xl">
+                <AvatarImage src={businessPage.avatar_url} />
+                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl">
+                  {businessPage.page_name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-lg p-4 shadow-2xl mb-4 border border-purple-200/50 dark:border-purple-800/50">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    {businessPage.page_name}
+                  </h1>
+                  {businessPage.is_verified && (
+                    <Badge className="bg-blue-500 text-white shadow-lg">
+                      <Award className="w-3 h-3 mr-1" />
+                      Verified
+                    </Badge>
+                  )}
+                  <Badge className={`${getStatusColor(businessPage.shop_status || 'open')} shadow-lg`}>
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    {businessPage.shop_status || 'open'}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground capitalize font-medium">
+                  {businessPage.business_type || businessPage.page_type} Business
                 </p>
               </div>
             </div>
+
+            {/* Action Buttons */}
+            <div className="absolute top-4 right-4 flex gap-2">
+              <Button variant="outline" size="sm" className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-lg">
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </Button>
+              {!isOwner && (
+                <>
+                  <Button 
+                    onClick={toggleFollow}
+                    variant={isFollowing ? 'outline' : 'default'}
+                    size="sm"
+                    className={`shadow-lg ${isFollowing 
+                      ? 'bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl' 
+                      : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 mr-2 ${isFollowing ? 'fill-current text-red-500' : ''}`} />
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </Button>
+                  <ProfileActions 
+                    userId={businessPage.owner_id} 
+                    username={businessPage.page_name}
+                  />
+                </>
+              )}
+              {isOwner && (
+                <Button 
+                  size="sm"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Manage
+                </Button>
+              )}
+            </div>
           </div>
 
-          <div className="p-6 space-y-6">
-            {/* Business Profile Header */}
-            <Card className="bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 border-purple-200/50 dark:border-purple-800/50 backdrop-blur-xl shadow-xl">
-              <CardContent className="p-8">
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="flex-shrink-0">
-                    <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
-                      <AvatarImage src={businessPage.logo_url} />
-                      <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl">
-                        {businessPage.page_name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
-                      <div>
-                        <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-2">
-                          {businessPage.page_name}
-                        </h2>
-                        <div className="flex flex-wrap items-center gap-3 mb-3">
-                          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                            {formatBusinessType(businessPage.business_type)}
-                          </Badge>
-                          {businessPage.verified && (
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                              <Award className="w-3 h-3 mr-1" />
-                              Verified
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
+          {/* Business Info */}
+          <div className="mt-20 mb-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50 shadow-xl">
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="font-semibold mb-3">About</h3>
+                      <p className="text-muted-foreground mb-4">
+                        {businessPage.description || 'No description available.'}
+                      </p>
                       
-                      <div className="flex items-center gap-2">
-                        <Button
-                          onClick={handleFollow}
-                          variant={isFollowing ? "outline" : "default"}
-                          className={!isFollowing ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" : ""}
-                        >
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          {isFollowing ? 'Following' : 'Follow'}
-                        </Button>
-                        <Button onClick={handleMessage} variant="outline">
-                          <MessageCircle className="w-4 h-4 mr-2" />
-                          Message
-                        </Button>
-                        <Button variant="outline" size="icon">
-                          <Share2 className="w-4 h-4" />
-                        </Button>
+                      <div className="space-y-2">
+                        {businessPage.address && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <MapPin className="w-4 h-4 text-muted-foreground" />
+                            <span>{businessPage.address}</span>
+                          </div>
+                        )}
+                        {businessPage.website && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Globe className="w-4 h-4 text-muted-foreground" />
+                            <a 
+                              href={businessPage.website} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-purple-600 hover:underline flex items-center gap-1"
+                            >
+                              {businessPage.website}
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        )}
+                        {businessPage.email && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="w-4 h-4 text-muted-foreground" />
+                            <a 
+                              href={`mailto:${businessPage.email}`}
+                              className="text-purple-600 hover:underline"
+                            >
+                              {businessPage.email}
+                            </a>
+                          </div>
+                        )}
+                        {businessPage.phone && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="w-4 h-4 text-muted-foreground" />
+                            <a 
+                              href={`tel:${businessPage.phone}`}
+                              className="text-purple-600 hover:underline"
+                            >
+                              {businessPage.phone}
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <p className="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
-                      {businessPage.description}
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {businessPage.location && (
-                        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                          <MapPin className="w-4 h-4 text-purple-500" />
-                          <span className="text-sm">{businessPage.location}</span>
+                    <div>
+                      <h3 className="font-semibold mb-3">Statistics</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                          <Users className="w-6 h-6 mx-auto mb-2 text-purple-600" />
+                          <div className="text-2xl font-bold">{businessPage.followers_count || 0}</div>
+                          <div className="text-xs text-muted-foreground">Followers</div>
                         </div>
-                      )}
-                      {businessPage.website && (
-                        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                          <Globe className="w-4 h-4 text-purple-500" />
-                          <a 
-                            href={businessPage.website} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-sm hover:text-purple-600 flex items-center gap-1"
-                          >
-                            Website
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
+                        <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                          <Package className="w-6 h-6 mx-auto mb-2 text-green-600" />
+                          <div className="text-2xl font-bold">{products.length}</div>
+                          <div className="text-xs text-muted-foreground">Products</div>
                         </div>
-                      )}
-                      {businessPage.phone && (
-                        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                          <Phone className="w-4 h-4 text-purple-500" />
-                          <span className="text-sm">{businessPage.phone}</span>
-                        </div>
-                      )}
-                      {businessPage.email && (
-                        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                          <Mail className="w-4 h-4 text-purple-500" />
-                          <span className="text-sm">{businessPage.email}</span>
-                        </div>
-                      )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Business Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50">
-                <CardContent className="p-4 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mx-auto mb-2">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">1.2K</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Followers</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50">
-                <CardContent className="p-4 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg flex items-center justify-center mx-auto mb-2">
-                    <Star className="w-6 h-6 text-white" />
-                  </div>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">4.8</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Rating</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50">
-                <CardContent className="p-4 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto mb-2">
-                    <Briefcase className="w-6 h-6 text-white" />
-                  </div>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">150+</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Projects</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50">
-                <CardContent className="p-4 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mx-auto mb-2">
-                    <TrendingUp className="w-6 h-6 text-white" />
-                  </div>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">98%</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Success Rate</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Content Tabs */}
-            <Tabs defaultValue="about" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl">
-                <TabsTrigger value="about">About</TabsTrigger>
-                <TabsTrigger value="services">Services</TabsTrigger>
-                <TabsTrigger value="posts">Posts</TabsTrigger>
-                <TabsTrigger value="reviews">Reviews</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="about">
-                <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50">
-                  <CardHeader>
-                    <CardTitle>About {businessPage.page_name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                      {businessPage.description}
-                    </p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-semibold mb-3 flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-purple-500" />
-                          Business Hours
-                        </h4>
-                        <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                          <div className="flex justify-between">
-                            <span>Monday - Friday</span>
-                            <span>9:00 AM - 6:00 PM</span>
+            <div>
+              <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="w-5 h-5 text-yellow-500" />
+                    Featured Products
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {featuredProducts.length > 0 ? (
+                    <div className="space-y-3">
+                      {featuredProducts.slice(0, 3).map((product) => (
+                        <div key={product.id} className="flex items-center gap-3 p-2 border rounded-lg">
+                          <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                            <Package className="w-6 h-6 text-gray-400" />
                           </div>
-                          <div className="flex justify-between">
-                            <span>Saturday</span>
-                            <span>10:00 AM - 4:00 PM</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Sunday</span>
-                            <span>Closed</span>
+                          <div className="flex-1">
+                            <h4 className="font-medium text-sm">{product.name}</h4>
+                            <p className="text-xs text-muted-foreground">
+                              ${product.price}
+                            </p>
                           </div>
                         </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-semibold mb-3 flex items-center gap-2">
-                          <Target className="w-4 h-4 text-purple-500" />
-                          Specializations
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="outline">Web Development</Badge>
-                          <Badge variant="outline">Mobile Apps</Badge>
-                          <Badge variant="outline">UI/UX Design</Badge>
-                          <Badge variant="outline">Digital Marketing</Badge>
-                        </div>
-                      </div>
+                      ))}
                     </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No featured products yet
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Main Content Tabs */}
+          <Tabs defaultValue="shop" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl shadow-lg">
+              <TabsTrigger value="shop">Shop</TabsTrigger>
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="services">Services</TabsTrigger>
+              <TabsTrigger value="about">About</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="shop">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5" />
+                    Online Store
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {products.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {products.map((product) => (
+                        <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                          <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                            <Package className="w-12 h-12 text-gray-400" />
+                          </div>
+                          <CardContent className="p-4">
+                            <h4 className="font-semibold mb-1">{product.name}</h4>
+                            <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                              {product.description}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-lg font-bold text-green-600">
+                                ${product.price}
+                              </span>
+                              {product.stock_quantity && (
+                                <span className="text-xs text-muted-foreground">
+                                  {product.stock_quantity} in stock
+                                </span>
+                              )}
+                            </div>
+                            <Button className="w-full mt-3" size="sm">
+                              Add to Cart
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <ShoppingCart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-600 mb-2">No products yet</h3>
+                      <p className="text-gray-500">Check back later for new products!</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="dashboard">
+              {isOwner ? (
+                businessPage.business_type === 'ecommerce' ? (
+                  <EcommerceDashboard businessPage={businessPage} />
+                ) : businessPage.business_type === 'it_services' ? (
+                  <ITServicesDashboard businessPage={businessPage} />
+                ) : businessPage.business_type === 'import_export' ? (
+                  <ImportExportDashboard businessPage={businessPage} />
+                ) : (
+                  <EcommerceDashboard businessPage={businessPage} />
+                )
+              ) : (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <TrendingUp className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">Access Restricted</h3>
+                    <p className="text-gray-500">Only business owners can view the dashboard.</p>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              )}
+            </TabsContent>
 
-              <TabsContent value="services">
-                <div className="grid gap-4">
-                  {services.map((service) => (
-                    <Card key={service.id} className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50">
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start mb-3">
-                          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                            {service.name}
-                          </h3>
-                          <Badge className="bg-gradient-to-r from-green-500 to-blue-500 text-white">
-                            {service.price}
-                          </Badge>
-                        </div>
-                        <p className="text-slate-600 dark:text-slate-400 mb-3">
-                          {service.description}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-sm text-slate-500">
-                            <Clock className="w-4 h-4" />
-                            {service.duration}
-                          </div>
-                          <Button size="sm" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
-                            Get Quote
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
+            <TabsContent value="services">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Services & Offerings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <Award className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">Services Coming Soon</h3>
+                    <p className="text-gray-500">Detailed service listings will be available here.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              <TabsContent value="posts">
-                <div className="space-y-4">
-                  {posts.length > 0 ? (
-                    posts.map((post) => (
-                      <Card key={post.id} className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50">
-                        <CardContent className="p-6">
-                          <p className="text-slate-800 dark:text-slate-200">{post.content}</p>
-                          <div className="flex items-center gap-4 mt-4 text-sm text-slate-500">
-                            <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                            <Button variant="ghost" size="sm">
-                              <Heart className="w-4 h-4 mr-1" />
-                              Like
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <MessageCircle className="w-4 h-4 mr-1" />
-                              Comment
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : (
-                    <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50">
-                      <CardContent className="p-8 text-center">
-                        <MessageCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-slate-600 dark:text-slate-400 mb-2">
-                          No posts yet
-                        </h3>
-                        <p className="text-slate-500">
-                          This business hasn't shared any posts yet.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="reviews">
-                <div className="space-y-4">
-                  {reviews.map((review) => (
-                    <Card key={review.id} className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h4 className="font-semibold text-slate-800 dark:text-slate-200">
-                              {review.reviewer_name}
-                            </h4>
-                            <div className="flex items-center gap-1 mt-1">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`w-4 h-4 ${
-                                    i < review.rating ? 'text-yellow-500 fill-current' : 'text-slate-300'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                          <span className="text-sm text-slate-500">
-                            {new Date(review.created_at).toLocaleDateString()}
-                          </span>
+            <TabsContent value="about">
+              <Card>
+                <CardHeader>
+                  <CardTitle>About This Business</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose max-w-none">
+                    <p className="text-muted-foreground mb-4">
+                      {businessPage.description || 'No detailed description available.'}
+                    </p>
+                    
+                    <h4 className="font-semibold mb-2">Business Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Type:</span>
+                        <span className="ml-2 capitalize">{businessPage.business_type || businessPage.page_type}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Status:</span>
+                        <span className="ml-2 capitalize">{businessPage.shop_status || 'Open'}</span>
+                      </div>
+                      {businessPage.default_currency && (
+                        <div>
+                          <span className="font-medium">Currency:</span>
+                          <span className="ml-2">{businessPage.default_currency}</span>
                         </div>
-                        <p className="text-slate-600 dark:text-slate-400">
-                          {review.comment}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </main>
-        
-        <RightSidebar />
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
