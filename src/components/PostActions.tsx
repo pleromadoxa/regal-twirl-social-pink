@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Repeat2, Pin, Trash2, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Pin, Trash2, MoreHorizontal, Flag } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import ReportPostDialog from './ReportPostDialog';
 
@@ -75,35 +75,55 @@ export const PostActions = ({
         </Button>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700">
-            <MoreHorizontal className="w-4 h-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onPin}>
-            <Pin className="w-4 h-4 mr-2" />
-            {userPinned ? 'Unpin post' : 'Pin post'}
-          </DropdownMenuItem>
-          {isOwnPost && (
-            <DropdownMenuItem onClick={onDelete} className="text-red-600">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete post
-            </DropdownMenuItem>
-          )}
-          {!isOwnPost && (
-            <ReportPostDialog 
-              postId={postId}
-              trigger={
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  Report post
+      <div className="flex items-center gap-1">
+        {!isOwnPost && (
+          <ReportPostDialog 
+            postId={postId}
+            trigger={
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                <Flag className="w-4 h-4" />
+              </Button>
+            }
+          />
+        )}
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700">
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {isOwnPost && (
+              <>
+                <DropdownMenuItem onClick={onPin}>
+                  <Pin className="w-4 h-4 mr-2" />
+                  {userPinned ? 'Unpin post' : 'Pin post'}
                 </DropdownMenuItem>
-              }
-            />
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+                <DropdownMenuItem onClick={onDelete} className="text-red-600">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete post
+                </DropdownMenuItem>
+              </>
+            )}
+            {!isOwnPost && (
+              <ReportPostDialog 
+                postId={postId}
+                trigger={
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Flag className="w-4 h-4 mr-2" />
+                    Report post
+                  </DropdownMenuItem>
+                }
+              />
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 };

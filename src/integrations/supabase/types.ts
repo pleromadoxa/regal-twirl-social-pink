@@ -1138,6 +1138,122 @@ export type Database = {
         }
         Relationships: []
       }
+      music_likes: {
+        Row: {
+          created_at: string
+          id: string
+          track_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          track_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          track_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "music_likes_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "music_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      music_playlists: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean | null
+          name: string
+          tracks: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name: string
+          tracks?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          tracks?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      music_tracks: {
+        Row: {
+          album: string | null
+          artist: string
+          created_at: string
+          description: string | null
+          duration: number | null
+          file_size: number | null
+          file_url: string
+          genre: string | null
+          id: string
+          is_public: boolean | null
+          likes_count: number | null
+          plays_count: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          album?: string | null
+          artist: string
+          created_at?: string
+          description?: string | null
+          duration?: number | null
+          file_size?: number | null
+          file_url: string
+          genre?: string | null
+          id?: string
+          is_public?: boolean | null
+          likes_count?: number | null
+          plays_count?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          album?: string | null
+          artist?: string
+          created_at?: string
+          description?: string | null
+          duration?: number | null
+          file_size?: number | null
+          file_url?: string
+          genre?: string | null
+          id?: string
+          is_public?: boolean | null
+          likes_count?: number | null
+          plays_count?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           actor_id: string | null
