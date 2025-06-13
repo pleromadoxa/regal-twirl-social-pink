@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +16,7 @@ export const useUserPresence = () => {
   const heartbeatRef = useRef<NodeJS.Timeout>();
   const channelRef = useRef<any>();
   const isSubscribedRef = useRef(false);
+  const isInitializedRef = useRef(false);
 
   // Update user's own presence
   const updatePresence = async (isOnline: boolean) => {
@@ -89,7 +91,10 @@ export const useUserPresence = () => {
   };
 
   useEffect(() => {
-    if (!user || isSubscribedRef.current) return;
+    if (!user || isInitializedRef.current) return;
+
+    console.log('Initializing user presence for:', user.id);
+    isInitializedRef.current = true;
 
     // Set user online when they connect
     updatePresence(true);
@@ -100,9 +105,10 @@ export const useUserPresence = () => {
     }, 2 * 60 * 1000); // Update every 2 minutes
 
     // Set up real-time subscription for presence updates only if not already subscribed
-    if (!channelRef.current) {
+    if (!channelRef.current && !isSubscribedRef.current) {
+      const channelName = `user_presence_changes_${user.id}_${Date.now()}`;
       channelRef.current = supabase
-        .channel(`user_presence_changes_${user.id}`)
+        .channel(channelName)
         .on(
           'postgres_changes',
           {
@@ -122,9 +128,13 @@ export const useUserPresence = () => {
           }
         );
 
-      // Subscribe without using .then()
-      channelRef.current.subscribe();
-      isSubscribedRef.current = true;
+      // Subscribe to the channel
+      channelRef.current.subscribe((status: string) => {
+        console.log('Presence channel subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
+      });
     }
 
     // Handle page visibility changes
@@ -145,24 +155,36 @@ export const useUserPresence = () => {
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      // Cleanup
+      console.log('Cleaning up user presence');
+      
+      // Cleanup heartbeat
       if (heartbeatRef.current) {
         clearInterval(heartbeatRef.current);
+        heartbeatRef.current = undefined;
       }
       
+      // Cleanup channel
       if (channelRef.current && isSubscribedRef.current) {
-        supabase.removeChannel(channelRef.current);
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.error('Error removing presence channel:', error);
+        }
         channelRef.current = null;
         isSubscribedRef.current = false;
       }
 
+      // Remove event listeners
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       
       // Set user offline when component unmounts
       updatePresence(false);
+      
+      // Reset initialization flag
+      isInitializedRef.current = false;
     };
-  }, [user]);
+  }, [user?.id]);
 
   return {
     fetchPresenceData,

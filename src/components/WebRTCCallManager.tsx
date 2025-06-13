@@ -28,10 +28,11 @@ const WebRTCCallManager = () => {
   const [callerProfile, setCallerProfile] = useState<CallerProfile | null>(null);
   const [showIncomingCall, setShowIncomingCall] = useState(false);
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   useEffect(() => {
     // Don't set up the channel if auth is loading or user is not available
-    if (loading || !user) {
+    if (loading || !user || isSubscribedRef.current) {
       return;
     }
 
@@ -40,8 +41,13 @@ const WebRTCCallManager = () => {
     // Clean up any existing channel first
     if (channelRef.current) {
       console.log('Cleaning up existing channel');
-      supabase.removeChannel(channelRef.current);
+      try {
+        supabase.removeChannel(channelRef.current);
+      } catch (error) {
+        console.error('Error removing existing channel:', error);
+      }
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
 
     // Create a unique channel name to avoid conflicts
@@ -106,10 +112,15 @@ const WebRTCCallManager = () => {
     // Store channel reference
     channelRef.current = callChannel;
 
-    // Subscribe to the channel
-    callChannel.subscribe((status) => {
-      console.log('WebRTC call channel status:', status);
-    });
+    // Subscribe to the channel only once
+    if (!isSubscribedRef.current) {
+      callChannel.subscribe((status) => {
+        console.log('WebRTC call channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
+      });
+    }
 
     // Request notification permission
     if (Notification.permission === 'default') {
@@ -118,12 +129,17 @@ const WebRTCCallManager = () => {
 
     return () => {
       console.log('Cleaning up WebRTC call manager');
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
+      if (channelRef.current && isSubscribedRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.error('Error removing channel in cleanup:', error);
+        }
         channelRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
-  }, [user?.id, loading, incomingCall?.id]);
+  }, [user?.id, loading]);
 
   const handleAcceptCall = async () => {
     if (!incomingCall || !user) return;

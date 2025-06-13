@@ -1,10 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { Message } from '@/types/messages';
 import { updateConversationStreak } from './streakService';
 
 // Keep track of active channels to prevent duplicate subscriptions
-const activeChannels = new Map<string, any>();
+const activeChannels = new Map<string, { channel: any; subscribed: boolean }>();
 
 export const fetchMessages = async (userId: string, otherUserId: string): Promise<Message[]> => {
   const { data: messageData, error: messageError } = await supabase
@@ -113,12 +112,23 @@ export const subscribeToMessages = (
   onNewMessage: (message: Message) => void
 ) => {
   // Create unique channel name to prevent conflicts
-  const channelName = `messages-${conversationId}-${Date.now()}`;
+  const channelName = `messages-${conversationId}-${userId}-${otherUserId}`;
   
-  // Check if channel already exists
-  if (activeChannels.has(channelName)) {
-    console.warn('Channel already exists:', channelName);
+  // Check if channel already exists and is subscribed
+  const existing = activeChannels.get(channelName);
+  if (existing && existing.subscribed) {
+    console.warn('Channel already exists and subscribed:', channelName);
     return () => {};
+  }
+
+  // Clean up existing channel if it exists but not subscribed
+  if (existing && !existing.subscribed) {
+    try {
+      supabase.removeChannel(existing.channel);
+    } catch (error) {
+      console.error('Error removing existing channel:', error);
+    }
+    activeChannels.delete(channelName);
   }
 
   const channel = supabase
@@ -146,15 +156,30 @@ export const subscribeToMessages = (
       } as Message;
 
       onNewMessage(messageWithProfile);
-    })
-    .subscribe();
+    });
 
-  // Store the channel
-  activeChannels.set(channelName, channel);
+  // Store the channel with subscription status
+  activeChannels.set(channelName, { channel, subscribed: false });
+
+  // Subscribe to the channel
+  channel.subscribe((status) => {
+    console.log('Message channel subscription status:', status);
+    if (status === 'SUBSCRIBED') {
+      const channelInfo = activeChannels.get(channelName);
+      if (channelInfo) {
+        channelInfo.subscribed = true;
+      }
+    }
+  });
 
   return () => {
-    if (activeChannels.has(channelName)) {
-      supabase.removeChannel(activeChannels.get(channelName));
+    const channelInfo = activeChannels.get(channelName);
+    if (channelInfo) {
+      try {
+        supabase.removeChannel(channelInfo.channel);
+      } catch (error) {
+        console.error('Error removing channel:', error);
+      }
       activeChannels.delete(channelName);
     }
   };
@@ -166,12 +191,23 @@ export const subscribeToTyping = (
   onTypingUpdate: (isTyping: boolean, userId: string) => void
 ) => {
   // Create unique channel name to prevent conflicts
-  const channelName = `typing-${conversationId}-${Date.now()}`;
+  const channelName = `typing-${conversationId}-${userId}`;
   
-  // Check if channel already exists
-  if (activeChannels.has(channelName)) {
-    console.warn('Typing channel already exists:', channelName);
+  // Check if channel already exists and is subscribed
+  const existing = activeChannels.get(channelName);
+  if (existing && existing.subscribed) {
+    console.warn('Typing channel already exists and subscribed:', channelName);
     return { unsubscribe: () => {}, sendTypingIndicator: async () => {} };
+  }
+
+  // Clean up existing channel if it exists but not subscribed
+  if (existing && !existing.subscribed) {
+    try {
+      supabase.removeChannel(existing.channel);
+    } catch (error) {
+      console.error('Error removing existing typing channel:', error);
+    }
+    activeChannels.delete(channelName);
   }
 
   const channel = supabase
@@ -190,23 +226,47 @@ export const subscribeToTyping = (
         }
       });
     })
-    .subscribe();
+    .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+      console.log('Typing join:', key, newPresences);
+    })
+    .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+      console.log('Typing leave:', key, leftPresences);
+    });
 
-  // Store the channel
-  activeChannels.set(channelName, channel);
+  // Store the channel with subscription status
+  activeChannels.set(channelName, { channel, subscribed: false });
+
+  // Subscribe to the channel
+  channel.subscribe((status) => {
+    console.log('Typing channel subscription status:', status);
+    if (status === 'SUBSCRIBED') {
+      const channelInfo = activeChannels.get(channelName);
+      if (channelInfo) {
+        channelInfo.subscribed = true;
+      }
+    }
+  });
 
   const sendTypingIndicator = async (isTyping: boolean) => {
-    await channel.track({
-      user_id: userId,
-      typing: isTyping,
-      online_at: new Date().toISOString()
-    });
+    const channelInfo = activeChannels.get(channelName);
+    if (channelInfo && channelInfo.subscribed) {
+      await channelInfo.channel.track({
+        user_id: userId,
+        typing: isTyping,
+        online_at: new Date().toISOString()
+      });
+    }
   };
 
   return {
     unsubscribe: () => {
-      if (activeChannels.has(channelName)) {
-        supabase.removeChannel(activeChannels.get(channelName));
+      const channelInfo = activeChannels.get(channelName);
+      if (channelInfo) {
+        try {
+          supabase.removeChannel(channelInfo.channel);
+        } catch (error) {
+          console.error('Error removing typing channel:', error);
+        }
         activeChannels.delete(channelName);
       }
     },
