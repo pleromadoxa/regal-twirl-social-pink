@@ -39,10 +39,9 @@ function App() {
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/home" element={<Index />} />
                 <Route path="/" element={<Landing />} />
-                <Route path="/landing" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/home" element={<Index />} />
                 <Route path="/profile/:userId" element={<Profile />} />
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/settings" element={<Settings />} />

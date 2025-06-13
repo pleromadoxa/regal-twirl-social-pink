@@ -1,92 +1,79 @@
 
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Users, X, Search, UserPlus } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Users, UserPlus, Camera, X, Search, Sparkles } from "lucide-react";
 
 interface User {
   id: string;
   username: string;
   display_name: string;
-  avatar_url: string;
+  avatar_url?: string;
 }
 
 interface GroupCreationDialogProps {
-  onCreateGroup: (groupName: string, participantIds: string[]) => Promise<string | undefined>;
-  trigger?: React.ReactNode;
+  onGroupCreated?: () => void;
 }
 
-const GroupCreationDialog = ({ onCreateGroup, trigger }: GroupCreationDialogProps) => {
+const GroupCreationDialog = ({ onGroupCreated }: GroupCreationDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [groupName, setGroupName] = useState('');
-  const [participants, setParticipants] = useState<User[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [groupName, setGroupName] = useState("");
+  const [description, setDescription] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
-  const { toast } = useToast();
+  
   const { user } = useAuth();
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const searchUsers = async () => {
-      if (searchQuery.length < 2) {
-        setSearchResults([]);
-        return;
-      }
-
-      setSearchLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, username, display_name, avatar_url')
-          .or(`username.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`)
-          .neq('id', user?.id || '')
-          .limit(10);
-
-        if (error) throw error;
-
-        // Filter out already selected participants
-        const filteredResults = (data || []).filter(
-          searchUser => !participants.some(p => p.id === searchUser.id)
-        );
-
-        setSearchResults(filteredResults);
-      } catch (error) {
-        console.error('Error searching users:', error);
-        toast({
-          title: "Search failed",
-          description: "Could not search for users",
-          variant: "destructive"
-        });
-      } finally {
-        setSearchLoading(false);
-      }
-    };
-
-    const debounce = setTimeout(searchUsers, 300);
-    return () => clearTimeout(debounce);
-  }, [searchQuery, participants, user]);
-
-  const handleAddParticipant = (selectedUser: User) => {
-    if (!participants.some(p => p.id === selectedUser.id)) {
-      setParticipants([...participants, selectedUser]);
-      setSearchQuery('');
+  const searchUsers = async (query: string) => {
+    if (!query.trim() || query.length < 2) {
       setSearchResults([]);
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .neq('id', user?.id)
+        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+        .limit(10);
+
+      if (error) throw error;
+      setSearchResults(data || []);
+    } catch (error) {
+      console.error('Error searching users:', error);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
-  const handleRemoveParticipant = (userId: string) => {
-    setParticipants(participants.filter(p => p.id !== userId));
+  const toggleUserSelection = (selectedUser: User) => {
+    setSelectedUsers(prev => {
+      const isSelected = prev.some(u => u.id === selectedUser.id);
+      if (isSelected) {
+        return prev.filter(u => u.id !== selectedUser.id);
+      }
+      return [...prev, selectedUser];
+    });
   };
 
-  const handleCreateGroup = async () => {
+  const createGroup = async () => {
     if (!groupName.trim()) {
       toast({
         title: "Group name required",
@@ -96,19 +83,10 @@ const GroupCreationDialog = ({ onCreateGroup, trigger }: GroupCreationDialogProp
       return;
     }
 
-    if (participants.length === 0) {
+    if (selectedUsers.length === 0) {
       toast({
-        title: "Participants required",
-        description: "Please add at least one participant",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "You must be logged in to create a group",
+        title: "Add members",
+        description: "Please add at least one member to your group",
         variant: "destructive"
       });
       return;
@@ -116,50 +94,76 @@ const GroupCreationDialog = ({ onCreateGroup, trigger }: GroupCreationDialogProp
 
     setLoading(true);
     try {
-      console.log('Creating group with participants:', participants.map(p => p.id));
-      const participantIds = participants.map(p => p.id);
-      
-      // Add additional logging and validation
-      console.log('Current user ID:', user.id);
-      console.log('Group name:', groupName.trim());
-      console.log('Participant IDs:', participantIds);
-      
-      const conversationId = await onCreateGroup(groupName.trim(), participantIds);
-      
-      if (conversationId) {
-        console.log('Group created successfully:', conversationId);
-        toast({
-          title: "Group created!",
-          description: `Successfully created "${groupName}" with ${participants.length} members`,
+      // Create the group conversation
+      const { data: conversation, error: conversationError } = await supabase
+        .from('conversations')
+        .insert({
+          name: groupName,
+          description: description || null,
+          is_group: true,
+          is_private: isPrivate,
+          created_by: user?.id
+        })
+        .select()
+        .single();
+
+      if (conversationError) throw conversationError;
+
+      // Add the creator as a participant
+      const participants = [
+        {
+          conversation_id: conversation.id,
+          user_id: user?.id,
+          role: 'admin',
+          joined_at: new Date().toISOString()
+        },
+        // Add selected users as members
+        ...selectedUsers.map(selectedUser => ({
+          conversation_id: conversation.id,
+          user_id: selectedUser.id,
+          role: 'member',
+          joined_at: new Date().toISOString()
+        }))
+      ];
+
+      const { error: participantsError } = await supabase
+        .from('conversation_participants')
+        .insert(participants);
+
+      if (participantsError) throw participantsError;
+
+      // Send welcome message
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversation.id,
+          sender_id: user?.id,
+          content: `Welcome to ${groupName}! 🎉`,
+          type: 'system'
         });
-        
-        // Reset form and close dialog
-        setOpen(false);
-        setGroupName('');
-        setParticipants([]);
-        setSearchQuery('');
-        setSearchResults([]);
-      } else {
-        throw new Error('Failed to create group - no conversation ID returned');
-      }
+
+      if (messageError) console.error('Error sending welcome message:', messageError);
+
+      toast({
+        title: "Group created successfully! ✨",
+        description: `${groupName} has been created with ${selectedUsers.length} members`,
+      });
+
+      // Reset form
+      setGroupName("");
+      setDescription("");
+      setIsPrivate(false);
+      setSelectedUsers([]);
+      setSearchQuery("");
+      setSearchResults([]);
+      setOpen(false);
+
+      onGroupCreated?.();
     } catch (error) {
       console.error('Error creating group:', error);
-      
-      // More detailed error handling
-      let errorMessage = "Something went wrong";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-        // Check for specific database errors
-        if (error.message.includes('row-level security')) {
-          errorMessage = "Permission denied. Please try again or contact support.";
-        } else if (error.message.includes('infinite recursion')) {
-          errorMessage = "Database configuration issue. Please try again in a moment.";
-        }
-      }
-      
       toast({
-        title: "Failed to create group",
-        description: errorMessage,
+        title: "Error creating group",
+        description: "Something went wrong. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -170,136 +174,167 @@ const GroupCreationDialog = ({ onCreateGroup, trigger }: GroupCreationDialogProp
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="outline" size="sm" className="rounded-full">
-            <Users className="w-4 h-4 mr-2" />
-            Create Group
-          </Button>
-        )}
+        <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white backdrop-blur-xl border-0 shadow-lg">
+          <UserPlus className="w-4 h-4 mr-2" />
+          Create Group
+        </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-purple-200 dark:border-purple-800 shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-purple-600" />
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-purple-600" />
             Create New Group
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6 py-4 flex-1 overflow-hidden">
-          {/* Group Name */}
-          <div className="space-y-2">
-            <Label htmlFor="groupName" className="text-sm font-medium">Group Name</Label>
-            <Input
-              id="groupName"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Enter group name..."
-              className="rounded-2xl"
-            />
-          </div>
+        <ScrollArea className="max-h-[70vh] pr-4">
+          <div className="space-y-6">
+            {/* Group Details */}
+            <div className="space-y-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+              <div>
+                <Label htmlFor="groupName" className="text-sm font-medium">Group Name *</Label>
+                <Input
+                  id="groupName"
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  placeholder="Enter group name..."
+                  className="mt-1 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-purple-200 dark:border-purple-700"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What's this group about?"
+                  rows={3}
+                  className="mt-1 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-purple-200 dark:border-purple-700"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="isPrivate" 
+                  checked={isPrivate}
+                  onCheckedChange={setIsPrivate}
+                />
+                <Label htmlFor="isPrivate" className="text-sm">Make this group private</Label>
+              </div>
+            </div>
 
-          {/* User Search */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Add Participants</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            {/* Member Search */}
+            <div className="space-y-4">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Search className="w-4 h-4" />
+                Add Members *
+              </Label>
               <Input
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  searchUsers(e.target.value);
+                }}
                 placeholder="Search users by username or name..."
-                className="pl-10 rounded-2xl"
+                className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-purple-200 dark:border-purple-700"
               />
+              
+              {/* Search Results */}
+              {searchResults.length > 0 && (
+                <div className="space-y-2 max-h-40 overflow-y-auto p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg border border-purple-200 dark:border-purple-700">
+                  {searchResults.map((searchUser) => (
+                    <div
+                      key={searchUser.id}
+                      className="flex items-center justify-between p-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg cursor-pointer transition-colors"
+                      onClick={() => toggleUserSelection(searchUser)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={searchUser.avatar_url} />
+                          <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
+                            {searchUser.display_name?.charAt(0) || searchUser.username?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">{searchUser.display_name}</p>
+                          <p className="text-xs text-muted-foreground">@{searchUser.username}</p>
+                        </div>
+                      </div>
+                      <Checkbox 
+                        checked={selectedUsers.some(u => u.id === searchUser.id)}
+                        onChange={() => toggleUserSelection(searchUser)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              
               {searchLoading && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
                 </div>
               )}
             </div>
 
-            {/* Search Results */}
-            {searchResults.length > 0 && (
-              <div className="max-h-40 overflow-y-auto space-y-1 border border-purple-200 dark:border-purple-700 rounded-xl p-2 bg-slate-50 dark:bg-slate-800">
-                {searchResults.map((searchUser) => (
-                  <div
-                    key={searchUser.id}
-                    className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg cursor-pointer transition-colors"
-                    onClick={() => handleAddParticipant(searchUser)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={searchUser.avatar_url || "/placeholder.svg"} />
+            {/* Selected Members */}
+            {selectedUsers.length > 0 && (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Selected Members ({selectedUsers.length})
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {selectedUsers.map((selectedUser) => (
+                    <Badge 
+                      key={selectedUser.id} 
+                      variant="secondary" 
+                      className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 text-purple-800 dark:text-purple-200 px-3 py-1 flex items-center gap-2"
+                    >
+                      <Avatar className="w-5 h-5">
+                        <AvatarImage src={selectedUser.avatar_url} />
                         <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
-                          {(searchUser.display_name || searchUser.username || 'U')[0].toUpperCase()}
+                          {selectedUser.display_name?.charAt(0) || selectedUser.username?.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="font-medium text-sm">{searchUser.display_name || searchUser.username}</p>
-                        <p className="text-xs text-slate-500">@{searchUser.username}</p>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm" className="rounded-full">
-                      <UserPlus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
+                      {selectedUser.display_name}
+                      <button
+                        onClick={() => toggleUserSelection(selectedUser)}
+                        className="ml-1 hover:bg-red-200 dark:hover:bg-red-800 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
           </div>
+        </ScrollArea>
 
-          {/* Selected Participants */}
-          {participants.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Selected Participants</Label>
-                <Badge variant="secondary" className="text-xs">
-                  {participants.length} selected
-                </Badge>
-              </div>
-              <div className="max-h-32 overflow-y-auto space-y-2 border border-purple-200 dark:border-purple-700 rounded-xl p-3 bg-purple-50/50 dark:bg-purple-900/20">
-                {participants.map((participant) => (
-                  <div key={participant.id} className="flex items-center justify-between bg-white dark:bg-slate-800 p-2 rounded-lg shadow-sm">
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={participant.avatar_url || "/placeholder.svg"} />
-                        <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
-                          {(participant.display_name || participant.username || 'U')[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-sm">{participant.display_name || participant.username}</p>
-                        <p className="text-xs text-slate-500">@{participant.username}</p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() => handleRemoveParticipant(participant.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 rounded-full hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Create Button */}
+        <div className="flex justify-end space-x-3 pt-4 border-t border-purple-200 dark:border-purple-800">
           <Button 
-            onClick={handleCreateGroup}
-            disabled={loading || !groupName.trim() || participants.length === 0}
-            className="w-full rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12"
+            variant="outline" 
+            onClick={() => setOpen(false)}
+            className="border-purple-200 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={createGroup}
+            disabled={loading || !groupName.trim() || selectedUsers.length === 0}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
           >
             {loading ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Creating...
-              </div>
+              </>
             ) : (
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Create Group ({participants.length} members)
-              </div>
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Create Group
+              </>
             )}
           </Button>
         </div>

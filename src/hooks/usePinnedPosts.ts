@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +13,7 @@ export interface Post {
   likes_count: number;
   retweets_count: number;
   replies_count: number;
+  image_urls?: string[];
   profiles: {
     username: string;
     display_name: string;
@@ -88,6 +90,7 @@ export const usePinnedPosts = () => {
         likes_count: post.likes_count || 0,
         retweets_count: post.retweets_count || 0,
         replies_count: post.replies_count || 0,
+        image_urls: post.image_urls || [],
         profiles: profilesMap.get(post.user_id) || {
           username: 'unknown',
           display_name: 'Unknown User',
