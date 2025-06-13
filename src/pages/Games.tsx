@@ -1,12 +1,15 @@
-
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import SidebarNav from '@/components/SidebarNav';
+import RightSidebar from '@/components/RightSidebar';
 import { 
   Gamepad, 
   Trophy, 
@@ -30,12 +33,18 @@ import {
   Layers,
   Star,
   Award,
-  TrendingUp
+  TrendingUp,
+  Car,
+  Plane,
+  Map,
+  Camera,
+  Mountain,
+  Waves,
+  Building,
+  Trees,
+  Gamepad2
 } from 'lucide-react';
-import SidebarNav from '@/components/SidebarNav';
-import RightSidebar from '@/components/RightSidebar';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 const Games = () => {
   const { user } = useAuth();
@@ -554,7 +563,8 @@ const Games = () => {
       icon: Brain,
       color: 'bg-blue-500',
       benefits: 'Improves working memory and concentration',
-      difficulty: 'Easy'
+      difficulty: 'Easy',
+      category: 'cognitive'
     },
     {
       id: 'math_quiz',
@@ -563,7 +573,8 @@ const Games = () => {
       icon: Calculator,
       color: 'bg-green-500',
       benefits: 'Enhances numerical processing and mental agility',
-      difficulty: 'Medium'
+      difficulty: 'Medium',
+      category: 'cognitive'
     },
     {
       id: 'pattern_memory',
@@ -572,7 +583,8 @@ const Games = () => {
       icon: Target,
       color: 'bg-purple-500',
       benefits: 'Strengthens sequential memory and attention',
-      difficulty: 'Medium'
+      difficulty: 'Medium',
+      category: 'cognitive'
     },
     {
       id: 'word_scramble',
@@ -581,7 +593,8 @@ const Games = () => {
       icon: Shuffle,
       color: 'bg-orange-500',
       benefits: 'Improves vocabulary and letter recognition',
-      difficulty: 'Easy'
+      difficulty: 'Easy',
+      category: 'cognitive'
     },
     {
       id: 'reaction_time',
@@ -590,7 +603,8 @@ const Games = () => {
       icon: Timer,
       color: 'bg-red-500',
       benefits: 'Improves response time and alertness',
-      difficulty: 'Easy'
+      difficulty: 'Easy',
+      category: 'cognitive'
     },
     {
       id: 'concentration',
@@ -599,7 +613,8 @@ const Games = () => {
       icon: Hash,
       color: 'bg-teal-500',
       benefits: 'Enhances focus and mental arithmetic',
-      difficulty: 'Hard'
+      difficulty: 'Hard',
+      category: 'cognitive'
     },
     {
       id: 'color_match',
@@ -608,7 +623,8 @@ const Games = () => {
       icon: Eye,
       color: 'bg-pink-500',
       benefits: 'Enhances visual processing and reaction time',
-      difficulty: 'Medium'
+      difficulty: 'Medium',
+      category: 'cognitive'
     },
     {
       id: 'spatial_puzzle',
@@ -617,7 +633,8 @@ const Games = () => {
       icon: Puzzle,
       color: 'bg-indigo-500',
       benefits: 'Develops spatial reasoning and problem solving',
-      difficulty: 'Hard'
+      difficulty: 'Hard',
+      category: 'cognitive'
     },
     {
       id: 'word_association',
@@ -626,7 +643,8 @@ const Games = () => {
       icon: BookOpen,
       color: 'bg-amber-500',
       benefits: 'Expands vocabulary and semantic memory',
-      difficulty: 'Medium'
+      difficulty: 'Medium',
+      category: 'cognitive'
     },
     {
       id: 'logic_puzzle',
@@ -635,7 +653,8 @@ const Games = () => {
       icon: Lightbulb,
       color: 'bg-yellow-500',
       benefits: 'Develops logical thinking and problem solving',
-      difficulty: 'Hard'
+      difficulty: 'Hard',
+      category: 'cognitive'
     },
     {
       id: 'visual_tracking',
@@ -644,7 +663,8 @@ const Games = () => {
       icon: MousePointer,
       color: 'bg-cyan-500',
       benefits: 'Improves visual attention and coordination',
-      difficulty: 'Medium'
+      difficulty: 'Medium',
+      category: 'cognitive'
     },
     {
       id: 'cognitive_load',
@@ -653,7 +673,8 @@ const Games = () => {
       icon: Layers,
       color: 'bg-violet-500',
       benefits: 'Enhances multitasking and working memory',
-      difficulty: 'Hard'
+      difficulty: 'Hard',
+      category: 'cognitive'
     },
     {
       id: 'flexibility_test',
@@ -662,9 +683,94 @@ const Games = () => {
       icon: Repeat,
       color: 'bg-emerald-500',
       benefits: 'Improves cognitive flexibility and adaptation',
-      difficulty: 'Hard'
+      difficulty: 'Hard',
+      category: 'cognitive'
+    },
+    
+    {
+      id: 'racing_simulator',
+      title: 'Racing Simulator',
+      description: 'Experience realistic car racing on famous tracks',
+      icon: Car,
+      color: 'bg-red-600',
+      benefits: 'Improves reaction time and hand-eye coordination',
+      difficulty: 'Medium',
+      category: 'photorealistic'
+    },
+    {
+      id: 'flight_simulator',
+      title: 'Flight Simulator',
+      description: 'Pilot realistic aircraft through various weather conditions',
+      icon: Plane,
+      color: 'bg-sky-600',
+      benefits: 'Enhances spatial awareness and multitasking',
+      difficulty: 'Hard',
+      category: 'photorealistic'
+    },
+    {
+      id: 'city_explorer',
+      title: 'City Explorer',
+      description: 'Navigate through photorealistic city environments',
+      icon: Building,
+      color: 'bg-gray-600',
+      benefits: 'Develops navigation skills and spatial memory',
+      difficulty: 'Easy',
+      category: 'photorealistic'
+    },
+    {
+      id: 'nature_photographer',
+      title: 'Nature Photographer',
+      description: 'Capture stunning wildlife and landscapes',
+      icon: Camera,
+      color: 'bg-green-600',
+      benefits: 'Improves observation skills and patience',
+      difficulty: 'Medium',
+      category: 'photorealistic'
+    },
+    {
+      id: 'mountain_climber',
+      title: 'Mountain Climber',
+      description: 'Scale realistic mountain peaks with proper equipment',
+      icon: Mountain,
+      color: 'bg-stone-600',
+      benefits: 'Builds perseverance and strategic planning',
+      difficulty: 'Hard',
+      category: 'photorealistic'
+    },
+    {
+      id: 'ocean_explorer',
+      title: 'Ocean Explorer',
+      description: 'Dive into realistic underwater environments',
+      icon: Waves,
+      color: 'bg-blue-600',
+      benefits: 'Enhances focus and environmental awareness',
+      difficulty: 'Medium',
+      category: 'photorealistic'
+    },
+    {
+      id: 'survival_challenge',
+      title: 'Survival Challenge',
+      description: 'Survive in realistic wilderness environments',
+      icon: Trees,
+      color: 'bg-emerald-700',
+      benefits: 'Develops problem-solving and resource management',
+      difficulty: 'Hard',
+      category: 'photorealistic'
+    },
+    {
+      id: 'space_mission',
+      title: 'Space Mission',
+      description: 'Command realistic space missions and exploration',
+      icon: Star,
+      color: 'bg-indigo-700',
+      benefits: 'Improves analytical thinking and precision',
+      difficulty: 'Hard',
+      category: 'photorealistic'
     }
   ];
+
+  const cognitiveGames = games.filter(game => game.category === 'cognitive');
+  const photorealisticGames = games.filter(game => game.category === 'photorealistic');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -676,10 +782,10 @@ const Games = () => {
             <div className="mb-6">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-3">
                 <Brain className="w-8 h-8" />
-                Mind Enhancement Games
+                Gaming Center
               </h1>
               <p className="text-slate-600 dark:text-slate-400 mt-2">
-                Train your brain with 13 scientifically-designed cognitive games
+                Explore cognitive training games and photorealistic experiences
               </p>
               {timerActive && (
                 <div className="mt-4 flex items-center gap-2">
@@ -696,62 +802,130 @@ const Games = () => {
                 <TabsTrigger value="progress">Progress</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="games" className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {games.map((game) => {
-                    const Icon = game.icon;
-                    const bestScore = scores.find(s => s.game_type === game.id)?.score || 0;
-                    
-                    return (
-                      <Card key={game.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                        <CardHeader>
-                          <div className="flex items-center gap-3">
-                            <div className={`w-12 h-12 rounded-lg ${game.color} flex items-center justify-center`}>
-                              <Icon className="w-6 h-6 text-white" />
+              <TabsContent value="games" className="space-y-8">
+                {/* Cognitive Games Section */}
+                <div>
+                  <div className="flex items-center gap-3 mb-6">
+                    <Brain className="w-6 h-6 text-purple-600" />
+                    <h2 className="text-2xl font-bold">Cognitive Training Games</h2>
+                    <Badge variant="outline">{cognitiveGames.length} games</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {cognitiveGames.map((game) => {
+                      const Icon = game.icon;
+                      const bestScore = scores.find(s => s.game_type === game.id)?.score || 0;
+                      
+                      return (
+                        <Card key={game.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                          <CardHeader>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-lg ${game.color} flex items-center justify-center`}>
+                                <Icon className="w-6 h-6 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <CardTitle className="text-lg">{game.title}</CardTitle>
+                                <p className="text-sm text-slate-500">{game.description}</p>
+                                <Badge variant="outline" className="mt-1">
+                                  {game.difficulty}
+                                </Badge>
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <CardTitle className="text-lg">{game.title}</CardTitle>
-                              <p className="text-sm text-slate-500">{game.description}</p>
-                              <Badge variant="outline" className="mt-1">
-                                {game.difficulty}
-                              </Badge>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-xs text-muted-foreground mb-3">{game.benefits}</p>
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <Trophy className="w-4 h-4 text-yellow-500" />
+                                <span className="text-sm">Best: {bestScore}</span>
+                              </div>
+                              <Button
+                                onClick={() => {
+                                  setCurrentGame(game.id);
+                                  setGameTimer(0);
+                                  setTimerActive(false);
+                                  
+                                  // Initialize specific games
+                                  if (game.id === 'memory') initializeMemoryGame();
+                                  if (game.id === 'math_quiz') startMathQuiz();
+                                  if (game.id === 'word_scramble') startWordScramble();
+                                  if (game.id === 'reaction_time') startReactionTime();
+                                  if (game.id === 'pattern_memory') startPatternGame();
+                                  if (game.id === 'concentration') startConcentrationGame();
+                                }}
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                              >
+                                <Play className="w-4 h-4 mr-2" />
+                                Play
+                              </Button>
                             </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-xs text-muted-foreground mb-3">{game.benefits}</p>
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                              <Trophy className="w-4 h-4 text-yellow-500" />
-                              <span className="text-sm">Best: {bestScore}</span>
-                            </div>
-                            <Button
-                              onClick={() => {
-                                setCurrentGame(game.id);
-                                setGameTimer(0);
-                                setTimerActive(false);
-                                
-                                // Initialize specific games
-                                if (game.id === 'memory') initializeMemoryGame();
-                                if (game.id === 'math_quiz') startMathQuiz();
-                                if (game.id === 'word_scramble') startWordScramble();
-                                if (game.id === 'reaction_time') startReactionTime();
-                                if (game.id === 'pattern_memory') startPatternGame();
-                                if (game.id === 'concentration') startConcentrationGame();
-                              }}
-                              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                            >
-                              <Play className="w-4 h-4 mr-2" />
-                              Play
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* Enhanced Game Area */}
+                {/* Photorealistic Games Section */}
+                <div>
+                  <div className="flex items-center gap-3 mb-6">
+                    <Gamepad2 className="w-6 h-6 text-blue-600" />
+                    <h2 className="text-2xl font-bold">Photorealistic Experiences</h2>
+                    <Badge variant="outline">{photorealisticGames.length} games</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {photorealisticGames.map((game) => {
+                      const Icon = game.icon;
+                      const bestScore = scores.find(s => s.game_type === game.id)?.score || 0;
+                      
+                      return (
+                        <Card key={game.id} className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
+                          <CardHeader>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-lg ${game.color} flex items-center justify-center shadow-lg`}>
+                                <Icon className="w-6 h-6 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <CardTitle className="text-lg">{game.title}</CardTitle>
+                                <p className="text-sm text-slate-500">{game.description}</p>
+                                <div className="flex gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {game.difficulty}
+                                  </Badge>
+                                  <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                                    Photorealistic
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-xs text-muted-foreground mb-3">{game.benefits}</p>
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <Trophy className="w-4 h-4 text-yellow-500" />
+                                <span className="text-sm">Best: {bestScore}</span>
+                              </div>
+                              <Button
+                                onClick={() => {
+                                  toast({
+                                    title: "Coming Soon!",
+                                    description: `${game.title} will be available in the next update with stunning photorealistic graphics.`
+                                  });
+                                }}
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                              >
+                                <Play className="w-4 h-4 mr-2" />
+                                Preview
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Enhanced Game Area - keep existing game implementations */}
                 {currentGame && (
                   <Card className="mt-6">
                     <CardHeader>
