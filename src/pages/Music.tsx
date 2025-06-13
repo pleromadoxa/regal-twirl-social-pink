@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,34 @@ const Music = () => {
   const [loading, setLoading] = useState(true);
   const [likedTracks, setLikedTracks] = useState<Set<string>>(new Set());
 
+  // Mock data for trending playlists
+  const trendingPlaylists = [
+    {
+      id: '1',
+      name: 'Hip Hop Hits',
+      creator: 'RegalMusic',
+      image: '/api/placeholder/200/200',
+      tracks: 24,
+      followers: 1500
+    },
+    {
+      id: '2',
+      name: 'Chill Vibes',
+      creator: 'ChillMaster',
+      image: '/api/placeholder/200/200',
+      tracks: 18,
+      followers: 980
+    },
+    {
+      id: '3',
+      name: 'Pop Classics',
+      creator: 'PopFan2024',
+      image: '/api/placeholder/200/200',
+      tracks: 32,
+      followers: 2100
+    }
+  ];
+
   useEffect(() => {
     fetchTracks();
     if (user) {
@@ -65,8 +94,19 @@ const Music = () => {
       const { data, error } = await supabase
         .from('music_tracks')
         .select(`
-          *,
-          profiles:user_id (
+          id,
+          title,
+          artist,
+          album,
+          duration,
+          file_url,
+          genre,
+          description,
+          plays_count,
+          likes_count,
+          created_at,
+          user_id,
+          profiles!music_tracks_user_id_fkey (
             username,
             display_name,
             is_verified
@@ -81,7 +121,13 @@ const Music = () => {
         return;
       }
 
-      setTracks(data || []);
+      // Transform the data to match our interface
+      const transformedTracks: MusicTrack[] = (data || []).map(track => ({
+        ...track,
+        profiles: Array.isArray(track.profiles) ? track.profiles[0] : track.profiles
+      }));
+
+      setTracks(transformedTracks);
     } catch (error) {
       console.error('Error in fetchTracks:', error);
     } finally {
