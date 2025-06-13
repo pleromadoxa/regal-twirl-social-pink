@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +32,7 @@ import {
 } from 'lucide-react';
 
 const ProfessionalAccountProfile = () => {
-  const { pageId } = useParams();
+  const { pageId } = useParams(); // Changed from userId to pageId to match route
   const { user } = useAuth();
   const { toast } = useToast();
   const [businessPage, setBusinessPage] = useState<any>(null);

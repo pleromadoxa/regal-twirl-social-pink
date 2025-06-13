@@ -27,6 +27,7 @@ import ProfessionalDirectory from "@/pages/ProfessionalDirectory";
 import ProfessionalAccountProfile from "@/pages/ProfessionalAccountProfile";
 import EditProfessionalAccount from "@/pages/EditProfessionalAccount";
 import Music from "@/pages/Music";
+import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,7 +51,7 @@ const App = () => {
                   <Route path="/notifications" element={<Notifications />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/explore" element={<Explore />} />
-                  <Route path="/hashtag/:tag" element={<Hashtag />} />
+                  <Route path="/hashtag/:hashtag" element={<Hashtag />} />
                   <Route path="/games" element={<Games />} />
                   <Route path="/pinned" element={<Pinned />} />
                   <Route path="/business-management" element={<BusinessManagement />} />
@@ -59,9 +60,10 @@ const App = () => {
                   <Route path="/ads-manager" element={<AdsManager />} />
                   <Route path="/professional" element={<ProfessionalAccounts />} />
                   <Route path="/professional-directory" element={<ProfessionalDirectory />} />
-                  <Route path="/professional/:userId" element={<ProfessionalAccountProfile />} />
-                  <Route path="/edit-professional/:userId" element={<EditProfessionalAccount />} />
+                  <Route path="/professional/:pageId" element={<ProfessionalAccountProfile />} />
+                  <Route path="/edit-professional/:pageId" element={<EditProfessionalAccount />} />
                   <Route path="/music" element={<Music />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </NotificationsProvider>
