@@ -55,6 +55,7 @@ const AdminMusicSection = () => {
   }, []);
 
   const fetchAllTracks = async () => {
+    console.log('Fetching all music tracks...');
     try {
       const { data, error } = await supabase
         .from('music_tracks')
@@ -70,8 +71,15 @@ const AdminMusicSection = () => {
 
       if (error) {
         console.error('Error fetching tracks:', error);
+        toast({
+          title: "Error fetching tracks",
+          description: error.message,
+          variant: "destructive"
+        });
         return;
       }
+
+      console.log('Fetched tracks:', data);
 
       const transformedTracks: MusicTrack[] = (data || []).map(track => ({
         ...track,
@@ -81,6 +89,11 @@ const AdminMusicSection = () => {
       setTracks(transformedTracks);
     } catch (error) {
       console.error('Error in fetchAllTracks:', error);
+      toast({
+        title: "Failed to load tracks",
+        description: "There was an error loading the music tracks",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -114,6 +127,10 @@ const AdminMusicSection = () => {
   };
 
   const deleteTrack = async (trackId: string) => {
+    if (!confirm('Are you sure you want to delete this track? This action cannot be undone.')) {
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('music_tracks')
@@ -234,20 +251,25 @@ const AdminMusicSection = () => {
                 className="pl-10"
               />
             </div>
+            <Button onClick={fetchAllTracks} variant="outline">
+              Refresh
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[600px]">
             {loading ? (
               <div className="text-center py-12">
-                <Music className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                <Music className="w-16 h-16 mx-auto text-gray-300 mb-4 animate-spin" />
                 <p className="text-gray-500">Loading tracks...</p>
               </div>
             ) : filteredTracks.length === 0 ? (
               <div className="text-center py-12">
                 <Music className="w-16 h-16 mx-auto text-gray-300 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-600 mb-2">No tracks found</h3>
-                <p className="text-gray-500">No music tracks match your search criteria.</p>
+                <p className="text-gray-500">
+                  {tracks.length === 0 ? 'No music tracks have been uploaded yet.' : 'No tracks match your search criteria.'}
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -287,7 +309,13 @@ const AdminMusicSection = () => {
                         <span>Duration: {formatDuration(track.duration)}</span>
                         <span>Plays: {track.plays_count}</span>
                         <span>Likes: {track.likes_count}</span>
+                        <span>Created: {new Date(track.created_at).toLocaleDateString()}</span>
                       </div>
+                      {track.description && (
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          {track.description}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -302,7 +330,7 @@ const AdminMusicSection = () => {
                           {track.profiles?.display_name || track.profiles?.username || 'Unknown'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(track.created_at).toLocaleDateString()}
+                          ID: {track.user_id.slice(0, 8)}...
                         </p>
                       </div>
                     </div>
@@ -312,6 +340,7 @@ const AdminMusicSection = () => {
                         size="sm"
                         variant="ghost"
                         onClick={() => toggleTrackVisibility(track.id, track.is_public)}
+                        title={track.is_public ? 'Make Private' : 'Make Public'}
                       >
                         {track.is_public ? (
                           <EyeOff className="w-4 h-4" />
@@ -323,8 +352,9 @@ const AdminMusicSection = () => {
                         size="sm"
                         variant="ghost"
                         asChild
+                        title="Download"
                       >
-                        <a href={track.file_url} download>
+                        <a href={track.file_url} download target="_blank" rel="noopener noreferrer">
                           <Download className="w-4 h-4" />
                         </a>
                       </Button>
@@ -333,6 +363,7 @@ const AdminMusicSection = () => {
                         variant="ghost"
                         onClick={() => deleteTrack(track.id)}
                         className="text-red-500 hover:text-red-700"
+                        title="Delete Track"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -359,7 +390,10 @@ const AdminMusicSection = () => {
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => setCurrentTrack(null)}
+              onClick={() => {
+                setCurrentTrack(null);
+                setIsPlaying(false);
+              }}
             >
               ×
             </Button>
@@ -370,6 +404,8 @@ const AdminMusicSection = () => {
               src={currentTrack.file_url}
               autoPlay={isPlaying}
               onEnded={() => setIsPlaying(false)}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
               controls
               className="w-full mt-3"
             />

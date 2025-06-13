@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,8 @@ import {
   Download,
   TrendingUp,
   Users,
-  Disc
+  Disc,
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -53,34 +55,6 @@ const Music = () => {
   const [loading, setLoading] = useState(true);
   const [likedTracks, setLikedTracks] = useState<Set<string>>(new Set());
 
-  // Mock data for trending playlists
-  const trendingPlaylists = [
-    {
-      id: '1',
-      name: 'Hip Hop Hits',
-      creator: 'RegalMusic',
-      image: '/api/placeholder/200/200',
-      tracks: 24,
-      followers: 1500
-    },
-    {
-      id: '2',
-      name: 'Chill Vibes',
-      creator: 'ChillMaster',
-      image: '/api/placeholder/200/200',
-      tracks: 18,
-      followers: 980
-    },
-    {
-      id: '3',
-      name: 'Pop Classics',
-      creator: 'PopFan2024',
-      image: '/api/placeholder/200/200',
-      tracks: 32,
-      followers: 2100
-    }
-  ];
-
   useEffect(() => {
     fetchTracks();
     if (user) {
@@ -89,7 +63,9 @@ const Music = () => {
   }, [user]);
 
   const fetchTracks = async () => {
+    console.log('Fetching music tracks...');
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('music_tracks')
         .select(`
@@ -113,12 +89,19 @@ const Music = () => {
         `)
         .eq('is_public', true)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (error) {
         console.error('Error fetching tracks:', error);
+        toast({
+          title: "Error loading tracks",
+          description: error.message,
+          variant: "destructive"
+        });
         return;
       }
+
+      console.log('Fetched tracks:', data);
 
       // Transform the data to match our interface
       const transformedTracks: MusicTrack[] = (data || []).map(track => ({
@@ -129,6 +112,11 @@ const Music = () => {
       setTracks(transformedTracks);
     } catch (error) {
       console.error('Error in fetchTracks:', error);
+      toast({
+        title: "Failed to load tracks",
+        description: "There was an error loading music tracks",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -154,21 +142,26 @@ const Music = () => {
     }
   };
 
-  const handlePlayTrack = (track: MusicTrack) => {
+  const handlePlayTrack = async (track: MusicTrack) => {
     setCurrentTrack(track);
     setIsPlaying(true);
     
     // Update play count
-    supabase
-      .from('music_tracks')
-      .update({ plays_count: track.plays_count + 1 })
-      .eq('id', track.id)
-      .then(() => {
+    try {
+      const { error } = await supabase
+        .from('music_tracks')
+        .update({ plays_count: track.plays_count + 1 })
+        .eq('id', track.id);
+
+      if (!error) {
         // Update local state
         setTracks(prev => prev.map(t => 
           t.id === track.id ? { ...t, plays_count: t.plays_count + 1 } : t
         ));
-      });
+      }
+    } catch (error) {
+      console.error('Error updating play count:', error);
+    }
   };
 
   const togglePlayPause = () => {
@@ -203,6 +196,11 @@ const Music = () => {
           newSet.delete(trackId);
           return newSet;
         });
+
+        // Update likes count locally
+        setTracks(prev => prev.map(track => 
+          track.id === trackId ? { ...track, likes_count: track.likes_count - 1 } : track
+        ));
       } else {
         // Like
         const { error } = await supabase
@@ -215,6 +213,11 @@ const Music = () => {
         if (error) throw error;
 
         setLikedTracks(prev => new Set(prev).add(trackId));
+
+        // Update likes count locally
+        setTracks(prev => prev.map(track => 
+          track.id === trackId ? { ...track, likes_count: track.likes_count + 1 } : track
+        ));
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -254,7 +257,18 @@ const Music = () => {
                   </p>
                 </div>
               </div>
-              {user && <MusicUpload onUploadComplete={fetchTracks} />}
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={fetchTracks} 
+                  variant="outline" 
+                  size="sm"
+                  disabled={loading}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+                {user && <MusicUpload onUploadComplete={fetchTracks} />}
+              </div>
             </div>
           </div>
 
@@ -270,22 +284,28 @@ const Music = () => {
               <TabsContent value="discover" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5" />
-                      Featured Tracks
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5" />
+                        Featured Tracks
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {tracks.length} tracks available
+                      </span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {loading ? (
                       <div className="text-center py-12">
-                        <MusicIcon className="w-16 h-16 mx-auto text-gray-300 mb-4 animate-pulse" />
+                        <MusicIcon className="w-16 h-16 mx-auto text-gray-300 mb-4 animate-spin" />
                         <p className="text-gray-500">Loading tracks...</p>
                       </div>
                     ) : tracks.length === 0 ? (
                       <div className="text-center py-12">
                         <MusicIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
                         <h3 className="text-lg font-semibold text-gray-600 mb-2">No tracks yet</h3>
-                        <p className="text-gray-500">Be the first to upload music!</p>
+                        <p className="text-gray-500 mb-4">Be the first to upload music!</p>
+                        {user && <MusicUpload onUploadComplete={fetchTracks} />}
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -345,8 +365,14 @@ const Music = () => {
                                 </div>
                                 
                                 <div className="text-xs text-muted-foreground">
-                                  {track.plays_count} plays
+                                  {track.plays_count} plays • by {track.profiles?.display_name || track.profiles?.username || 'Unknown Artist'}
                                 </div>
+
+                                {track.description && (
+                                  <p className="text-xs text-muted-foreground line-clamp-2">
+                                    {track.description}
+                                  </p>
+                                )}
                               </div>
                             </CardContent>
                           </Card>
