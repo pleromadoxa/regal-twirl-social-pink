@@ -13,7 +13,8 @@ interface BusinessPage {
   id: string;
   page_name: string;
   page_type: string;
-  avatar_url: string;
+  page_avatar_url?: string;
+  avatar_url?: string;
   description: string;
   followers_count: number;
   is_verified: boolean;
@@ -169,8 +170,9 @@ const ProfessionalUsersWidget = () => {
                   className="flex items-center space-x-3 flex-1 cursor-pointer" 
                   onClick={() => navigate(`/professional-account/${account.id}`)}
                 >
+                  {/* Use page_avatar_url first, then fallback to avatar_url */}
                   <Avatar className="w-12 h-12">
-                    <AvatarImage src={account.avatar_url || undefined} />
+                    <AvatarImage src={account.page_avatar_url || account.avatar_url || undefined} />
                     <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white">
                       {account.page_name[0]?.toUpperCase()}
                     </AvatarFallback>

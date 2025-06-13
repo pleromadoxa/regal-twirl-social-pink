@@ -536,6 +536,8 @@ export type Database = {
           id: string
           is_verified: boolean | null
           owner_id: string
+          page_avatar_url: string | null
+          page_banner_url: string | null
           page_name: string
           page_type: string
           phone: string | null
@@ -561,6 +563,8 @@ export type Database = {
           id?: string
           is_verified?: boolean | null
           owner_id: string
+          page_avatar_url?: string | null
+          page_banner_url?: string | null
           page_name: string
           page_type: string
           phone?: string | null
@@ -586,6 +590,8 @@ export type Database = {
           id?: string
           is_verified?: boolean | null
           owner_id?: string
+          page_avatar_url?: string | null
+          page_banner_url?: string | null
           page_name?: string
           page_type?: string
           phone?: string | null
@@ -1488,6 +1494,10 @@ export type Database = {
           premium_tier: string | null
           updated_at: string | null
           username: string | null
+          verification_level: string | null
+          verification_notes: string | null
+          verified_at: string | null
+          verified_by: string | null
           website: string | null
         }
         Insert: {
@@ -1507,6 +1517,10 @@ export type Database = {
           premium_tier?: string | null
           updated_at?: string | null
           username?: string | null
+          verification_level?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
           website?: string | null
         }
         Update: {
@@ -1526,6 +1540,10 @@ export type Database = {
           premium_tier?: string | null
           updated_at?: string | null
           username?: string | null
+          verification_level?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
           website?: string | null
         }
         Relationships: []

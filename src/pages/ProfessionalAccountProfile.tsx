@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,13 +28,15 @@ import {
   ExternalLink,
   Award,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  Settings
 } from 'lucide-react';
 
 const ProfessionalAccountProfile = () => {
   const { pageId } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [businessPage, setBusinessPage] = useState<any>(null);
   const [ownerProfile, setOwnerProfile] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
@@ -213,11 +215,11 @@ const ProfessionalAccountProfile = () => {
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Business Header */}
           <div className="relative mb-8">
-            {/* Banner */}
+            {/* Banner - Use page_banner_url or fallback to banner_url */}
             <div className="h-48 md:h-64 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg overflow-hidden shadow-2xl">
-              {businessPage.banner_url ? (
+              {(businessPage.page_banner_url || businessPage.banner_url) ? (
                 <img 
-                  src={businessPage.banner_url} 
+                  src={businessPage.page_banner_url || businessPage.banner_url} 
                   alt="Business Banner"
                   className="w-full h-full object-cover"
                 />
@@ -231,8 +233,9 @@ const ProfessionalAccountProfile = () => {
 
             {/* Profile Info */}
             <div className="absolute -bottom-16 left-8 flex items-end gap-6">
+              {/* Use page_avatar_url or fallback to avatar_url, but not the owner's personal avatar */}
               <Avatar className="w-32 h-32 border-4 border-white shadow-2xl">
-                <AvatarImage src={businessPage.avatar_url || ownerProfile?.avatar_url} />
+                <AvatarImage src={businessPage.page_avatar_url || businessPage.avatar_url} />
                 <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl">
                   {businessPage.page_name.charAt(0).toUpperCase()}
                 </AvatarFallback>
@@ -288,10 +291,11 @@ const ProfessionalAccountProfile = () => {
               {isOwner && (
                 <Button 
                   size="sm"
+                  onClick={() => navigate('/business-management')}
                   className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg"
                 >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Manage
+                  <Settings className="w-4 h-4 mr-2" />
+                  Business Dashboard
                 </Button>
               )}
             </div>
