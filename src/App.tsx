@@ -39,7 +39,8 @@ function App() {
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/home" element={<Index />} />
+                <Route path="/" element={<Landing />} />
                 <Route path="/landing" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/profile/:userId" element={<Profile />} />
@@ -48,7 +49,7 @@ function App() {
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/pinned" element={<Pinned />} />
-                <Route path="/hashtag/:tag" element={<Hashtag />} />
+                <Route path="/hashtag/:hashtag" element={<Hashtag />} />
                 <Route path="/games" element={<Games />} />
                 <Route path="/business/:businessId" element={<BusinessDashboard />} />
                 <Route path="/business-management" element={<BusinessManagement />} />

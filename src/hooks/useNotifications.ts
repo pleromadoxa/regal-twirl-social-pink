@@ -178,9 +178,10 @@ export const useNotifications = () => {
 
     fetchNotifications();
 
-    // Set up real-time subscription
+    // Set up real-time subscription with unique channel name
+    const channelName = `notifications_${user.id}_${Date.now()}`;
     const subscription = supabase
-      .channel('notifications')
+      .channel(channelName)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',

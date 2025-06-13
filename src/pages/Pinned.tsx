@@ -21,7 +21,11 @@ import UserLink from '@/components/UserLink';
 
 const Pinned = () => {
   const { user } = useAuth();
-  const { pinnedPosts, loading, unpinPost } = usePinnedPosts();
+  const { pinnedPosts, loading, togglePin } = usePinnedPosts();
+
+  const handleUnpin = (postId: string) => {
+    togglePin(postId);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -129,7 +133,7 @@ const Pinned = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => unpinPost(post.id)}
+                              onClick={() => handleUnpin(post.id)}
                               className="text-slate-500 hover:text-red-500"
                             >
                               <Bookmark className="w-4 h-4 fill-current" />

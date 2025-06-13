@@ -7,7 +7,7 @@ const Landing = () => {
   const navigate = useNavigate();
 
   const handleEnterClick = () => {
-    navigate('/auth');
+    navigate('/home');
   };
 
   return (

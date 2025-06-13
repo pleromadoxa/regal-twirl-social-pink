@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
   const navigate = useNavigate();
   const { followUser, loading: followLoading } = useFollow();
 
+  // Consistent hashtags across the app
   const trends = [
     { topic: "#rhapsodyTeeVo", tweets: "89K", growth: "+25%", category: "Faith" },
     { topic: "#24hoursOPC", tweets: "125K", growth: "+32%", category: "Prayer" },
