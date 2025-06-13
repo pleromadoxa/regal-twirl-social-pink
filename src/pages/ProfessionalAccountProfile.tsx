@@ -32,10 +32,11 @@ import {
 } from 'lucide-react';
 
 const ProfessionalAccountProfile = () => {
-  const { pageId } = useParams(); // Changed from userId to pageId to match route
+  const { pageId } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
   const [businessPage, setBusinessPage] = useState<any>(null);
+  const [ownerProfile, setOwnerProfile] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -51,26 +52,35 @@ const ProfessionalAccountProfile = () => {
     try {
       console.log('Fetching business page for ID:', pageId);
       
-      const { data, error } = await supabase
+      // First fetch the business page
+      const { data: businessData, error: businessError } = await supabase
         .from('business_pages')
-        .select(`
-          *,
-          profiles!business_pages_owner_id_fkey(
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('id', pageId)
         .single();
 
-      if (error) {
-        console.error('Error fetching business page:', error);
-        throw error;
+      if (businessError) {
+        console.error('Error fetching business page:', businessError);
+        throw businessError;
       }
       
-      console.log('Fetched business page:', data);
-      setBusinessPage(data);
+      console.log('Fetched business page:', businessData);
+      setBusinessPage(businessData);
+
+      // Then fetch the owner profile separately
+      if (businessData?.owner_id) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('username, display_name, avatar_url')
+          .eq('id', businessData.owner_id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching owner profile:', profileError);
+        } else {
+          setOwnerProfile(profileData);
+        }
+      }
 
       // Fetch products for the shop
       const { data: productsData } = await supabase
@@ -222,7 +232,7 @@ const ProfessionalAccountProfile = () => {
             {/* Profile Info */}
             <div className="absolute -bottom-16 left-8 flex items-end gap-6">
               <Avatar className="w-32 h-32 border-4 border-white shadow-2xl">
-                <AvatarImage src={businessPage.avatar_url} />
+                <AvatarImage src={businessPage.avatar_url || ownerProfile?.avatar_url} />
                 <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl">
                   {businessPage.page_name.charAt(0).toUpperCase()}
                 </AvatarFallback>
