@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,11 @@ import {
   Building,
   Briefcase,
   Search,
-  MoreHorizontal
+  MoreHorizontal,
+  Flag,
+  Eye,
+  Check,
+  X
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -34,10 +37,12 @@ const AdminDashboard = () => {
     totalUsers: 0,
     totalPosts: 0,
     totalMessages: 0,
-    totalBusinessPages: 0
+    totalBusinessPages: 0,
+    pendingReports: 0
   });
   const [users, setUsers] = useState<any[]>([]);
   const [posts, setPosts] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -73,18 +78,20 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       // Fetch stats
-      const [usersResult, postsResult, messagesResult, businessResult] = await Promise.all([
+      const [usersResult, postsResult, messagesResult, businessResult, reportsResult] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact' }),
         supabase.from('posts').select('*', { count: 'exact' }),
         supabase.from('messages').select('*', { count: 'exact' }),
-        supabase.from('business_pages').select('*', { count: 'exact' })
+        supabase.from('business_pages').select('*', { count: 'exact' }),
+        (supabase as any).from('post_reports').select('*', { count: 'exact' }).eq('status', 'pending')
       ]);
 
       setStats({
         totalUsers: usersResult.count || 0,
         totalPosts: postsResult.count || 0,
         totalMessages: messagesResult.count || 0,
-        totalBusinessPages: businessResult.count || 0
+        totalBusinessPages: businessResult.count || 0,
+        pendingReports: reportsResult.count || 0
       });
 
       // Fetch recent users
@@ -107,6 +114,19 @@ const AdminDashboard = () => {
         .limit(10);
 
       setPosts(postsData || []);
+
+      // Fetch recent reports
+      const { data: reportsData } = await (supabase as any)
+        .from('post_reports')
+        .select(`
+          *,
+          posts(content, user_id),
+          profiles!post_reports_reporter_id_fkey(username, display_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      setReports(reportsData || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
@@ -141,6 +161,36 @@ const AdminDashboard = () => {
       toast({
         title: "Error",
         description: "Failed to update user verification",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateReportStatus = async (reportId: string, status: string, adminNotes?: string) => {
+    try {
+      const { error } = await (supabase as any)
+        .from('post_reports')
+        .update({
+          status,
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user?.id,
+          admin_notes: adminNotes || null
+        })
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Report ${status} successfully`
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error updating report status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update report status",
         variant: "destructive"
       });
     }
@@ -189,7 +239,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -229,13 +279,24 @@ const AdminDashboard = () => {
                 <div className="text-2xl font-bold">{stats.totalBusinessPages.toLocaleString()}</div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending Reports</CardTitle>
+                <Flag className="h-4 w-4 text-red-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{stats.pendingReports.toLocaleString()}</div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Main Content */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="posts">Posts</TabsTrigger>
+              <TabsTrigger value="reports">Reports</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
@@ -344,6 +405,95 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="reports">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Post Reports</CardTitle>
+                  <div className="flex items-center space-x-2">
+                    <Search className="w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search reports..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="max-w-sm"
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {reports.map((report) => (
+                      <div key={report.id} className="p-4 border rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <Badge variant={report.status === 'pending' ? 'destructive' : 'secondary'}>
+                                {report.status}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">
+                                {report.reason}
+                              </span>
+                            </div>
+                            <div className="text-sm mb-2">
+                              <strong>Reported by:</strong> @{report.profiles?.username || 'Unknown'}
+                            </div>
+                            <div className="text-sm mb-2">
+                              <strong>Post content:</strong> {report.posts?.content?.substring(0, 100)}...
+                            </div>
+                            {report.details && (
+                              <div className="text-sm mb-2">
+                                <strong>Details:</strong> {report.details}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground">
+                              Reported on {new Date(report.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                          
+                          {report.status === 'pending' && (
+                            <div className="flex space-x-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateReportStatus(report.id, 'approved', 'Post violated community guidelines')}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Check className="w-4 h-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateReportStatus(report.id, 'rejected', 'No violation found')}
+                                className="text-green-600 hover:text-green-700"
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => window.open(`/profile/${report.posts?.user_id}`, '_blank')}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {reports.length === 0 && (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Flag className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <h3 className="text-lg font-semibold mb-2">No reports found</h3>
+                        <p>All reports have been reviewed or no reports have been submitted yet.</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

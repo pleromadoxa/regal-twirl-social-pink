@@ -2,6 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, Repeat2, Pin, Trash2, MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import ReportPostDialog from './ReportPostDialog';
 
 interface PostActionsProps {
   postId: string;
@@ -90,6 +91,16 @@ export const PostActions = ({
               <Trash2 className="w-4 h-4 mr-2" />
               Delete post
             </DropdownMenuItem>
+          )}
+          {!isOwnPost && (
+            <ReportPostDialog 
+              postId={postId}
+              trigger={
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  Report post
+                </DropdownMenuItem>
+              }
+            />
           )}
         </DropdownMenuContent>
       </DropdownMenu>
