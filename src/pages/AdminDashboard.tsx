@@ -1,10 +1,11 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import SidebarNav from '@/components/SidebarNav';
 import AdminMusicSection from '@/components/AdminMusicSection';
+import AdminUsersSection from '@/components/AdminUsersSection';
 import { 
   Users, 
   MessageSquare, 
@@ -13,11 +14,119 @@ import {
   TrendingUp,
   Shield,
   Settings,
-  BarChart3
+  BarChart3,
+  Activity
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface DashboardStats {
+  totalUsers: number;
+  totalTracks: number;
+  totalMessages: number;
+  totalReports: number;
+  newUsersToday: number;
+  activeUsers: number;
+}
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [stats, setStats] = useState<DashboardStats>({
+    totalUsers: 0,
+    totalTracks: 0,
+    totalMessages: 0,
+    totalReports: 0,
+    newUsersToday: 0,
+    activeUsers: 0
+  });
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch users count
+      const { count: usersCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch music tracks count  
+      const { count: tracksCount } = await supabase
+        .from('music_tracks')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch messages count
+      const { count: messagesCount } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch reports count
+      const { count: reportsCount } = await supabase
+        .from('post_reports')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch new users today
+      const today = new Date().toISOString().split('T')[0];
+      const { count: newUsersCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', today);
+
+      // Fetch active users (users with presence)
+      const { count: activeUsersCount } = await supabase
+        .from('user_presence')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_online', true);
+
+      setStats({
+        totalUsers: usersCount || 0,
+        totalTracks: tracksCount || 0,
+        totalMessages: messagesCount || 0,
+        totalReports: reportsCount || 0,
+        newUsersToday: newUsersCount || 0,
+        activeUsers: activeUsersCount || 0
+      });
+
+      // Fetch recent activity
+      const { data: recentPosts } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          profiles!posts_user_id_fkey (username, display_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const { data: recentUsers } = await supabase
+        .from('profiles')
+        .select('username, display_name, created_at')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      const activityItems = [
+        ...(recentUsers?.map(user => ({
+          type: 'user_joined',
+          user: user.display_name || user.username,
+          time: new Date(user.created_at).toLocaleTimeString(),
+          color: 'green'
+        })) || []),
+        ...(recentPosts?.map(post => ({
+          type: 'post_created',
+          user: post.profiles?.display_name || post.profiles?.username,
+          time: new Date(post.created_at).toLocaleTimeString(),
+          color: 'blue'
+        })) || [])
+      ].slice(0, 10);
+
+      setRecentActivity(activityItems);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -77,9 +186,9 @@ const AdminDashboard = () => {
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">1,234</div>
+                    <div className="text-2xl font-bold">{stats.totalUsers}</div>
                     <p className="text-xs text-muted-foreground">
-                      +12% from last month
+                      +{stats.newUsersToday} new today
                     </p>
                   </CardContent>
                 </Card>
@@ -90,9 +199,9 @@ const AdminDashboard = () => {
                     <Music className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">567</div>
+                    <div className="text-2xl font-bold">{stats.totalTracks}</div>
                     <p className="text-xs text-muted-foreground">
-                      +23% from last month
+                      Total uploaded tracks
                     </p>
                   </CardContent>
                 </Card>
@@ -103,23 +212,23 @@ const AdminDashboard = () => {
                     <MessageSquare className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">8,901</div>
+                    <div className="text-2xl font-bold">{stats.totalMessages}</div>
                     <p className="text-xs text-muted-foreground">
-                      +8% from last month
+                      Total platform messages
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Reports</CardTitle>
-                    <Flag className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+                    <Activity className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">23</div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="destructive" className="text-xs">5 pending</Badge>
-                    </div>
+                    <div className="text-2xl font-bold">{stats.activeUsers}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Currently online
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -131,21 +240,27 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <p className="text-sm">New user registered: @john_doe</p>
-                        <span className="text-xs text-muted-foreground ml-auto">2 min ago</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <p className="text-sm">Music track uploaded: "Summer Vibes"</p>
-                        <span className="text-xs text-muted-foreground ml-auto">5 min ago</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                        <p className="text-sm">New report submitted</p>
-                        <span className="text-xs text-muted-foreground ml-auto">10 min ago</span>
-                      </div>
+                      {loading ? (
+                        <p className="text-sm text-muted-foreground">Loading activity...</p>
+                      ) : recentActivity.length > 0 ? (
+                        recentActivity.map((activity, index) => (
+                          <div key={index} className="flex items-center gap-3">
+                            <div className={`w-2 h-2 rounded-full ${
+                              activity.color === 'green' ? 'bg-green-500' : 
+                              activity.color === 'blue' ? 'bg-blue-500' : 'bg-orange-500'
+                            }`}></div>
+                            <p className="text-sm">
+                              {activity.type === 'user_joined' ? 
+                                `New user registered: ${activity.user}` :
+                                `${activity.user} created a new post`
+                              }
+                            </p>
+                            <span className="text-xs text-muted-foreground ml-auto">{activity.time}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No recent activity</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -168,6 +283,12 @@ const AdminDashboard = () => {
                         <span className="text-sm">API</span>
                         <Badge variant="default">Healthy</Badge>
                       </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Reports Queue</span>
+                        <Badge variant={stats.totalReports > 10 ? "destructive" : "default"}>
+                          {stats.totalReports} pending
+                        </Badge>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -175,18 +296,7 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="users">
-              <Card>
-                <CardHeader>
-                  <CardTitle>User Management</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Users className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-600 mb-2">User Management</h3>
-                    <p className="text-gray-500">Manage platform users, roles, and permissions.</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <AdminUsersSection />
             </TabsContent>
 
             <TabsContent value="music">
@@ -217,7 +327,7 @@ const AdminDashboard = () => {
                   <div className="text-center py-12">
                     <Flag className="w-16 h-16 mx-auto text-gray-300 mb-4" />
                     <h3 className="text-lg font-semibold text-gray-600 mb-2">Content Reports</h3>
-                    <p className="text-gray-500">Review and manage reported content.</p>
+                    <p className="text-gray-500">Review and manage reported content. {stats.totalReports} pending reports.</p>
                   </div>
                 </CardContent>
               </Card>

@@ -145,12 +145,6 @@ const AdminMusicSection = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes) return '0 MB';
-    const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(2)} MB`;
-  };
-
   const filteredTracks = tracks.filter(track =>
     track.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     track.artist.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -293,7 +287,6 @@ const AdminMusicSection = () => {
                         <span>Duration: {formatDuration(track.duration)}</span>
                         <span>Plays: {track.plays_count}</span>
                         <span>Likes: {track.likes_count}</span>
-                        <span>Size: {formatFileSize(track.file_size)}</span>
                       </div>
                     </div>
 
