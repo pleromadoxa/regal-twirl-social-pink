@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePosts } from "@/hooks/usePosts";
 import { useAI } from "@/hooks/useAI";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 
 const AIPostComposer = () => {
@@ -21,6 +22,7 @@ const AIPostComposer = () => {
   const [showLocationInput, setShowLocationInput] = useState(false);
   
   const { user } = useAuth();
+  const { profile } = useProfile();
   const { createPost } = usePosts();
   const { generateCaption, enhanceContent, loading: aiLoading } = useAI();
   const { toast } = useToast();
@@ -146,9 +148,11 @@ const AIPostComposer = () => {
     <div className="border-b border-purple-200 dark:border-purple-800 p-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
       <div className="flex space-x-4">
         <Avatar className="ring-2 ring-purple-300 dark:ring-purple-500 transition-all duration-300 hover:ring-pink-400">
-          <AvatarImage src={user.user_metadata?.avatar_url} />
+          <AvatarImage src={profile?.avatar_url || user.user_metadata?.avatar_url} />
           <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white font-semibold">
-            {user.email?.charAt(0).toUpperCase()}
+            {profile?.display_name?.[0]?.toUpperCase() || 
+             profile?.username?.[0]?.toUpperCase() || 
+             user.email?.[0]?.toUpperCase() || 'U'}
           </AvatarFallback>
         </Avatar>
         

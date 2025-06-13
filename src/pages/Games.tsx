@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +18,14 @@ import {
   BookOpen,
   Lightbulb,
   Timer,
-  Check
+  Check,
+  Shuffle,
+  Eye,
+  MousePointer,
+  Puzzle,
+  Hash,
+  Repeat,
+  Layers
 } from 'lucide-react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
@@ -33,7 +39,7 @@ const Games = () => {
   const [saves, setSaves] = useState<any[]>([]);
   const [currentGame, setCurrentGame] = useState<string | null>(null);
 
-  // Memory Game State
+  // Game states for all 13 games
   const [memoryGame, setMemoryGame] = useState({
     cards: [] as {id: number, value: number, flipped: boolean, matched: boolean}[],
     flippedCards: [] as number[],
@@ -43,7 +49,6 @@ const Games = () => {
     timeElapsed: 0
   });
 
-  // Math Quiz State
   const [mathQuiz, setMathQuiz] = useState({
     currentQuestion: { num1: 0, num2: 0, operator: '+', answer: 0 },
     userAnswer: '',
@@ -53,16 +58,6 @@ const Games = () => {
     isCompleted: false
   });
 
-  // Word Chain State
-  const [wordChain, setWordChain] = useState({
-    words: [] as string[],
-    currentWord: '',
-    score: 0,
-    timeElapsed: 0,
-    isGameActive: false
-  });
-
-  // Pattern Memory State
   const [patternGame, setPatternGame] = useState({
     sequence: [] as number[],
     userSequence: [] as number[],
@@ -72,13 +67,84 @@ const Games = () => {
     gamePhase: 'waiting' as 'waiting' | 'showing' | 'input' | 'correct' | 'wrong'
   });
 
-  // Speed Reading State
-  const [speedReading, setSpeedReading] = useState({
-    text: '',
-    currentWordIndex: 0,
-    wpm: 250,
-    isReading: false,
-    comprehensionScore: 0
+  const [wordScramble, setWordScramble] = useState({
+    originalWord: '',
+    scrambledWord: '',
+    userGuess: '',
+    score: 0,
+    level: 1,
+    isCompleted: false
+  });
+
+  const [colorMatch, setColorMatch] = useState({
+    colors: ['red', 'blue', 'green', 'yellow', 'purple', 'orange'],
+    targetColor: '',
+    timeLeft: 30,
+    score: 0,
+    isActive: false
+  });
+
+  const [reactionTime, setReactionTime] = useState({
+    isWaiting: false,
+    isReady: false,
+    startTime: 0,
+    bestTime: Infinity,
+    currentTime: 0,
+    attempts: 0
+  });
+
+  const [numberSequence, setNumberSequence] = useState({
+    sequence: [] as number[],
+    userInput: '',
+    level: 1,
+    score: 0,
+    isShowing: false
+  });
+
+  const [spatialPuzzle, setSpatialPuzzle] = useState({
+    pieces: [] as {id: number, position: number, correctPosition: number}[],
+    moves: 0,
+    isCompleted: false,
+    score: 0
+  });
+
+  const [wordAssociation, setWordAssociation] = useState({
+    currentWord: '',
+    userResponse: '',
+    score: 0,
+    level: 1,
+    timeLeft: 30
+  });
+
+  const [logicPuzzle, setLogicPuzzle] = useState({
+    puzzle: '',
+    options: [] as string[],
+    correctAnswer: 0,
+    userAnswer: -1,
+    score: 0,
+    level: 1
+  });
+
+  const [visualTracking, setVisualTracking] = useState({
+    targets: [] as {id: number, x: number, y: number, clicked: boolean}[],
+    timeLeft: 20,
+    score: 0,
+    isActive: false
+  });
+
+  const [cognitiveLoad, setCognitiveLoad] = useState({
+    tasks: [] as {type: string, value: any, completed: boolean}[],
+    currentTask: 0,
+    score: 0,
+    timeLeft: 60
+  });
+
+  const [flexibilityTest, setFlexibilityTest] = useState({
+    rules: [] as string[],
+    currentRule: 0,
+    stimuli: [] as {shape: string, color: string, size: string}[],
+    score: 0,
+    level: 1
   });
 
   useEffect(() => {
@@ -126,9 +192,10 @@ const Games = () => {
     }
   };
 
+  // Game initialization functions
   const initializeMemoryGame = () => {
     const cards = [];
-    const cardCount = 16; // 8 pairs
+    const cardCount = 16;
     for (let i = 0; i < cardCount / 2; i++) {
       cards.push(
         { id: i * 2, value: i, flipped: false, matched: false },
@@ -143,53 +210,6 @@ const Games = () => {
       isCompleted: false,
       timeElapsed: 0
     });
-  };
-
-  const flipCard = (cardId: number) => {
-    if (memoryGame.flippedCards.length >= 2) return;
-    
-    const newCards = memoryGame.cards.map(card => 
-      card.id === cardId ? { ...card, flipped: true } : card
-    );
-    
-    const newFlippedCards = [...memoryGame.flippedCards, cardId];
-    
-    setMemoryGame(prev => ({
-      ...prev,
-      cards: newCards,
-      flippedCards: newFlippedCards
-    }));
-
-    if (newFlippedCards.length === 2) {
-      const [first, second] = newFlippedCards;
-      const firstCard = newCards.find(c => c.id === first);
-      const secondCard = newCards.find(c => c.id === second);
-
-      setTimeout(() => {
-        if (firstCard?.value === secondCard?.value) {
-          // Match found
-          setMemoryGame(prev => ({
-            ...prev,
-            cards: prev.cards.map(card => 
-              card.id === first || card.id === second ? { ...card, matched: true } : card
-            ),
-            flippedCards: [],
-            moves: prev.moves + 1,
-            score: prev.score + 100
-          }));
-        } else {
-          // No match
-          setMemoryGame(prev => ({
-            ...prev,
-            cards: prev.cards.map(card => 
-              card.id === first || card.id === second ? { ...card, flipped: false } : card
-            ),
-            flippedCards: [],
-            moves: prev.moves + 1
-          }));
-        }
-      }, 1000);
-    }
   };
 
   const generateMathQuestion = () => {
@@ -236,72 +256,63 @@ const Games = () => {
     });
   };
 
-  const submitMathAnswer = () => {
-    const isCorrect = parseInt(mathQuiz.userAnswer) === mathQuiz.currentQuestion.answer;
-    const newScore = isCorrect ? mathQuiz.score + 10 : mathQuiz.score;
-    const newTotal = mathQuiz.totalQuestions + 1;
-
-    if (newTotal >= 10) {
-      setMathQuiz(prev => ({ ...prev, isCompleted: true, score: newScore }));
-      saveScore('math_quiz', newScore, 1, { accuracy: (newScore / (newTotal * 10)) * 100 });
-    } else {
-      setMathQuiz({
-        currentQuestion: generateMathQuestion(),
-        userAnswer: '',
-        score: newScore,
-        totalQuestions: newTotal,
-        timeElapsed: mathQuiz.timeElapsed,
-        isCompleted: false
-      });
-    }
+  const startWordScramble = () => {
+    const words = ['ELEPHANT', 'COMPUTER', 'HAPPINESS', 'KNOWLEDGE', 'CREATIVE', 'BUILDING', 'SOLUTION', 'THINKING'];
+    const word = words[Math.floor(Math.random() * words.length)];
+    const scrambled = word.split('').sort(() => Math.random() - 0.5).join('');
+    
+    setWordScramble({
+      originalWord: word,
+      scrambledWord: scrambled,
+      userGuess: '',
+      score: 0,
+      level: 1,
+      isCompleted: false
+    });
   };
 
-  const startPatternGame = () => {
-    const sequence = [Math.floor(Math.random() * 4)];
-    setPatternGame({
-      sequence,
-      userSequence: [],
-      level: 1,
+  const startColorMatch = () => {
+    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
+    setColorMatch({
+      colors,
+      targetColor: colors[Math.floor(Math.random() * colors.length)],
+      timeLeft: 30,
       score: 0,
-      showingPattern: true,
-      gamePhase: 'showing'
+      isActive: true
+    });
+  };
+
+  const startReactionTime = () => {
+    setReactionTime({
+      isWaiting: true,
+      isReady: false,
+      startTime: 0,
+      bestTime: Infinity,
+      currentTime: 0,
+      attempts: 0
     });
 
+    const delay = Math.random() * 4000 + 1000;
     setTimeout(() => {
-      setPatternGame(prev => ({ ...prev, showingPattern: false, gamePhase: 'input' }));
-    }, 1000);
+      setReactionTime(prev => ({
+        ...prev,
+        isWaiting: false,
+        isReady: true,
+        startTime: Date.now()
+      }));
+    }, delay);
   };
 
-  const handlePatternInput = (index: number) => {
-    const newUserSequence = [...patternGame.userSequence, index];
-    
-    if (newUserSequence[newUserSequence.length - 1] !== patternGame.sequence[newUserSequence.length - 1]) {
-      // Wrong input
-      setPatternGame(prev => ({ ...prev, gamePhase: 'wrong' }));
-      saveScore('pattern_memory', patternGame.score, patternGame.level);
-      return;
-    }
-
-    if (newUserSequence.length === patternGame.sequence.length) {
-      // Level completed
-      const newScore = patternGame.score + (patternGame.level * 10);
-      const newLevel = patternGame.level + 1;
-      const newSequence = [...patternGame.sequence, Math.floor(Math.random() * 4)];
-      
-      setPatternGame({
-        sequence: newSequence,
-        userSequence: [],
-        level: newLevel,
-        score: newScore,
-        showingPattern: true,
-        gamePhase: 'correct'
-      });
-
-      setTimeout(() => {
-        setPatternGame(prev => ({ ...prev, showingPattern: false, gamePhase: 'input' }));
-      }, 1500);
-    } else {
-      setPatternGame(prev => ({ ...prev, userSequence: newUserSequence }));
+  const handleReactionClick = () => {
+    if (reactionTime.isReady) {
+      const currentTime = Date.now() - reactionTime.startTime;
+      setReactionTime(prev => ({
+        ...prev,
+        currentTime,
+        bestTime: Math.min(prev.bestTime, currentTime),
+        attempts: prev.attempts + 1,
+        isReady: false
+      }));
     }
   };
 
@@ -331,20 +342,52 @@ const Games = () => {
       benefits: 'Strengthens sequential memory and attention'
     },
     {
-      id: 'word_chain',
-      title: 'Word Association',
-      description: 'Create chains of related words to boost vocabulary',
-      icon: BookOpen,
+      id: 'word_scramble',
+      title: 'Word Scramble',
+      description: 'Unscramble letters to form words',
+      icon: Shuffle,
       color: 'bg-orange-500',
-      benefits: 'Expands vocabulary and semantic memory'
+      benefits: 'Improves vocabulary and letter recognition'
     },
     {
-      id: 'speed_reading',
-      title: 'Speed Reading',
-      description: 'Improve reading speed while maintaining comprehension',
-      icon: Zap,
+      id: 'color_match',
+      title: 'Color Match',
+      description: 'Match colors quickly under time pressure',
+      icon: Eye,
+      color: 'bg-pink-500',
+      benefits: 'Enhances visual processing and reaction time'
+    },
+    {
+      id: 'reaction_time',
+      title: 'Reaction Time',
+      description: 'Test your reflexes and reaction speed',
+      icon: Timer,
       color: 'bg-red-500',
-      benefits: 'Increases reading speed and text processing'
+      benefits: 'Improves response time and alertness'
+    },
+    {
+      id: 'number_sequence',
+      title: 'Number Sequence',
+      description: 'Remember and input number sequences',
+      icon: Hash,
+      color: 'bg-teal-500',
+      benefits: 'Strengthens numerical memory and attention'
+    },
+    {
+      id: 'spatial_puzzle',
+      title: 'Spatial Puzzle',
+      description: 'Arrange pieces in correct spatial order',
+      icon: Puzzle,
+      color: 'bg-indigo-500',
+      benefits: 'Develops spatial reasoning and problem solving'
+    },
+    {
+      id: 'word_association',
+      title: 'Word Association',
+      description: 'Generate related words quickly',
+      icon: BookOpen,
+      color: 'bg-amber-500',
+      benefits: 'Expands vocabulary and semantic memory'
     },
     {
       id: 'logic_puzzle',
@@ -353,6 +396,30 @@ const Games = () => {
       icon: Lightbulb,
       color: 'bg-yellow-500',
       benefits: 'Develops logical thinking and problem solving'
+    },
+    {
+      id: 'visual_tracking',
+      title: 'Visual Tracking',
+      description: 'Track and click moving targets',
+      icon: MousePointer,
+      color: 'bg-cyan-500',
+      benefits: 'Improves visual attention and coordination'
+    },
+    {
+      id: 'cognitive_load',
+      title: 'Cognitive Load',
+      description: 'Handle multiple tasks simultaneously',
+      icon: Layers,
+      color: 'bg-violet-500',
+      benefits: 'Enhances multitasking and working memory'
+    },
+    {
+      id: 'flexibility_test',
+      title: 'Mental Flexibility',
+      description: 'Switch between different rule sets',
+      icon: Repeat,
+      color: 'bg-emerald-500',
+      benefits: 'Improves cognitive flexibility and adaptation'
     }
   ];
 
@@ -369,7 +436,7 @@ const Games = () => {
                 Mind Enhancement Games
               </h1>
               <p className="text-slate-600 dark:text-slate-400 mt-2">
-                Train your brain with scientifically-designed cognitive games
+                Train your brain with 13 scientifically-designed cognitive games
               </p>
             </div>
 
@@ -377,7 +444,7 @@ const Games = () => {
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="games">Games</TabsTrigger>
                 <TabsTrigger value="scores">High Scores</TabsTrigger>
-                <TabsTrigger value="saved">Progress</TabsTrigger>
+                <TabsTrigger value="progress">Progress</TabsTrigger>
               </TabsList>
 
               <TabsContent value="games" className="space-y-6">
@@ -408,7 +475,9 @@ const Games = () => {
                                 setCurrentGame(game.id);
                                 if (game.id === 'memory') initializeMemoryGame();
                                 if (game.id === 'math_quiz') startMathQuiz();
-                                if (game.id === 'pattern_memory') startPatternGame();
+                                if (game.id === 'word_scramble') startWordScramble();
+                                if (game.id === 'color_match') startColorMatch();
+                                if (game.id === 'reaction_time') startReactionTime();
                               }}
                               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                             >
@@ -446,7 +515,50 @@ const Games = () => {
                             {memoryGame.cards.map((card) => (
                               <div
                                 key={card.id}
-                                onClick={() => !card.matched && !card.flipped && flipCard(card.id)}
+                                onClick={() => {
+                                  if (card.matched || card.flipped || memoryGame.flippedCards.length >= 2) return;
+                                  
+                                  const newCards = memoryGame.cards.map(c => 
+                                    c.id === card.id ? { ...c, flipped: true } : c
+                                  );
+                                  
+                                  const newFlippedCards = [...memoryGame.flippedCards, card.id];
+                                  
+                                  setMemoryGame(prev => ({
+                                    ...prev,
+                                    cards: newCards,
+                                    flippedCards: newFlippedCards
+                                  }));
+
+                                  if (newFlippedCards.length === 2) {
+                                    setTimeout(() => {
+                                      const [first, second] = newFlippedCards;
+                                      const firstCard = newCards.find(c => c.id === first);
+                                      const secondCard = newCards.find(c => c.id === second);
+
+                                      if (firstCard?.value === secondCard?.value) {
+                                        setMemoryGame(prev => ({
+                                          ...prev,
+                                          cards: prev.cards.map(c => 
+                                            c.id === first || c.id === second ? { ...c, matched: true } : c
+                                          ),
+                                          flippedCards: [],
+                                          moves: prev.moves + 1,
+                                          score: prev.score + 100
+                                        }));
+                                      } else {
+                                        setMemoryGame(prev => ({
+                                          ...prev,
+                                          cards: prev.cards.map(c => 
+                                            c.id === first || c.id === second ? { ...c, flipped: false } : c
+                                          ),
+                                          flippedCards: [],
+                                          moves: prev.moves + 1
+                                        }));
+                                      }
+                                    }, 1000);
+                                  }
+                                }}
                                 className={`w-16 h-16 border-2 rounded-lg flex items-center justify-center cursor-pointer transition-all ${
                                   card.flipped || card.matched
                                     ? 'bg-blue-500 text-white transform scale-105'
@@ -469,38 +581,52 @@ const Games = () => {
                         </div>
                       )}
 
-                      {currentGame === 'math_quiz' && (
+                      {currentGame === 'word_scramble' && (
                         <div className="text-center max-w-md mx-auto">
                           <div className="mb-6">
-                            <p className="text-sm text-muted-foreground mb-2">Question {mathQuiz.totalQuestions + 1}/10</p>
-                            <p className="text-lg mb-2">Score: {mathQuiz.score}</p>
+                            <p className="text-sm text-muted-foreground mb-2">Level {wordScramble.level}</p>
+                            <p className="text-lg mb-2">Score: {wordScramble.score}</p>
                           </div>
-                          {!mathQuiz.isCompleted ? (
+                          {!wordScramble.isCompleted ? (
                             <div className="space-y-4">
                               <div className="text-3xl font-bold p-6 bg-slate-100 rounded-lg">
-                                {mathQuiz.currentQuestion.num1} {mathQuiz.currentQuestion.operator} {mathQuiz.currentQuestion.num2} = ?
+                                {wordScramble.scrambledWord}
                               </div>
                               <Input
-                                type="number"
-                                value={mathQuiz.userAnswer}
-                                onChange={(e) => setMathQuiz(prev => ({ ...prev, userAnswer: e.target.value }))}
+                                type="text"
+                                value={wordScramble.userGuess}
+                                onChange={(e) => setWordScramble(prev => ({ ...prev, userGuess: e.target.value.toUpperCase() }))}
                                 placeholder="Your answer"
                                 className="text-center text-xl"
-                                onKeyPress={(e) => e.key === 'Enter' && submitMathAnswer()}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    if (wordScramble.userGuess === wordScramble.originalWord) {
+                                      const newScore = wordScramble.score + 100;
+                                      setWordScramble(prev => ({ ...prev, score: newScore, isCompleted: true }));
+                                      saveScore('word_scramble', newScore, wordScramble.level);
+                                    }
+                                  }
+                                }}
                               />
-                              <Button onClick={submitMathAnswer} className="w-full">
+                              <Button 
+                                onClick={() => {
+                                  if (wordScramble.userGuess === wordScramble.originalWord) {
+                                    const newScore = wordScramble.score + 100;
+                                    setWordScramble(prev => ({ ...prev, score: newScore, isCompleted: true }));
+                                    saveScore('word_scramble', newScore, wordScramble.level);
+                                  }
+                                }}
+                                className="w-full"
+                              >
                                 <Check className="w-4 h-4 mr-2" />
                                 Submit Answer
                               </Button>
                             </div>
                           ) : (
                             <div className="space-y-4">
-                              <h3 className="text-2xl font-bold">Quiz Complete!</h3>
-                              <p className="text-lg">Final Score: {mathQuiz.score}/100</p>
-                              <p className="text-muted-foreground">
-                                Accuracy: {((mathQuiz.score / 100) * 100).toFixed(1)}%
-                              </p>
-                              <Button onClick={startMathQuiz} className="w-full">
+                              <h3 className="text-2xl font-bold">Correct!</h3>
+                              <p className="text-lg">Score: {wordScramble.score}</p>
+                              <Button onClick={startWordScramble} className="w-full">
                                 <RotateCcw className="w-4 h-4 mr-2" />
                                 Play Again
                               </Button>
@@ -509,55 +635,43 @@ const Games = () => {
                         </div>
                       )}
 
-                      {currentGame === 'pattern_memory' && (
+                      {currentGame === 'reaction_time' && (
                         <div className="text-center max-w-md mx-auto">
                           <div className="mb-6">
-                            <p className="text-lg mb-2">Level: {patternGame.level} | Score: {patternGame.score}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {patternGame.gamePhase === 'showing' && 'Watch the pattern...'}
-                              {patternGame.gamePhase === 'input' && 'Repeat the pattern'}
-                              {patternGame.gamePhase === 'correct' && 'Correct! Next level...'}
-                              {patternGame.gamePhase === 'wrong' && 'Game Over!'}
-                            </p>
+                            <p className="text-lg mb-2">Best Time: {reactionTime.bestTime === Infinity ? 'N/A' : `${reactionTime.bestTime}ms`}</p>
+                            <p className="text-sm text-muted-foreground">Attempts: {reactionTime.attempts}</p>
                           </div>
-                          <div className="grid grid-cols-2 gap-3 mb-6">
-                            {[0, 1, 2, 3].map((index) => (
-                              <div
-                                key={index}
-                                onClick={() => patternGame.gamePhase === 'input' && handlePatternInput(index)}
-                                className={`w-24 h-24 rounded-lg cursor-pointer transition-all ${
-                                  patternGame.showingPattern && patternGame.sequence.includes(index)
-                                    ? 'bg-yellow-400 scale-110'
-                                    : 'bg-slate-200 hover:bg-slate-300'
-                                } ${patternGame.gamePhase === 'input' ? 'hover:scale-105' : ''}`}
-                              />
-                            ))}
+                          <div 
+                            onClick={handleReactionClick}
+                            className={`w-64 h-64 mx-auto rounded-lg cursor-pointer transition-all ${
+                              reactionTime.isWaiting ? 'bg-red-500' : 
+                              reactionTime.isReady ? 'bg-green-500' : 'bg-gray-300'
+                            } flex items-center justify-center`}
+                          >
+                            <span className="text-white text-xl font-bold">
+                              {reactionTime.isWaiting ? 'Wait...' :
+                               reactionTime.isReady ? 'CLICK!' : 'Click to Start'}
+                            </span>
                           </div>
-                          <Button onClick={startPatternGame} className="w-full">
+                          {reactionTime.currentTime > 0 && (
+                            <p className="mt-4 text-lg">Last: {reactionTime.currentTime}ms</p>
+                          )}
+                          <Button onClick={startReactionTime} className="mt-4">
                             <RotateCcw className="w-4 h-4 mr-2" />
-                            Start New Game
+                            New Test
                           </Button>
                         </div>
                       )}
 
-                      {currentGame === 'word_chain' && (
+                      {/* Placeholder implementations for other games */}
+                      {['color_match', 'number_sequence', 'spatial_puzzle', 'word_association', 'logic_puzzle', 'visual_tracking', 'cognitive_load', 'flexibility_test'].includes(currentGame) && (
                         <div className="text-center">
-                          <p className="text-muted-foreground">Word Association Game - Coming Soon!</p>
-                          <p className="text-sm mt-2">Create chains of related words to expand your vocabulary</p>
-                        </div>
-                      )}
-
-                      {currentGame === 'speed_reading' && (
-                        <div className="text-center">
-                          <p className="text-muted-foreground">Speed Reading Trainer - Coming Soon!</p>
-                          <p className="text-sm mt-2">Improve your reading speed while maintaining comprehension</p>
-                        </div>
-                      )}
-
-                      {currentGame === 'logic_puzzle' && (
-                        <div className="text-center">
-                          <p className="text-muted-foreground">Logic Puzzles - Coming Soon!</p>
-                          <p className="text-sm mt-2">Challenge your logical reasoning with various puzzle types</p>
+                          <p className="text-muted-foreground">
+                            {games.find(g => g.id === currentGame)?.title} - Fully functional implementation coming soon!
+                          </p>
+                          <p className="text-sm mt-2">
+                            {games.find(g => g.id === currentGame)?.benefits}
+                          </p>
                         </div>
                       )}
                     </CardContent>
@@ -598,7 +712,7 @@ const Games = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="saved">
+              <TabsContent value="progress">
                 <div className="space-y-4">
                   {saves.length > 0 ? (
                     saves.map((save) => (
@@ -618,7 +732,6 @@ const Games = () => {
                               size="sm"
                               onClick={() => {
                                 setCurrentGame(save.game_type);
-                                // Load save data logic here
                               }}
                             >
                               Resume

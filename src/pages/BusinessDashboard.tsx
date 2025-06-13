@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,7 +31,7 @@ import ImportExportDashboard from '@/components/business/ImportExportDashboard';
 const BusinessDashboard = () => {
   const { businessId } = useParams();
   const { user } = useAuth();
-  const { myPages } = useBusinessPages();
+  const { myPages, loading } = useBusinessPages();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState<any>(null);
 
@@ -42,7 +41,7 @@ const BusinessDashboard = () => {
       return;
     }
 
-    if (businessId && myPages.length > 0) {
+    if (businessId && !loading) {
       const page = myPages.find(p => p.id === businessId);
       if (page) {
         setCurrentPage(page);
@@ -50,9 +49,9 @@ const BusinessDashboard = () => {
         navigate('/professional');
       }
     }
-  }, [user, businessId, myPages, navigate]);
+  }, [user, businessId, myPages, navigate, loading]);
 
-  if (!currentPage) {
+  if (loading || !currentPage) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
