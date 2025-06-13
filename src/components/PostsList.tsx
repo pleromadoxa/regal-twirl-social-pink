@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -9,6 +8,8 @@ import { PostIndicators } from '@/components/PostIndicators';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Repeat } from 'lucide-react';
+import { useVerifiedStatus } from '@/hooks/useVerifiedStatus';
+import VerificationBadge from '@/components/VerificationBadge';
 import InlineComments from './InlineComments';
 import MediaPreview from './MediaPreview';
 import { supabase } from '@/integrations/supabase/client';
@@ -330,7 +331,7 @@ export const PostsList = ({
       )}
 
       {posts.map((post) => {
-        const isVerified = getVerifiedStatus(post.profiles);
+        const { verificationLevel } = useVerifiedStatus(post.profiles);
         const isThread = isThreadPost(post.content);
         const hasAudio = hasAudioContent(post.content);
         const retweetInfo = retweetedBy[post.id];
@@ -384,10 +385,11 @@ export const PostsList = ({
                             : post.profiles.display_name || post.profiles.username
                           }
                         </h3>
-                        {(businessPage?.is_verified || isVerified) && (
-                          <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-1.5 py-0.5 relative z-50">
-                            <CheckCircle className="w-3 h-3" />
-                          </Badge>
+                        {businessPage?.is_verified && (
+                          <VerificationBadge level="business" showText={false} />
+                        )}
+                        {!businessPage && verificationLevel && (
+                          <VerificationBadge level={verificationLevel} showText={false} />
                         )}
                         {businessPage && (
                           <Badge variant="outline" className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700 px-1.5 py-0.5 text-xs">
