@@ -15,7 +15,8 @@ import {
   Repeat2, 
   CheckCheck,
   Phone,
-  PhoneCall
+  PhoneCall,
+  Sparkles
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import SidebarNav from '@/components/SidebarNav';
@@ -97,11 +98,20 @@ const Notifications = () => {
           <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Notifications
-                </h1>
+                <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                  <Bell className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    Notifications
+                  </h1>
+                  <p className="text-slate-600 dark:text-slate-400">
+                    Stay updated with your interactions
+                  </p>
+                </div>
                 {unreadCount > 0 && (
-                  <Badge variant="secondary" className="bg-red-100 text-red-700">
+                  <Badge variant="secondary" className="bg-red-100 text-red-700 shadow-lg">
+                    <Sparkles className="w-3 h-3 mr-1" />
                     {unreadCount} new
                   </Badge>
                 )}
@@ -111,7 +121,7 @@ const Notifications = () => {
                   variant="outline" 
                   size="sm"
                   onClick={markAllAsRead}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 border-purple-200 dark:border-purple-800"
                 >
                   <CheckCheck className="w-4 h-4" />
                   Mark all read
@@ -126,64 +136,77 @@ const Notifications = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="text-center py-12">
-                <Bell className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-600 dark:text-slate-400">
-                  No notifications yet
-                </h3>
-                <p className="text-slate-500 dark:text-slate-500">
-                  When someone interacts with your posts, you'll see it here.
-                </p>
-              </div>
+              <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50 shadow-xl">
+                <CardContent className="p-12 text-center">
+                  <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Bell className="w-10 h-10 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3">
+                    No notifications yet
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto">
+                    When someone interacts with your posts, follows you, or sends you a message, you'll see it here.
+                  </p>
+                </CardContent>
+              </Card>
             ) : (
               <Tabs defaultValue="all" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="unread">
+                <TabsList className="grid w-full grid-cols-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-purple-200/50 dark:border-purple-800/50">
+                  <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white">
+                    All
+                  </TabsTrigger>
+                  <TabsTrigger value="unread" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white">
                     Unread {unreadCount > 0 && `(${unreadCount})`}
                   </TabsTrigger>
-                  <TabsTrigger value="read">Read</TabsTrigger>
+                  <TabsTrigger value="read" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white">
+                    Read
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="all" className="space-y-4">
                   {notifications.map((notification) => (
                     <Card 
                       key={notification.id}
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        !notification.read ? 'border-purple-300 bg-purple-50/50 dark:bg-purple-900/20' : ''
+                      className={`cursor-pointer transition-all hover:shadow-lg backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50 ${
+                        !notification.read 
+                          ? 'bg-gradient-to-r from-purple-50/70 to-pink-50/70 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-300/70 shadow-lg' 
+                          : 'bg-white/70 dark:bg-slate-800/70 hover:bg-purple-50/50 dark:hover:bg-purple-900/10'
                       }`}
                       onClick={() => handleNotificationClick(notification)}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 p-2 bg-white/80 dark:bg-slate-800/80 rounded-lg shadow-sm">
                             {getNotificationIcon(notification.type)}
                           </div>
                           
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <p className="text-sm text-slate-800 dark:text-slate-200">
+                            <div className="flex items-start justify-between mb-2">
+                              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-relaxed">
                                 {getNotificationText(notification)}
                               </p>
                               {!notification.read && (
-                                <div className="w-2 h-2 bg-purple-600 rounded-full flex-shrink-0 ml-2 mt-1"></div>
+                                <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex-shrink-0 ml-3 shadow-lg"></div>
                               )}
                             </div>
                             
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
                               {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                             </p>
                           </div>
 
                           {notification.actor_profile && (
-                            <UserLink
-                              userId={notification.actor_id || ''}
-                              username={notification.actor_profile.username}
-                              displayName={notification.actor_profile.display_name}
-                              avatarUrl={notification.actor_profile.avatar_url}
-                              showAvatar={true}
-                              className="w-8 h-8"
-                            />
+                            <div className="flex-shrink-0">
+                              <UserLink
+                                userId={notification.actor_id || ''}
+                                username={notification.actor_profile.username}
+                                displayName={notification.actor_profile.display_name}
+                                avatarUrl={notification.actor_profile.avatar_url}
+                                showAvatar={true}
+                                className="w-10 h-10 border-2 border-white shadow-lg"
+                              />
+                            </div>
                           )}
                         </div>
                       </CardContent>
@@ -193,45 +216,54 @@ const Notifications = () => {
 
                 <TabsContent value="unread" className="space-y-4">
                   {unreadNotifications.length === 0 ? (
-                    <div className="text-center py-8">
-                      <CheckCheck className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                      <p className="text-slate-500">All caught up! No unread notifications.</p>
-                    </div>
+                    <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50">
+                      <CardContent className="p-8 text-center">
+                        <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <CheckCheck className="w-8 h-8 text-white" />
+                        </div>
+                        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-2">
+                          All caught up!
+                        </h3>
+                        <p className="text-slate-500">No unread notifications.</p>
+                      </CardContent>
+                    </Card>
                   ) : (
                     unreadNotifications.map((notification) => (
                       <Card 
                         key={notification.id}
-                        className="cursor-pointer transition-all hover:shadow-md border-purple-300 bg-purple-50/50 dark:bg-purple-900/20"
+                        className="cursor-pointer transition-all hover:shadow-lg bg-gradient-to-r from-purple-50/70 to-pink-50/70 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-300/70 backdrop-blur-xl shadow-lg"
                         onClick={() => handleNotificationClick(notification)}
                       >
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0">
+                        <CardContent className="p-6">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 p-2 bg-white/80 dark:bg-slate-800/80 rounded-lg shadow-sm">
                               {getNotificationIcon(notification.type)}
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between">
-                                <p className="text-sm text-slate-800 dark:text-slate-200">
+                              <div className="flex items-start justify-between mb-2">
+                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-relaxed">
                                   {getNotificationText(notification)}
                                 </p>
-                                <div className="w-2 h-2 bg-purple-600 rounded-full flex-shrink-0 ml-2 mt-1"></div>
+                                <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex-shrink-0 ml-3 shadow-lg"></div>
                               </div>
                               
-                              <p className="text-xs text-slate-500 mt-1">
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
                                 {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                               </p>
                             </div>
 
                             {notification.actor_profile && (
-                              <UserLink
-                                userId={notification.actor_id || ''}
-                                username={notification.actor_profile.username}
-                                displayName={notification.actor_profile.display_name}
-                                avatarUrl={notification.actor_profile.avatar_url}
-                                showAvatar={true}
-                                className="w-8 h-8"
-                              />
+                              <div className="flex-shrink-0">
+                                <UserLink
+                                  userId={notification.actor_id || ''}
+                                  username={notification.actor_profile.username}
+                                  displayName={notification.actor_profile.display_name}
+                                  avatarUrl={notification.actor_profile.avatar_url}
+                                  showAvatar={true}
+                                  className="w-10 h-10 border-2 border-white shadow-lg"
+                                />
+                              </div>
                             )}
                           </div>
                         </CardContent>
@@ -242,42 +274,51 @@ const Notifications = () => {
 
                 <TabsContent value="read" className="space-y-4">
                   {readNotifications.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Bell className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                      <p className="text-slate-500">No read notifications.</p>
-                    </div>
+                    <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50">
+                      <CardContent className="p-8 text-center">
+                        <div className="w-16 h-16 bg-gradient-to-r from-slate-400 to-slate-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Bell className="w-8 h-8 text-white" />
+                        </div>
+                        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-2">
+                          No read notifications
+                        </h3>
+                        <p className="text-slate-500">Your read notifications will appear here.</p>
+                      </CardContent>
+                    </Card>
                   ) : (
                     readNotifications.map((notification) => (
                       <Card 
                         key={notification.id}
-                        className="cursor-pointer transition-all hover:shadow-md"
+                        className="cursor-pointer transition-all hover:shadow-lg bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-purple-200/50 dark:border-purple-800/50 hover:bg-purple-50/50 dark:hover:bg-purple-900/10"
                         onClick={() => handleNotificationClick(notification)}
                       >
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0">
+                        <CardContent className="p-6">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 p-2 bg-white/80 dark:bg-slate-800/80 rounded-lg shadow-sm">
                               {getNotificationIcon(notification.type)}
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-slate-800 dark:text-slate-200">
+                              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-relaxed mb-2">
                                 {getNotificationText(notification)}
                               </p>
                               
-                              <p className="text-xs text-slate-500 mt-1">
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
                                 {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                               </p>
                             </div>
 
                             {notification.actor_profile && (
-                              <UserLink
-                                userId={notification.actor_id || ''}
-                                username={notification.actor_profile.username}
-                                displayName={notification.actor_profile.display_name}
-                                avatarUrl={notification.actor_profile.avatar_url}
-                                showAvatar={true}
-                                className="w-8 h-8"
-                              />
+                              <div className="flex-shrink-0">
+                                <UserLink
+                                  userId={notification.actor_id || ''}
+                                  username={notification.actor_profile.username}
+                                  displayName={notification.actor_profile.display_name}
+                                  avatarUrl={notification.actor_profile.avatar_url}
+                                  showAvatar={true}
+                                  className="w-10 h-10 border-2 border-white shadow-lg"
+                                />
+                              </div>
                             )}
                           </div>
                         </CardContent>
