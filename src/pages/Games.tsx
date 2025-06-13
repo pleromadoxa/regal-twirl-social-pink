@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import { 
   Gamepad, 
   Trophy, 
@@ -25,7 +27,10 @@ import {
   Puzzle,
   Hash,
   Repeat,
-  Layers
+  Layers,
+  Star,
+  Award,
+  TrendingUp
 } from 'lucide-react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
@@ -38,15 +43,18 @@ const Games = () => {
   const [scores, setScores] = useState<any[]>([]);
   const [saves, setSaves] = useState<any[]>([]);
   const [currentGame, setCurrentGame] = useState<string | null>(null);
+  const [gameTimer, setGameTimer] = useState(0);
+  const [timerActive, setTimerActive] = useState(false);
 
-  // Game states for all 13 games
+  // Enhanced game states with proper initialization
   const [memoryGame, setMemoryGame] = useState({
     cards: [] as {id: number, value: number, flipped: boolean, matched: boolean}[],
     flippedCards: [] as number[],
     moves: 0,
     score: 0,
     isCompleted: false,
-    timeElapsed: 0
+    timeElapsed: 0,
+    isStarted: false
   });
 
   const [mathQuiz, setMathQuiz] = useState({
@@ -55,7 +63,8 @@ const Games = () => {
     score: 0,
     totalQuestions: 0,
     timeElapsed: 0,
-    isCompleted: false
+    isCompleted: false,
+    streak: 0
   });
 
   const [patternGame, setPatternGame] = useState({
@@ -73,15 +82,8 @@ const Games = () => {
     userGuess: '',
     score: 0,
     level: 1,
-    isCompleted: false
-  });
-
-  const [colorMatch, setColorMatch] = useState({
-    colors: ['red', 'blue', 'green', 'yellow', 'purple', 'orange'],
-    targetColor: '',
-    timeLeft: 30,
-    score: 0,
-    isActive: false
+    isCompleted: false,
+    wordsCompleted: 0
   });
 
   const [reactionTime, setReactionTime] = useState({
@@ -90,62 +92,29 @@ const Games = () => {
     startTime: 0,
     bestTime: Infinity,
     currentTime: 0,
-    attempts: 0
+    attempts: 0,
+    averageTime: 0
   });
 
-  const [numberSequence, setNumberSequence] = useState({
-    sequence: [] as number[],
-    userInput: '',
-    level: 1,
-    score: 0,
-    isShowing: false
-  });
-
-  const [spatialPuzzle, setSpatialPuzzle] = useState({
-    pieces: [] as {id: number, position: number, correctPosition: number}[],
-    moves: 0,
-    isCompleted: false,
-    score: 0
-  });
-
-  const [wordAssociation, setWordAssociation] = useState({
-    currentWord: '',
-    userResponse: '',
+  const [concentrationGame, setConcentrationGame] = useState({
+    numbers: [] as number[],
+    userAnswer: '',
     score: 0,
     level: 1,
-    timeLeft: 30
-  });
-
-  const [logicPuzzle, setLogicPuzzle] = useState({
-    puzzle: '',
-    options: [] as string[],
-    correctAnswer: 0,
-    userAnswer: -1,
-    score: 0,
-    level: 1
-  });
-
-  const [visualTracking, setVisualTracking] = useState({
-    targets: [] as {id: number, x: number, y: number, clicked: boolean}[],
-    timeLeft: 20,
-    score: 0,
+    timeLeft: 10,
     isActive: false
   });
 
-  const [cognitiveLoad, setCognitiveLoad] = useState({
-    tasks: [] as {type: string, value: any, completed: boolean}[],
-    currentTask: 0,
-    score: 0,
-    timeLeft: 60
-  });
-
-  const [flexibilityTest, setFlexibilityTest] = useState({
-    rules: [] as string[],
-    currentRule: 0,
-    stimuli: [] as {shape: string, color: string, size: string}[],
-    score: 0,
-    level: 1
-  });
+  // Timer effect for active games
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (timerActive) {
+      interval = setInterval(() => {
+        setGameTimer(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timerActive]);
 
   useEffect(() => {
     if (user) {
@@ -192,26 +161,107 @@ const Games = () => {
     }
   };
 
-  // Game initialization functions
+  const saveGameProgress = async (gameType: string, saveData: any) => {
+    if (!user) return;
+
+    try {
+      await supabase.from('game_saves').upsert({
+        user_id: user.id,
+        game_type: gameType,
+        save_data: saveData
+      });
+    } catch (error) {
+      console.error('Error saving game progress:', error);
+    }
+  };
+
+  // Enhanced Memory Game Implementation
   const initializeMemoryGame = () => {
     const cards = [];
     const cardCount = 16;
+    const symbols = ['🧠', '⭐', '🎯', '💎', '🔥', '⚡', '🎨', '🚀'];
+    
     for (let i = 0; i < cardCount / 2; i++) {
       cards.push(
         { id: i * 2, value: i, flipped: false, matched: false },
         { id: i * 2 + 1, value: i, flipped: false, matched: false }
       );
     }
+    
     setMemoryGame({
       cards: cards.sort(() => Math.random() - 0.5),
       flippedCards: [],
       moves: 0,
       score: 0,
       isCompleted: false,
-      timeElapsed: 0
+      timeElapsed: 0,
+      isStarted: true
     });
+    
+    setGameTimer(0);
+    setTimerActive(true);
   };
 
+  const handleMemoryCardClick = (cardId: number) => {
+    const card = memoryGame.cards.find(c => c.id === cardId);
+    if (!card || card.matched || card.flipped || memoryGame.flippedCards.length >= 2) return;
+    
+    const newCards = memoryGame.cards.map(c => 
+      c.id === cardId ? { ...c, flipped: true } : c
+    );
+    
+    const newFlippedCards = [...memoryGame.flippedCards, cardId];
+    
+    setMemoryGame(prev => ({
+      ...prev,
+      cards: newCards,
+      flippedCards: newFlippedCards
+    }));
+
+    if (newFlippedCards.length === 2) {
+      setTimeout(() => {
+        const [first, second] = newFlippedCards;
+        const firstCard = newCards.find(c => c.id === first);
+        const secondCard = newCards.find(c => c.id === second);
+
+        if (firstCard?.value === secondCard?.value) {
+          const matchedCards = newCards.map(c => 
+            c.id === first || c.id === second ? { ...c, matched: true } : c
+          );
+          
+          const newScore = memoryGame.score + 100;
+          const isCompleted = matchedCards.every(c => c.matched);
+          
+          setMemoryGame(prev => ({
+            ...prev,
+            cards: matchedCards,
+            flippedCards: [],
+            moves: prev.moves + 1,
+            score: newScore,
+            isCompleted
+          }));
+
+          if (isCompleted) {
+            setTimerActive(false);
+            const bonusScore = Math.max(0, 1000 - gameTimer * 10);
+            const finalScore = newScore + bonusScore;
+            saveScore('memory', finalScore, 1, { moves: memoryGame.moves + 1, time: gameTimer });
+          }
+        } else {
+          setMemoryGame(prev => ({
+            ...prev,
+            cards: prev.cards.map(c => 
+              c.id === first || c.id === second ? { ...c, flipped: false } : c
+            ),
+            flippedCards: [],
+            moves: prev.moves + 1
+          }));
+        }
+      }, 1000);
+    }
+  };
+
+  // Enhanced Math Quiz Implementation
   const generateMathQuestion = () => {
     const operators = ['+', '-', '×', '÷'];
     const operator = operators[Math.floor(Math.random() * operators.length)];
@@ -252,12 +302,115 @@ const Games = () => {
       score: 0,
       totalQuestions: 0,
       timeElapsed: 0,
-      isCompleted: false
+      isCompleted: false,
+      streak: 0
     });
+    setGameTimer(0);
+    setTimerActive(true);
   };
 
+  const submitMathAnswer = () => {
+    const isCorrect = parseInt(mathQuiz.userAnswer) === mathQuiz.currentQuestion.answer;
+    const newScore = isCorrect ? mathQuiz.score + (10 + mathQuiz.streak * 2) : mathQuiz.score;
+    const newStreak = isCorrect ? mathQuiz.streak + 1 : 0;
+    const newTotal = mathQuiz.totalQuestions + 1;
+
+    setMathQuiz(prev => ({
+      ...prev,
+      score: newScore,
+      streak: newStreak,
+      totalQuestions: newTotal,
+      currentQuestion: generateMathQuestion(),
+      userAnswer: ''
+    }));
+
+    if (newTotal >= 10) {
+      setTimerActive(false);
+      saveScore('math_quiz', newScore, 1, { questions: newTotal, time: gameTimer, streak: newStreak });
+      setMathQuiz(prev => ({ ...prev, isCompleted: true }));
+    }
+  };
+
+  // Enhanced Pattern Memory Game
+  const startPatternGame = () => {
+    const newSequence = [Math.floor(Math.random() * 4)];
+    setPatternGame({
+      sequence: newSequence,
+      userSequence: [],
+      level: 1,
+      score: 0,
+      showingPattern: true,
+      gamePhase: 'showing'
+    });
+    
+    setTimeout(() => {
+      setPatternGame(prev => ({
+        ...prev,
+        showingPattern: false,
+        gamePhase: 'input'
+      }));
+    }, 1000 * newSequence.length);
+  };
+
+  const handlePatternClick = (buttonId: number) => {
+    if (patternGame.gamePhase !== 'input') return;
+    
+    const newUserSequence = [...patternGame.userSequence, buttonId];
+    const isCorrect = newUserSequence[newUserSequence.length - 1] === patternGame.sequence[newUserSequence.length - 1];
+    
+    if (!isCorrect) {
+      setPatternGame(prev => ({ ...prev, gamePhase: 'wrong' }));
+      setTimeout(() => {
+        saveScore('pattern_memory', patternGame.score, patternGame.level);
+        setCurrentGame(null);
+      }, 1000);
+      return;
+    }
+    
+    if (newUserSequence.length === patternGame.sequence.length) {
+      const newScore = patternGame.score + (patternGame.level * 10);
+      const newLevel = patternGame.level + 1;
+      const newSequence = [...patternGame.sequence, Math.floor(Math.random() * 4)];
+      
+      setPatternGame({
+        sequence: newSequence,
+        userSequence: [],
+        level: newLevel,
+        score: newScore,
+        showingPattern: true,
+        gamePhase: 'correct'
+      });
+      
+      setTimeout(() => {
+        setPatternGame(prev => ({
+          ...prev,
+          gamePhase: 'showing'
+        }));
+        
+        setTimeout(() => {
+          setPatternGame(prev => ({
+            ...prev,
+            showingPattern: false,
+            gamePhase: 'input'
+          }));
+        }, 1000 * newSequence.length);
+      }, 500);
+    } else {
+      setPatternGame(prev => ({
+        ...prev,
+        userSequence: newUserSequence
+      }));
+    }
+  };
+
+  // Enhanced Word Scramble
+  const words = [
+    'ELEPHANT', 'COMPUTER', 'HAPPINESS', 'KNOWLEDGE', 'CREATIVE', 'BUILDING', 
+    'SOLUTION', 'THINKING', 'BEAUTIFUL', 'ADVENTURE', 'WONDERFUL', 'FANTASTIC',
+    'EDUCATION', 'EXPERIENCE', 'FRIENDSHIP', 'INNOVATION', 'DISCOVERY', 'EXCELLENCE'
+  ];
+
   const startWordScramble = () => {
-    const words = ['ELEPHANT', 'COMPUTER', 'HAPPINESS', 'KNOWLEDGE', 'CREATIVE', 'BUILDING', 'SOLUTION', 'THINKING'];
     const word = words[Math.floor(Math.random() * words.length)];
     const scrambled = word.split('').sort(() => Math.random() - 0.5).join('');
     
@@ -267,29 +420,46 @@ const Games = () => {
       userGuess: '',
       score: 0,
       level: 1,
-      isCompleted: false
+      isCompleted: false,
+      wordsCompleted: 0
     });
   };
 
-  const startColorMatch = () => {
-    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
-    setColorMatch({
-      colors,
-      targetColor: colors[Math.floor(Math.random() * colors.length)],
-      timeLeft: 30,
-      score: 0,
-      isActive: true
-    });
+  const submitWordGuess = () => {
+    if (wordScramble.userGuess.toUpperCase() === wordScramble.originalWord) {
+      const newScore = wordScramble.score + (wordScramble.originalWord.length * 10);
+      const newWordsCompleted = wordScramble.wordsCompleted + 1;
+      
+      if (newWordsCompleted >= 5) {
+        setWordScramble(prev => ({ ...prev, score: newScore, isCompleted: true }));
+        saveScore('word_scramble', newScore, wordScramble.level);
+      } else {
+        const nextWord = words[Math.floor(Math.random() * words.length)];
+        const nextScrambled = nextWord.split('').sort(() => Math.random() - 0.5).join('');
+        
+        setWordScramble({
+          originalWord: nextWord,
+          scrambledWord: nextScrambled,
+          userGuess: '',
+          score: newScore,
+          level: wordScramble.level,
+          isCompleted: false,
+          wordsCompleted: newWordsCompleted
+        });
+      }
+    }
   };
 
+  // Reaction Time Game
   const startReactionTime = () => {
     setReactionTime({
       isWaiting: true,
       isReady: false,
       startTime: 0,
-      bestTime: Infinity,
+      bestTime: reactionTime.bestTime,
       currentTime: 0,
-      attempts: 0
+      attempts: reactionTime.attempts,
+      averageTime: reactionTime.averageTime
     });
 
     const delay = Math.random() * 4000 + 1000;
@@ -306,13 +476,73 @@ const Games = () => {
   const handleReactionClick = () => {
     if (reactionTime.isReady) {
       const currentTime = Date.now() - reactionTime.startTime;
+      const newAttempts = reactionTime.attempts + 1;
+      const newAverage = ((reactionTime.averageTime * reactionTime.attempts) + currentTime) / newAttempts;
+      
       setReactionTime(prev => ({
         ...prev,
         currentTime,
         bestTime: Math.min(prev.bestTime, currentTime),
-        attempts: prev.attempts + 1,
+        attempts: newAttempts,
+        averageTime: newAverage,
         isReady: false
       }));
+
+      if (newAttempts >= 5) {
+        const score = Math.max(0, 1000 - Math.floor(newAverage / 10));
+        saveScore('reaction_time', score, 1, { 
+          bestTime: Math.min(reactionTime.bestTime, currentTime),
+          averageTime: newAverage,
+          attempts: newAttempts 
+        });
+      }
+    }
+  };
+
+  // Concentration Game
+  const startConcentrationGame = () => {
+    const numbers = Array.from({length: 5}, () => Math.floor(Math.random() * 100));
+    setConcentrationGame({
+      numbers,
+      userAnswer: '',
+      score: 0,
+      level: 1,
+      timeLeft: 10,
+      isActive: true
+    });
+
+    const timer = setInterval(() => {
+      setConcentrationGame(prev => {
+        if (prev.timeLeft <= 1) {
+          clearInterval(timer);
+          return { ...prev, timeLeft: 0, isActive: false };
+        }
+        return { ...prev, timeLeft: prev.timeLeft - 1 };
+      });
+    }, 1000);
+  };
+
+  const submitConcentrationAnswer = () => {
+    const sum = concentrationGame.numbers.reduce((a, b) => a + b, 0);
+    const isCorrect = parseInt(concentrationGame.userAnswer) === sum;
+    
+    if (isCorrect) {
+      const newScore = concentrationGame.score + (concentrationGame.level * 50);
+      const newNumbers = Array.from({length: 5 + concentrationGame.level}, () => 
+        Math.floor(Math.random() * 100)
+      );
+      
+      setConcentrationGame({
+        numbers: newNumbers,
+        userAnswer: '',
+        score: newScore,
+        level: concentrationGame.level + 1,
+        timeLeft: Math.max(5, 10 - concentrationGame.level),
+        isActive: true
+      });
+    } else {
+      setConcentrationGame(prev => ({ ...prev, isActive: false }));
+      saveScore('concentration', concentrationGame.score, concentrationGame.level);
     }
   };
 
@@ -323,7 +553,8 @@ const Games = () => {
       description: 'Test your visual memory by matching pairs of cards',
       icon: Brain,
       color: 'bg-blue-500',
-      benefits: 'Improves working memory and concentration'
+      benefits: 'Improves working memory and concentration',
+      difficulty: 'Easy'
     },
     {
       id: 'math_quiz',
@@ -331,7 +562,8 @@ const Games = () => {
       description: 'Solve math problems as quickly as possible',
       icon: Calculator,
       color: 'bg-green-500',
-      benefits: 'Enhances numerical processing and mental agility'
+      benefits: 'Enhances numerical processing and mental agility',
+      difficulty: 'Medium'
     },
     {
       id: 'pattern_memory',
@@ -339,7 +571,8 @@ const Games = () => {
       description: 'Remember and repeat sequences of patterns',
       icon: Target,
       color: 'bg-purple-500',
-      benefits: 'Strengthens sequential memory and attention'
+      benefits: 'Strengthens sequential memory and attention',
+      difficulty: 'Medium'
     },
     {
       id: 'word_scramble',
@@ -347,15 +580,8 @@ const Games = () => {
       description: 'Unscramble letters to form words',
       icon: Shuffle,
       color: 'bg-orange-500',
-      benefits: 'Improves vocabulary and letter recognition'
-    },
-    {
-      id: 'color_match',
-      title: 'Color Match',
-      description: 'Match colors quickly under time pressure',
-      icon: Eye,
-      color: 'bg-pink-500',
-      benefits: 'Enhances visual processing and reaction time'
+      benefits: 'Improves vocabulary and letter recognition',
+      difficulty: 'Easy'
     },
     {
       id: 'reaction_time',
@@ -363,15 +589,26 @@ const Games = () => {
       description: 'Test your reflexes and reaction speed',
       icon: Timer,
       color: 'bg-red-500',
-      benefits: 'Improves response time and alertness'
+      benefits: 'Improves response time and alertness',
+      difficulty: 'Easy'
     },
     {
-      id: 'number_sequence',
-      title: 'Number Sequence',
-      description: 'Remember and input number sequences',
+      id: 'concentration',
+      title: 'Number Sum',
+      description: 'Add numbers shown briefly on screen',
       icon: Hash,
       color: 'bg-teal-500',
-      benefits: 'Strengthens numerical memory and attention'
+      benefits: 'Enhances focus and mental arithmetic',
+      difficulty: 'Hard'
+    },
+    {
+      id: 'color_match',
+      title: 'Color Match',
+      description: 'Match colors quickly under time pressure',
+      icon: Eye,
+      color: 'bg-pink-500',
+      benefits: 'Enhances visual processing and reaction time',
+      difficulty: 'Medium'
     },
     {
       id: 'spatial_puzzle',
@@ -379,7 +616,8 @@ const Games = () => {
       description: 'Arrange pieces in correct spatial order',
       icon: Puzzle,
       color: 'bg-indigo-500',
-      benefits: 'Develops spatial reasoning and problem solving'
+      benefits: 'Develops spatial reasoning and problem solving',
+      difficulty: 'Hard'
     },
     {
       id: 'word_association',
@@ -387,7 +625,8 @@ const Games = () => {
       description: 'Generate related words quickly',
       icon: BookOpen,
       color: 'bg-amber-500',
-      benefits: 'Expands vocabulary and semantic memory'
+      benefits: 'Expands vocabulary and semantic memory',
+      difficulty: 'Medium'
     },
     {
       id: 'logic_puzzle',
@@ -395,7 +634,8 @@ const Games = () => {
       description: 'Solve logical reasoning challenges',
       icon: Lightbulb,
       color: 'bg-yellow-500',
-      benefits: 'Develops logical thinking and problem solving'
+      benefits: 'Develops logical thinking and problem solving',
+      difficulty: 'Hard'
     },
     {
       id: 'visual_tracking',
@@ -403,7 +643,8 @@ const Games = () => {
       description: 'Track and click moving targets',
       icon: MousePointer,
       color: 'bg-cyan-500',
-      benefits: 'Improves visual attention and coordination'
+      benefits: 'Improves visual attention and coordination',
+      difficulty: 'Medium'
     },
     {
       id: 'cognitive_load',
@@ -411,7 +652,8 @@ const Games = () => {
       description: 'Handle multiple tasks simultaneously',
       icon: Layers,
       color: 'bg-violet-500',
-      benefits: 'Enhances multitasking and working memory'
+      benefits: 'Enhances multitasking and working memory',
+      difficulty: 'Hard'
     },
     {
       id: 'flexibility_test',
@@ -419,7 +661,8 @@ const Games = () => {
       description: 'Switch between different rule sets',
       icon: Repeat,
       color: 'bg-emerald-500',
-      benefits: 'Improves cognitive flexibility and adaptation'
+      benefits: 'Improves cognitive flexibility and adaptation',
+      difficulty: 'Hard'
     }
   ];
 
@@ -438,6 +681,12 @@ const Games = () => {
               <p className="text-slate-600 dark:text-slate-400 mt-2">
                 Train your brain with 13 scientifically-designed cognitive games
               </p>
+              {timerActive && (
+                <div className="mt-4 flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  <span>Time: {Math.floor(gameTimer / 60)}:{(gameTimer % 60).toString().padStart(2, '0')}</span>
+                </div>
+              )}
             </div>
 
             <Tabs defaultValue="games" className="space-y-6">
@@ -451,6 +700,8 @@ const Games = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {games.map((game) => {
                     const Icon = game.icon;
+                    const bestScore = scores.find(s => s.game_type === game.id)?.score || 0;
+                    
                     return (
                       <Card key={game.id} className="hover:shadow-lg transition-shadow cursor-pointer">
                         <CardHeader>
@@ -458,26 +709,35 @@ const Games = () => {
                             <div className={`w-12 h-12 rounded-lg ${game.color} flex items-center justify-center`}>
                               <Icon className="w-6 h-6 text-white" />
                             </div>
-                            <div>
+                            <div className="flex-1">
                               <CardTitle className="text-lg">{game.title}</CardTitle>
                               <p className="text-sm text-slate-500">{game.description}</p>
+                              <Badge variant="outline" className="mt-1">
+                                {game.difficulty}
+                              </Badge>
                             </div>
                           </div>
                         </CardHeader>
                         <CardContent>
                           <p className="text-xs text-muted-foreground mb-3">{game.benefits}</p>
                           <div className="flex justify-between items-center">
-                            <Badge variant="outline">
-                              Best: {scores.find(s => s.game_type === game.id)?.score || 0}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Trophy className="w-4 h-4 text-yellow-500" />
+                              <span className="text-sm">Best: {bestScore}</span>
+                            </div>
                             <Button
                               onClick={() => {
                                 setCurrentGame(game.id);
+                                setGameTimer(0);
+                                setTimerActive(false);
+                                
+                                // Initialize specific games
                                 if (game.id === 'memory') initializeMemoryGame();
                                 if (game.id === 'math_quiz') startMathQuiz();
                                 if (game.id === 'word_scramble') startWordScramble();
-                                if (game.id === 'color_match') startColorMatch();
                                 if (game.id === 'reaction_time') startReactionTime();
+                                if (game.id === 'pattern_memory') startPatternGame();
+                                if (game.id === 'concentration') startConcentrationGame();
                               }}
                               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                             >
@@ -491,141 +751,179 @@ const Games = () => {
                   })}
                 </div>
 
-                {/* Game Area */}
+                {/* Enhanced Game Area */}
                 {currentGame && (
                   <Card className="mt-6">
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <CardTitle>{games.find(g => g.id === currentGame)?.title}</CardTitle>
+                        <CardTitle className="flex items-center gap-3">
+                          {games.find(g => g.id === currentGame)?.title}
+                          {timerActive && (
+                            <Badge variant="outline">
+                              {Math.floor(gameTimer / 60)}:{(gameTimer % 60).toString().padStart(2, '0')}
+                            </Badge>
+                          )}
+                        </CardTitle>
                         <Button
                           variant="outline"
-                          onClick={() => setCurrentGame(null)}
+                          onClick={() => {
+                            setCurrentGame(null);
+                            setTimerActive(false);
+                          }}
                         >
                           Close Game
                         </Button>
                       </div>
                     </CardHeader>
                     <CardContent>
+                      {/* Memory Game */}
                       {currentGame === 'memory' && (
                         <div className="text-center">
-                          <div className="mb-4">
-                            <p>Moves: {memoryGame.moves} | Score: {memoryGame.score}</p>
+                          <div className="mb-4 flex justify-center gap-6">
+                            <div>Moves: {memoryGame.moves}</div>
+                            <div>Score: {memoryGame.score}</div>
+                            {memoryGame.isCompleted && (
+                              <Badge className="bg-green-500">Completed!</Badge>
+                            )}
                           </div>
-                          <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
-                            {memoryGame.cards.map((card) => (
-                              <div
-                                key={card.id}
-                                onClick={() => {
-                                  if (card.matched || card.flipped || memoryGame.flippedCards.length >= 2) return;
-                                  
-                                  const newCards = memoryGame.cards.map(c => 
-                                    c.id === card.id ? { ...c, flipped: true } : c
-                                  );
-                                  
-                                  const newFlippedCards = [...memoryGame.flippedCards, card.id];
-                                  
-                                  setMemoryGame(prev => ({
-                                    ...prev,
-                                    cards: newCards,
-                                    flippedCards: newFlippedCards
-                                  }));
-
-                                  if (newFlippedCards.length === 2) {
-                                    setTimeout(() => {
-                                      const [first, second] = newFlippedCards;
-                                      const firstCard = newCards.find(c => c.id === first);
-                                      const secondCard = newCards.find(c => c.id === second);
-
-                                      if (firstCard?.value === secondCard?.value) {
-                                        setMemoryGame(prev => ({
-                                          ...prev,
-                                          cards: prev.cards.map(c => 
-                                            c.id === first || c.id === second ? { ...c, matched: true } : c
-                                          ),
-                                          flippedCards: [],
-                                          moves: prev.moves + 1,
-                                          score: prev.score + 100
-                                        }));
-                                      } else {
-                                        setMemoryGame(prev => ({
-                                          ...prev,
-                                          cards: prev.cards.map(c => 
-                                            c.id === first || c.id === second ? { ...c, flipped: false } : c
-                                          ),
-                                          flippedCards: [],
-                                          moves: prev.moves + 1
-                                        }));
-                                      }
-                                    }, 1000);
-                                  }
-                                }}
-                                className={`w-16 h-16 border-2 rounded-lg flex items-center justify-center cursor-pointer transition-all ${
-                                  card.flipped || card.matched
-                                    ? 'bg-blue-500 text-white transform scale-105'
-                                    : 'bg-slate-200 hover:bg-slate-300'
-                                } ${card.matched ? 'bg-green-500' : ''}`}
-                              >
-                                {card.flipped || card.matched ? (
-                                  <span className="text-2xl">🧠</span>
-                                ) : '?'}
-                              </div>
-                            ))}
+                          <div className="grid grid-cols-4 gap-2 max-w-md mx-auto mb-4">
+                            {memoryGame.cards.map((card) => {
+                              const symbols = ['🧠', '⭐', '🎯', '💎', '🔥', '⚡', '🎨', '🚀'];
+                              return (
+                                <div
+                                  key={card.id}
+                                  onClick={() => handleMemoryCardClick(card.id)}
+                                  className={`w-16 h-16 border-2 rounded-lg flex items-center justify-center cursor-pointer transition-all text-2xl ${
+                                    card.flipped || card.matched
+                                      ? 'bg-blue-500 text-white transform scale-105'
+                                      : 'bg-slate-200 hover:bg-slate-300'
+                                  } ${card.matched ? 'bg-green-500' : ''}`}
+                                >
+                                  {card.flipped || card.matched ? symbols[card.value] : '?'}
+                                </div>
+                              );
+                            })}
                           </div>
-                          <Button
-                            className="mt-4"
-                            onClick={initializeMemoryGame}
-                          >
+                          <Button onClick={initializeMemoryGame}>
                             <RotateCcw className="w-4 h-4 mr-2" />
                             New Game
                           </Button>
                         </div>
                       )}
 
-                      {currentGame === 'word_scramble' && (
+                      {/* Math Quiz */}
+                      {currentGame === 'math_quiz' && (
                         <div className="text-center max-w-md mx-auto">
-                          <div className="mb-6">
-                            <p className="text-sm text-muted-foreground mb-2">Level {wordScramble.level}</p>
-                            <p className="text-lg mb-2">Score: {wordScramble.score}</p>
+                          <div className="mb-6 flex justify-center gap-6">
+                            <div>Score: {mathQuiz.score}</div>
+                            <div>Question: {mathQuiz.totalQuestions + 1}/10</div>
+                            <div>Streak: {mathQuiz.streak}</div>
                           </div>
-                          {!wordScramble.isCompleted ? (
+                          {!mathQuiz.isCompleted ? (
                             <div className="space-y-4">
-                              <div className="text-3xl font-bold p-6 bg-slate-100 rounded-lg">
-                                {wordScramble.scrambledWord}
+                              <div className="text-4xl font-bold p-6 bg-slate-100 rounded-lg">
+                                {mathQuiz.currentQuestion.num1} {mathQuiz.currentQuestion.operator} {mathQuiz.currentQuestion.num2} = ?
                               </div>
                               <Input
-                                type="text"
-                                value={wordScramble.userGuess}
-                                onChange={(e) => setWordScramble(prev => ({ ...prev, userGuess: e.target.value.toUpperCase() }))}
+                                type="number"
+                                value={mathQuiz.userAnswer}
+                                onChange={(e) => setMathQuiz(prev => ({ ...prev, userAnswer: e.target.value }))}
                                 placeholder="Your answer"
                                 className="text-center text-xl"
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter') {
-                                    if (wordScramble.userGuess === wordScramble.originalWord) {
-                                      const newScore = wordScramble.score + 100;
-                                      setWordScramble(prev => ({ ...prev, score: newScore, isCompleted: true }));
-                                      saveScore('word_scramble', newScore, wordScramble.level);
-                                    }
-                                  }
-                                }}
+                                onKeyPress={(e) => e.key === 'Enter' && submitMathAnswer()}
                               />
-                              <Button 
-                                onClick={() => {
-                                  if (wordScramble.userGuess === wordScramble.originalWord) {
-                                    const newScore = wordScramble.score + 100;
-                                    setWordScramble(prev => ({ ...prev, score: newScore, isCompleted: true }));
-                                    saveScore('word_scramble', newScore, wordScramble.level);
-                                  }
-                                }}
-                                className="w-full"
-                              >
+                              <Button onClick={submitMathAnswer} className="w-full">
                                 <Check className="w-4 h-4 mr-2" />
                                 Submit Answer
                               </Button>
                             </div>
                           ) : (
                             <div className="space-y-4">
-                              <h3 className="text-2xl font-bold">Correct!</h3>
-                              <p className="text-lg">Score: {wordScramble.score}</p>
+                              <h3 className="text-2xl font-bold">Quiz Complete!</h3>
+                              <p className="text-lg">Final Score: {mathQuiz.score}</p>
+                              <p>Best Streak: {mathQuiz.streak}</p>
+                              <Button onClick={startMathQuiz} className="w-full">
+                                <RotateCcw className="w-4 h-4 mr-2" />
+                                Play Again
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Pattern Memory Game */}
+                      {currentGame === 'pattern_memory' && (
+                        <div className="text-center max-w-md mx-auto">
+                          <div className="mb-6 flex justify-center gap-6">
+                            <div>Level: {patternGame.level}</div>
+                            <div>Score: {patternGame.score}</div>
+                          </div>
+                          <div className="mb-4">
+                            <p className="mb-2">
+                              {patternGame.gamePhase === 'showing' && 'Watch the pattern...'}
+                              {patternGame.gamePhase === 'input' && 'Repeat the pattern!'}
+                              {patternGame.gamePhase === 'correct' && 'Correct! Next level...'}
+                              {patternGame.gamePhase === 'wrong' && 'Wrong! Game Over.'}
+                              {patternGame.gamePhase === 'waiting' && 'Click Start to begin!'}
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            {[0, 1, 2, 3].map((buttonId) => (
+                              <button
+                                key={buttonId}
+                                onClick={() => handlePatternClick(buttonId)}
+                                disabled={patternGame.gamePhase !== 'input'}
+                                className={`w-20 h-20 rounded-lg border-2 transition-all ${
+                                  patternGame.showingPattern && patternGame.sequence[patternGame.userSequence.length] === buttonId
+                                    ? 'bg-yellow-400 border-yellow-600'
+                                    : 'bg-blue-400 border-blue-600 hover:bg-blue-500'
+                                } ${patternGame.gamePhase !== 'input' ? 'opacity-50' : ''}`}
+                              >
+                                {buttonId + 1}
+                              </button>
+                            ))}
+                          </div>
+                          {patternGame.gamePhase === 'waiting' && (
+                            <Button onClick={startPatternGame}>
+                              <Play className="w-4 h-4 mr-2" />
+                              Start Game
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Word Scramble */}
+                      {currentGame === 'word_scramble' && (
+                        <div className="text-center max-w-md mx-auto">
+                          <div className="mb-6 flex justify-center gap-6">
+                            <div>Score: {wordScramble.score}</div>
+                            <div>Words: {wordScramble.wordsCompleted}/5</div>
+                          </div>
+                          {!wordScramble.isCompleted ? (
+                            <div className="space-y-4">
+                              <div className="text-3xl font-bold p-6 bg-slate-100 rounded-lg tracking-wider">
+                                {wordScramble.scrambledWord}
+                              </div>
+                              <Input
+                                type="text"
+                                value={wordScramble.userGuess}
+                                onChange={(e) => setWordScramble(prev => ({ ...prev, userGuess: e.target.value }))}
+                                placeholder="Unscramble the word"
+                                className="text-center text-xl"
+                                onKeyPress={(e) => e.key === 'Enter' && submitWordGuess()}
+                              />
+                              <Button onClick={submitWordGuess} className="w-full">
+                                <Check className="w-4 h-4 mr-2" />
+                                Submit Answer
+                              </Button>
+                              <p className="text-sm text-muted-foreground">
+                                Hint: {wordScramble.originalWord.length} letters
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <h3 className="text-2xl font-bold">Excellent!</h3>
+                              <p className="text-lg">Final Score: {wordScramble.score}</p>
                               <Button onClick={startWordScramble} className="w-full">
                                 <RotateCcw className="w-4 h-4 mr-2" />
                                 Play Again
@@ -635,43 +933,101 @@ const Games = () => {
                         </div>
                       )}
 
+                      {/* Reaction Time */}
                       {currentGame === 'reaction_time' && (
                         <div className="text-center max-w-md mx-auto">
-                          <div className="mb-6">
-                            <p className="text-lg mb-2">Best Time: {reactionTime.bestTime === Infinity ? 'N/A' : `${reactionTime.bestTime}ms`}</p>
-                            <p className="text-sm text-muted-foreground">Attempts: {reactionTime.attempts}</p>
+                          <div className="mb-6 flex justify-center gap-6 text-sm">
+                            <div>Best: {reactionTime.bestTime === Infinity ? 'N/A' : `${reactionTime.bestTime}ms`}</div>
+                            <div>Attempts: {reactionTime.attempts}/5</div>
+                            {reactionTime.averageTime > 0 && (
+                              <div>Avg: {Math.round(reactionTime.averageTime)}ms</div>
+                            )}
                           </div>
                           <div 
                             onClick={handleReactionClick}
-                            className={`w-64 h-64 mx-auto rounded-lg cursor-pointer transition-all ${
+                            className={`w-64 h-64 mx-auto rounded-lg cursor-pointer transition-all flex items-center justify-center ${
                               reactionTime.isWaiting ? 'bg-red-500' : 
                               reactionTime.isReady ? 'bg-green-500' : 'bg-gray-300'
-                            } flex items-center justify-center`}
+                            }`}
                           >
                             <span className="text-white text-xl font-bold">
-                              {reactionTime.isWaiting ? 'Wait...' :
-                               reactionTime.isReady ? 'CLICK!' : 'Click to Start'}
+                              {reactionTime.isWaiting ? 'Wait for green...' :
+                               reactionTime.isReady ? 'CLICK NOW!' : 'Click to Start'}
                             </span>
                           </div>
                           {reactionTime.currentTime > 0 && (
                             <p className="mt-4 text-lg">Last: {reactionTime.currentTime}ms</p>
                           )}
-                          <Button onClick={startReactionTime} className="mt-4">
-                            <RotateCcw className="w-4 h-4 mr-2" />
-                            New Test
-                          </Button>
+                          <div className="mt-4">
+                            <Button onClick={startReactionTime}>
+                              <RotateCcw className="w-4 h-4 mr-2" />
+                              {reactionTime.attempts === 0 ? 'Start Test' : 'Next Attempt'}
+                            </Button>
+                          </div>
                         </div>
                       )}
 
-                      {/* Placeholder implementations for other games */}
-                      {['color_match', 'number_sequence', 'spatial_puzzle', 'word_association', 'logic_puzzle', 'visual_tracking', 'cognitive_load', 'flexibility_test'].includes(currentGame) && (
+                      {/* Concentration Game */}
+                      {currentGame === 'concentration' && (
+                        <div className="text-center max-w-md mx-auto">
+                          <div className="mb-6 flex justify-center gap-6">
+                            <div>Score: {concentrationGame.score}</div>
+                            <div>Level: {concentrationGame.level}</div>
+                            <div>Time: {concentrationGame.timeLeft}s</div>
+                          </div>
+                          {concentrationGame.isActive ? (
+                            <div className="space-y-4">
+                              <div className="text-2xl font-bold p-4 bg-slate-100 rounded-lg">
+                                Add these numbers:
+                              </div>
+                              <div className="text-4xl font-bold p-6 bg-blue-100 rounded-lg">
+                                {concentrationGame.numbers.join(' + ')}
+                              </div>
+                              <Progress value={(concentrationGame.timeLeft / (Math.max(5, 10 - concentrationGame.level + 1))) * 100} />
+                              <Input
+                                type="number"
+                                value={concentrationGame.userAnswer}
+                                onChange={(e) => setConcentrationGame(prev => ({ ...prev, userAnswer: e.target.value }))}
+                                placeholder="Sum"
+                                className="text-center text-xl"
+                                onKeyPress={(e) => e.key === 'Enter' && submitConcentrationAnswer()}
+                              />
+                              <Button onClick={submitConcentrationAnswer} className="w-full">
+                                Submit
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <h3 className="text-2xl font-bold">
+                                {concentrationGame.score > 0 ? 'Time\'s Up!' : 'Get Ready!'}
+                              </h3>
+                              {concentrationGame.score > 0 && (
+                                <p className="text-lg">Final Score: {concentrationGame.score}</p>
+                              )}
+                              <Button onClick={startConcentrationGame} className="w-full">
+                                <Play className="w-4 h-4 mr-2" />
+                                {concentrationGame.score > 0 ? 'Play Again' : 'Start Game'}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Placeholder for other games */}
+                      {!['memory', 'math_quiz', 'pattern_memory', 'word_scramble', 'reaction_time', 'concentration'].includes(currentGame) && (
                         <div className="text-center">
-                          <p className="text-muted-foreground">
-                            {games.find(g => g.id === currentGame)?.title} - Fully functional implementation coming soon!
+                          <p className="text-muted-foreground mb-4">
+                            {games.find(g => g.id === currentGame)?.title} - Advanced implementation coming soon!
                           </p>
-                          <p className="text-sm mt-2">
+                          <p className="text-sm">
                             {games.find(g => g.id === currentGame)?.benefits}
                           </p>
+                          <Button 
+                            onClick={() => setCurrentGame(null)}
+                            className="mt-4"
+                          >
+                            Choose Another Game
+                          </Button>
                         </div>
                       )}
                     </CardContent>
@@ -730,9 +1086,7 @@ const Games = () => {
                             </div>
                             <Button
                               size="sm"
-                              onClick={() => {
-                                setCurrentGame(save.game_type);
-                              }}
+                              onClick={() => setCurrentGame(save.game_type)}
                             >
                               Resume
                             </Button>

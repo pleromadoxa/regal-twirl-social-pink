@@ -20,6 +20,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import UserLink from '@/components/UserLink';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Notifications = () => {
@@ -30,8 +31,7 @@ const Notifications = () => {
     unreadCount, 
     loading, 
     markAsRead, 
-    markAllAsRead,
-    deleteNotification 
+    markAllAsRead
   } = useNotifications();
 
   const getNotificationIcon = (type: string) => {
@@ -52,7 +52,7 @@ const Notifications = () => {
   };
 
   const getNotificationText = (notification: any) => {
-    const actorName = notification.profiles?.display_name || notification.profiles?.username || 'Someone';
+    const actorName = notification.actor_profile?.display_name || notification.actor_profile?.username || 'Someone';
     
     switch (notification.type) {
       case 'like':
@@ -175,13 +175,15 @@ const Notifications = () => {
                             </p>
                           </div>
 
-                          {notification.profiles && (
-                            <Avatar className="w-8 h-8">
-                              <AvatarImage src={notification.profiles.avatar_url} />
-                              <AvatarFallback className="text-xs">
-                                {notification.profiles.display_name?.[0] || notification.profiles.username?.[0] || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
+                          {notification.actor_profile && (
+                            <UserLink
+                              userId={notification.actor_id || ''}
+                              username={notification.actor_profile.username}
+                              displayName={notification.actor_profile.display_name}
+                              avatarUrl={notification.actor_profile.avatar_url}
+                              showAvatar={true}
+                              className="w-8 h-8"
+                            />
                           )}
                         </div>
                       </CardContent>
@@ -221,13 +223,15 @@ const Notifications = () => {
                               </p>
                             </div>
 
-                            {notification.profiles && (
-                              <Avatar className="w-8 h-8">
-                                <AvatarImage src={notification.profiles.avatar_url} />
-                                <AvatarFallback className="text-xs">
-                                  {notification.profiles.display_name?.[0] || notification.profiles.username?.[0] || 'U'}
-                                </AvatarFallback>
-                              </Avatar>
+                            {notification.actor_profile && (
+                              <UserLink
+                                userId={notification.actor_id || ''}
+                                username={notification.actor_profile.username}
+                                displayName={notification.actor_profile.display_name}
+                                avatarUrl={notification.actor_profile.avatar_url}
+                                showAvatar={true}
+                                className="w-8 h-8"
+                              />
                             )}
                           </div>
                         </CardContent>
@@ -265,13 +269,15 @@ const Notifications = () => {
                               </p>
                             </div>
 
-                            {notification.profiles && (
-                              <Avatar className="w-8 h-8">
-                                <AvatarImage src={notification.profiles.avatar_url} />
-                                <AvatarFallback className="text-xs">
-                                  {notification.profiles.display_name?.[0] || notification.profiles.username?.[0] || 'U'}
-                                </AvatarFallback>
-                              </Avatar>
+                            {notification.actor_profile && (
+                              <UserLink
+                                userId={notification.actor_id || ''}
+                                username={notification.actor_profile.username}
+                                displayName={notification.actor_profile.display_name}
+                                avatarUrl={notification.actor_profile.avatar_url}
+                                showAvatar={true}
+                                className="w-8 h-8"
+                              />
                             )}
                           </div>
                         </CardContent>
