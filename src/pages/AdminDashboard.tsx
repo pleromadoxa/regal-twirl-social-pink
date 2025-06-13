@@ -28,6 +28,13 @@ interface DashboardStats {
   activeUsers: number;
 }
 
+interface ActivityItem {
+  type: string;
+  user: string;
+  time: string;
+  color: string;
+}
+
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState<DashboardStats>({
@@ -38,7 +45,7 @@ const AdminDashboard = () => {
     newUsersToday: 0,
     activeUsers: 0
   });
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -89,13 +96,10 @@ const AdminDashboard = () => {
         activeUsers: activeUsersCount || 0
       });
 
-      // Fetch recent activity
+      // Fetch recent activity - Fix the query by doing separate queries
       const { data: recentPosts } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles!posts_user_id_fkey (username, display_name)
-        `)
+        .select('user_id, created_at')
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -105,22 +109,40 @@ const AdminDashboard = () => {
         .order('created_at', { ascending: false })
         .limit(3);
 
-      const activityItems = [
-        ...(recentUsers?.map(user => ({
-          type: 'user_joined',
-          user: user.display_name || user.username,
-          time: new Date(user.created_at).toLocaleTimeString(),
-          color: 'green'
-        })) || []),
-        ...(recentPosts?.map(post => ({
-          type: 'post_created',
-          user: post.profiles?.display_name || post.profiles?.username,
-          time: new Date(post.created_at).toLocaleTimeString(),
-          color: 'blue'
-        })) || [])
-      ].slice(0, 10);
+      // Get profile information for posts
+      const activityItems: ActivityItem[] = [];
+      
+      if (recentUsers) {
+        recentUsers.forEach(user => {
+          activityItems.push({
+            type: 'user_joined',
+            user: user.display_name || user.username || 'Unknown User',
+            time: new Date(user.created_at).toLocaleTimeString(),
+            color: 'green'
+          });
+        });
+      }
 
-      setRecentActivity(activityItems);
+      if (recentPosts) {
+        for (const post of recentPosts) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username, display_name')
+            .eq('id', post.user_id)
+            .single();
+
+          if (profile) {
+            activityItems.push({
+              type: 'post_created',
+              user: profile.display_name || profile.username || 'Unknown User',
+              time: new Date(post.created_at).toLocaleTimeString(),
+              color: 'blue'
+            });
+          }
+        }
+      }
+
+      setRecentActivity(activityItems.slice(0, 10));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
