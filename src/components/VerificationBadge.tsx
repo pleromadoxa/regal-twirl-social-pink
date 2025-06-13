@@ -5,9 +5,10 @@ import { Crown, Award, Building, Briefcase, Shield } from 'lucide-react';
 interface VerificationBadgeProps {
   level: 'verified' | 'vip' | 'business' | 'professional';
   className?: string;
+  showText?: boolean;
 }
 
-const VerificationBadge = ({ level, className = "" }: VerificationBadgeProps) => {
+const VerificationBadge = ({ level, className = "", showText = true }: VerificationBadgeProps) => {
   const getBadgeConfig = () => {
     switch (level) {
       case 'verified':
@@ -43,7 +44,7 @@ const VerificationBadge = ({ level, className = "" }: VerificationBadgeProps) =>
   return (
     <Badge className={`${config.className} ${className} font-medium`}>
       <Icon className="w-3 h-3 mr-1" />
-      {config.text}
+      {showText && config.text}
     </Badge>
   );
 };

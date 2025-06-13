@@ -1,11 +1,12 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useGallery } from "@/hooks/useGallery";
+import { useVerifiedStatus } from "@/hooks/useVerifiedStatus";
 import SidebarNav from "@/components/SidebarNav";
 import ProfileActions from "@/components/ProfileActions";
+import VerificationBadge from "@/components/VerificationBadge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +30,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { profile, loading: profileLoading, isFollowing, toggleFollow } = useProfile(userId);
   const { galleryItems, loading: galleryLoading, transformToMediaItems } = useGallery(userId);
+  const { verificationLevel } = useVerifiedStatus(profile);
   const [activeTab, setActiveTab] = useState('gallery');
 
   const isOwnProfile = user?.id === userId;
@@ -68,8 +70,6 @@ const Profile = () => {
     );
   }
 
-  const isVerified = profile.username === 'pleromadoxa' || profile.is_verified || (profile.followers_count && profile.followers_count >= 100);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
@@ -106,22 +106,22 @@ const Profile = () => {
               <div className="flex gap-3 mt-4 sm:mt-0">
                 {isOwnProfile ? (
                   <Button 
-                    onClick={handleEditProfile}
+                    onClick={() => navigate('/settings')}
                     variant="outline" 
                     className="rounded-full border-2 border-purple-300 hover:bg-purple-50 hover:border-purple-500 transition-all duration-300"
                   >
                     <Settings className="w-4 h-4 mr-2" />
                     Edit Profile
                   </Button>
-                ) : null}
-                
-                <ProfileActions
-                  userId={userId || ''}
-                  username={profile.username || profile.display_name || ''}
-                  isOwnProfile={isOwnProfile}
-                  isFollowing={isFollowing}
-                  onFollowToggle={toggleFollow}
-                />
+                ) : (
+                  <ProfileActions
+                    userId={userId || ''}
+                    username={profile.username || profile.display_name || ''}
+                    isOwnProfile={isOwnProfile}
+                    isFollowing={isFollowing}
+                    onFollowToggle={toggleFollow}
+                  />
+                )}
               </div>
             </div>
 
@@ -131,10 +131,8 @@ const Profile = () => {
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {profile.display_name || profile.username}
                 </h1>
-                {isVerified && (
-                  <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700">
-                    <CheckCircle className="w-4 h-4" />
-                  </Badge>
+                {verificationLevel && (
+                  <VerificationBadge level={verificationLevel} />
                 )}
                 {profile.premium_tier && profile.premium_tier !== 'free' && (
                   <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
@@ -181,15 +179,15 @@ const Profile = () => {
               {/* Stats */}
               <div className="flex gap-6 text-sm">
                 <div>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">{profile.following_count}</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">{profile.following_count || 0}</span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">Following</span>
                 </div>
                 <div>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">{profile.followers_count}</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">{profile.followers_count || 0}</span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">Followers</span>
                 </div>
                 <div>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">{profile.posts_count}</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">{profile.posts_count || 0}</span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">Posts</span>
                 </div>
               </div>
