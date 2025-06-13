@@ -181,7 +181,7 @@ const ProfessionalAccountProfile = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
-        <div className="flex-1 pl-80 flex items-center justify-center">
+        <div className="flex-1 ml-80 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <p className="text-gray-500">Loading business profile...</p>
@@ -195,7 +195,7 @@ const ProfessionalAccountProfile = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
-        <div className="flex-1 pl-80 flex items-center justify-center">
+        <div className="flex-1 ml-80 flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-600 mb-2">Business Not Found</h2>
             <p className="text-gray-500">The business page you're looking for doesn't exist.</p>
@@ -211,7 +211,7 @@ const ProfessionalAccountProfile = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
       
-      <div className="flex-1 pl-80 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+      <div className="flex-1 ml-80 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Business Header */}
           <div className="relative mb-8">

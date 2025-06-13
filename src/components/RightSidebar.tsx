@@ -62,7 +62,7 @@ const RightSidebar = () => {
   };
 
   return (
-    <aside className="w-96 bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900 border-l border-purple-200 dark:border-purple-800 h-screen overflow-hidden">
+    <aside className="fixed right-0 top-0 w-96 bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900 border-l border-purple-200 dark:border-purple-800 h-screen overflow-hidden z-10">
       <ScrollArea className="h-full">
         <div className="p-6 space-y-6">
           {/* Top actions */}
