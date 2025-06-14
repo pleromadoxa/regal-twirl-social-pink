@@ -1,8 +1,26 @@
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Repeat2, Pin, Trash2, MoreHorizontal, Flag, Share } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { 
+  Heart, 
+  MessageCircle, 
+  Repeat, 
+  Share, 
+  Pin, 
+  MoreHorizontal, 
+  Trash2,
+  Megaphone,
+  Flag
+} from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuTrigger, 
+  DropdownMenuItem 
+} from '@/components/ui/dropdown-menu';
+import BoostPostDialog from './BoostPostDialog';
 import ReportPostDialog from './ReportPostDialog';
+import { useBusinessPages } from '@/hooks/useBusinessPages';
 
 interface PostActionsProps {
   postId: string;
@@ -18,7 +36,7 @@ interface PostActionsProps {
   onPin: () => void;
   onDelete: () => void;
   onComment: () => void;
-  onShare?: () => void;
+  onShare: () => void;
   isOwnPost: boolean;
 }
 
@@ -28,9 +46,9 @@ export const PostActions = ({
   likesCount,
   retweetsCount,
   repliesCount,
-  userLiked = false,
-  userRetweeted = false,
-  userPinned = false,
+  userLiked,
+  userRetweeted,
+  userPinned,
   onLike,
   onRetweet,
   onPin,
@@ -39,104 +57,119 @@ export const PostActions = ({
   onShare,
   isOwnPost
 }: PostActionsProps) => {
+  const { myPages } = useBusinessPages();
+  const [showReportDialog, setShowReportDialog] = useState(false);
+
+  const hasBusinessPages = myPages && myPages.length > 0;
+
   return (
-    <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
-      <div className="flex items-center space-x-6">
-        <Button
-          variant="ghost"
-          size="sm"
+    <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
+      <div className="flex items-center space-x-1">
+        {/* Like Button */}
+        <Button 
+          variant="ghost" 
+          size="sm" 
           onClick={onLike}
-          className={`flex items-center space-x-2 ${
+          className={`hover:bg-red-50 dark:hover:bg-red-900/20 ${
             userLiked ? 'text-red-500 hover:text-red-600' : 'text-slate-500 hover:text-red-500'
           }`}
         >
-          <Heart className={`w-4 h-4 ${userLiked ? 'fill-current' : ''}`} />
+          <Heart className={`w-4 h-4 mr-1 ${userLiked ? 'fill-current' : ''}`} />
           <span className="text-sm">{likesCount}</span>
         </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
+        {/* Comment Button */}
+        <Button 
+          variant="ghost" 
+          size="sm" 
           onClick={onComment}
-          className="flex items-center space-x-2 text-slate-500 hover:text-blue-500"
+          className="text-slate-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
         >
-          <MessageCircle className="w-4 h-4" />
+          <MessageCircle className="w-4 h-4 mr-1" />
           <span className="text-sm">{repliesCount}</span>
         </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
+        {/* Retweet Button */}
+        <Button 
+          variant="ghost" 
+          size="sm" 
           onClick={onRetweet}
-          className={`flex items-center space-x-2 ${
+          className={`hover:bg-green-50 dark:hover:bg-green-900/20 ${
             userRetweeted ? 'text-green-500 hover:text-green-600' : 'text-slate-500 hover:text-green-500'
           }`}
         >
-          <Repeat2 className="w-4 h-4" />
+          <Repeat className="w-4 h-4 mr-1" />
           <span className="text-sm">{retweetsCount}</span>
         </Button>
 
-        {onShare && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onShare}
-            className="flex items-center space-x-2 text-slate-500 hover:text-purple-500"
-          >
-            <Share className="w-4 h-4" />
-          </Button>
-        )}
+        {/* Share Button */}
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onShare}
+          className="text-slate-500 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+        >
+          <Share className="w-4 h-4" />
+        </Button>
       </div>
 
-      <div className="flex items-center gap-1">
-        {!isOwnPost && (
-          <ReportPostDialog 
-            postId={postId}
-            trigger={
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-              >
-                <Flag className="w-4 h-4" />
-              </Button>
-            }
-          />
-        )}
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {isOwnPost && (
-              <>
-                <DropdownMenuItem onClick={onPin}>
-                  <Pin className="w-4 h-4 mr-2" />
-                  {userPinned ? 'Unpin post' : 'Pin post'}
+      {/* More Actions Dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700">
+            <MoreHorizontal className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {/* Pin/Unpin - only for own posts */}
+          {isOwnPost && (
+            <DropdownMenuItem onClick={onPin}>
+              <Pin className="w-4 h-4 mr-2" />
+              {userPinned ? 'Unpin' : 'Pin'} Post
+            </DropdownMenuItem>
+          )}
+
+          {/* Boost Post - only for own posts with business pages */}
+          {isOwnPost && hasBusinessPages && (
+            <BoostPostDialog
+              postId={postId}
+              trigger={
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <Megaphone className="w-4 h-4 mr-2" />
+                  Boost Post
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onDelete} className="text-red-600">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete post
-                </DropdownMenuItem>
-              </>
-            )}
-            {!isOwnPost && (
-              <ReportPostDialog 
-                postId={postId}
-                trigger={
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <Flag className="w-4 h-4 mr-2" />
-                    Report post
-                  </DropdownMenuItem>
-                }
-              />
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+              }
+            />
+          )}
+
+          {/* Report Post - only for others' posts */}
+          {!isOwnPost && (
+            <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+              <Flag className="w-4 h-4 mr-2" />
+              Report Post
+            </DropdownMenuItem>
+          )}
+
+          {/* Delete - only for own posts */}
+          {isOwnPost && (
+            <DropdownMenuItem onClick={onDelete} className="text-red-600 dark:text-red-400">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Post
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Report Dialog */}
+      {showReportDialog && (
+        <ReportPostDialog
+          postId={postId}
+          isOpen={showReportDialog}
+          onClose={() => setShowReportDialog(false)}
+        />
+      )}
     </div>
   );
 };
+
+export default PostActions;

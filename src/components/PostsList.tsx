@@ -7,7 +7,7 @@ import { PostActions } from '@/components/PostActions';
 import { PostIndicators } from '@/components/PostIndicators';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Repeat, Share } from 'lucide-react';
+import { CheckCircle, Repeat, Share, Megaphone } from 'lucide-react';
 import { VerificationLevel } from '@/hooks/useVerifiedStatus';
 import VerificationBadge from '@/components/VerificationBadge';
 import InlineComments from './InlineComments';
@@ -82,6 +82,7 @@ export const PostsList = ({
     initialIndex: 0
   });
   const [businessPages, setBusinessPages] = useState<{[key: string]: any}>({});
+  const [sponsoredPosts, setSponsoredPosts] = useState<{[key: string]: any}>({});
 
   let posts = externalPosts || hookPosts;
   
@@ -156,6 +157,50 @@ export const PostsList = ({
   const onRetweet = externalOnRetweet || handleRetweet;
   const onPin = externalOnPin || togglePin;
   const onDelete = externalOnDelete || deletePost;
+
+  // Fetch sponsored post information
+  useEffect(() => {
+    const fetchSponsoredPosts = async () => {
+      if (!posts || posts.length === 0) return;
+      
+      const postIds = posts
+        .filter(post => post.sponsored_post_id)
+        .map(post => post.sponsored_post_id)
+        .filter(Boolean);
+      
+      if (postIds.length === 0) return;
+      
+      try {
+        const { data: sponsoredData } = await supabase
+          .from('sponsored_posts')
+          .select(`
+            id,
+            post_id,
+            business_page_id,
+            sponsor_type,
+            status,
+            business_pages(
+              id,
+              page_name,
+              page_type
+            )
+          `)
+          .in('id', postIds);
+
+        if (sponsoredData) {
+          const sponsoredMap: {[key: string]: any} = {};
+          sponsoredData.forEach(sponsored => {
+            sponsoredMap[sponsored.post_id] = sponsored;
+          });
+          setSponsoredPosts(sponsoredMap);
+        }
+      } catch (error) {
+        console.error('Error fetching sponsored posts:', error);
+      }
+    };
+
+    fetchSponsoredPosts();
+  }, [posts]);
 
   // Fetch business page information for posts made as professional accounts
   useEffect(() => {
@@ -437,6 +482,33 @@ export const PostsList = ({
     return null;
   };
 
+  const renderSponsoredIndicator = (post: any) => {
+    const sponsoredInfo = sponsoredPosts[post.id];
+    
+    if (!sponsoredInfo || sponsoredInfo.status !== 'active') {
+      return null;
+    }
+
+    return (
+      <div className="flex items-center gap-2 mb-3 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700/50">
+        <Megaphone className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+        <span className="text-purple-700 dark:text-purple-300 font-medium text-sm">
+          Sponsored
+        </span>
+        {sponsoredInfo.business_pages && (
+          <span className="text-purple-600 dark:text-purple-400 text-sm">
+            • {sponsoredInfo.business_pages.page_name}
+          </span>
+        )}
+        {sponsoredInfo.sponsor_type === 'boosted_post' && (
+          <span className="text-purple-600 dark:text-purple-400 text-sm">
+            • Boosted Post
+          </span>
+        )}
+      </div>
+    );
+  };
+
   if (loading && !externalPosts) {
     return (
       <div className="flex items-center justify-center py-8 relative z-10">
@@ -472,6 +544,9 @@ export const PostsList = ({
               }`}
             >
               <CardContent className="p-6 relative z-30">
+                {/* Sponsored Post Indicator */}
+                {renderSponsoredIndicator(post)}
+                
                 {/* Enhanced Retweet indicator */}
                 {renderRetweetIndicator(post.id)}
                 

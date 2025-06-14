@@ -1427,6 +1427,7 @@ export type Database = {
           posted_as_page: string | null
           replies_count: number | null
           retweets_count: number | null
+          sponsored_post_id: string | null
           updated_at: string
           user_id: string
         }
@@ -1440,6 +1441,7 @@ export type Database = {
           posted_as_page?: string | null
           replies_count?: number | null
           retweets_count?: number | null
+          sponsored_post_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1453,6 +1455,7 @@ export type Database = {
           posted_as_page?: string | null
           replies_count?: number | null
           retweets_count?: number | null
+          sponsored_post_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1462,6 +1465,13 @@ export type Database = {
             columns: ["posted_as_page"]
             isOneToOne: false
             referencedRelation: "business_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_sponsored_post_id_fkey"
+            columns: ["sponsored_post_id"]
+            isOneToOne: false
+            referencedRelation: "sponsored_posts"
             referencedColumns: ["id"]
           },
         ]
@@ -1795,6 +1805,88 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "retweets_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsored_posts: {
+        Row: {
+          ad_id: string | null
+          budget_amount: number
+          budget_currency: string
+          business_page_id: string | null
+          clicks: number | null
+          created_at: string | null
+          duration_days: number
+          ends_at: string | null
+          id: string
+          impressions: number | null
+          post_id: string
+          spent_amount: number | null
+          sponsor_type: string
+          starts_at: string | null
+          status: string
+          target_audience: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          ad_id?: string | null
+          budget_amount?: number
+          budget_currency?: string
+          business_page_id?: string | null
+          clicks?: number | null
+          created_at?: string | null
+          duration_days?: number
+          ends_at?: string | null
+          id?: string
+          impressions?: number | null
+          post_id: string
+          spent_amount?: number | null
+          sponsor_type: string
+          starts_at?: string | null
+          status?: string
+          target_audience?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          ad_id?: string | null
+          budget_amount?: number
+          budget_currency?: string
+          business_page_id?: string | null
+          clicks?: number | null
+          created_at?: string | null
+          duration_days?: number
+          ends_at?: string | null
+          id?: string
+          impressions?: number | null
+          post_id?: string
+          spent_amount?: number | null
+          sponsor_type?: string
+          starts_at?: string | null
+          status?: string
+          target_audience?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsored_posts_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "business_ads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsored_posts_business_page_id_fkey"
+            columns: ["business_page_id"]
+            isOneToOne: false
+            referencedRelation: "business_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsored_posts_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
