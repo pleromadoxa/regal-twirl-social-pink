@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +17,7 @@ export interface Profile {
   posts_count: number;
   is_verified: boolean;
   premium_tier: string | null;
+  verification_level: string | null;
   created_at: string;
 }
 
@@ -52,7 +52,8 @@ export const useProfile = (userId?: string) => {
         ...profileData,
         avatar_url: profileData.avatar_url || null,
         display_name: profileData.display_name || null,
-        username: profileData.username || null
+        username: profileData.username || null,
+        verification_level: profileData.verification_level || null
       };
 
       setProfile(processedProfile);
