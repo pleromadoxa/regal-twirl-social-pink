@@ -52,7 +52,7 @@ const ProfessionalDirectory = () => {
       <SidebarNav />
       
       <div className="flex-1 flex gap-6 ml-80"> {/* Container for main content and right sidebar */}
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-5xl"> {/* Added max-w-5xl */}
+        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto min-h-screen"> 
           {/* Header */}
           <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
             <div className="flex flex-col gap-4">
