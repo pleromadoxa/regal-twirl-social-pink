@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
@@ -9,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Megaphone, 
   Plus, 
@@ -20,7 +20,8 @@ import {
   Calendar,
   Pause,
   Play,
-  Trash2
+  Trash2,
+  Building2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -69,12 +70,12 @@ const AdsManager = () => {
 
       if (adsError) throw adsError;
 
-      // Fetch sponsored posts (boosted posts)
+      // Fix the sponsored posts query by specifying the correct relationship
       let sponsoredQuery = supabase
         .from('sponsored_posts')
         .select(`
           *,
-          posts(
+          posts!sponsored_posts_post_id_fkey(
             id,
             content,
             image_urls,
@@ -215,10 +216,29 @@ const AdsManager = () => {
                 Manage your business advertisements and sponsored posts
               </p>
             </div>
-            <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Ad
-            </Button>
+            <div className="flex items-center gap-4">
+              {/* Business Page Filter */}
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                <Select value={selectedPage} onValueChange={setSelectedPage}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Select business page" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Business Pages</SelectItem>
+                    {myPages.map((page) => (
+                      <SelectItem key={page.id} value={page.id}>
+                        {page.page_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Ad
+              </Button>
+            </div>
           </div>
         </div>
 
