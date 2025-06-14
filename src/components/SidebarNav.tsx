@@ -62,21 +62,6 @@ const SidebarNav = () => {
     { icon: FolderOpen, label: 'Directory', path: '/professional-directory' },
   ];
 
-  // Get logo URLs from Supabase storage
-  const getLightLogoUrl = () => {
-    const { data } = supabase.storage
-      .from('logos')
-      .getPublicUrl('regal-network-light.png');
-    return data.publicUrl;
-  };
-
-  const getDarkLogoUrl = () => {
-    const { data } = supabase.storage
-      .from('logos')
-      .getPublicUrl('regal-network-dark.png');
-    return data.publicUrl;
-  };
-
   return (
     <div className="fixed left-0 top-0 w-80 bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900 border-r border-purple-200 dark:border-purple-800 h-screen flex flex-col z-20">
       <div className="flex-1 overflow-y-auto">
@@ -85,18 +70,9 @@ const SidebarNav = () => {
           <div className="mb-8">
             <div className="flex items-center space-x-3">
               <img 
-                src={theme === 'dark' ? getLightLogoUrl() : getDarkLogoUrl()}
+                src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
                 alt="Regal Network Logo" 
                 className="h-8 w-auto"
-                onError={(e) => {
-                  // Fallback to text if image fails to load
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  const fallback = document.createElement('span');
-                  fallback.className = 'text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent';
-                  fallback.textContent = 'RN';
-                  target.parentNode?.appendChild(fallback);
-                }}
               />
               <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Regal Network
