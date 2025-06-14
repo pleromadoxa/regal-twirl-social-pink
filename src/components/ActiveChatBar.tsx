@@ -47,31 +47,37 @@ const ActiveChatBar = () => {
 
   // Update characters based on recent conversations
   useEffect(() => {
-    if (conversations.length > 0) {
+    if (conversations.length > 0 && user) {
       const recentConversations = conversations.slice(0, 3);
       const updatedCharacters: ConversationCharacter[] = [
         { emoji: "💬", name: "Messages", online: false },
         ...recentConversations.map((conv, index) => {
-          const { isOnline } = getUserStatus(conv.other_user?.id || '');
+          // Determine the other user from conversation participants
+          const otherUser = conv.participant_1 === user.id 
+            ? conv.participant_2_profile 
+            : conv.participant_1_profile;
+          
+          const { isOnline } = getUserStatus(otherUser?.id || '');
+          
           return {
             id: conv.id,
-            emoji: conv.other_user?.avatar_url ? "👤" : ["👤", "🌟", "💼"][index] || "👤",
-            name: `${conv.other_user?.display_name || conv.other_user?.username || "User"}${conv.streak_count > 0 ? ` ${getStreakEmoji(conv.streak_count)}${conv.streak_count}` : ''}`,
+            emoji: otherUser?.avatar_url ? "👤" : ["👤", "🌟", "💼"][index] || "👤",
+            name: `${otherUser?.display_name || otherUser?.username || "User"}${conv.streak_count && conv.streak_count > 0 ? ` ${getStreakEmoji(conv.streak_count)}${conv.streak_count}` : ''}`,
             online: isOnline,
             backgroundColor: ["bg-blue-300", "bg-purple-300", "bg-pink-300"][index] || "bg-gray-300",
             gradientColors: ["#93c5fd, #dbeafe", "#c084fc, #f3e8ff", "#f9a8d4, #fce7f3"][index] || "#d1d5db, #f3f4f6",
-            avatar: conv.other_user?.avatar_url,
-            username: conv.other_user?.username,
-            displayName: conv.other_user?.display_name,
+            avatar: otherUser?.avatar_url,
+            username: otherUser?.username,
+            displayName: otherUser?.display_name,
             streakCount: conv.streak_count,
-            userId: conv.other_user?.id
+            userId: otherUser?.id
           };
         }),
         { emoji: "📋", name: "Menu", online: false },
       ];
       setCharacters(updatedCharacters);
     }
-  }, [conversations, getUserStatus]);
+  }, [conversations, getUserStatus, user]);
 
   const handleMessageSend = async (message: string, character: ConversationCharacter, characterIndex: number) => {
     if (!user) {
@@ -87,9 +93,9 @@ const ActiveChatBar = () => {
       // If it's a conversation character (has ID), send message directly
       if (character.id) {
         const conversation = conversations.find(conv => conv.id === character.id);
-        if (conversation?.other_user?.id) {
-          await sendMessage(message);
+        if (conversation) {
           setSelectedConversation(character.id as string);
+          await sendMessage(message);
           toast({
             title: "Message sent",
             description: `Message sent to ${character.name}`,
