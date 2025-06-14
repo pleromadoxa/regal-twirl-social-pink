@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -26,7 +27,7 @@ interface PostsListProps {
 
 // Helper function to calculate verification status without using hooks
 const getVerificationLevel = (user: any): VerificationLevel => {
-  if (!user) return null;
+  if (!user || typeof user !== 'object') return null;
   
   // Special case for VIP user
   if (user.email === 'pleromadoxa@gmail.com' || user.username === 'pleromadoxa') {
@@ -239,22 +240,25 @@ export const PostsList = ({
           if (!retweetUsersMap[retweet.post_id]) {
             retweetUsersMap[retweet.post_id] = [];
           }
-          retweetUsersMap[retweet.post_id].push({
-            ...retweet.profiles,
-            user_id: retweet.user_id,
-            created_at: retweet.created_at
-          });
+          
+          if (retweet.profiles && typeof retweet.profiles === 'object') {
+            retweetUsersMap[retweet.post_id].push({
+              ...retweet.profiles,
+              user_id: retweet.user_id,
+              created_at: retweet.created_at
+            });
 
-          if (retweet.user_id === user.id) {
-            retweetInfo[retweet.post_id] = {
-              retweetedBy: user,
-              isCurrentUser: true
-            };
-          } else if (!retweetInfo[retweet.post_id]) {
-            retweetInfo[retweet.post_id] = {
-              retweetedBy: retweet.profiles,
-              isCurrentUser: false
-            };
+            if (retweet.user_id === user.id) {
+              retweetInfo[retweet.post_id] = {
+                retweetedBy: user,
+                isCurrentUser: true
+              };
+            } else if (!retweetInfo[retweet.post_id]) {
+              retweetInfo[retweet.post_id] = {
+                retweetedBy: retweet.profiles,
+                isCurrentUser: false
+              };
+            }
           }
         });
       }
@@ -346,7 +350,7 @@ export const PostsList = ({
   };
 
   const getVerifiedStatus = (user: any) => {
-    if (!user) return false;
+    if (!user || typeof user !== 'object') return false;
     
     if (user.username === 'pleromadoxa') {
       return true;
