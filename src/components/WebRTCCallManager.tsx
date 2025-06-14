@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,29 +30,20 @@ const WebRTCCallManager = () => {
   const isSubscribedRef = useRef(false);
 
   useEffect(() => {
-    // Don't set up the channel if auth is loading or user is not available
     if (loading || !user || isSubscribedRef.current) {
       return;
     }
 
-    console.log('Setting up WebRTC call manager for user:', user.id);
-
-    // Clean up any existing channel first
+    // Clean up existing channel (if any)
     if (channelRef.current) {
-      console.log('Cleaning up existing channel');
-      try {
-        supabase.removeChannel(channelRef.current);
-      } catch (error) {
-        console.error('Error removing existing channel:', error);
-      }
+      try { supabase.removeChannel(channelRef.current); } catch {}
       channelRef.current = null;
       isSubscribedRef.current = false;
     }
 
-    // Create a unique channel name to avoid conflicts
-    const channelName = `webrtc-calls-${user.id}-${Date.now()}`;
-    
-    // Listen for incoming calls
+    // We listen for new calls where the user is a participant but not the caller
+    const channelName = `webrtc-calls-${user.id}`;
+
     const callChannel = supabase
       .channel(channelName)
       .on('postgres_changes', {
@@ -62,14 +52,10 @@ const WebRTCCallManager = () => {
         table: 'active_calls',
         filter: `participants.cs.["${user.id}"]`
       }, async (payload) => {
-        console.log('Incoming call detected:', payload);
-        
         const newCall = payload.new as ActiveCall;
-        
-        // Don't show notification for own calls
-        if (newCall.caller_id === user.id) return;
-        
-        // Check if user is in participants list
+        if (newCall.caller_id === user.id) return; // Don't notify own outgoing calls
+
+        // Check if current user is in participants
         const participants = Array.isArray(newCall.participants) ? newCall.participants : [];
         if (!participants.includes(user.id)) return;
 
@@ -85,7 +71,6 @@ const WebRTCCallManager = () => {
           setIncomingCall(newCall);
           setShowIncomingCall(true);
 
-          // Show browser notification if permission granted
           if (Notification.permission === 'granted') {
             new Notification(`Incoming ${newCall.call_type} call`, {
               body: `${profile.display_name || profile.username} is calling you`,
@@ -100,8 +85,6 @@ const WebRTCCallManager = () => {
         table: 'active_calls'
       }, (payload) => {
         const updatedCall = payload.new as ActiveCall;
-        
-        // If call ended, hide incoming call popup
         if (updatedCall.status === 'ended' && incomingCall?.id === updatedCall.id) {
           setShowIncomingCall(false);
           setIncomingCall(null);
@@ -109,32 +92,21 @@ const WebRTCCallManager = () => {
         }
       });
 
-    // Store channel reference
     channelRef.current = callChannel;
-
-    // Subscribe to the channel only once
     if (!isSubscribedRef.current) {
       callChannel.subscribe((status) => {
-        console.log('WebRTC call channel status:', status);
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
-        }
+        if (status === 'SUBSCRIBED') isSubscribedRef.current = true;
       });
     }
 
-    // Request notification permission
+    // Request notification perm
     if (Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
     return () => {
-      console.log('Cleaning up WebRTC call manager');
       if (channelRef.current && isSubscribedRef.current) {
-        try {
-          supabase.removeChannel(channelRef.current);
-        } catch (error) {
-          console.error('Error removing channel in cleanup:', error);
-        }
+        try { supabase.removeChannel(channelRef.current); } catch {}
         channelRef.current = null;
         isSubscribedRef.current = false;
       }
@@ -200,14 +172,10 @@ const WebRTCCallManager = () => {
     }
   };
 
-  // Don't render anything if auth is loading or user is not available
-  if (loading || !user) {
-    return null;
-  }
-
+  if (loading || !user) return null;
   if (!incomingCall || !callerProfile || !showIncomingCall) return null;
 
-  // Render the incoming call popup in a portal to ensure it's above everything
+  // Renders the incoming call popup in a portal above the app
   return createPortal(
     <IncomingCallPopup
       callId={incomingCall.id}

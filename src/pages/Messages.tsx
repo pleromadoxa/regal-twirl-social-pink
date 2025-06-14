@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
@@ -12,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { MessageCircle, Users, Phone, Bell, Archive, Search, User, Plus } from 'lucide-react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
+import WebRTCCallManager from '@/components/WebRTCCallManager';
 
 const Messages = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -172,9 +172,10 @@ const Messages = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
       <SidebarNav />
-      
+
       <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
         <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
+          <WebRTCCallManager />
           {/* Tab Navigation */}
           <div className="border-b border-purple-200 dark:border-purple-800 p-4">
             <div className="flex space-x-1">
@@ -204,14 +205,12 @@ const Messages = () => {
               })}
             </div>
           </div>
-
           {/* Content Area */}
           <div className="flex h-[calc(100vh-200px)]">
             {/* Conversations Sidebar */}
             <div className="w-80 border-r border-purple-200 dark:border-purple-800">
               {renderConversationsList()}
             </div>
-
             {/* Main Content */}
             <div className="flex-1">
               {renderTabContent()}
