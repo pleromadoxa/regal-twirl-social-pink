@@ -246,7 +246,10 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
               <Label htmlFor="page_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Account Type *
               </Label>
-              <Select value={formData.page_type} onValueChange={(value) => handleInputChange('page_type', value)}>
+              <Select
+                value={formData.page_type}
+                onValueChange={value => handleInputChange('page_type', value)}
+              >
                 <SelectTrigger className="rounded-xl border-purple-200 focus:border-purple-500">
                   <SelectValue placeholder="Select account type" />
                 </SelectTrigger>
@@ -269,6 +272,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                       Organization Account
                     </div>
                   </SelectItem>
+                  {/* NEVER render value="" SelectItem */}
                 </SelectContent>
               </Select>
             </div>
@@ -280,19 +284,25 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                 <Label htmlFor="business_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   {getTypeFieldLabel()}
                 </Label>
-                <Select value={formData.business_type} onValueChange={(value) => handleInputChange('business_type', value)}>
+                <Select
+                  value={formData.business_type}
+                  onValueChange={value => handleInputChange('business_type', value)}
+                >
                   <SelectTrigger className="rounded-xl border-purple-200 focus:border-purple-500">
                     <SelectValue placeholder={`Select ${formData.page_type === 'business' ? 'business' : formData.page_type} type`} />
                   </SelectTrigger>
                   <SelectContent>
-                    {getTypeOptions().map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        <div className="flex items-center">
-                          {getBusinessTypeIcon(type.value)}
-                          {type.label}
-                        </div>
-                      </SelectItem>
-                    ))}
+                    {getTypeOptions()
+                      .filter(type => !!type.value && type.value !== '')
+                      .map(type => (
+                        <SelectItem key={type.value} value={type.value}>
+                          <div className="flex items-center">
+                            {getBusinessTypeIcon(type.value)}
+                            {type.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    {/* NEVER render value="" item */}
                   </SelectContent>
                 </Select>
               </div>
@@ -302,20 +312,26 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
               <Label htmlFor="default_currency" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Default Currency *
               </Label>
-              <Select value={formData.default_currency} onValueChange={(value) => handleInputChange('default_currency', value)}>
+              <Select
+                value={formData.default_currency}
+                onValueChange={value => handleInputChange('default_currency', value)}
+              >
                 <SelectTrigger className="rounded-xl border-purple-200 focus:border-purple-500">
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
-                  {currencies.map((currency) => (
-                    <SelectItem key={currency.code} value={currency.code}>
-                      <div className="flex items-center gap-2">
-                        <span>{currency.symbol}</span>
-                        <span>{currency.code}</span>
-                        <span className="text-slate-500">- {currency.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {currencies
+                    .filter(currency => !!currency.code)
+                    .map(currency => (
+                      <SelectItem key={currency.code} value={currency.code}>
+                        <div className="flex items-center gap-2">
+                          <span>{currency.symbol}</span>
+                          <span>{currency.code}</span>
+                          <span className="text-slate-500">- {currency.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  {/* NEVER render value="" item */}
                 </SelectContent>
               </Select>
             </div>

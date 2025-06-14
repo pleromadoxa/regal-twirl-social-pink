@@ -104,7 +104,6 @@ const BoostPostDialog = ({ postId, trigger }: BoostPostDialogProps) => {
             Boost This Post
           </DialogTitle>
         </DialogHeader>
-
         <div className="space-y-6">
           {/* Business Page Selection */}
           <div className="space-y-2">
@@ -117,11 +116,14 @@ const BoostPostDialog = ({ postId, trigger }: BoostPostDialogProps) => {
                 <SelectValue placeholder="Choose a business page" />
               </SelectTrigger>
               <SelectContent>
-                {myPages.map((page) => (
-                  <SelectItem key={page.id} value={page.id}>
-                    {page.page_name} ({page.page_type})
-                  </SelectItem>
-                ))}
+                {myPages
+                  .filter(page => !!page.id)
+                  .map((page) => (
+                    <SelectItem key={page.id} value={page.id}>
+                      {page.page_name} ({page.page_type})
+                    </SelectItem>
+                  ))}
+                {/* DO NOT render value="" */}
               </SelectContent>
             </Select>
           </div>
