@@ -1,6 +1,6 @@
-
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import MusicUpload from '@/components/MusicUpload';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Music as MusicIcon, Play, Pause, Search, Heart, Share, Download, Upload } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +39,7 @@ const Music = () => {
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const audioRef = useRef<HTMLAudioElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -87,10 +88,27 @@ const Music = () => {
 
   const handlePlayPause = (track: MusicTrack) => {
     if (currentTrack?.id === track.id && isPlaying) {
+      // Pause current track
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
       setIsPlaying(false);
     } else {
+      // Play new track or resume
       setCurrentTrack(track);
-      setIsPlaying(true);
+      if (audioRef.current) {
+        audioRef.current.src = track.file_url;
+        audioRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch((error) => {
+          console.error('Error playing audio:', error);
+          toast({
+            title: "Playback Error",
+            description: "Unable to play this track",
+            variant: "destructive"
+          });
+        });
+      }
     }
   };
 
@@ -109,6 +127,33 @@ const Music = () => {
 
   const genres = [...new Set(tracks.map(track => track.genre).filter(Boolean))];
 
+  // Handle audio events
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+    };
+
+    const handleError = () => {
+      setIsPlaying(false);
+      toast({
+        title: "Playback Error",
+        description: "Unable to play this track",
+        variant: "destructive"
+      });
+    };
+
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+
+    return () => {
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+    };
+  }, [toast]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
       <SidebarNav />
@@ -121,10 +166,7 @@ const Music = () => {
                 <MusicIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Music</h1>
               </div>
-              <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Track
-              </Button>
+              <MusicUpload onUploadComplete={fetchTracks} />
             </div>
 
             {/* Search Bar */}
@@ -285,6 +327,20 @@ const Music = () => {
                 </div>
               </TabsContent>
             </Tabs>
+
+            {/* Hidden audio element for playback */}
+            <audio
+              ref={audioRef}
+              onEnded={() => setIsPlaying(false)}
+              onError={() => {
+                setIsPlaying(false);
+                toast({
+                  title: "Playback Error",
+                  description: "Unable to play this track",
+                  variant: "destructive"
+                });
+              }}
+            />
           </div>
         </main>
       </div>

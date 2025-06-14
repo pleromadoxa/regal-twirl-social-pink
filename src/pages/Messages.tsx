@@ -119,7 +119,9 @@ const Messages = () => {
                         </span>
                       </div>
                       <p className="text-sm text-gray-500 truncate">
-                        {conversation.last_message || 'No messages yet'}
+                        {typeof conversation.last_message === 'string' 
+                          ? conversation.last_message 
+                          : 'No messages yet'}
                       </p>
                     </div>
                   </div>
@@ -138,7 +140,6 @@ const Messages = () => {
         return selectedConversation ? (
           <MessageThread 
             conversationId={selectedConversation}
-            onSendMessage={handleSendMessage}
           />
         ) : (
           <div className="p-6 text-center text-gray-500">
