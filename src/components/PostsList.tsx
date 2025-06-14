@@ -242,8 +242,12 @@ export const PostsList = ({
           }
           
           if (retweet.profiles && typeof retweet.profiles === 'object') {
+            // Create a safe profile object to spread
+            const profileData = retweet.profiles as { username?: string; display_name?: string; avatar_url?: string };
             retweetUsersMap[retweet.post_id].push({
-              ...retweet.profiles,
+              username: profileData.username,
+              display_name: profileData.display_name,
+              avatar_url: profileData.avatar_url,
               user_id: retweet.user_id,
               created_at: retweet.created_at
             });
@@ -255,7 +259,7 @@ export const PostsList = ({
               };
             } else if (!retweetInfo[retweet.post_id]) {
               retweetInfo[retweet.post_id] = {
-                retweetedBy: retweet.profiles,
+                retweetedBy: profileData,
                 isCurrentUser: false
               };
             }
