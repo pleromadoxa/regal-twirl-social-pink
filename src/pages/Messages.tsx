@@ -6,16 +6,19 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import MessageThread from '@/components/MessageThread';
 import SidebarNav from '@/components/SidebarNav';
 import CallHistorySection from '@/components/CallHistorySection';
 import GroupMessagesSection from '@/components/GroupMessagesSection';
-import { MessageCircle, Users, Bell } from 'lucide-react';
+import MessageSearch from '@/components/MessageSearch';
+import { MessageCircle, Users, Bell, Search } from 'lucide-react';
 
 const Messages = () => {
   const { user } = useAuth();
   const { conversations, loading, selectedConversation, setSelectedConversation } = useEnhancedMessages();
   const [activeTab, setActiveTab] = useState('all');
+  const [conversationSearchTerm, setConversationSearchTerm] = useState('');
 
   useEffect(() => {
     if (conversations.length > 0 && !selectedConversation) {
@@ -33,20 +36,44 @@ const Messages = () => {
   };
 
   const getFilteredConversations = () => {
+    let filtered = conversations;
+    
+    // Filter by search term
+    if (conversationSearchTerm) {
+      filtered = filtered.filter(conv => {
+        const otherParticipant = conv.participant_1 === user?.id 
+          ? conv.participant_2_profile
+          : conv.participant_1_profile;
+        
+        const searchLower = conversationSearchTerm.toLowerCase();
+        return (
+          otherParticipant?.display_name?.toLowerCase().includes(searchLower) ||
+          otherParticipant?.username?.toLowerCase().includes(searchLower) ||
+          conv.last_message?.content?.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Filter by tab
     switch (activeTab) {
       case 'unread':
-        return conversations.filter(conv => 
+        return filtered.filter(conv => 
           conv.last_message && !conv.last_message.read_at && 
           conv.last_message.sender_id !== user?.id
         );
       case 'archived':
         return [];
       default:
-        return conversations;
+        return filtered;
     }
   };
 
   const filteredConversations = getFilteredConversations();
+
+  const handleStartConversation = (userId: string) => {
+    // The conversation will be created and selected automatically
+    // by the useEnhancedMessages hook
+  };
 
   if (loading) {
     return (
@@ -67,16 +94,32 @@ const Messages = () => {
         {/* Conversations List */}
         <div className="w-96 border-r border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
           <div className="p-4 border-b border-purple-200 dark:border-purple-800">
-            <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
-              {activeTab === 'calls' ? <Bell className="w-5 h-5" /> : 
-               activeTab === 'groups' ? <Users className="w-5 h-5" /> : 
-               <MessageCircle className="w-5 h-5" />}
-              {activeTab === 'calls' ? 'Call History' :
-               activeTab === 'groups' ? 'Group Messages' :
-               activeTab === 'unread' ? 'Unread Messages' :
-               activeTab === 'archived' ? 'Archived Messages' :
-               'Messages'}
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
+                {activeTab === 'calls' ? <Bell className="w-5 h-5" /> : 
+                 activeTab === 'groups' ? <Users className="w-5 h-5" /> : 
+                 <MessageCircle className="w-5 h-5" />}
+                {activeTab === 'calls' ? 'Call History' :
+                 activeTab === 'groups' ? 'Group Messages' :
+                 activeTab === 'unread' ? 'Unread Messages' :
+                 activeTab === 'archived' ? 'Archived Messages' :
+                 'Messages'}
+              </h2>
+              <MessageSearch onStartConversation={handleStartConversation} />
+            </div>
+
+            {/* Search conversations */}
+            {activeTab === 'all' && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Search conversations..."
+                  className="pl-10"
+                  value={conversationSearchTerm}
+                  onChange={(e) => setConversationSearchTerm(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           <ScrollArea className="h-[calc(100vh-140px)]">
@@ -90,7 +133,8 @@ const Messages = () => {
                   <div className="text-center py-8 text-muted-foreground">
                     <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                     <p className="text-sm">
-                      {activeTab === 'unread' ? 'No unread messages' : 'No conversations yet'}
+                      {conversationSearchTerm ? 'No conversations found' :
+                       activeTab === 'unread' ? 'No unread messages' : 'No conversations yet'}
                     </p>
                   </div>
                 ) : (

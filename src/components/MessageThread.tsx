@@ -14,11 +14,11 @@ import {
   MoreVertical,
   Smile
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import VideoCall from './VideoCall';
 import EnhancedAudioCall from './EnhancedAudioCall';
+import EnhancedMessageBubble from './EnhancedMessageBubble';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -35,6 +35,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     otherUserName: string;
     otherUserAvatar?: string;
   } | null>(null);
+  const [localMessages, setLocalMessages] = useState(messages);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -46,13 +47,17 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
         : conversation.participant_1_profile)
     : null;
 
+  useEffect(() => {
+    setLocalMessages(messages);
+  }, [messages]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [localMessages]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -75,6 +80,10 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    setLocalMessages(prev => prev.filter(msg => msg.id !== messageId));
   };
 
   const initiateCall = async (callType: 'audio' | 'video') => {
@@ -216,55 +225,16 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-        {messages.length > 0 ? (
+        {localMessages.length > 0 ? (
           <div className="space-y-4">
-            {messages.map((message) => (
-              <div
+            {localMessages.map((message) => (
+              <EnhancedMessageBubble
                 key={message.id}
-                className={`flex items-start space-x-3 ${
-                  message.sender_id === user?.id ? 'flex-row-reverse space-x-reverse' : ''
-                }`}
-                onMouseEnter={() => {
-                  if (message.sender_id !== user?.id && !message.read_at) {
-                    markAsRead(message.id);
-                  }
-                }}
-              >
-                <Avatar className="h-8 w-8 mt-1">
-                  <AvatarImage 
-                    src={message.sender_id === user?.id 
-                      ? user.user_metadata?.avatar_url 
-                      : otherParticipant.avatar_url || "/placeholder.svg"} 
-                  />
-                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
-                    {message.sender_id === user?.id 
-                      ? (user.user_metadata?.display_name || 'Y')[0].toUpperCase()
-                      : (otherParticipant.display_name || otherParticipant.username || 'U')[0].toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className={`flex-1 max-w-[70%] ${message.sender_id === user?.id ? 'text-right' : ''}`}>
-                  <div
-                    className={`rounded-2xl px-4 py-2 ${
-                      message.sender_id === user?.id
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100'
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap break-words">
-                      {message.content}
-                    </p>
-                  </div>
-                  <p className={`text-xs mt-1 ${
-                    message.sender_id === user?.id ? 'text-slate-400' : 'text-slate-500'
-                  }`}>
-                    {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                    {message.read_at && message.sender_id === user?.id && (
-                      <span className="ml-2">✓✓</span>
-                    )}
-                  </p>
-                </div>
-              </div>
+                message={message}
+                isOwn={message.sender_id === user?.id}
+                currentUserId={user?.id || ''}
+                onDelete={handleDeleteMessage}
+              />
             ))}
             <div ref={messagesEndRef} />
           </div>
