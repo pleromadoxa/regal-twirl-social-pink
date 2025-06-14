@@ -58,7 +58,6 @@ export const PostActions = ({
   isOwnPost
 }: PostActionsProps) => {
   const { myPages } = useBusinessPages();
-  const [showReportDialog, setShowReportDialog] = useState(false);
 
   const hasBusinessPages = myPages && myPages.length > 0;
 
@@ -144,10 +143,15 @@ export const PostActions = ({
 
           {/* Report Post - only for others' posts */}
           {!isOwnPost && (
-            <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
-              <Flag className="w-4 h-4 mr-2" />
-              Report Post
-            </DropdownMenuItem>
+            <ReportPostDialog
+              postId={postId}
+              trigger={
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <Flag className="w-4 h-4 mr-2" />
+                  Report Post
+                </DropdownMenuItem>
+              }
+            />
           )}
 
           {/* Delete - only for own posts */}
@@ -156,18 +160,9 @@ export const PostActions = ({
               <Trash2 className="w-4 h-4 mr-2" />
               Delete Post
             </DropdownMenuItem>
-          )}
+            )}
         </DropdownMenuContent>
       </DropdownMenu>
-
-      {/* Report Dialog */}
-      {showReportDialog && (
-        <ReportPostDialog
-          postId={postId}
-          isOpen={showReportDialog}
-          onClose={() => setShowReportDialog(false)}
-        />
-      )}
     </div>
   );
 };
