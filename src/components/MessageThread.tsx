@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
@@ -43,6 +42,16 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  // Guard: If conversationId is not present or invalid, don't render input
+  if (!conversationId) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center text-muted-foreground pt-16">
+        <p className="mb-3">No conversation selected</p>
+        <p className="text-sm text-slate-400">Please select a conversation first to send or view messages.</p>
+      </div>
+    );
+  }
+
   // Get conversation details
   const conversation = conversations.find(c => c.id === conversationId);
   const otherParticipant = conversation 
@@ -65,7 +74,6 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() && attachments.length === 0 && !sharedLocation) return;
-    
     if (!user) {
       toast({
         title: "Error",
@@ -74,7 +82,15 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       });
       return;
     }
-
+    // Guard if conversation id is missing
+    if (!conversationId) {
+      toast({
+        title: "Error",
+        description: "No conversation selected. Please select a conversation before sending a message.",
+        variant: "destructive"
+      });
+      return;
+    }
     try {
       let messageContent = newMessage.trim();
       let messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' = 'text';
