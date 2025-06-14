@@ -147,7 +147,8 @@ const SidebarNav = () => {
   ];
 
   return (
-    <div className="fixed left-0 top-0 w-80 bg-gradient-to-b from-purple-50/80 to-pink-50/80 dark:from-slate-900/80 dark:to-purple-900/80 backdrop-blur-xl border-r border-purple-200/30 dark:border-purple-800/30 h-screen flex flex-col z-20">
+-    <div className="fixed left-0 top-0 w-80 bg-gradient-to-b from-purple-50/80 to-pink-50/80 dark:from-slate-900/80 dark:to-purple-900/80 backdrop-blur-xl border-r border-purple-200/30 dark:border-purple-800/30 h-screen flex flex-col z-20">
++    <div className="fixed left-0 top-0 w-96 bg-gradient-to-b from-purple-50/80 to-pink-50/80 dark:from-slate-900/80 dark:to-purple-900/80 backdrop-blur-xl border-r border-purple-200/30 dark:border-purple-800/30 h-screen flex flex-col z-20">
       <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           {/* Logo */}
