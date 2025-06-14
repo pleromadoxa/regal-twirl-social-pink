@@ -48,16 +48,6 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Guard: If conversationId is not present or invalid, don't render input
-  if (!conversationId) {
-    return (
-      <div className="flex flex-col h-full items-center justify-center text-muted-foreground pt-16">
-        <p className="mb-3">No conversation selected</p>
-        <p className="text-sm text-slate-400">Please select a conversation first to send or view messages.</p>
-      </div>
-    );
-  }
-
   // Get conversation details
   const conversation = conversations.find(c => c.id === conversationId);
   const otherParticipant = conversation 
@@ -66,6 +56,11 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
         : conversation.participant_1_profile)
     : null;
 
+  // Guard: If conversationId is not present or invalid, don't render input
+  const isConversationIdValid = !!conversationId;
+  const isConversationValid = !!conversation && !!otherParticipant;
+
+  // All hooks must be above any early returns!
   useEffect(() => {
     setLocalMessages(messages);
   }, [messages]);
@@ -77,6 +72,13 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   useEffect(() => {
     scrollToBottom();
   }, [localMessages]);
+
+  // Ensure hook's internal selectedConversation is always in sync with prop
+  useEffect(() => {
+    if (conversationId) {
+      setSelectedConversation(conversationId);
+    }
+  }, [conversationId, setSelectedConversation]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() && attachments.length === 0 && !sharedLocation) return;
@@ -226,20 +228,22 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
     setActiveCall(null);
   };
 
-  if (!conversation || !otherParticipant) {
+  if (!isConversationIdValid) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center text-muted-foreground pt-16">
+        <p className="mb-3">No conversation selected</p>
+        <p className="text-sm text-slate-400">Please select a conversation first to send or view messages.</p>
+      </div>
+    );
+  }
+
+  if (!isConversationValid) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         <p>Conversation not found</p>
       </div>
     );
   }
-
-  // Ensure hook's internal selectedConversation is always in sync with prop
-  useEffect(() => {
-    if (conversationId) {
-      setSelectedConversation(conversationId);
-    }
-  }, [conversationId, setSelectedConversation]);
 
   // Render active call
   if (activeCall) {
