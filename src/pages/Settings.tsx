@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
@@ -14,13 +13,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import { useUserSettings } from '@/hooks/useUserSettings';
 
 const Settings = () => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const { profile, updateProfile } = useProfile();
   const { toast } = useToast();
-  
+  // Import new settings hook
+  const { settings, loading: settingsLoading, updateSetting } = useUserSettings();
+
   const [profileData, setProfileData] = useState({
     display_name: '',
     username: '',
@@ -29,13 +31,6 @@ const Settings = () => {
     website: ''
   });
   
-  const [settings, setSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: false,
-    privateAccount: false,
-    showActivity: true,
-  });
-
   useEffect(() => {
     if (profile) {
       setProfileData({
@@ -64,17 +59,21 @@ const Settings = () => {
     }
   };
 
-  const handleSettingChange = (key: string, value: boolean) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
+  // Bind toggles to settings from Supabase
+  const notificationSwitch = (field: "email_notifications" | "push_notifications") => ({
+    checked: !!settings?.[field],
+    onCheckedChange: (value: boolean) => updateSetting(field, value)
+  });
+
+  const privacySwitch = (field: "private_account" | "show_online_status") => ({
+    checked: !!settings?.[field],
+    onCheckedChange: (value: boolean) => updateSetting(field, value)
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
       <SidebarNav />
-      
+
       <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
         <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
           <div className="p-6">
@@ -103,6 +102,7 @@ const Settings = () => {
                 </TabsTrigger>
               </TabsList>
 
+              {/* Account Section (profile info) - keep as is, except profile update logic. */}
               <TabsContent value="account" className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -166,6 +166,7 @@ const Settings = () => {
                 </Card>
               </TabsContent>
 
+              {/* Notifications - now fully livesynced */}
               <TabsContent value="notifications" className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -177,25 +178,20 @@ const Settings = () => {
                         <h3 className="font-medium text-gray-900 dark:text-gray-100">Email Notifications</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Receive notifications via email</p>
                       </div>
-                      <Switch
-                        checked={settings.emailNotifications}
-                        onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
-                      />
+                      <Switch {...notificationSwitch("email_notifications")} />
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-medium text-gray-900 dark:text-gray-100">Push Notifications</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Receive push notifications in your browser</p>
                       </div>
-                      <Switch
-                        checked={settings.pushNotifications}
-                        onCheckedChange={(checked) => handleSettingChange('pushNotifications', checked)}
-                      />
+                      <Switch {...notificationSwitch("push_notifications")} />
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
+              {/* Privacy - now fully livesynced */}
               <TabsContent value="privacy" className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -207,25 +203,20 @@ const Settings = () => {
                         <h3 className="font-medium text-gray-900 dark:text-gray-100">Private Account</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Require approval for new followers</p>
                       </div>
-                      <Switch
-                        checked={settings.privateAccount}
-                        onCheckedChange={(checked) => handleSettingChange('privateAccount', checked)}
-                      />
+                      <Switch {...privacySwitch("private_account")} />
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-medium text-gray-900 dark:text-gray-100">Show Activity Status</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Let others see when you're online</p>
                       </div>
-                      <Switch
-                        checked={settings.showActivity}
-                        onCheckedChange={(checked) => handleSettingChange('showActivity', checked)}
-                      />
+                      <Switch {...privacySwitch("show_online_status")} />
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
+              {/* Appearance - remains as before, but could be extended for Supabase-driven themes if desired */}
               <TabsContent value="appearance" className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -265,10 +256,13 @@ const Settings = () => {
                 </Card>
               </TabsContent>
             </Tabs>
+            {settingsLoading && (
+              <div className="mt-3 text-center text-xs text-gray-500">Loading your settings...</div>
+            )}
           </div>
         </main>
       </div>
-      
+
       <RightSidebar />
     </div>
   );
