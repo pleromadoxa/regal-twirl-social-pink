@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -104,10 +103,15 @@ export const useEnhancedMessages = () => {
       console.log('Sending message:', { senderId: user.id, recipientId, content, conversationId: selectedConversation });
 
       const newMessage = await sendMessageService(user.id, recipientId, content);
+      
+      // Update local messages state immediately
       setMessages((prevMessages) => [...prevMessages, newMessage]);
       
       // Update conversation's last_message_at
       await updateConversationLastMessage(selectedConversation);
+      
+      // Refresh conversations to update last message info
+      await refetch();
       
       return newMessage;
     } catch (error) {

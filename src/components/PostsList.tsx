@@ -103,7 +103,7 @@ export const PostsList = ({
         .select('id')
         .eq('user_id', user.id)
         .eq('post_id', postId)
-        .single();
+        .maybeSingle();
 
       if (existingRetweet) {
         await supabase
@@ -122,7 +122,12 @@ export const PostsList = ({
       }
 
       // Refresh retweet info immediately
-      fetchRetweetInfo();
+      await fetchRetweetInfo();
+      
+      // Also refetch posts to get updated counts
+      if (refetch) {
+        await refetch();
+      }
     } catch (error) {
       console.error('Error handling repost:', error);
     }
@@ -201,7 +206,7 @@ export const PostsList = ({
         if (newPost.user_id === user.id) {
           // If it's user's own post, refresh the feed immediately
           setTimeout(() => {
-            refetch();
+            if (refetch) refetch();
           }, 500);
           return;
         }
@@ -211,7 +216,7 @@ export const PostsList = ({
           .from('profiles')
           .select('username, display_name')
           .eq('id', newPost.user_id)
-          .single();
+          .maybeSingle();
 
         if (profile) {
           const authorName = profile.display_name || profile.username || 'Someone';
@@ -220,7 +225,7 @@ export const PostsList = ({
           // Auto-hide notification and refresh after 3 seconds
           setTimeout(() => {
             setNewPostNotification(null);
-            refetch();
+            if (refetch) refetch();
           }, 3000);
         }
       })

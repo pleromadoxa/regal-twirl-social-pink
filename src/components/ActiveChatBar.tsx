@@ -33,6 +33,7 @@ const ActiveChatBar = () => {
     startDirectConversation, 
     sendMessage, 
     setSelectedConversation,
+    selectedConversation,
     messages 
   } = useEnhancedMessages();
   
@@ -93,11 +94,13 @@ const ActiveChatBar = () => {
       // If it's a conversation character (has ID), send message directly
       if (character.id) {
         console.log('Sending message to conversation:', character.id);
-        // First select the conversation
-        setSelectedConversation(character.id as string);
         
-        // Wait a moment for the conversation to be selected
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // First check if this conversation is already selected
+        if (selectedConversation !== character.id) {
+          setSelectedConversation(character.id as string);
+          // Wait a bit longer for the conversation to be properly selected
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
         
         // Then send the message
         await sendMessage(message);
