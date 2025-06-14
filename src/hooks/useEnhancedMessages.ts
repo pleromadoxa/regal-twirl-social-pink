@@ -79,16 +79,21 @@ export const useEnhancedMessages = () => {
   }, [clearCache]);
 
   const sendMessage = async (content: string): Promise<Message> => {
-    if (!user || !selectedConversation) {
-      console.error('No user or selected conversation');
-      throw new Error('No user or selected conversation');
+    if (!user) {
+      console.error('No authenticated user');
+      throw new Error('No authenticated user');
+    }
+
+    if (!selectedConversation) {
+      console.error('No selected conversation');
+      throw new Error('No selected conversation');
     }
 
     try {
       // Get conversation details
       const conversation = conversations.find(c => c.id === selectedConversation);
       if (!conversation) {
-        console.error('Conversation not found');
+        console.error('Conversation not found for ID:', selectedConversation);
         throw new Error('Conversation not found');
       }
 
@@ -96,7 +101,7 @@ export const useEnhancedMessages = () => {
         ? conversation.participant_2 
         : conversation.participant_1;
 
-      console.log('Sending message:', { senderId: user.id, recipientId, content });
+      console.log('Sending message:', { senderId: user.id, recipientId, content, conversationId: selectedConversation });
 
       const newMessage = await sendMessageService(user.id, recipientId, content);
       setMessages((prevMessages) => [...prevMessages, newMessage]);

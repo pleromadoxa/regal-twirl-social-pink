@@ -92,15 +92,20 @@ const ActiveChatBar = () => {
     try {
       // If it's a conversation character (has ID), send message directly
       if (character.id) {
-        const conversation = conversations.find(conv => conv.id === character.id);
-        if (conversation) {
-          setSelectedConversation(character.id as string);
-          await sendMessage(message);
-          toast({
-            title: "Message sent",
-            description: `Message sent to ${character.name}`,
-          });
-        }
+        console.log('Sending message to conversation:', character.id);
+        // First select the conversation
+        setSelectedConversation(character.id as string);
+        
+        // Wait a moment for the conversation to be selected
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Then send the message
+        await sendMessage(message);
+        
+        toast({
+          title: "Message sent",
+          description: `Message sent to ${character.name}`,
+        });
       } else {
         // Handle special actions based on character name
         switch (character.name) {
