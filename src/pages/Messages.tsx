@@ -10,7 +10,6 @@ import MessageThread from '@/components/MessageThread';
 import SidebarNav from '@/components/SidebarNav';
 import CallHistorySection from '@/components/CallHistorySection';
 import GroupMessagesSection from '@/components/GroupMessagesSection';
-import { MessagesNavigationDock } from '@/components/MessagesNavigationDock';
 import { MessageCircle, Users, Bell } from 'lucide-react';
 
 const Messages = () => {
@@ -27,10 +26,6 @@ const Messages = () => {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setSelectedConversation(null);
-  };
-
-  const handleAction = (action: string) => {
-    console.log('Action:', action);
   };
 
   const formatLastMessage = (message: string) => {
@@ -65,7 +60,7 @@ const Messages = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
       
       <div className="flex-1 ml-80 mr-96 flex overflow-hidden">
@@ -193,13 +188,6 @@ const Messages = () => {
           )}
         </div>
       </div>
-
-      {/* Navigation Dock */}
-      <MessagesNavigationDock
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        onAction={handleAction}
-      />
     </div>
   );
 };
