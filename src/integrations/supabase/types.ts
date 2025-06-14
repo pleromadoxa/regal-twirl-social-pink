@@ -1121,7 +1121,10 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
+          edited_at: string | null
           id: string
+          message_type: string | null
+          metadata: Json | null
           read_at: string | null
           recipient_id: string
           sender_id: string
@@ -1129,7 +1132,10 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string | null
+          edited_at?: string | null
           id?: string
+          message_type?: string | null
+          metadata?: Json | null
           read_at?: string | null
           recipient_id: string
           sender_id: string
@@ -1137,7 +1143,10 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string | null
+          edited_at?: string | null
           id?: string
+          message_type?: string | null
+          metadata?: Json | null
           read_at?: string | null
           recipient_id?: string
           sender_id?: string

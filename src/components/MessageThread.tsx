@@ -19,6 +19,8 @@ import { supabase } from '@/integrations/supabase/client';
 import VideoCall from './VideoCall';
 import EnhancedAudioCall from './EnhancedAudioCall';
 import EnhancedMessageBubble from './EnhancedMessageBubble';
+import AttachmentUpload from './AttachmentUpload';
+import { uploadMessageAttachment, createMessageAttachment } from '@/services/messageAttachmentService';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -29,6 +31,8 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const { messages, sendMessage, markAsRead, conversations } = useEnhancedMessages();
   const { toast } = useToast();
   const [newMessage, setNewMessage] = useState('');
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [sharedLocation, setSharedLocation] = useState<{lat: number; lng: number; address: string} | null>(null);
   const [activeCall, setActiveCall] = useState<{
     type: 'audio' | 'video';
     otherUserId: string;
@@ -60,11 +64,57 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   }, [localMessages]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && attachments.length === 0 && !sharedLocation) return;
     
     try {
-      await sendMessage(newMessage);
+      let messageContent = newMessage.trim();
+      let messageType = 'text';
+      let metadata: any = {};
+
+      // Handle location sharing
+      if (sharedLocation) {
+        messageContent = `📍 Shared location: ${sharedLocation.address}`;
+        messageType = 'location';
+        metadata = { location: sharedLocation };
+      }
+
+      // Send the message first
+      const message = await sendMessage(messageContent);
+      
+      // Handle file attachments
+      if (attachments.length > 0 && user) {
+        for (const file of attachments) {
+          try {
+            const fileUrl = await uploadMessageAttachment(file, user.id);
+            
+            let attachmentType: 'image' | 'video' | 'audio' | 'document' = 'document';
+            if (file.type.startsWith('image/')) attachmentType = 'image';
+            else if (file.type.startsWith('video/')) attachmentType = 'video';
+            else if (file.type.startsWith('audio/')) attachmentType = 'audio';
+
+            await createMessageAttachment(
+              message.id,
+              file.name,
+              file.type,
+              file.size,
+              fileUrl,
+              attachmentType
+            );
+          } catch (error) {
+            console.error('Error uploading attachment:', error);
+            toast({
+              title: "Attachment upload failed",
+              description: `Failed to upload ${file.name}`,
+              variant: "destructive"
+            });
+          }
+        }
+      }
+
+      // Reset form
       setNewMessage('');
+      setAttachments([]);
+      setSharedLocation(null);
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -249,7 +299,29 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       </ScrollArea>
 
       {/* Message Input */}
-      <div className="border-t border-purple-200 dark:border-purple-800 p-4">
+      <div className="border-t border-purple-200 dark:border-purple-800 p-4 space-y-3">
+        {/* Attachment Upload */}
+        <AttachmentUpload
+          attachments={attachments}
+          onAttachmentsChange={setAttachments}
+          onLocationSelect={setSharedLocation}
+        />
+
+        {/* Location Preview */}
+        {sharedLocation && (
+          <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <span className="text-sm">📍 Location: {sharedLocation.address}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSharedLocation(null)}
+              className="h-6 w-6 p-0"
+            >
+              ✕
+            </Button>
+          </div>
+        )}
+
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="sm" className="rounded-full">
             <Smile className="w-4 h-4" />
@@ -263,7 +335,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
           />
           <Button
             onClick={handleSendMessage}
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() && attachments.length === 0 && !sharedLocation}
             className="rounded-full w-10 h-10 p-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
             <Send className="w-4 h-4" />

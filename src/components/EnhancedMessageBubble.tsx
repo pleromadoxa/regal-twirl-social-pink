@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Check, X, Edit } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import MessageContextMenu from './MessageContextMenu';
+import MessageAttachments from './MessageAttachments';
+import LocationMessage from './LocationMessage';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,6 +18,8 @@ interface Message {
   created_at: string;
   read_at?: string;
   edited_at?: string;
+  message_type?: string;
+  metadata?: any;
   sender_profile?: {
     avatar_url?: string;
     display_name?: string;
@@ -107,6 +111,23 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
     }
   };
 
+  const renderMessageContent = () => {
+    // Handle location messages
+    if (message.message_type === 'location' && message.metadata?.location) {
+      return <LocationMessage location={message.metadata.location} />;
+    }
+
+    // Handle regular text messages
+    return (
+      <p className="text-sm whitespace-pre-wrap break-words">
+        {message.content}
+        {message.edited_at && (
+          <span className="text-xs opacity-70 ml-2">(edited)</span>
+        )}
+      </p>
+    );
+  };
+
   return (
     <div
       className={`group flex items-start space-x-3 ${
@@ -155,12 +176,7 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
             </div>
           ) : (
             <>
-              <p className="text-sm whitespace-pre-wrap break-words">
-                {message.content}
-                {message.edited_at && (
-                  <span className="text-xs opacity-70 ml-2">(edited)</span>
-                )}
-              </p>
+              {renderMessageContent()}
               
               {/* Message Actions */}
               <div className={`absolute top-1 ${isOwn ? 'left-1' : 'right-1'}`}>
@@ -174,6 +190,11 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
               </div>
             </>
           )}
+        </div>
+        
+        {/* Message Attachments */}
+        <div className={`mt-2 ${isOwn ? 'text-right' : 'text-left'}`}>
+          <MessageAttachments messageId={message.id} />
         </div>
         
         {/* Timestamp */}

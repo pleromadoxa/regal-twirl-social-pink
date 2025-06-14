@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { Message } from '@/types/messages';
 import { updateConversationStreak } from './streakService';
@@ -36,18 +37,25 @@ export const fetchMessages = async (userId: string, otherUserId: string): Promis
   return messageData.map(msg => ({
     ...msg,
     conversation_id: '',
-    message_type: 'text' as const,
     sender_profile: profilesMap.get(msg.sender_id) || null
   }));
 };
 
-export const sendMessage = async (senderId: string, recipientId: string, content: string): Promise<Message> => {
+export const sendMessage = async (
+  senderId: string, 
+  recipientId: string, 
+  content: string,
+  messageType: string = 'text',
+  metadata: any = {}
+): Promise<Message> => {
   const { data: newMessage, error } = await supabase
     .from('messages')
     .insert({
       sender_id: senderId,
       recipient_id: recipientId,
-      content: content
+      content: content,
+      message_type: messageType,
+      metadata: metadata
     })
     .select('*')
     .single();
@@ -79,7 +87,6 @@ export const sendMessage = async (senderId: string, recipientId: string, content
   return {
     ...newMessage,
     conversation_id: conversation?.id || '',
-    message_type: 'text' as const,
     sender_profile: senderProfile || null
   };
 };
