@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -8,11 +7,12 @@ import { PostActions } from '@/components/PostActions';
 import { PostIndicators } from '@/components/PostIndicators';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Repeat } from 'lucide-react';
+import { CheckCircle, Repeat, Share } from 'lucide-react';
 import { VerificationLevel } from '@/hooks/useVerifiedStatus';
 import VerificationBadge from '@/components/VerificationBadge';
 import InlineComments from './InlineComments';
 import MediaPreview from './MediaPreview';
+import UserLink from './UserLink';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -125,6 +125,26 @@ export const PostsList = ({
       fetchRetweetInfo();
     } catch (error) {
       console.error('Error handling repost:', error);
+    }
+  };
+
+  const handleShare = async (postId: string) => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Check out this post',
+          url: `${window.location.origin}/post/${postId}`
+        });
+      } else {
+        // Fallback - copy to clipboard
+        await navigator.clipboard.writeText(`${window.location.origin}/post/${postId}`);
+        toast({
+          title: "Link copied!",
+          description: "Post link copied to clipboard"
+        });
+      }
+    } catch (error) {
+      console.error('Error sharing post:', error);
     }
   };
 
@@ -242,12 +262,14 @@ export const PostsList = ({
           }
           
           if (retweet.profiles && typeof retweet.profiles === 'object') {
-            // Create a safe profile object to spread
-            const profileData = retweet.profiles as { username?: string; display_name?: string; avatar_url?: string };
+            const profileData = {
+              username: (retweet.profiles as any).username,
+              display_name: (retweet.profiles as any).display_name,
+              avatar_url: (retweet.profiles as any).avatar_url
+            };
+            
             retweetUsersMap[retweet.post_id].push({
-              username: profileData.username,
-              display_name: profileData.display_name,
-              avatar_url: profileData.avatar_url,
+              ...profileData,
               user_id: retweet.user_id,
               created_at: retweet.created_at
             });
@@ -455,24 +477,27 @@ export const PostsList = ({
                 />
                 
                 <div className="flex items-start space-x-3">
-                  <Avatar className="w-12 h-12 relative z-40">
-                    <AvatarImage src={businessPage ? businessPage.avatar_url : post.profiles.avatar_url} />
-                    <AvatarFallback>
-                      {businessPage 
-                        ? businessPage.page_name?.[0] || 'B'
-                        : post.profiles.display_name?.[0] || post.profiles.username?.[0] || 'U'
-                      }
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserLink 
+                    userId={post.user_id}
+                    showAvatar={true}
+                    avatarUrl={businessPage ? businessPage.avatar_url : post.profiles.avatar_url}
+                    displayName={businessPage ? businessPage.page_name : post.profiles.display_name}
+                    username={businessPage ? businessPage.page_name.toLowerCase().replace(/\s+/g, '') : post.profiles.username}
+                    className="w-12 h-12"
+                  />
+                  
                   <div className="flex-1 min-w-0 relative z-40">
                     <div className="flex items-center space-x-2 mb-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                        <UserLink 
+                          userId={post.user_id}
+                          className="font-semibold text-slate-900 dark:text-slate-100 truncate hover:underline"
+                        >
                           {businessPage 
                             ? businessPage.page_name 
                             : post.profiles.display_name || post.profiles.username
                           }
-                        </h3>
+                        </UserLink>
                         {businessPage?.is_verified && (
                           <VerificationBadge level="business" showText={false} />
                         )}
@@ -485,9 +510,12 @@ export const PostsList = ({
                           </Badge>
                         )}
                       </div>
-                      <span className="text-slate-500 dark:text-slate-400">
+                      <UserLink 
+                        userId={post.user_id}
+                        className="text-slate-500 dark:text-slate-400 hover:underline"
+                      >
                         @{businessPage ? businessPage.page_name.toLowerCase().replace(/\s+/g, '') : post.profiles.username}
-                      </span>
+                      </UserLink>
                       <span className="text-slate-400 dark:text-slate-500 text-sm">
                         {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                       </span>
@@ -548,6 +576,7 @@ export const PostsList = ({
                         onPin={() => onPin(post.id)}
                         onDelete={() => onDelete(post.id)}
                         onComment={() => handleCommentClick(post.id)}
+                        onShare={() => handleShare(post.id)}
                         isOwnPost={user?.id === post.user_id}
                       />
                     </div>

@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Repeat2, Pin, Trash2, MoreHorizontal, Flag } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Pin, Trash2, MoreHorizontal, Flag, Share } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import ReportPostDialog from './ReportPostDialog';
 
@@ -18,6 +18,7 @@ interface PostActionsProps {
   onPin: () => void;
   onDelete: () => void;
   onComment: () => void;
+  onShare?: () => void;
   isOwnPost: boolean;
 }
 
@@ -35,6 +36,7 @@ export const PostActions = ({
   onPin,
   onDelete,
   onComment,
+  onShare,
   isOwnPost
 }: PostActionsProps) => {
   return (
@@ -73,6 +75,17 @@ export const PostActions = ({
           <Repeat2 className="w-4 h-4" />
           <span className="text-sm">{retweetsCount}</span>
         </Button>
+
+        {onShare && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onShare}
+            className="flex items-center space-x-2 text-slate-500 hover:text-purple-500"
+          >
+            <Share className="w-4 h-4" />
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center gap-1">
