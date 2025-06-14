@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -116,14 +115,14 @@ const BoostPostDialog = ({ postId, trigger }: BoostPostDialogProps) => {
                 <SelectValue placeholder="Choose a business page" />
               </SelectTrigger>
               <SelectContent>
-                {myPages
-                  .filter(page => !!page.id)
+                {(myPages
+                  .filter(page => typeof page.id === "string" && page.id.trim() !== "")
                   .map((page) => (
                     <SelectItem key={page.id} value={page.id}>
                       {page.page_name} ({page.page_type})
                     </SelectItem>
-                  ))}
-                {/* DO NOT render value="" */}
+                  )))}
+                {/* No SelectItem with value=""! */}
               </SelectContent>
             </Select>
           </div>

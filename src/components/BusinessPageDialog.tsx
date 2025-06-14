@@ -293,7 +293,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                   </SelectTrigger>
                   <SelectContent>
                     {getTypeOptions()
-                      .filter(type => !!type.value && type.value !== '')
+                      .filter(type => typeof type.value === "string" && type.value.trim() !== "")
                       .map(type => (
                         <SelectItem key={type.value} value={type.value}>
                           <div className="flex items-center">
@@ -302,7 +302,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                           </div>
                         </SelectItem>
                       ))}
-                    {/* NEVER render value="" item */}
+                    {/* No item with value="" */}
                   </SelectContent>
                 </Select>
               </div>
