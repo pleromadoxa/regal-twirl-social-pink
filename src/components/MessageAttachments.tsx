@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Play, Pause, Download, Image as ImageIcon, Video, Mic, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -59,12 +58,13 @@ const MessageAttachments = ({ messageId }: MessageAttachmentsProps) => {
       {attachments.map((attachment) => (
         <div key={attachment.id} className="border rounded-lg overflow-hidden">
           {attachment.attachment_type === 'image' && (
-            <div className="relative">
+            <div className="relative flex justify-start">
               <img
                 src={attachment.file_url}
                 alt={attachment.file_name}
-                className="w-full max-w-sm h-auto rounded-lg"
+                className="block max-w-[180px] md:max-w-[240px] w-auto h-auto rounded-lg"
                 loading="lazy"
+                style={{ maxHeight: "200px", objectFit: "cover" }}
               />
               <Button
                 variant="ghost"
