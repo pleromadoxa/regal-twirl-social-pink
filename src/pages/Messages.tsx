@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMessages } from '@/hooks/useMessages';
+import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,15 +15,14 @@ import { MessageCircle, Users, Bell } from 'lucide-react';
 
 const Messages = () => {
   const { user } = useAuth();
-  const { conversations, loading } = useMessages();
-  const [selectedConversation, setSelectedConversation] = useState<any>(null);
+  const { conversations, loading, selectedConversation, setSelectedConversation } = useEnhancedMessages();
   const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     if (conversations.length > 0 && !selectedConversation) {
-      setSelectedConversation(conversations[0]);
+      setSelectedConversation(conversations[0].id);
     }
-  }, [conversations, selectedConversation]);
+  }, [conversations, selectedConversation, setSelectedConversation]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -32,7 +31,6 @@ const Messages = () => {
 
   const handleAction = (action: string) => {
     console.log('Action:', action);
-    // Handle various actions like search, new group, etc.
   };
 
   const formatLastMessage = (message: string) => {
@@ -47,7 +45,7 @@ const Messages = () => {
           conv.last_message.sender_id !== user?.id
         );
       case 'archived':
-        return []; // Would filter archived conversations
+        return [];
       default:
         return conversations;
     }
@@ -59,7 +57,7 @@ const Messages = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
-        <div className="flex-1 pl-80 flex items-center justify-center">
+        <div className="flex-1 ml-80 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
         </div>
       </div>
@@ -70,7 +68,7 @@ const Messages = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
       <SidebarNav />
       
-      <div className="flex-1 pl-80 flex overflow-hidden">
+      <div className="flex-1 ml-80 mr-96 flex overflow-hidden">
         {/* Conversations List */}
         <div className="w-96 border-r border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
           <div className="p-4 border-b border-purple-200 dark:border-purple-800">
@@ -102,7 +100,6 @@ const Messages = () => {
                   </div>
                 ) : (
                   filteredConversations.map((conversation) => {
-                    // Get the other participant
                     const otherParticipant = conversation.participant_1 === user?.id 
                       ? conversation.participant_2_profile
                       : conversation.participant_1_profile;
@@ -115,9 +112,9 @@ const Messages = () => {
                       <Card
                         key={conversation.id}
                         className={`mb-2 cursor-pointer transition-colors hover:bg-purple-50 dark:hover:bg-purple-900/20 ${
-                          selectedConversation?.id === conversation.id ? 'bg-purple-100 dark:bg-purple-900/30' : ''
+                          selectedConversation === conversation.id ? 'bg-purple-100 dark:bg-purple-900/30' : ''
                         }`}
-                        onClick={() => setSelectedConversation(conversation)}
+                        onClick={() => setSelectedConversation(conversation.id)}
                       >
                         <CardContent className="p-3">
                           <div className="flex items-center gap-3">
@@ -176,7 +173,7 @@ const Messages = () => {
         {/* Message Thread */}
         <div className="flex-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
           {selectedConversation && activeTab === 'all' ? (
-            <MessageThread conversationId={selectedConversation.id} />
+            <MessageThread conversationId={selectedConversation} />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <div className="text-center">

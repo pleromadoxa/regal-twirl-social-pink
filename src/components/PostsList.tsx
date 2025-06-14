@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -65,10 +64,11 @@ export const PostsList = ({
   onDelete: externalOnDelete,
   userId: filterUserId
 }: PostsListProps = {}) => {
-  const { posts: hookPosts, loading, toggleLike, toggleRetweet, togglePin, deletePost } = usePosts();
+  const { posts: hookPosts, loading, toggleLike, toggleRetweet, togglePin, deletePost, refetch } = usePosts();
   const { user } = useAuth();
   const { toast } = useToast();
   const [retweetedBy, setRetweetedBy] = useState<{[key: string]: any}>({});
+  const [retweetUsers, setRetweetUsers] = useState<{[key: string]: any[]}>({});
   const [commentsOpen, setCommentsOpen] = useState<{[key: string]: boolean}>({});
   const [newPostNotification, setNewPostNotification] = useState<string | null>(null);
   const [mediaPreview, setMediaPreview] = useState<{
@@ -97,7 +97,6 @@ export const PostsList = ({
     if (!post) return;
 
     try {
-      // Check if already retweeted
       const { data: existingRetweet } = await supabase
         .from('retweets')
         .select('id')
@@ -106,23 +105,23 @@ export const PostsList = ({
         .single();
 
       if (existingRetweet) {
-        // Remove retweet
         await supabase
           .from('retweets')
           .delete()
           .eq('user_id', user.id)
           .eq('post_id', postId);
       } else {
-        // Create repost entry
         await supabase
           .from('retweets')
           .insert([{ user_id: user.id, post_id: postId }]);
       }
 
-      // Call the original retweet function to update counts
       if (toggleRetweet) {
         toggleRetweet(postId);
       }
+
+      // Refresh retweet info immediately
+      fetchRetweetInfo();
     } catch (error) {
       console.error('Error handling repost:', error);
     }
@@ -165,9 +164,9 @@ export const PostsList = ({
     fetchBusinessPages();
   }, [posts]);
 
-  // Real-time notification for new posts
+  // Real-time notification for new posts with auto-refresh
   useEffect(() => {
-    if (!user || externalPosts) return; // Only for main feed, not profile pages
+    if (!user || externalPosts) return;
 
     const channel = supabase
       .channel('new-posts-notifications')
@@ -178,10 +177,15 @@ export const PostsList = ({
       }, async (payload) => {
         const newPost = payload.new;
         
-        // Don't show notification for user's own posts
-        if (newPost.user_id === user.id) return;
+        if (newPost.user_id === user.id) {
+          // If it's user's own post, refresh the feed immediately
+          setTimeout(() => {
+            refetch();
+          }, 500);
+          return;
+        }
 
-        // Fetch the author's profile
+        // Fetch the author's profile for notification
         const { data: profile } = await supabase
           .from('profiles')
           .select('username, display_name')
@@ -192,10 +196,11 @@ export const PostsList = ({
           const authorName = profile.display_name || profile.username || 'Someone';
           setNewPostNotification(`${authorName} just posted!`);
           
-          // Auto-hide notification after 5 seconds
+          // Auto-hide notification and refresh after 3 seconds
           setTimeout(() => {
             setNewPostNotification(null);
-          }, 5000);
+            refetch();
+          }, 3000);
         }
       })
       .subscribe();
@@ -203,52 +208,66 @@ export const PostsList = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, externalPosts]);
+  }, [user, externalPosts, refetch]);
+
+  // Enhanced retweet information fetching
+  const fetchRetweetInfo = async () => {
+    if (!posts || posts.length === 0 || !user) return;
+    
+    const retweetInfo: {[key: string]: any} = {};
+    const retweetUsersMap: {[key: string]: any[]} = {};
+    const postIds = posts.map(post => post.id);
+    
+    try {
+      const { data: retweetsData } = await supabase
+        .from('retweets')
+        .select(`
+          post_id,
+          user_id,
+          created_at,
+          profiles:user_id (
+            username,
+            display_name,
+            avatar_url
+          )
+        `)
+        .in('post_id', postIds)
+        .order('created_at', { ascending: false });
+
+      if (retweetsData) {
+        retweetsData.forEach(retweet => {
+          if (!retweetUsersMap[retweet.post_id]) {
+            retweetUsersMap[retweet.post_id] = [];
+          }
+          retweetUsersMap[retweet.post_id].push({
+            ...retweet.profiles,
+            user_id: retweet.user_id,
+            created_at: retweet.created_at
+          });
+
+          if (retweet.user_id === user.id) {
+            retweetInfo[retweet.post_id] = {
+              retweetedBy: user,
+              isCurrentUser: true
+            };
+          } else if (!retweetInfo[retweet.post_id]) {
+            retweetInfo[retweet.post_id] = {
+              retweetedBy: retweet.profiles,
+              isCurrentUser: false
+            };
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching retweet info:', error);
+    }
+    
+    setRetweetedBy(retweetInfo);
+    setRetweetUsers(retweetUsersMap);
+  };
 
   // Fetch retweet information for posts
   useEffect(() => {
-    const fetchRetweetInfo = async () => {
-      if (!posts || posts.length === 0 || !user) return;
-      
-      const retweetInfo: {[key: string]: any} = {};
-      const postIds = posts.map(post => post.id);
-      
-      try {
-        // Get all retweets for these posts
-        const { data: retweetsData } = await supabase
-          .from('retweets')
-          .select(`
-            post_id,
-            user_id,
-            profiles:user_id (
-              username,
-              display_name
-            )
-          `)
-          .in('post_id', postIds);
-
-        if (retweetsData) {
-          retweetsData.forEach(retweet => {
-            if (retweet.user_id === user.id) {
-              retweetInfo[retweet.post_id] = {
-                retweetedBy: user,
-                isCurrentUser: true
-              };
-            } else if (!retweetInfo[retweet.post_id]) {
-              retweetInfo[retweet.post_id] = {
-                retweetedBy: retweet.profiles,
-                isCurrentUser: false
-              };
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching retweet info:', error);
-      }
-      
-      setRetweetedBy(retweetInfo);
-    };
-
     fetchRetweetInfo();
   }, [posts, user]);
 
@@ -344,6 +363,45 @@ export const PostsList = ({
     return false;
   };
 
+  const renderRetweetIndicator = (postId: string) => {
+    const users = retweetUsers[postId];
+    if (!users || users.length === 0) return null;
+
+    const currentUserRetweeted = users.some(u => u.user_id === user?.id);
+    const otherUsers = users.filter(u => u.user_id !== user?.id);
+
+    if (currentUserRetweeted && otherUsers.length === 0) {
+      return (
+        <div className="flex items-center gap-2 text-sm mb-3 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700/50">
+          <Repeat className="w-4 h-4 text-green-600 dark:text-green-400" />
+          <span className="text-green-700 dark:text-green-300 font-medium">
+            You reshared this post
+          </span>
+        </div>
+      );
+    }
+
+    if (otherUsers.length > 0) {
+      const firstUser = otherUsers[0];
+      const remainingCount = otherUsers.length - 1;
+
+      return (
+        <div className="flex items-center gap-2 text-sm mb-3 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700/50">
+          <Repeat className="w-4 h-4 text-green-600 dark:text-green-400" />
+          <span className="text-green-700 dark:text-green-300 font-medium">
+            {currentUserRetweeted ? 'You, ' : ''}
+            @{firstUser.username || firstUser.display_name}
+            {remainingCount > 0 && ` and ${remainingCount} other${remainingCount > 1 ? 's' : ''}`}
+            {remainingCount >= 3 && ` (${otherUsers.length} total)`}
+            {' '}reshared this post
+          </span>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   if (loading && !externalPosts) {
     return (
       <div className="flex items-center justify-center py-8 relative z-10">
@@ -367,7 +425,6 @@ export const PostsList = ({
         const verificationLevel = getVerificationLevel(post.profiles);
         const isThread = isThreadPost(post.content);
         const hasAudio = hasAudioContent(post.content);
-        const retweetInfo = retweetedBy[post.id];
         const businessPage = post.posted_as_page ? businessPages[post.posted_as_page] : null;
         
         return (
@@ -381,17 +438,7 @@ export const PostsList = ({
             >
               <CardContent className="p-6 relative z-30">
                 {/* Enhanced Retweet indicator */}
-                {retweetInfo && (
-                  <div className="flex items-center gap-2 text-sm mb-3 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700/50">
-                    <Repeat className="w-4 h-4 text-green-600 dark:text-green-400" />
-                    <span className="text-green-700 dark:text-green-300 font-medium">
-                      {retweetInfo.isCurrentUser 
-                        ? 'You reshared this post' 
-                        : `@${retweetInfo.retweetedBy?.username || retweetInfo.retweetedBy?.display_name || 'someone'} reshared this post`
-                      }
-                    </span>
-                  </div>
-                )}
+                {renderRetweetIndicator(post.id)}
                 
                 <PostIndicators 
                   isThread={isThread} 

@@ -1,15 +1,17 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
-  Video, 
-  VideoOff, 
+  Camera, 
+  CameraOff, 
   Mic, 
   MicOff, 
   PhoneOff,
-  Monitor,
-  MonitorOff,
-  Minimize2
+  Minimize2,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,17 +23,25 @@ import MinimizedCallWidget from './MinimizedCallWidget';
 interface VideoCallProps {
   conversationId: string;
   otherUserId: string;
+  otherUserName: string;
+  otherUserAvatar?: string;
   onCallEnd: () => void;
   isIncoming?: boolean;
 }
 
-const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false }: VideoCallProps) => {
+const VideoCall = ({ 
+  conversationId, 
+  otherUserId, 
+  otherUserName, 
+  otherUserAvatar,
+  onCallEnd, 
+  isIncoming = false 
+}: VideoCallProps) => {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [callStatus, setCallStatus] = useState<'connecting' | 'connected' | 'ended'>('connecting');
-  const [isMinimized, setIsMinimized] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const [isMinimized, setIsMinimized] = useState(false);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -43,13 +53,15 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
   
   const { user } = useAuth();
   const { toast } = useToast();
-  const { playConnect, playEndCall, playRinging, stopRinging } = useCallSounds();
+  const { playConnect, playEndCall, stopRinging } = useCallSounds();
   const { addCallToHistory } = useCallHistory();
 
   const rtcConfiguration = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' }
     ]
   };
 
@@ -78,14 +90,15 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
     };
 
     peerConnection.ontrack = (event) => {
-      if (remoteVideoRef.current) {
+      console.log('Received remote track:', event.track.kind);
+      if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
       }
     };
 
     peerConnection.onconnectionstatechange = () => {
       const state = peerConnection.connectionState;
-      console.log('Video call connection state:', state);
+      console.log('Connection state:', state);
       
       if (state === 'connected') {
         setCallStatus('connected');
@@ -103,10 +116,22 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
 
   const startLocalStream = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: isVideoEnabled,
-        audio: isAudioEnabled
-      });
+      console.log('Requesting media access...');
+      const constraints = {
+        video: isVideoEnabled ? {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        } : false,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('Media access granted:', stream.getTracks().map(t => t.kind));
 
       localStreamRef.current = stream;
 
@@ -116,16 +141,17 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
 
       if (peerConnectionRef.current) {
         stream.getTracks().forEach(track => {
+          console.log('Adding track to peer connection:', track.kind);
           peerConnectionRef.current?.addTrack(track, stream);
         });
       }
 
       return stream;
     } catch (error) {
-      console.error('Error accessing camera/microphone:', error);
+      console.error('Error accessing media devices:', error);
       toast({
-        title: "Media access error",
-        description: "Could not access camera or microphone",
+        title: "Camera/Microphone access error",
+        description: "Could not access camera or microphone. Please check permissions.",
         variant: "destructive"
       });
       throw error;
@@ -138,6 +164,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
     channel.on('broadcast', { event: 'offer' }, async (payload) => {
       const { offer, from } = payload.payload;
       if (from !== user?.id && peerConnectionRef.current) {
+        console.log('Received offer from:', from);
         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await peerConnectionRef.current.createAnswer();
         await peerConnectionRef.current.setLocalDescription(answer);
@@ -158,6 +185,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
     channel.on('broadcast', { event: 'answer' }, async (payload) => {
       const { answer, from } = payload.payload;
       if (from !== user?.id && peerConnectionRef.current) {
+        console.log('Received answer from:', from);
         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
       }
     });
@@ -188,8 +216,11 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       await startLocalStream();
       
       if (!isIncoming) {
-        playRinging();
-        const offer = await peerConnectionRef.current.createOffer();
+        console.log('Creating offer...');
+        const offer = await peerConnectionRef.current.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true
+        });
         await peerConnectionRef.current.setLocalDescription(offer);
         
         signalingChannelRef.current.send({
@@ -204,20 +235,18 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
         });
       }
     } catch (error) {
-      console.error('Error starting video call:', error);
+      console.error('Error starting call:', error);
       handleEndCall();
     }
   };
 
   const handleEndCall = async () => {
-    stopRinging();
     playEndCall();
     
     const endTime = new Date().toISOString();
     const duration = callStartTimeRef.current ? 
       Math.floor((Date.now() - callStartTimeRef.current) / 1000) : 0;
 
-    // Add to call history
     if (user) {
       await addCallToHistory({
         recipient_id: otherUserId,
@@ -230,7 +259,6 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
       });
     }
 
-    // Cleanup
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
     }
@@ -257,7 +285,7 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
     onCallEnd();
   };
 
-  const toggleVideo = () => {
+  const toggleVideo = async () => {
     if (localStreamRef.current) {
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
       if (videoTrack) {
@@ -277,43 +305,6 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
     }
   };
 
-  const toggleScreenShare = async () => {
-    try {
-      if (!isScreenSharing) {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: true
-        });
-        
-        if (peerConnectionRef.current && localStreamRef.current) {
-          const sender = peerConnectionRef.current.getSenders().find(s => 
-            s.track && s.track.kind === 'video'
-          );
-          
-          if (sender) {
-            await sender.replaceTrack(screenStream.getVideoTracks()[0]);
-          }
-        }
-        
-        setIsScreenSharing(true);
-        
-        screenStream.getVideoTracks()[0].addEventListener('ended', () => {
-          setIsScreenSharing(false);
-        });
-      } else {
-        setIsScreenSharing(false);
-      }
-    } catch (error) {
-      console.error('Error toggling screen share:', error);
-      toast({
-        title: "Screen share error",
-        description: "Could not start screen sharing",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Call duration timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
@@ -337,12 +328,11 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
     };
   }, []);
 
-  // Render minimized widget if minimized
   if (isMinimized) {
     return (
       <MinimizedCallWidget
-        otherUserName="Video Call"
-        otherUserAvatar=""
+        otherUserName={otherUserName}
+        otherUserAvatar={otherUserAvatar}
         callType="video"
         duration={formatCallDuration(callDuration)}
         isAudioEnabled={isAudioEnabled}
@@ -367,8 +357,9 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
         bottom: 0
       }}
     >
-      {/* Remote video */}
-      <div className="flex-1 relative overflow-hidden">
+      {/* Video container */}
+      <div className="flex-1 relative">
+        {/* Remote video */}
         <video
           ref={remoteVideoRef}
           autoPlay
@@ -376,106 +367,104 @@ const VideoCall = ({ conversationId, otherUserId, onCallEnd, isIncoming = false 
           className="w-full h-full object-cover"
         />
         
-        {/* Connecting overlay */}
-        {callStatus === 'connecting' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <Card className="bg-black/60 border-white/20 text-white backdrop-blur-lg">
-              <CardContent className="p-8 text-center">
-                <div className="relative mb-6">
-                  <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Connecting...</h3>
-                <p className="text-white/70">Setting up video call</p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
-
-      {/* Local video */}
-      <div className="absolute top-6 right-6 w-40 h-30 bg-black/80 rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl">
-        <video
-          ref={localVideoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-cover"
-        />
-        {!isVideoEnabled && (
-          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
-            <VideoOff className="w-8 h-8 text-white/70" />
-          </div>
-        )}
-      </div>
-
-      {/* Minimize button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setIsMinimized(true)}
-        className="absolute top-6 left-6 text-white/70 hover:text-white hover:bg-white/10 rounded-full w-10 h-10 p-0"
-        style={{ zIndex: 2147483648 }}
-      >
-        <Minimize2 className="w-5 h-5" />
-      </Button>
-
-      {/* Call controls */}
-      <Card className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/60 border-white/20 backdrop-blur-lg">
-        <CardContent className="p-4">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant={isAudioEnabled ? "default" : "destructive"}
-              size="lg"
-              onClick={toggleAudio}
-              className="rounded-full w-14 h-14 p-0"
-            >
-              {isAudioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
-            </Button>
-            
-            <Button
-              variant={isVideoEnabled ? "default" : "destructive"}
-              size="lg"
-              onClick={toggleVideo}
-              className="rounded-full w-14 h-14 p-0"
-            >
-              {isVideoEnabled ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
-            </Button>
-            
-            <Button
-              variant={isScreenSharing ? "secondary" : "outline"}
-              size="lg"
-              onClick={toggleScreenShare}
-              className="rounded-full w-14 h-14 p-0"
-            >
-              {isScreenSharing ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
-            </Button>
-            
-            <Button
-              variant="destructive"
-              size="lg"
-              onClick={handleEndCall}
-              className="rounded-full w-14 h-14 p-0"
-            >
-              <PhoneOff className="w-6 h-6" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Call status */}
-      <div className="absolute top-6 left-1/2 transform -translate-x-1/2 text-white">
-        <div className="flex items-center space-x-3 bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
-          <div className={`w-3 h-3 rounded-full ${
-            callStatus === 'connected' ? 'bg-green-400 animate-pulse' :
-            callStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
-            'bg-red-400'
-          }`}></div>
-          <span className="text-sm font-medium">
-            {callStatus === 'connecting' && 'Connecting...'}
-            {callStatus === 'connected' && formatCallDuration(callDuration)}
-            {callStatus === 'ended' && 'Call ended'}
-          </span>
+        {/* Local video */}
+        <div className="absolute top-4 right-4 w-48 h-36 bg-black rounded-lg overflow-hidden border-2 border-white/20">
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+          />
+          {!isVideoEnabled && (
+            <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+              <Avatar className="w-16 h-16">
+                <AvatarImage src={user?.user_metadata?.avatar_url} />
+                <AvatarFallback className="bg-purple-500 text-white text-xl">
+                  {user?.user_metadata?.display_name?.[0] || 'Y'}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          )}
         </div>
+
+        {/* Minimize button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsMinimized(true)}
+          className="absolute top-4 left-4 text-white/70 hover:text-white hover:bg-white/10 rounded-full w-10 h-10 p-0"
+        >
+          <Minimize2 className="w-5 h-5" />
+        </Button>
+
+        {/* Call info */}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center text-white">
+          {callStatus === 'connecting' && (
+            <div>
+              <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-white/20">
+                <AvatarImage src={otherUserAvatar} />
+                <AvatarFallback className="text-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                  {otherUserName[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <h2 className="text-xl font-bold">{otherUserName}</h2>
+              <p className="text-white/75">Connecting...</p>
+            </div>
+          )}
+        </div>
+
+        {/* Call status */}
+        <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
+          <div className="flex items-center space-x-2 text-white/75 bg-black/40 backdrop-blur-sm rounded-full px-4 py-2">
+            <div className={`w-2 h-2 rounded-full ${
+              callStatus === 'connected' ? 'bg-green-400' :
+              callStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
+              'bg-red-400'
+            }`}></div>
+            <span className="text-sm">
+              {callStatus === 'connected' ? formatCallDuration(callDuration) :
+               callStatus === 'connecting' ? 'Connecting' :
+               'Disconnected'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="p-6">
+        <Card className="bg-black/40 border-white/20 backdrop-blur-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center space-x-6">
+              <Button
+                variant={isVideoEnabled ? "default" : "destructive"}
+                size="lg"
+                onClick={toggleVideo}
+                className="rounded-full w-14 h-14 p-0"
+              >
+                {isVideoEnabled ? <Camera className="w-6 h-6" /> : <CameraOff className="w-6 h-6" />}
+              </Button>
+              
+              <Button
+                variant={isAudioEnabled ? "default" : "destructive"}
+                size="lg"
+                onClick={toggleAudio}
+                className="rounded-full w-14 h-14 p-0"
+              >
+                {isAudioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+              </Button>
+              
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={handleEndCall}
+                className="rounded-full w-14 h-14 p-0"
+              >
+                <PhoneOff className="w-6 h-6" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
