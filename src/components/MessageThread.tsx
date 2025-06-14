@@ -27,7 +27,13 @@ interface MessageThreadProps {
 
 const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const { user } = useAuth();
-  const { messages, sendMessage, markAsRead, conversations } = useEnhancedMessages();
+  const { 
+    messages, 
+    sendMessage, 
+    markAsRead, 
+    conversations, 
+    setSelectedConversation 
+  } = useEnhancedMessages();
   const { toast } = useToast();
   const [newMessage, setNewMessage] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -227,6 +233,13 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       </div>
     );
   }
+
+  // Ensure hook's internal selectedConversation is always in sync with prop
+  useEffect(() => {
+    if (conversationId) {
+      setSelectedConversation(conversationId);
+    }
+  }, [conversationId, setSelectedConversation]);
 
   // Render active call
   if (activeCall) {
