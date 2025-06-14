@@ -1,264 +1,192 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { useProfile } from "@/hooks/useProfile";
-import { useGallery } from "@/hooks/useGallery";
-import { useVerifiedStatus } from "@/hooks/useVerifiedStatus";
-import SidebarNav from "@/components/SidebarNav";
-import ProfileActions from "@/components/ProfileActions";
-import VerificationBadge from "@/components/VerificationBadge";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  MapPin, 
-  Globe, 
-  Calendar, 
-  CheckCircle, 
-  Settings
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import PostsList from "@/components/PostsList";
-import GalleryUpload from "@/components/GalleryUpload";
-import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
-import InteractiveBentoGallery from "@/components/ui/interactive-bento-gallery";
+
+import { useParams } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import SidebarNav from '@/components/SidebarNav';
+import RightSidebar from '@/components/RightSidebar';
+import { useProfile } from '@/hooks/useProfile';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MapPin, Calendar, Link as LinkIcon, Users, Heart } from 'lucide-react';
+import PostsList from '@/components/PostsList';
+import { ProfileActions } from '@/components/ProfileActions';
+import VerificationBadge from '@/components/VerificationBadge';
 
 const Profile = () => {
-  const { userId } = useParams();
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-  const { profile, loading: profileLoading, isFollowing, toggleFollow } = useProfile(userId);
-  const { galleryItems, loading: galleryLoading, transformToMediaItems } = useGallery(userId);
-  const { verificationLevel } = useVerifiedStatus(profile);
-  const [activeTab, setActiveTab] = useState('gallery');
+  const { userId } = useParams<{ userId: string }>();
+  const { user } = useAuth();
+  const { profile, loading, error } = useProfile(userId);
 
-  const isOwnProfile = user?.id === userId;
+  if (!user) {
+    return null;
+  }
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
-    }
-  }, [user, loading, navigate]);
-
-  const handleEditProfile = () => {
-    navigate('/settings');
-  };
-
-  if (loading || profileLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
         <SidebarNav />
-        <div className="flex-1 pl-80 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
+          <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
+            <div className="p-6">
+              <div className="animate-pulse">
+                <div className="h-32 bg-gray-300 rounded-lg mb-4"></div>
+                <div className="h-20 w-20 bg-gray-300 rounded-full mb-4"></div>
+                <div className="h-6 bg-gray-300 rounded mb-2"></div>
+                <div className="h-4 bg-gray-300 rounded mb-4"></div>
+              </div>
+            </div>
+          </main>
         </div>
+        <RightSidebar />
       </div>
     );
   }
 
-  if (!profile) {
+  if (error || !profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
         <SidebarNav />
-        <div className="flex-1 pl-80 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-300">User not found</h2>
-            <p className="text-slate-500 dark:text-slate-400">The profile you're looking for doesn't exist.</p>
-          </div>
+        <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
+          <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
+            <div className="p-6">
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Profile not found</h2>
+                <p className="text-gray-600 dark:text-gray-400">This user profile could not be loaded.</p>
+              </div>
+            </div>
+          </main>
         </div>
+        <RightSidebar />
       </div>
     );
   }
+
+  const isOwnProfile = user.id === userId;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
       <SidebarNav />
       
-      <main className="flex-1 pl-80 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
-        {/* Profile Header */}
-        <div className="relative">
-          {/* Banner */}
-          <div className="h-48 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 relative overflow-hidden">
-            {profile.banner_url ? (
-              <img 
-                src={profile.banner_url} 
-                alt="Profile banner" 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/80 via-pink-500/80 to-blue-500/80" />
-            )}
-          </div>
+      <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
+        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
+          {/* Profile Header */}
+          <div className="relative">
+            {/* Cover Photo */}
+            <div className="h-48 bg-gradient-to-r from-purple-400 to-pink-400 relative">
+              {profile.cover_image && (
+                <img 
+                  src={profile.cover_image} 
+                  alt="Cover" 
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
 
-          {/* Profile Info */}
-          <div className="relative px-6 pb-6">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between -mt-16 relative z-10">
-              <div className="flex items-end space-x-4">
-                <Avatar className="w-32 h-32 border-4 border-white dark:border-slate-800 shadow-xl">
-                  <AvatarImage src={profile.avatar_url || "/placeholder.svg"} />
-                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-4xl">
-                    {profile.display_name?.[0]?.toUpperCase() || profile.username?.[0]?.toUpperCase() || 'U'}
+            {/* Profile Info */}
+            <div className="px-6 pb-6">
+              <div className="flex justify-between items-start -mt-16 relative z-10">
+                <Avatar className="w-32 h-32 border-4 border-white dark:border-slate-800">
+                  <AvatarImage src={profile.avatar_url} />
+                  <AvatarFallback className="text-2xl">
+                    {profile.display_name?.[0] || profile.username?.[0] || 'U'}
                   </AvatarFallback>
                 </Avatar>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 mt-4 sm:mt-0">
-                {isOwnProfile ? (
-                  <Button 
-                    onClick={() => navigate('/settings')}
-                    variant="outline" 
-                    className="rounded-full border-2 border-purple-300 hover:bg-purple-50 hover:border-purple-500 transition-all duration-300"
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                ) : (
-                  <ProfileActions
-                    userId={userId || ''}
-                    username={profile.username || profile.display_name || ''}
+                <div className="mt-16">
+                  <ProfileActions 
+                    profileId={profile.id}
                     isOwnProfile={isOwnProfile}
-                    isFollowing={isFollowing}
-                    onFollowToggle={toggleFollow}
                   />
-                )}
+                </div>
               </div>
-            </div>
 
-            {/* Profile Details */}
-            <div className="mt-6">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {profile.display_name || profile.username}
-                </h1>
-                {verificationLevel && (
-                  <VerificationBadge level={verificationLevel} />
+              <div className="mt-4">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {profile.display_name || profile.username}
+                  </h1>
+                  <VerificationBadge userId={profile.id} />
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">@{profile.username}</p>
+                
+                {profile.bio && (
+                  <p className="mt-3 text-gray-900 dark:text-gray-100">{profile.bio}</p>
                 )}
-                {profile.premium_tier && profile.premium_tier !== 'free' && (
-                  <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                    {profile.premium_tier}
-                  </Badge>
-                )}
-              </div>
-              
-              <p className="text-slate-600 dark:text-slate-400 mb-1">@{profile.username}</p>
-              
-              {profile.bio && (
-                <p className="text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">
-                  {profile.bio}
-                </p>
-              )}
 
-              {/* Profile Metadata */}
-              <div className="flex flex-wrap gap-4 text-sm text-slate-500 dark:text-slate-400 mb-4">
-                {profile.location && (
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {profile.location}
+                {/* Profile Stats */}
+                <div className="flex gap-6 mt-4 text-sm">
+                  {profile.location && (
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                      <MapPin className="w-4 h-4" />
+                      {profile.location}
+                    </div>
+                  )}
+                  {profile.website && (
+                    <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                      <LinkIcon className="w-4 h-4" />
+                      <a href={profile.website} target="_blank" rel="noopener noreferrer" 
+                         className="hover:text-purple-600 dark:hover:text-purple-400">
+                        {profile.website}
+                      </a>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                    <Calendar className="w-4 h-4" />
+                    Joined {new Date(profile.created_at).toLocaleDateString('en-US', { 
+                      month: 'long', 
+                      year: 'numeric' 
+                    })}
                   </div>
-                )}
-                {profile.website && (
-                  <div className="flex items-center gap-1">
-                    <Globe className="w-4 h-4" />
-                    <a 
-                      href={profile.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-purple-600 dark:text-purple-400 hover:underline"
-                    >
-                      {profile.website.replace(/^https?:\/\//, '')}
-                    </a>
-                  </div>
-                )}
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  Joined {formatDistanceToNow(new Date(profile.created_at), { addSuffix: true })}
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="flex gap-6 text-sm">
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">{profile.following_count || 0}</span>
-                  <span className="text-slate-500 dark:text-slate-400 ml-1">Following</span>
-                </div>
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">{profile.followers_count || 0}</span>
-                  <span className="text-slate-500 dark:text-slate-400 ml-1">Followers</span>
-                </div>
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">{profile.posts_count || 0}</span>
-                  <span className="text-slate-500 dark:text-slate-400 ml-1">Posts</span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-          <div className="border-b border-purple-200 dark:border-purple-800 px-6">
-            <TabsList className="grid w-full grid-cols-3 bg-transparent">
-              <TabsTrigger 
-                value="gallery" 
-                className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 dark:data-[state=active]:bg-purple-900/30 dark:data-[state=active]:text-purple-300"
-              >
-                Gallery ({galleryItems.length})
-              </TabsTrigger>
-              <TabsTrigger 
-                value="posts" 
-                className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 dark:data-[state=active]:bg-purple-900/30 dark:data-[state=active]:text-purple-300"
-              >
+          {/* Profile Content Tabs */}
+          <Tabs defaultValue="posts" className="w-full">
+            <TabsList className="w-full justify-start border-b border-purple-200 dark:border-purple-800 bg-transparent rounded-none p-0">
+              <TabsTrigger value="posts" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
                 Posts
               </TabsTrigger>
-              <TabsTrigger 
-                value="media" 
-                className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 dark:data-[state=active]:bg-purple-900/30 dark:data-[state=active]:text-purple-300"
-              >
+              <TabsTrigger value="replies" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
+                Replies
+              </TabsTrigger>
+              <TabsTrigger value="media" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
                 Media
               </TabsTrigger>
+              <TabsTrigger value="likes" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
+                Likes
+              </TabsTrigger>
             </TabsList>
-          </div>
 
-          <TabsContent value="gallery" className="p-6">
-            <div className="mb-6 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                Gallery
-              </h2>
-              {isOwnProfile && <GalleryUpload />}
-            </div>
-            
-            {galleryLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <TabsContent value="posts" className="mt-0">
+              <PostsList userId={userId} />
+            </TabsContent>
+
+            <TabsContent value="replies" className="mt-0">
+              <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                Replies feature coming soon
               </div>
-            ) : galleryItems.length > 0 ? (
-              <InteractiveBentoGallery 
-                mediaItems={transformToMediaItems(galleryItems)}
-                title={`${profile.display_name || profile.username}'s Gallery`}
-                description="Collection of photos and videos"
-              />
-            ) : (
-              <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-                <p>No gallery items yet</p>
-                {isOwnProfile && (
-                  <p className="text-sm mt-2">Share your photos and videos to get started!</p>
-                )}
+            </TabsContent>
+
+            <TabsContent value="media" className="mt-0">
+              <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                Media gallery coming soon
               </div>
-            )}
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="posts" className="p-6">
-            <PostsList userId={userId} />
-          </TabsContent>
-
-          <TabsContent value="media" className="p-6">
-            <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-              <p>Media posts will appear here</p>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
+            <TabsContent value="likes" className="mt-0">
+              <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                Liked posts coming soon
+              </div>
+            </TabsContent>
+          </Tabs>
+        </main>
+      </div>
+      
+      <RightSidebar />
     </div>
   );
 };
