@@ -60,8 +60,8 @@ const BusinessManagement = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
       <SidebarNav />
       
-      <div className="flex-1 flex gap-6">
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+      <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
+        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
           {/* Header */}
           <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
             <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
@@ -112,7 +112,7 @@ const BusinessManagement = () => {
                 <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-slate-100">
                   Your Professional Accounts ({myPages.length})
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   {myPages.map((page) => (
                     <Card key={page.id} className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm hover:shadow-lg transition-all duration-300">
                       <CardHeader className="pb-3">
@@ -193,9 +193,9 @@ const BusinessManagement = () => {
             )}
           </div>
         </main>
-        
-        <RightSidebar />
       </div>
+      
+      <RightSidebar />
     </div>
   );
 };
