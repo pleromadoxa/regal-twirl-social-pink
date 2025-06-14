@@ -83,11 +83,11 @@ const Settings = () => {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
             </div>
 
-            <Tabs defaultValue="profile" className="w-full">
+            <Tabs defaultValue="account" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="profile" className="flex items-center gap-2">
+                <TabsTrigger value="account" className="flex items-center gap-2">
                   <User className="w-4 h-4" />
-                  Profile
+                  Account
                 </TabsTrigger>
                 <TabsTrigger value="notifications" className="flex items-center gap-2">
                   <Bell className="w-4 h-4" />
@@ -103,10 +103,10 @@ const Settings = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="profile" className="space-y-6">
+              <TabsContent value="account" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Profile Information</CardTitle>
+                    <CardTitle>Account Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">

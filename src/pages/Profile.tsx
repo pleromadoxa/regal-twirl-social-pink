@@ -9,10 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Calendar, Link as LinkIcon, Users, Heart } from 'lucide-react';
+import { MapPin, Calendar, Link as LinkIcon, Users, Heart, Edit } from 'lucide-react';
 import PostsList from '@/components/PostsList';
 import ProfileActions from '@/components/ProfileActions';
 import VerificationBadge from '@/components/VerificationBadge';
+import ProfileEditDialog from '@/components/ProfileEditDialog';
 
 const Profile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -94,12 +95,27 @@ const Profile = () => {
                   </AvatarFallback>
                 </Avatar>
 
-                <div className="mt-16">
-                  <ProfileActions 
-                    userId={profile.id}
-                    username={profile.username}
-                    isOwnProfile={isOwnProfile}
-                  />
+                <div className="mt-16 flex gap-2">
+                  {isOwnProfile && (
+                    <ProfileEditDialog
+                      trigger={
+                        <Button
+                          variant="outline"
+                          className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Profile
+                        </Button>
+                      }
+                    />
+                  )}
+                  {!isOwnProfile && (
+                    <ProfileActions 
+                      userId={profile.id}
+                      username={profile.username}
+                      isOwnProfile={isOwnProfile}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -141,6 +157,22 @@ const Profile = () => {
                       month: 'long', 
                       year: 'numeric' 
                     })}
+                  </div>
+                </div>
+
+                {/* Follow counts */}
+                <div className="flex gap-6 mt-4">
+                  <div className="flex items-center gap-1 text-sm">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                      {profile.following_count}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-400">Following</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                      {profile.followers_count}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-400">Followers</span>
                   </div>
                 </div>
               </div>
