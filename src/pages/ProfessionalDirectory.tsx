@@ -18,7 +18,7 @@ const ProfessionalDirectory = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('list'); // Default to list view
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -53,7 +53,7 @@ const ProfessionalDirectory = () => {
       
       {/* Center the main content between sidebars */}
       <div className="flex flex-1 justify-center">
-        <main className="border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-2xl w-full min-h-screen mx-auto flex-shrink-0">
+        <main className="border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl w-full min-h-screen mx-auto flex-shrink-0">
           {/* Header */}
           <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
             <div className="flex flex-col gap-4">
