@@ -53,20 +53,9 @@ const Music = () => {
   const checkAdminStatus = async () => {
     if (!user) return;
     
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .single();
-
-      if (!error && data) {
-        setIsAdmin(true);
-      }
-    } catch (error) {
-      console.log('User is not an admin');
-    }
+    // Check if user is admin by email
+    const isUserAdmin = user.email === 'pleromadoxa@gmail.com';
+    setIsAdmin(isUserAdmin);
   };
 
   const fetchTracks = async () => {
