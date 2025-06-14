@@ -288,12 +288,11 @@ const Music = () => {
             </div>
 
             <Tabs defaultValue="featured" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="featured">Featured</TabsTrigger>
                 <TabsTrigger value="affirmations">Affirmations</TabsTrigger>
                 <TabsTrigger value="genres">Genres</TabsTrigger>
                 <TabsTrigger value="playlists">Playlists</TabsTrigger>
-                <TabsTrigger value="uploads">My Uploads</TabsTrigger>
               </TabsList>
 
               <TabsContent value="featured" className="mt-6">
@@ -352,22 +351,6 @@ const Music = () => {
                   </p>
                   <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
                     Create Playlist
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="uploads" className="mt-6">
-                <div className="text-center py-12">
-                  <Upload className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h2 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
-                    No uploads yet
-                  </h2>
-                  <p className="text-gray-500 dark:text-gray-500 mb-6">
-                    Share your music with the community by uploading your tracks.
-                  </p>
-                  <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Your First Track
                   </Button>
                 </div>
               </TabsContent>
