@@ -66,9 +66,18 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
   const handleSendMessage = async () => {
     if (!newMessage.trim() && attachments.length === 0 && !sharedLocation) return;
     
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to send messages",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       let messageContent = newMessage.trim();
-      let messageType = 'text';
+      let messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' = 'text';
       let metadata: any = {};
 
       // Handle location sharing
@@ -81,8 +90,12 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       // Send the message first
       const message = await sendMessage(messageContent);
       
+      if (!message || !message.id) {
+        throw new Error('Failed to send message');
+      }
+      
       // Handle file attachments
-      if (attachments.length > 0 && user) {
+      if (attachments.length > 0) {
         for (const file of attachments) {
           try {
             const fileUrl = await uploadMessageAttachment(file, user.id);
@@ -115,6 +128,11 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       setNewMessage('');
       setAttachments([]);
       setSharedLocation(null);
+
+      toast({
+        title: "Message sent",
+        description: "Your message has been sent successfully"
+      });
     } catch (error) {
       console.error('Error sending message:', error);
       toast({

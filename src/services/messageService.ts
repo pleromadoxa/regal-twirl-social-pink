@@ -37,6 +37,7 @@ export const fetchMessages = async (userId: string, otherUserId: string): Promis
   return messageData.map(msg => ({
     ...msg,
     conversation_id: '',
+    message_type: (msg.message_type || 'text') as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location',
     sender_profile: profilesMap.get(msg.sender_id) || null
   }));
 };
@@ -45,7 +46,7 @@ export const sendMessage = async (
   senderId: string, 
   recipientId: string, 
   content: string,
-  messageType: string = 'text',
+  messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' = 'text',
   metadata: any = {}
 ): Promise<Message> => {
   const { data: newMessage, error } = await supabase
@@ -87,6 +88,7 @@ export const sendMessage = async (
   return {
     ...newMessage,
     conversation_id: conversation?.id || '',
+    message_type: (newMessage.message_type || 'text') as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location',
     sender_profile: senderProfile || null
   };
 };

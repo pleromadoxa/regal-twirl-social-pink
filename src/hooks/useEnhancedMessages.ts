@@ -78,10 +78,10 @@ export const useEnhancedMessages = () => {
     };
   }, [clearCache]);
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string): Promise<Message> => {
     if (!user || !selectedConversation) {
       console.error('No user or selected conversation');
-      return;
+      throw new Error('No user or selected conversation');
     }
 
     try {
@@ -89,7 +89,7 @@ export const useEnhancedMessages = () => {
       const conversation = conversations.find(c => c.id === selectedConversation);
       if (!conversation) {
         console.error('Conversation not found');
-        return;
+        throw new Error('Conversation not found');
       }
 
       const recipientId = conversation.participant_1 === user.id 
@@ -103,8 +103,11 @@ export const useEnhancedMessages = () => {
       
       // Update conversation's last_message_at
       await updateConversationLastMessage(selectedConversation);
+      
+      return newMessage;
     } catch (error) {
       console.error("Error sending message:", error);
+      throw error;
     }
   };
 
