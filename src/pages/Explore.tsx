@@ -69,7 +69,7 @@ const Explore = () => {
                     <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
                       Posts containing "{searchQuery}"
                     </h2>
-                    <PostsList searchQuery={searchQuery} />
+                    <PostsList />
                   </div>
                 ) : (
                   <div>

@@ -11,13 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MapPin, Calendar, Link as LinkIcon, Users, Heart } from 'lucide-react';
 import PostsList from '@/components/PostsList';
-import { ProfileActions } from '@/components/ProfileActions';
+import ProfileActions from '@/components/ProfileActions';
 import VerificationBadge from '@/components/VerificationBadge';
 
 const Profile = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
-  const { profile, loading, error } = useProfile(userId);
+  const { profile, loading } = useProfile(userId);
 
   if (!user) {
     return null;
@@ -44,7 +44,7 @@ const Profile = () => {
     );
   }
 
-  if (error || !profile) {
+  if (!profile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
         <SidebarNav />
@@ -75,9 +75,9 @@ const Profile = () => {
           <div className="relative">
             {/* Cover Photo */}
             <div className="h-48 bg-gradient-to-r from-purple-400 to-pink-400 relative">
-              {profile.cover_image && (
+              {profile.banner_url && (
                 <img 
-                  src={profile.cover_image} 
+                  src={profile.banner_url} 
                   alt="Cover" 
                   className="w-full h-full object-cover"
                 />
@@ -96,7 +96,8 @@ const Profile = () => {
 
                 <div className="mt-16">
                   <ProfileActions 
-                    profileId={profile.id}
+                    userId={profile.id}
+                    username={profile.username}
                     isOwnProfile={isOwnProfile}
                   />
                 </div>
@@ -107,7 +108,9 @@ const Profile = () => {
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {profile.display_name || profile.username}
                   </h1>
-                  <VerificationBadge userId={profile.id} />
+                  {profile.verification_level && (
+                    <VerificationBadge level={profile.verification_level as any} />
+                  )}
                 </div>
                 <p className="text-gray-600 dark:text-gray-400">@{profile.username}</p>
                 

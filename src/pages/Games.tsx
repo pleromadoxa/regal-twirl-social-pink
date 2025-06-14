@@ -9,7 +9,7 @@ import GamePopup from '@/components/GamePopup';
 import { useState } from 'react';
 
 const Games = () => {
-  const [selectedGame, setSelectedGame] = useState<string | null>(null);
+  const [selectedGame, setSelectedGame] = useState<any>(null);
 
   const games = [
     {
@@ -91,7 +91,7 @@ const Games = () => {
 
                       <Button 
                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                        onClick={() => setSelectedGame(game.id)}
+                        onClick={() => setSelectedGame(game)}
                       >
                         Play Now
                       </Button>
@@ -149,7 +149,7 @@ const Games = () => {
       {/* Game Popup */}
       {selectedGame && (
         <GamePopup
-          gameId={selectedGame}
+          game={selectedGame}
           isOpen={!!selectedGame}
           onClose={() => setSelectedGame(null)}
         />

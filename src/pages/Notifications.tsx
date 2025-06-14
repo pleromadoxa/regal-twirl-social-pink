@@ -56,9 +56,9 @@ const Notifications = () => {
                     switch (notification.type) {
                       case 'like':
                         return <Heart className="w-5 h-5 text-red-500" />;
-                      case 'comment':
+                      case 'reply':
                         return <MessageCircle className="w-5 h-5 text-blue-500" />;
-                      case 'repost':
+                      case 'retweet':
                         return <Repeat className="w-5 h-5 text-green-500" />;
                       case 'follow':
                         return <UserPlus className="w-5 h-5 text-purple-500" />;
@@ -82,7 +82,7 @@ const Notifications = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-gray-900 dark:text-gray-100">
-                              {notification.content}
+                              {notification.message || notification.title || 'New notification'}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                               {new Date(notification.created_at).toLocaleDateString()}
