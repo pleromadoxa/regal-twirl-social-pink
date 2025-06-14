@@ -173,7 +173,7 @@ const BusinessManagement = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => navigate(`/professional/${page.id}/edit`)}
+                            onClick={() => navigate(`/edit-professional/${page.id}`)}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
