@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
-import ActiveChatBar from '@/components/ActiveChatBar';
+// import ActiveChatBar from '@/components/ActiveChatBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -504,7 +504,6 @@ const AdsManager = () => {
       </div>
       
       <RightSidebar />
-      <ActiveChatBar />
     </div>
   );
 };
