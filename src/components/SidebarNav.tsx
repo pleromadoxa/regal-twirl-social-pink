@@ -68,15 +68,20 @@ const SidebarNav = () => {
         <div className="p-6">
           {/* Logo */}
           <div className="mb-8">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 mb-2">
               <img 
                 src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
                 alt="Regal Network Logo" 
                 className="h-8 w-auto"
               />
-              <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Regal Network
-              </span>
+              <div className="flex flex-col">
+                <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  Regal Network
+                </span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  Christian Social Network
+                </span>
+              </div>
             </div>
           </div>
 
