@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Upload, Music, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +24,7 @@ const MusicUpload = ({ onUploadComplete }: MusicUploadProps) => {
   const [album, setAlbum] = useState('');
   const [genre, setGenre] = useState('');
   const [description, setDescription] = useState('');
+  const [trackType, setTrackType] = useState('featured');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -121,7 +123,8 @@ const MusicUpload = ({ onUploadComplete }: MusicUploadProps) => {
           description: description || null,
           file_url: publicUrl,
           file_size: audioFile.size,
-          duration
+          duration,
+          track_type: trackType
         });
 
       if (dbError) {
@@ -147,6 +150,7 @@ const MusicUpload = ({ onUploadComplete }: MusicUploadProps) => {
       setAlbum('');
       setGenre('');
       setDescription('');
+      setTrackType('featured');
       setAudioFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -224,6 +228,20 @@ const MusicUpload = ({ onUploadComplete }: MusicUploadProps) => {
                 Size: {(audioFile.size / (1024 * 1024)).toFixed(2)} MB
               </p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Track Type</Label>
+            <RadioGroup value={trackType} onValueChange={setTrackType}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="featured" id="featured" />
+                <Label htmlFor="featured">Featured</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="affirmation" id="affirmation" />
+                <Label htmlFor="affirmation">Affirmation</Label>
+              </div>
+            </RadioGroup>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

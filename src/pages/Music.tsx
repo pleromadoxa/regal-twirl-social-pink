@@ -26,6 +26,7 @@ interface MusicTrack {
   created_at: string;
   user_id: string;
   is_public: boolean;
+  track_type?: string;
   profiles?: {
     username: string;
     display_name: string;
@@ -39,13 +40,34 @@ const Music = () => {
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchTracks();
+    checkAdminStatus();
   }, []);
+
+  const checkAdminStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (!error && data) {
+        setIsAdmin(true);
+      }
+    } catch (error) {
+      console.log('User is not an admin');
+    }
+  };
 
   const fetchTracks = async () => {
     try {
@@ -119,6 +141,102 @@ const Music = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const featuredTracks = tracks.filter(track => track.track_type === 'featured' || !track.track_type);
+  const affirmationTracks = tracks.filter(track => track.track_type === 'affirmation');
+
+  const renderTracksList = (tracksList: MusicTrack[]) => {
+    if (loading) {
+      return (
+        <div className="text-center py-12">
+          <MusicIcon className="w-16 h-16 mx-auto text-gray-300 mb-4 animate-spin" />
+          <p className="text-gray-500">Loading tracks...</p>
+        </div>
+      );
+    }
+
+    if (tracksList.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <MusicIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+          <p className="text-gray-500">No tracks found</p>
+        </div>
+      );
+    }
+
+    return tracksList.map((track) => (
+      <Card key={track.id} className="group hover:shadow-lg transition-all duration-200">
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 rounded-lg flex items-center justify-center">
+                <MusicIcon className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+              </div>
+              <Button
+                size="sm"
+                className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full p-0 bg-white dark:bg-slate-800 border-2 border-purple-200 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900"
+                onClick={() => handlePlayPause(track)}
+              >
+                {currentTrack?.id === track.id && isPlaying ? (
+                  <Pause className="w-4 h-4 text-purple-600" />
+                ) : (
+                  <Play className="w-4 h-4 text-purple-600" />
+                )}
+              </Button>
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                {track.title}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                {track.artist}
+              </p>
+              {track.album && (
+                <p className="text-xs text-gray-500 dark:text-gray-500 truncate">
+                  {track.album}
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-1">
+                <Avatar className="w-5 h-5">
+                  <AvatarImage src={track.profiles?.avatar_url} />
+                  <AvatarFallback className="text-xs">
+                    {track.profiles?.display_name?.[0] || track.profiles?.username?.[0] || '?'}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs text-gray-500">
+                  {track.profiles?.display_name || track.profiles?.username}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              {track.genre && (
+                <Badge variant="secondary" className="text-xs">
+                  {track.genre}
+                </Badge>
+              )}
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {formatDuration(track.duration)}
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+                <Heart className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+                <Share className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+                <Download className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ));
+  };
+
   const filteredTracks = tracks.filter(track =>
     track.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     track.artist.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -166,7 +284,7 @@ const Music = () => {
                 <MusicIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Music</h1>
               </div>
-              <MusicUpload onUploadComplete={fetchTracks} />
+              {isAdmin && <MusicUpload onUploadComplete={fetchTracks} />}
             </div>
 
             {/* Search Bar */}
@@ -181,8 +299,9 @@ const Music = () => {
             </div>
 
             <Tabs defaultValue="featured" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="featured">Featured</TabsTrigger>
+                <TabsTrigger value="affirmations">Affirmations</TabsTrigger>
                 <TabsTrigger value="genres">Genres</TabsTrigger>
                 <TabsTrigger value="playlists">Playlists</TabsTrigger>
                 <TabsTrigger value="uploads">My Uploads</TabsTrigger>
@@ -191,90 +310,27 @@ const Music = () => {
               <TabsContent value="featured" className="mt-6">
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Featured Tracks</h2>
-                  {loading ? (
-                    <div className="text-center py-12">
-                      <MusicIcon className="w-16 h-16 mx-auto text-gray-300 mb-4 animate-spin" />
-                      <p className="text-gray-500">Loading tracks...</p>
-                    </div>
-                  ) : filteredTracks.length === 0 ? (
-                    <div className="text-center py-12">
-                      <MusicIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                      <p className="text-gray-500">No tracks found</p>
-                    </div>
-                  ) : (
-                    filteredTracks.map((track) => (
-                      <Card key={track.id} className="group hover:shadow-lg transition-all duration-200">
-                        <CardContent className="p-4">
-                          <div className="flex items-center space-x-4">
-                            <div className="relative">
-                              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 rounded-lg flex items-center justify-center">
-                                <MusicIcon className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-                              </div>
-                              <Button
-                                size="sm"
-                                className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full p-0 bg-white dark:bg-slate-800 border-2 border-purple-200 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900"
-                                onClick={() => handlePlayPause(track)}
-                              >
-                                {currentTrack?.id === track.id && isPlaying ? (
-                                  <Pause className="w-4 h-4 text-purple-600" />
-                                ) : (
-                                  <Play className="w-4 h-4 text-purple-600" />
-                                )}
-                              </Button>
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                {track.title}
-                              </h3>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                                {track.artist}
-                              </p>
-                              {track.album && (
-                                <p className="text-xs text-gray-500 dark:text-gray-500 truncate">
-                                  {track.album}
-                                </p>
-                              )}
-                              <div className="flex items-center gap-2 mt-1">
-                                <Avatar className="w-5 h-5">
-                                  <AvatarImage src={track.profiles?.avatar_url} />
-                                  <AvatarFallback className="text-xs">
-                                    {track.profiles?.display_name?.[0] || track.profiles?.username?.[0] || '?'}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span className="text-xs text-gray-500">
-                                  {track.profiles?.display_name || track.profiles?.username}
-                                </span>
-                              </div>
-                            </div>
+                  {renderTracksList(featuredTracks.filter(track =>
+                    track.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    track.artist.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    track.genre?.toLowerCase().includes(searchTerm.toLowerCase())
+                  ))}
+                </div>
+              </TabsContent>
 
-                            <div className="flex items-center space-x-2">
-                              {track.genre && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {track.genre}
-                                </Badge>
-                              )}
-                              <span className="text-sm text-gray-500 dark:text-gray-400">
-                                {formatDuration(track.duration)}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
-                                <Heart className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
-                                <Share className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
-                                <Download className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
+              <TabsContent value="affirmations" className="mt-6">
+                <div className="space-y-4">
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Affirmations</h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                      These are affirmations of Pastor Chris Oyakhilome Dsc Dsc DD.
+                    </p>
+                  </div>
+                  {renderTracksList(affirmationTracks.filter(track =>
+                    track.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    track.artist.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    track.genre?.toLowerCase().includes(searchTerm.toLowerCase())
+                  ))}
                 </div>
               </TabsContent>
 
