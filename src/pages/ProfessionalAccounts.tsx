@@ -29,7 +29,6 @@ const ProfessionalAccounts = () => {
   const { user } = useAuth();
   const { myPages, loading, refetch } = useBusinessPages();
   const navigate = useNavigate();
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const handleViewProfile = (pageId: string) => {
     navigate(`/professional/${pageId}`);
@@ -70,13 +69,14 @@ const ProfessionalAccounts = () => {
                 Manage your business pages and professional presence
               </p>
             </div>
-            <Button 
-              onClick={() => setShowCreateDialog(true)}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Business Page
-            </Button>
+            <BusinessPageDialog
+              trigger={
+                <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Business Page
+                </Button>
+              }
+            />
           </div>
 
           {myPages.length === 0 ? (
@@ -87,13 +87,14 @@ const ProfessionalAccounts = () => {
                 <p className="text-gray-500 mb-6">
                   Create your first business page to start building your professional presence
                 </p>
-                <Button 
-                  onClick={() => setShowCreateDialog(true)}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Your First Page
-                </Button>
+                <BusinessPageDialog
+                  trigger={
+                    <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Your First Page
+                    </Button>
+                  }
+                />
               </CardContent>
             </Card>
           ) : (
@@ -103,7 +104,7 @@ const ProfessionalAccounts = () => {
                   <CardHeader className="pb-3">
                     <div className="flex items-start gap-4">
                       <Avatar className="w-16 h-16 border-2 border-purple-200">
-                        <AvatarImage src={page.page_avatar_url || page.avatar_url} />
+                        <AvatarImage src={page.avatar_url} />
                         <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-lg">
                           {page.page_name?.charAt(0)?.toUpperCase()}
                         </AvatarFallback>
@@ -182,17 +183,6 @@ const ProfessionalAccounts = () => {
       </div>
 
       <RightSidebar />
-
-      {showCreateDialog && (
-        <BusinessPageDialog
-          isOpen={showCreateDialog}
-          onClose={() => setShowCreateDialog(false)}
-          onSuccess={() => {
-            setShowCreateDialog(false);
-            refetch();
-          }}
-        />
-      )}
     </div>
   );
 };
