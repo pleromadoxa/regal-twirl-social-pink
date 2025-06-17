@@ -178,6 +178,11 @@ const ProfessionalAccountProfile = () => {
     businessPage?.featured_products?.includes(p.id)
   ).slice(0, 6);
 
+  const handleBusinessDashboard = () => {
+    console.log('Navigating to business dashboard for pageId:', pageId);
+    navigate(`/business/${pageId}`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -293,7 +298,7 @@ const ProfessionalAccountProfile = () => {
                 <div className="flex gap-2">
                   <Button 
                     size="sm"
-                    onClick={() => navigate(`/business/${pageId}`)}
+                    onClick={handleBusinessDashboard}
                     className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg"
                   >
                     <Settings className="w-4 h-4 mr-2" />

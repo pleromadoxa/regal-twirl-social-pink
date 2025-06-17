@@ -6,10 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Gamepad2, Users, Star, Clock, Trophy } from 'lucide-react';
 import GamePopup from '@/components/GamePopup';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Games = () => {
   const [selectedGame, setSelectedGame] = useState<any>(null);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   const games = [
     {
@@ -43,6 +48,64 @@ const Games = () => {
       image: '/lovable-uploads/game-placeholder.png'
     }
   ];
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, []);
+
+  const fetchLeaderboard = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('game_scores')
+        .select(`
+          *,
+          profiles!game_scores_user_id_fkey (
+            username,
+            display_name,
+            avatar_url
+          )
+        `)
+        .order('score', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching leaderboard:', error);
+        return;
+      }
+
+      setLeaderboard(data || []);
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveGameScore = async (gameType: string, score: number, level: number = 1) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('game_scores')
+        .insert({
+          user_id: user.id,
+          game_type: gameType,
+          score: score,
+          level: level,
+          data: { timestamp: new Date().toISOString() }
+        });
+
+      if (error) {
+        console.error('Error saving game score:', error);
+        return;
+      }
+
+      // Refresh leaderboard after saving score
+      fetchLeaderboard();
+    } catch (error) {
+      console.error('Error saving game score:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
@@ -91,7 +154,7 @@ const Games = () => {
 
                       <Button 
                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                        onClick={() => setSelectedGame(game)}
+                        onClick={() => setSelectedGame({ ...game, onSaveScore: saveGameScore })}
                       >
                         Play Now
                       </Button>
@@ -111,32 +174,48 @@ const Games = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {[1, 2, 3, 4, 5].map((rank) => (
-                      <div key={rank} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                            rank === 1 ? 'bg-yellow-500' : 
-                            rank === 2 ? 'bg-gray-400' : 
-                            rank === 3 ? 'bg-amber-600' : 'bg-purple-500'
-                          }`}>
-                            {rank}
+                  {loading ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                    </div>
+                  ) : leaderboard.length > 0 ? (
+                    <div className="space-y-3">
+                      {leaderboard.map((entry, index) => (
+                        <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                              index === 0 ? 'bg-yellow-500' : 
+                              index === 1 ? 'bg-gray-400' : 
+                              index === 2 ? 'bg-amber-600' : 'bg-purple-500'
+                            }`}>
+                              {index + 1}
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-900 dark:text-gray-100">
+                                {entry.profiles?.display_name || entry.profiles?.username || `Player ${index + 1}`}
+                              </span>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                                {entry.game_type?.replace('_', ' ')} - Level {entry.level}
+                              </div>
+                            </div>
                           </div>
-                          <span className="font-medium text-gray-900 dark:text-gray-100">
-                            Player {rank}
-                          </span>
+                          <div className="text-right">
+                            <div className="font-bold text-purple-600 dark:text-purple-400">
+                              {entry.score} pts
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(entry.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-bold text-purple-600 dark:text-purple-400">
-                            {Math.floor(Math.random() * 1000) + 500} pts
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {Math.floor(Math.random() * 20) + 5} games
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Trophy className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-gray-500 dark:text-gray-400">No scores yet. Be the first to play!</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
