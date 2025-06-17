@@ -61,7 +61,7 @@ const App = () => {
                   <Route path="/professional" element={<ProfessionalAccounts />} />
                   <Route path="/professional-directory" element={<ProfessionalDirectory />} />
                   <Route path="/professional/:pageId" element={<ProfessionalAccountProfile />} />
-                  <Route path="/edit-professional/:pageId" element={<EditProfessionalAccount />} />
+                  <Route path="/professional/:pageId/edit" element={<EditProfessionalAccount />} />
                   <Route path="/music" element={<Music />} />
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="*" element={<NotFound />} />

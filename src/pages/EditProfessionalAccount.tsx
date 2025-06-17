@@ -63,7 +63,7 @@ const EditProfessionalAccount = () => {
           description: "This professional account doesn't exist or you don't have permission to edit it.",
           variant: "destructive"
         });
-        navigate('/business');
+        navigate('/professional');
       }
     }
   }, [user, pageId, myPages, navigate, toast]);
@@ -98,7 +98,7 @@ const EditProfessionalAccount = () => {
         description: "Your professional account has been updated successfully."
       });
 
-      navigate('/business');
+      navigate(`/professional/${pageId}`);
     } catch (error) {
       console.error('Error updating page:', error);
       toast({
@@ -138,7 +138,7 @@ const EditProfessionalAccount = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/business')}
+              onClick={() => navigate(`/professional/${pageId}`)}
               className="p-2"
             >
               <ArrowLeft className="w-5 h-5" />

@@ -301,6 +301,15 @@ const ProfessionalAccountProfile = () => {
                   </Button>
                   <Button 
                     size="sm"
+                    onClick={() => navigate(`/professional/${pageId}/edit`)}
+                    variant="outline"
+                    className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-lg"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Edit Page
+                  </Button>
+                  <Button 
+                    size="sm"
                     variant="outline"
                     onClick={() => navigate('/business-analytics')}
                     className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-lg"
