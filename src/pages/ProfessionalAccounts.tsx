@@ -31,14 +31,17 @@ const ProfessionalAccounts = () => {
   const navigate = useNavigate();
 
   const handleViewProfile = (pageId: string) => {
+    console.log('Navigating to profile:', pageId);
     navigate(`/professional/${pageId}`);
   };
 
   const handleDashboard = (pageId: string) => {
+    console.log('Navigating to dashboard:', pageId);
     navigate(`/business/${pageId}`);
   };
 
   const handleEditPage = (pageId: string) => {
+    console.log('Navigating to edit:', pageId);
     navigate(`/professional/${pageId}/edit`);
   };
 
@@ -153,7 +156,11 @@ const ProfessionalAccounts = () => {
                         variant="outline" 
                         size="sm" 
                         className="flex-1"
-                        onClick={() => handleViewProfile(page.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleViewProfile(page.id);
+                        }}
                       >
                         <Globe className="w-3 h-3 mr-1" />
                         View
@@ -161,7 +168,11 @@ const ProfessionalAccounts = () => {
                       <Button 
                         size="sm" 
                         className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-                        onClick={() => handleDashboard(page.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDashboard(page.id);
+                        }}
                       >
                         <BarChart3 className="w-3 h-3 mr-1" />
                         Dashboard
@@ -169,7 +180,11 @@ const ProfessionalAccounts = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleEditPage(page.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleEditPage(page.id);
+                        }}
                       >
                         <Settings className="w-3 h-3" />
                       </Button>
