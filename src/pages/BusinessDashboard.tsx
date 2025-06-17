@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,7 +30,7 @@ import ITServicesDashboard from '@/components/business/ITServicesDashboard';
 import ImportExportDashboard from '@/components/business/ImportExportDashboard';
 
 const BusinessDashboard = () => {
-  const { businessId } = useParams();
+  const { pageId } = useParams(); // Changed from businessId to pageId to match the route
   const { user } = useAuth();
   const { myPages, loading } = useBusinessPages();
   const navigate = useNavigate();
@@ -43,15 +42,15 @@ const BusinessDashboard = () => {
       return;
     }
 
-    if (businessId && !loading) {
-      const page = myPages.find(p => p.id === businessId);
+    if (pageId && !loading) {
+      const page = myPages.find(p => p.id === pageId);
       if (page) {
         setCurrentPage(page);
       } else {
         navigate('/professional');
       }
     }
-  }, [user, businessId, myPages, navigate, loading]);
+  }, [user, pageId, myPages, navigate, loading]);
 
   if (loading || !currentPage) {
     return (
