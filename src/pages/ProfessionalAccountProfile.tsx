@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +29,8 @@ import {
   Award,
   TrendingUp,
   Sparkles,
-  Settings
+  Settings,
+  BarChart3
 } from 'lucide-react';
 
 const ProfessionalAccountProfile = () => {
@@ -206,7 +206,7 @@ const ProfessionalAccountProfile = () => {
     );
   }
 
-  const isOwner = user?.id === businessPage.owner_id;
+  const isOwner = user?.id === businessPage?.owner_id;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -218,7 +218,7 @@ const ProfessionalAccountProfile = () => {
           <div className="relative mb-8">
             {/* Banner - Use page_banner_url or fallback to banner_url */}
             <div className="h-48 md:h-64 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg overflow-hidden shadow-2xl">
-              {(businessPage.page_banner_url || businessPage.banner_url) ? (
+              {(businessPage?.page_banner_url || businessPage?.banner_url) ? (
                 <img 
                   src={businessPage.page_banner_url || businessPage.banner_url} 
                   alt="Business Banner"
@@ -236,29 +236,29 @@ const ProfessionalAccountProfile = () => {
             <div className="absolute -bottom-16 left-8 flex items-end gap-6">
               {/* Use page_avatar_url or fallback to avatar_url, but not the owner's personal avatar */}
               <Avatar className="w-32 h-32 border-4 border-white shadow-2xl">
-                <AvatarImage src={businessPage.page_avatar_url || businessPage.avatar_url} />
+                <AvatarImage src={businessPage?.page_avatar_url || businessPage?.avatar_url} />
                 <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl">
-                  {businessPage.page_name.charAt(0).toUpperCase()}
+                  {businessPage?.page_name?.charAt(0)?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-lg p-4 shadow-2xl mb-4 border border-purple-200/50 dark:border-purple-800/50">
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    {businessPage.page_name}
+                    {businessPage?.page_name}
                   </h1>
-                  {businessPage.is_verified && (
+                  {businessPage?.is_verified && (
                     <Badge className="bg-blue-500 text-white shadow-lg">
                       <Award className="w-3 h-3 mr-1" />
                       Verified
                     </Badge>
                   )}
-                  <Badge className={`${getStatusColor(businessPage.shop_status || 'open')} shadow-lg`}>
+                  <Badge className={`${getStatusColor(businessPage?.shop_status || 'open')} shadow-lg`}>
                     <Sparkles className="w-3 h-3 mr-1" />
-                    {businessPage.shop_status || 'open'}
+                    {businessPage?.shop_status || 'open'}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground capitalize font-medium">
-                  {businessPage.business_type || businessPage.page_type} Business
+                  {businessPage?.business_type || businessPage?.page_type} Business
                 </p>
               </div>
             </div>
@@ -284,20 +284,31 @@ const ProfessionalAccountProfile = () => {
                     {isFollowing ? 'Following' : 'Follow'}
                   </Button>
                   <ProfileActions 
-                    userId={businessPage.owner_id} 
-                    username={businessPage.page_name}
+                    userId={businessPage?.owner_id} 
+                    username={businessPage?.page_name}
                   />
                 </>
               )}
               {isOwner && (
-                <Button 
-                  size="sm"
-                  onClick={() => navigate('/business-management')}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Business Dashboard
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm"
+                    onClick={() => navigate(`/business/${pageId}`)}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Business Dashboard
+                  </Button>
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate('/business-analytics')}
+                    className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-lg"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Analytics
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -311,17 +322,17 @@ const ProfessionalAccountProfile = () => {
                     <div>
                       <h3 className="font-semibold mb-3">About</h3>
                       <p className="text-muted-foreground mb-4">
-                        {businessPage.description || 'No description available.'}
+                        {businessPage?.description || 'No description available.'}
                       </p>
                       
                       <div className="space-y-2">
-                        {businessPage.address && (
+                        {businessPage?.address && (
                           <div className="flex items-center gap-2 text-sm">
                             <MapPin className="w-4 h-4 text-muted-foreground" />
                             <span>{businessPage.address}</span>
                           </div>
                         )}
-                        {businessPage.website && (
+                        {businessPage?.website && (
                           <div className="flex items-center gap-2 text-sm">
                             <Globe className="w-4 h-4 text-muted-foreground" />
                             <a 
@@ -335,7 +346,7 @@ const ProfessionalAccountProfile = () => {
                             </a>
                           </div>
                         )}
-                        {businessPage.email && (
+                        {businessPage?.email && (
                           <div className="flex items-center gap-2 text-sm">
                             <Mail className="w-4 h-4 text-muted-foreground" />
                             <a 
@@ -346,7 +357,7 @@ const ProfessionalAccountProfile = () => {
                             </a>
                           </div>
                         )}
-                        {businessPage.phone && (
+                        {businessPage?.phone && (
                           <div className="flex items-center gap-2 text-sm">
                             <Phone className="w-4 h-4 text-muted-foreground" />
                             <a 
@@ -365,7 +376,7 @@ const ProfessionalAccountProfile = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                           <Users className="w-6 h-6 mx-auto mb-2 text-purple-600" />
-                          <div className="text-2xl font-bold">{businessPage.followers_count || 0}</div>
+                          <div className="text-2xl font-bold">{businessPage?.followers_count || 0}</div>
                           <div className="text-xs text-muted-foreground">Followers</div>
                         </div>
                         <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
@@ -475,11 +486,11 @@ const ProfessionalAccountProfile = () => {
 
             <TabsContent value="dashboard">
               {isOwner ? (
-                businessPage.business_type === 'ecommerce' ? (
+                businessPage?.business_type === 'ecommerce' ? (
                   <EcommerceDashboard businessPage={businessPage} />
-                ) : businessPage.business_type === 'it_services' ? (
+                ) : businessPage?.business_type === 'it_services' ? (
                   <ITServicesDashboard businessPage={businessPage} />
-                ) : businessPage.business_type === 'import_export' ? (
+                ) : businessPage?.business_type === 'import_export' ? (
                   <ImportExportDashboard businessPage={businessPage} />
                 ) : (
                   <EcommerceDashboard businessPage={businessPage} />
@@ -518,20 +529,20 @@ const ProfessionalAccountProfile = () => {
                 <CardContent>
                   <div className="prose max-w-none">
                     <p className="text-muted-foreground mb-4">
-                      {businessPage.description || 'No detailed description available.'}
+                      {businessPage?.description || 'No detailed description available.'}
                     </p>
                     
                     <h4 className="font-semibold mb-2">Business Information</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="font-medium">Type:</span>
-                        <span className="ml-2 capitalize">{businessPage.business_type || businessPage.page_type}</span>
+                        <span className="ml-2 capitalize">{businessPage?.business_type || businessPage?.page_type}</span>
                       </div>
                       <div>
                         <span className="font-medium">Status:</span>
-                        <span className="ml-2 capitalize">{businessPage.shop_status || 'Open'}</span>
+                        <span className="ml-2 capitalize">{businessPage?.shop_status || 'Open'}</span>
                       </div>
-                      {businessPage.default_currency && (
+                      {businessPage?.default_currency && (
                         <div>
                           <span className="font-medium">Currency:</span>
                           <span className="ml-2">{businessPage.default_currency}</span>
