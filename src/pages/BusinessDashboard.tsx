@@ -30,29 +30,38 @@ import ITServicesDashboard from '@/components/business/ITServicesDashboard';
 import ImportExportDashboard from '@/components/business/ImportExportDashboard';
 
 const BusinessDashboard = () => {
-  const { pageId } = useParams(); // Changed from businessId to pageId to match the route
+  const { pageId } = useParams();
   const { user } = useAuth();
   const { myPages, loading } = useBusinessPages();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState<any>(null);
 
   useEffect(() => {
+    console.log('BusinessDashboard useEffect:', { user: !!user, pageId, myPagesLength: myPages.length, loading });
+    
     if (!user) {
+      console.log('No user, redirecting to auth');
       navigate('/auth');
       return;
     }
 
     if (pageId && !loading) {
+      console.log('Looking for page with ID:', pageId);
+      console.log('Available pages:', myPages.map(p => ({ id: p.id, name: p.page_name })));
+      
       const page = myPages.find(p => p.id === pageId);
       if (page) {
+        console.log('Page found:', page.page_name);
         setCurrentPage(page);
       } else {
+        console.log('Page not found, redirecting to professional');
         navigate('/professional');
       }
     }
   }, [user, pageId, myPages, navigate, loading]);
 
   if (loading || !currentPage) {
+    console.log('Loading or no current page:', { loading, currentPage: !!currentPage });
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
