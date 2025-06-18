@@ -36,14 +36,21 @@ const SidebarNav = () => {
 
   return (
     <div className="fixed top-0 left-0 h-full w-80 bg-white dark:bg-slate-900 border-r border-purple-200 dark:border-purple-800 py-4 px-3 flex flex-col z-50">
-      {/* Logo */}
-      <div className="mb-6 flex items-center gap-3">
+      {/* Logo and App Name */}
+      <div className="mb-6 flex flex-col items-center text-center">
         <img 
-          src="/lovable-uploads/1c8fdda0-b186-484f-a4d2-052b7342178b.png" 
-          alt="Regal Logo" 
-          className="h-8 w-auto" 
+          src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png" 
+          alt="Regal Network Logo" 
+          className="h-16 w-auto mb-3" 
         />
-        <span className="font-bold text-lg text-gray-900 dark:text-gray-100">Regal</span>
+        <div>
+          <h1 className="font-bold text-xl text-gray-900 dark:text-gray-100 mb-1">
+            Regal Network
+          </h1>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            A Global Christian Social Network
+          </p>
+        </div>
       </div>
 
       {/* Navigation Items */}
