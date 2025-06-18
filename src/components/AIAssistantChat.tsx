@@ -51,7 +51,6 @@ const AIAssistantChat = () => {
     if (!user) return;
 
     try {
-      // Use the ai_generations table to store and retrieve chat history
       const { data, error } = await supabase
         .from('ai_generations')
         .select('*')
@@ -112,14 +111,13 @@ const AIAssistantChat = () => {
     setInput('');
     setLoading(true);
 
-    // Save user message
     await saveChatMessage(userMessage.content, 'user');
 
     try {
-      const { data, error } = await supabase.functions.invoke('ai-assistant-chat', {
+      const { data, error } = await supabase.functions.invoke('openrouter-ai', {
         body: {
-          message: userMessage.content,
-          conversationHistory: messages.slice(-10)
+          prompt: `Previous conversation: ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}\n\nUser: ${userMessage.content}`,
+          type: 'chat'
         }
       });
 
@@ -127,14 +125,13 @@ const AIAssistantChat = () => {
 
       const assistantMessage: Message = {
         id: `assistant_${Date.now()}`,
-        content: data.response,
+        content: data.generatedText,
         role: 'assistant',
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
       
-      // Save assistant message
       await saveChatMessage(assistantMessage.content, 'assistant');
 
     } catch (error) {

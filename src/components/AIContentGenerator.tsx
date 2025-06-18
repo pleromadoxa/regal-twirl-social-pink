@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,8 +13,6 @@ const AIContentGenerator = () => {
   const [prompt, setPrompt] = useState('');
   const [contentType, setContentType] = useState('social-post');
   const [tone, setTone] = useState('friendly');
-  const [length, setLength] = useState('medium');
-  const [audience, setAudience] = useState('general');
   const [generatedContent, setGeneratedContent] = useState('');
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
@@ -26,27 +23,25 @@ const AIContentGenerator = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-content-generator', {
+      const enhancedPrompt = `Create ${contentType} content with a ${tone} tone: ${prompt.trim()}`;
+      
+      const { data, error } = await supabase.functions.invoke('openrouter-ai', {
         body: {
-          prompt: prompt.trim(),
-          contentType,
-          tone,
-          length,
-          audience,
-          userId: user?.id
+          prompt: enhancedPrompt,
+          type: 'generate'
         }
       });
 
       if (error) throw error;
 
-      setGeneratedContent(data.content);
+      setGeneratedContent(data.generatedText);
       
       // Save to history
       if (user) {
         await supabase.from('ai_generations').insert({
           user_id: user.id,
           prompt: prompt.trim(),
-          result: data.content,
+          result: data.generatedText,
           generation_type: 'content'
         });
       }
@@ -116,53 +111,19 @@ const AIContentGenerator = () => {
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Tone</label>
-              <Select value={tone} onValueChange={setTone}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="friendly">Friendly</SelectItem>
-                  <SelectItem value="professional">Professional</SelectItem>
-                  <SelectItem value="casual">Casual</SelectItem>
-                  <SelectItem value="formal">Formal</SelectItem>
-                  <SelectItem value="creative">Creative</SelectItem>
-                  <SelectItem value="humorous">Humorous</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Length</label>
-              <Select value={length} onValueChange={setLength}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="short">Short</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="long">Long</SelectItem>
-                  <SelectItem value="very-long">Very Long</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           <div>
-            <label className="block text-sm font-medium mb-2">Target Audience</label>
-            <Select value={audience} onValueChange={setAudience}>
+            <label className="block text-sm font-medium mb-2">Tone</label>
+            <Select value={tone} onValueChange={setTone}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="general">General Audience</SelectItem>
-                <SelectItem value="business-professionals">Business Professionals</SelectItem>
-                <SelectItem value="young-adults">Young Adults</SelectItem>
-                <SelectItem value="entrepreneurs">Entrepreneurs</SelectItem>
-                <SelectItem value="creatives">Creatives</SelectItem>
-                <SelectItem value="tech-enthusiasts">Tech Enthusiasts</SelectItem>
+                <SelectItem value="friendly">Friendly</SelectItem>
+                <SelectItem value="professional">Professional</SelectItem>
+                <SelectItem value="casual">Casual</SelectItem>
+                <SelectItem value="formal">Formal</SelectItem>
+                <SelectItem value="creative">Creative</SelectItem>
+                <SelectItem value="humorous">Humorous</SelectItem>
               </SelectContent>
             </Select>
           </div>

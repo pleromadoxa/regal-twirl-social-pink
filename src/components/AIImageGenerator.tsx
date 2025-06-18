@@ -12,8 +12,6 @@ import { Image, Download, Wand2 } from 'lucide-react';
 const AIImageGenerator = () => {
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('realistic');
-  const [size, setSize] = useState('1024x1024');
-  const [quality, setQuality] = useState('standard');
   const [generatedImage, setGeneratedImage] = useState('');
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
@@ -24,33 +22,35 @@ const AIImageGenerator = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-image-generator', {
+      const enhancedPrompt = `${style} style: ${prompt.trim()}`;
+      
+      const { data, error } = await supabase.functions.invoke('openrouter-ai', {
         body: {
-          prompt: prompt.trim(),
-          style,
-          size,
-          quality,
-          userId: user?.id
+          prompt: enhancedPrompt,
+          type: 'image'
         }
       });
 
       if (error) throw error;
 
-      setGeneratedImage(data.imageUrl);
+      // For now, we'll generate a placeholder since OpenRouter doesn't do images
+      // You could integrate with DALL-E or another image service here
+      const placeholderImage = `https://via.placeholder.com/512x512/6366f1/ffffff?text=${encodeURIComponent(prompt.slice(0, 20))}`;
+      setGeneratedImage(placeholderImage);
       
       // Save to history
       if (user) {
         await supabase.from('ai_generations').insert({
           user_id: user.id,
           prompt: prompt.trim(),
-          result: data.imageUrl,
+          result: placeholderImage,
           generation_type: 'image'
         });
       }
 
       toast({
         title: "Image Generated",
-        description: "Your image has been generated successfully!"
+        description: "Your image placeholder has been generated!"
       });
 
     } catch (error) {
@@ -126,35 +126,6 @@ const AIImageGenerator = () => {
                 <SelectItem value="cyberpunk">Cyberpunk</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Size</label>
-              <Select value={size} onValueChange={setSize}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1024x1024">Square (1024x1024)</SelectItem>
-                  <SelectItem value="1792x1024">Landscape (1792x1024)</SelectItem>
-                  <SelectItem value="1024x1792">Portrait (1024x1792)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Quality</label>
-              <Select value={quality} onValueChange={setQuality}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="standard">Standard</SelectItem>
-                  <SelectItem value="hd">HD</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <Button 
