@@ -37,7 +37,13 @@ const BusinessDashboard = () => {
   const [currentPage, setCurrentPage] = useState<any>(null);
 
   useEffect(() => {
-    console.log('BusinessDashboard useEffect:', { user: !!user, pageId, myPagesLength: myPages.length, loading });
+    console.log('BusinessDashboard useEffect:', { 
+      user: !!user, 
+      pageId, 
+      myPagesLength: myPages.length, 
+      loading,
+      myPages: myPages.map(p => ({ id: p.id, name: p.page_name }))
+    });
     
     if (!user) {
       console.log('No user, redirecting to auth');
@@ -45,7 +51,7 @@ const BusinessDashboard = () => {
       return;
     }
 
-    if (pageId && !loading) {
+    if (pageId && !loading && myPages.length > 0) {
       console.log('Looking for page with ID:', pageId);
       console.log('Available pages:', myPages.map(p => ({ id: p.id, name: p.page_name })));
       
@@ -54,19 +60,44 @@ const BusinessDashboard = () => {
         console.log('Page found:', page.page_name);
         setCurrentPage(page);
       } else {
-        console.log('Page not found, redirecting to professional');
+        console.log('Page not found in available pages, redirecting to professional');
         navigate('/professional');
       }
+    } else if (pageId && !loading && myPages.length === 0) {
+      console.log('No pages available, redirecting to professional');
+      navigate('/professional');
     }
   }, [user, pageId, myPages, navigate, loading]);
 
-  if (loading || !currentPage) {
-    console.log('Loading or no current page:', { loading, currentPage: !!currentPage });
+  if (loading) {
+    console.log('Still loading business pages...');
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
         <div className="flex-1 ml-80 mr-96 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentPage) {
+    console.log('No current page found, showing error state');
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+        <SidebarNav />
+        <div className="flex-1 ml-80 mr-96 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              Business Page Not Found
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              The requested business page could not be found.
+            </p>
+            <Button onClick={() => navigate('/professional')}>
+              Back to Professional Accounts
+            </Button>
+          </div>
         </div>
       </div>
     );

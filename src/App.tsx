@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,6 +26,7 @@ import ProfessionalDirectory from "@/pages/ProfessionalDirectory";
 import ProfessionalAccountProfile from "@/pages/ProfessionalAccountProfile";
 import EditProfessionalAccount from "@/pages/EditProfessionalAccount";
 import Music from "@/pages/Music";
+import AIStudio from "@/pages/AIStudio";
 import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "@/pages/NotFound";
 
@@ -63,6 +63,7 @@ const App = () => {
                   <Route path="/professional/:pageId" element={<ProfessionalAccountProfile />} />
                   <Route path="/professional/:pageId/edit" element={<EditProfessionalAccount />} />
                   <Route path="/music" element={<Music />} />
+                  <Route path="/ai-studio" element={<AIStudio />} />
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
