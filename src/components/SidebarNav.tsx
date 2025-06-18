@@ -36,36 +36,14 @@ const SidebarNav = () => {
 
   return (
     <div className="fixed top-0 left-0 h-full w-80 bg-white dark:bg-slate-900 border-r border-purple-200 dark:border-purple-800 py-4 px-3 flex flex-col z-50">
-      {/* Logo and Profile */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src="/logo.svg" alt="Regal Logo" className="h-8 w-auto" />
-          <span className="font-bold text-lg text-gray-900 dark:text-gray-100">Regal</span>
-        </div>
-        
-        {user && (
-          <div className="relative group">
-            <Avatar className="ring-2 ring-purple-300 dark:ring-purple-500 transition-all duration-300 hover:ring-pink-400">
-              <AvatarImage src={profile?.avatar_url} />
-              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white font-semibold">
-                {profile?.username?.[0]?.toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-              <div className="py-2 px-4">
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{user.email}</p>
-                <Button variant="ghost" size="sm" className="w-full justify-start mt-2 hover:bg-purple-100 dark:hover:bg-purple-700/50">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
-                <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-purple-100 dark:hover:bg-purple-700/50" onClick={signOut}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Logo */}
+      <div className="mb-6 flex items-center gap-3">
+        <img 
+          src="/lovable-uploads/1c8fdda0-b186-484f-a4d2-052b7342178b.png" 
+          alt="Regal Logo" 
+          className="h-8 w-auto" 
+        />
+        <span className="font-bold text-lg text-gray-900 dark:text-gray-100">Regal</span>
       </div>
 
       {/* Navigation Items */}
@@ -103,8 +81,41 @@ const SidebarNav = () => {
         ))}
       </nav>
 
+      {/* Profile Section at Bottom */}
+      {user && (
+        <div className="mt-auto px-4 border-t border-purple-200 dark:border-purple-700 pt-4">
+          <div className="flex items-center gap-3 mb-3">
+            <Avatar className="ring-2 ring-purple-300 dark:ring-purple-500">
+              <AvatarImage src={profile?.avatar_url} />
+              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white font-semibold">
+                {profile?.username?.[0]?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                @{profile?.username}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {user.email}
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-1">
+            <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-purple-100 dark:hover:bg-purple-700/50">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+            <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-purple-100 dark:hover:bg-purple-700/50" onClick={signOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
-      <div className="mt-auto px-4">
+      <div className="mt-4 px-4">
         <p className="text-center text-xs text-gray-500 dark:text-gray-600">
           © {new Date().getFullYear()} Regal. All rights reserved.
         </p>
