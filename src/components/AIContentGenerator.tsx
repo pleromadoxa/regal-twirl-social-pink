@@ -2,86 +2,34 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Wand2, 
-  Copy, 
-  Download, 
-  Share2, 
-  RefreshCw,
-  Sparkles,
-  FileText,
-  Hash,
-  MessageSquare,
-  Globe,
-  Image,
-  Video
-} from 'lucide-react';
+import { FileText, Copy, Download, Wand2 } from 'lucide-react';
 
 const AIContentGenerator = () => {
-  const [contentType, setContentType] = useState('social-post');
   const [prompt, setPrompt] = useState('');
-  const [tone, setTone] = useState('professional');
+  const [contentType, setContentType] = useState('social-post');
+  const [tone, setTone] = useState('friendly');
   const [length, setLength] = useState('medium');
   const [audience, setAudience] = useState('general');
   const [generatedContent, setGeneratedContent] = useState('');
   const [loading, setLoading] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
-
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const contentTypes = [
-    { value: 'social-post', label: 'Social Media Post', icon: MessageSquare },
-    { value: 'blog-post', label: 'Blog Post', icon: FileText },
-    { value: 'email', label: 'Email', icon: MessageSquare },
-    { value: 'product-description', label: 'Product Description', icon: FileText },
-    { value: 'hashtags', label: 'Hashtags', icon: Hash },
-    { value: 'website-copy', label: 'Website Copy', icon: Globe },
-    { value: 'ad-copy', label: 'Advertisement Copy', icon: Sparkles },
-    { value: 'video-script', label: 'Video Script', icon: Video }
-  ];
-
-  const tones = [
-    'professional', 'casual', 'friendly', 'formal', 'humorous', 
-    'inspiring', 'persuasive', 'informative', 'creative', 'urgent'
-  ];
-
-  const lengths = [
-    { value: 'short', label: 'Short (50-100 words)' },
-    { value: 'medium', label: 'Medium (100-300 words)' },
-    { value: 'long', label: 'Long (300-500 words)' },
-    { value: 'very-long', label: 'Very Long (500+ words)' }
-  ];
-
-  const audiences = [
-    'general', 'business-professionals', 'millennials', 'gen-z', 
-    'parents', 'students', 'entrepreneurs', 'tech-enthusiasts', 'creatives'
-  ];
-
-  const generateContent = async () => {
-    if (!prompt.trim()) {
-      toast({
-        title: "Prompt required",
-        description: "Please enter a content prompt",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleGenerate = async () => {
+    if (!prompt.trim() || loading) return;
 
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-content-generator', {
         body: {
-          contentType,
           prompt: prompt.trim(),
+          contentType,
           tone,
           length,
           audience,
@@ -94,28 +42,24 @@ const AIContentGenerator = () => {
       setGeneratedContent(data.content);
       
       // Save to history
-      const historyItem = {
-        id: Date.now(),
-        contentType,
-        prompt,
-        content: data.content,
-        tone,
-        length,
-        audience,
-        timestamp: new Date()
-      };
-      
-      setHistory(prev => [historyItem, ...prev.slice(0, 9)]); // Keep last 10 items
+      if (user) {
+        await supabase.from('ai_generations').insert({
+          user_id: user.id,
+          prompt: prompt.trim(),
+          result: data.content,
+          generation_type: 'content'
+        });
+      }
 
       toast({
-        title: "Content generated!",
-        description: "Your AI-generated content is ready"
+        title: "Content Generated",
+        description: "Your content has been generated successfully!"
       });
 
     } catch (error) {
       console.error('Error generating content:', error);
       toast({
-        title: "Generation failed",
+        title: "Error",
         description: "Failed to generate content. Please try again.",
         variant: "destructive"
       });
@@ -124,53 +68,22 @@ const AIContentGenerator = () => {
     }
   };
 
-  const copyContent = () => {
+  const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedContent);
     toast({
-      title: "Copied!",
+      title: "Copied",
       description: "Content copied to clipboard"
     });
   };
 
   const downloadContent = () => {
-    const blob = new Blob([generatedContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ai-generated-${contentType}-${Date.now()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Downloaded!",
-      description: "Content saved to your device"
-    });
-  };
-
-  const shareContent = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'AI Generated Content',
-          text: generatedContent,
-        });
-      } catch (error) {
-        copyContent(); // Fallback to copy
-      }
-    } else {
-      copyContent(); // Fallback to copy
-    }
-  };
-
-  const loadFromHistory = (item: any) => {
-    setContentType(item.contentType);
-    setPrompt(item.prompt);
-    setTone(item.tone);
-    setLength(item.length);
-    setAudience(item.audience);
-    setGeneratedContent(item.content);
+    const element = document.createElement('a');
+    const file = new Blob([generatedContent], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `generated-content-${Date.now()}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   return (
@@ -179,104 +92,104 @@ const AIContentGenerator = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Wand2 className="w-5 h-5 text-purple-600" />
-            AI Content Generator
+            <FileText className="w-5 h-5 text-purple-600" />
+            Content Generator
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="content-type">Content Type</Label>
+            <label className="block text-sm font-medium mb-2">Content Type</label>
             <Select value={contentType} onValueChange={setContentType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {contentTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    <div className="flex items-center gap-2">
-                      <type.icon className="w-4 h-4" />
-                      {type.label}
-                    </div>
-                  </SelectItem>
-                ))}
+                <SelectItem value="social-post">Social Media Post</SelectItem>
+                <SelectItem value="blog-post">Blog Post</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="product-description">Product Description</SelectItem>
+                <SelectItem value="hashtags">Hashtags</SelectItem>
+                <SelectItem value="website-copy">Website Copy</SelectItem>
+                <SelectItem value="ad-copy">Ad Copy</SelectItem>
+                <SelectItem value="video-script">Video Script</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="prompt">Content Prompt</Label>
-            <Textarea
-              id="prompt"
-              placeholder="Describe what content you want to generate..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={3}
-            />
-          </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="tone">Tone</Label>
+              <label className="block text-sm font-medium mb-2">Tone</label>
               <Select value={tone} onValueChange={setTone}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {tones.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t.charAt(0).toUpperCase() + t.slice(1)}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="friendly">Friendly</SelectItem>
+                  <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="casual">Casual</SelectItem>
+                  <SelectItem value="formal">Formal</SelectItem>
+                  <SelectItem value="creative">Creative</SelectItem>
+                  <SelectItem value="humorous">Humorous</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="length">Length</Label>
+              <label className="block text-sm font-medium mb-2">Length</label>
               <Select value={length} onValueChange={setLength}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {lengths.map((l) => (
-                    <SelectItem key={l.value} value={l.value}>
-                      {l.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="short">Short</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="long">Long</SelectItem>
+                  <SelectItem value="very-long">Very Long</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div>
-            <Label htmlFor="audience">Target Audience</Label>
+            <label className="block text-sm font-medium mb-2">Target Audience</label>
             <Select value={audience} onValueChange={setAudience}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {audiences.map((a) => (
-                  <SelectItem key={a} value={a}>
-                    {a.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                  </SelectItem>
-                ))}
+                <SelectItem value="general">General Audience</SelectItem>
+                <SelectItem value="business-professionals">Business Professionals</SelectItem>
+                <SelectItem value="young-adults">Young Adults</SelectItem>
+                <SelectItem value="entrepreneurs">Entrepreneurs</SelectItem>
+                <SelectItem value="creatives">Creatives</SelectItem>
+                <SelectItem value="tech-enthusiasts">Tech Enthusiasts</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium mb-2">Prompt</label>
+            <Textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Describe what you want to create..."
+              rows={4}
+            />
+          </div>
+
           <Button 
-            onClick={generateContent} 
+            onClick={handleGenerate} 
             disabled={loading || !prompt.trim()}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
             {loading ? (
               <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                <Wand2 className="w-4 h-4 mr-2 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 mr-2" />
+                <Wand2 className="w-4 h-4 mr-2" />
                 Generate Content
               </>
             )}
@@ -285,81 +198,36 @@ const AIContentGenerator = () => {
       </Card>
 
       {/* Output Panel */}
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Generated Content
-              {generatedContent && (
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={copyContent}>
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={downloadContent}>
-                    <Download className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={shareContent}>
-                    <Share2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {generatedContent ? (
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">{contentType}</Badge>
-                  <Badge variant="outline">{tone}</Badge>
-                  <Badge variant="outline">{length}</Badge>
-                  <Badge variant="outline">{audience}</Badge>
-                </div>
-                <Textarea
-                  value={generatedContent}
-                  onChange={(e) => setGeneratedContent(e.target.value)}
-                  rows={10}
-                  className="min-h-[200px]"
-                />
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Generated content will appear here</p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            Generated Content
+            {generatedContent && (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={copyToClipboard}>
+                  <Copy className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={downloadContent}>
+                  <Download className="w-4 h-4" />
+                </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* History */}
-        {history.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Generations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {history.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                    onClick={() => loadFromHistory(item)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="secondary">{item.contentType}</Badge>
-                      <span className="text-xs text-gray-500">
-                        {item.timestamp.toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                      {item.prompt}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {generatedContent ? (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[400px]">
+              <pre className="whitespace-pre-wrap text-sm">{generatedContent}</pre>
+            </div>
+          ) : (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[400px] flex items-center justify-center">
+              <p className="text-gray-500 dark:text-gray-400 text-center">
+                Your generated content will appear here
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

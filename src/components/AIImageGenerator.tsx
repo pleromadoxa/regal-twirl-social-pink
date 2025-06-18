@@ -3,69 +3,24 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Image as ImageIcon, 
-  Download, 
-  RefreshCw, 
-  Sparkles, 
-  Palette,
-  Zap,
-  Settings,
-  Copy
-} from 'lucide-react';
+import { Image, Download, Wand2 } from 'lucide-react';
 
 const AIImageGenerator = () => {
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('realistic');
   const [size, setSize] = useState('1024x1024');
   const [quality, setQuality] = useState('standard');
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [generatedImage, setGeneratedImage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
-
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const styles = [
-    { value: 'realistic', label: 'Realistic' },
-    { value: 'artistic', label: 'Artistic' },
-    { value: 'cartoon', label: 'Cartoon' },
-    { value: 'anime', label: 'Anime' },
-    { value: 'abstract', label: 'Abstract' },
-    { value: 'vintage', label: 'Vintage' },
-    { value: 'minimalist', label: 'Minimalist' },
-    { value: 'cyberpunk', label: 'Cyberpunk' }
-  ];
-
-  const sizes = [
-    { value: '256x256', label: '256×256 (Small)' },
-    { value: '512x512', label: '512×512 (Medium)' },
-    { value: '1024x1024', label: '1024×1024 (Large)' },
-    { value: '1024x1792', label: '1024×1792 (Portrait)' },
-    { value: '1792x1024', label: '1792×1024 (Landscape)' }
-  ];
-
-  const qualities = [
-    { value: 'standard', label: 'Standard' },
-    { value: 'hd', label: 'HD (Higher Quality)' }
-  ];
-
-  const generateImage = async () => {
-    if (!prompt.trim()) {
-      toast({
-        title: "Prompt required",
-        description: "Please enter an image description",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleGenerate = async () => {
+    if (!prompt.trim() || loading) return;
 
     setLoading(true);
     try {
@@ -81,30 +36,27 @@ const AIImageGenerator = () => {
 
       if (error) throw error;
 
-      setGeneratedImages([data.imageUrl, ...generatedImages.slice(0, 7)]); // Keep last 8 images
+      setGeneratedImage(data.imageUrl);
       
       // Save to history
-      const historyItem = {
-        id: Date.now(),
-        prompt,
-        style,
-        size,
-        quality,
-        imageUrl: data.imageUrl,
-        timestamp: new Date()
-      };
-      
-      setHistory(prev => [historyItem, ...prev.slice(0, 9)]); // Keep last 10 items
+      if (user) {
+        await supabase.from('ai_generations').insert({
+          user_id: user.id,
+          prompt: prompt.trim(),
+          result: data.imageUrl,
+          generation_type: 'image'
+        });
+      }
 
       toast({
-        title: "Image generated!",
-        description: "Your AI-generated image is ready"
+        title: "Image Generated",
+        description: "Your image has been generated successfully!"
       });
 
     } catch (error) {
       console.error('Error generating image:', error);
       toast({
-        title: "Generation failed",
+        title: "Error",
         description: "Failed to generate image. Please try again.",
         variant: "destructive"
       });
@@ -113,123 +65,111 @@ const AIImageGenerator = () => {
     }
   };
 
-  const downloadImage = async (imageUrl: string, filename?: string) => {
+  const downloadImage = async () => {
+    if (!generatedImage) return;
+
     try {
-      const response = await fetch(imageUrl);
+      const response = await fetch(generatedImage);
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename || `ai-generated-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      toast({
-        title: "Downloaded!",
-        description: "Image saved to your device"
-      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `generated-image-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
+      console.error('Error downloading image:', error);
       toast({
-        title: "Download failed",
+        title: "Error",
         description: "Failed to download image",
         variant: "destructive"
       });
     }
   };
 
-  const copyPrompt = (promptText: string) => {
-    navigator.clipboard.writeText(promptText);
-    toast({
-      title: "Copied!",
-      description: "Prompt copied to clipboard"
-    });
-  };
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Input Panel */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ImageIcon className="w-5 h-5 text-purple-600" />
-            AI Image Generator
+            <Image className="w-5 h-5 text-purple-600" />
+            Image Generator
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="prompt">Image Description</Label>
+            <label className="block text-sm font-medium mb-2">Prompt</label>
             <Input
-              id="prompt"
-              placeholder="A beautiful sunset over mountains..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Describe the image you want to create..."
             />
           </div>
 
           <div>
-            <Label htmlFor="style">Art Style</Label>
+            <label className="block text-sm font-medium mb-2">Style</label>
             <Select value={style} onValueChange={setStyle}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {styles.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
-                    {s.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="realistic">Realistic</SelectItem>
+                <SelectItem value="artistic">Artistic</SelectItem>
+                <SelectItem value="cartoon">Cartoon</SelectItem>
+                <SelectItem value="anime">Anime</SelectItem>
+                <SelectItem value="abstract">Abstract</SelectItem>
+                <SelectItem value="vintage">Vintage</SelectItem>
+                <SelectItem value="minimalist">Minimalist</SelectItem>
+                <SelectItem value="cyberpunk">Cyberpunk</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="size">Image Size</Label>
-            <Select value={size} onValueChange={setSize}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sizes.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Size</label>
+              <Select value={size} onValueChange={setSize}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1024x1024">Square (1024x1024)</SelectItem>
+                  <SelectItem value="1792x1024">Landscape (1792x1024)</SelectItem>
+                  <SelectItem value="1024x1792">Portrait (1024x1792)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div>
-            <Label htmlFor="quality">Quality</Label>
-            <Select value={quality} onValueChange={setQuality}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {qualities.map((q) => (
-                  <SelectItem key={q.value} value={q.value}>
-                    {q.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div>
+              <label className="block text-sm font-medium mb-2">Quality</label>
+              <Select value={quality} onValueChange={setQuality}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="hd">HD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <Button 
-            onClick={generateImage} 
+            onClick={handleGenerate} 
             disabled={loading || !prompt.trim()}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
             {loading ? (
               <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                <Wand2 className="w-4 h-4 mr-2 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 mr-2" />
+                <Wand2 className="w-4 h-4 mr-2" />
                 Generate Image
               </>
             )}
@@ -237,102 +177,37 @@ const AIImageGenerator = () => {
         </CardContent>
       </Card>
 
-      {/* Generated Images */}
-      <Card className="lg:col-span-2">
+      {/* Output Panel */}
+      <Card>
         <CardHeader>
-          <CardTitle>Generated Images</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            Generated Image
+            {generatedImage && (
+              <Button variant="outline" size="sm" onClick={downloadImage}>
+                <Download className="w-4 h-4 mr-1" />
+                Download
+              </Button>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {generatedImages.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {generatedImages.map((imageUrl, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={imageUrl}
-                    alt={`Generated image ${index + 1}`}
-                    className="w-full h-64 object-cover rounded-lg"
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => downloadImage(imageUrl)}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download
-                    </Button>
-                  </div>
-                </div>
-              ))}
+          {generatedImage ? (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <img 
+                src={generatedImage} 
+                alt="Generated image" 
+                className="w-full h-auto rounded-lg shadow-lg"
+              />
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-500">
-              <ImageIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p>Generated images will appear here</p>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[400px] flex items-center justify-center">
+              <p className="text-gray-500 dark:text-gray-400 text-center">
+                Your generated image will appear here
+              </p>
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* History */}
-      {history.length > 0 && (
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Recent Generations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {history.map((item) => (
-                <div key={item.id} className="space-y-2">
-                  <div className="relative group">
-                    <img
-                      src={item.imageUrl}
-                      alt="Generated"
-                      className="w-full h-32 object-cover rounded-lg cursor-pointer"
-                      onClick={() => {
-                        setPrompt(item.prompt);
-                        setStyle(item.style);
-                        setSize(item.size);
-                        setQuality(item.quality);
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          downloadImage(item.imageUrl, `${item.prompt.slice(0, 20)}-${item.id}.png`);
-                        }}
-                      >
-                        <Download className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                      {item.prompt}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="text-xs">
-                        {item.style}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyPrompt(item.prompt)}
-                        className="h-6 px-2"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

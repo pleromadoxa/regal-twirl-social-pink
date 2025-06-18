@@ -13,7 +13,6 @@ import {
   Bot, 
   User, 
   Sparkles, 
-  MessageSquare, 
   Copy,
   ThumbsUp,
   ThumbsDown,
@@ -45,7 +44,6 @@ const AIAssistantChat = () => {
   }, [messages]);
 
   useEffect(() => {
-    // Load chat history
     loadChatHistory();
   }, [user]);
 
@@ -53,10 +51,12 @@ const AIAssistantChat = () => {
     if (!user) return;
 
     try {
+      // Use the ai_generations table to store and retrieve chat history
       const { data, error } = await supabase
-        .from('ai_chat_history')
+        .from('ai_generations')
         .select('*')
         .eq('user_id', user.id)
+        .eq('generation_type', 'chat')
         .order('created_at', { ascending: true })
         .limit(50);
 
@@ -64,10 +64,9 @@ const AIAssistantChat = () => {
 
       const chatMessages: Message[] = data.map((item: any) => ({
         id: item.id,
-        content: item.message,
-        role: item.role,
-        timestamp: new Date(item.created_at),
-        rating: item.rating
+        content: item.result,
+        role: 'assistant',
+        timestamp: new Date(item.created_at)
       }));
 
       setMessages(chatMessages);
@@ -81,12 +80,12 @@ const AIAssistantChat = () => {
 
     try {
       const { data, error } = await supabase
-        .from('ai_chat_history')
+        .from('ai_generations')
         .insert({
           user_id: user.id,
-          message,
-          role,
-          session_id: `session_${Date.now()}`
+          prompt: role === 'user' ? message : '',
+          result: message,
+          generation_type: 'chat'
         })
         .select()
         .single();
@@ -120,7 +119,7 @@ const AIAssistantChat = () => {
       const { data, error } = await supabase.functions.invoke('ai-assistant-chat', {
         body: {
           message: userMessage.content,
-          conversationHistory: messages.slice(-10) // Send last 10 messages for context
+          conversationHistory: messages.slice(-10)
         }
       });
 
@@ -147,28 +146,6 @@ const AIAssistantChat = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleRating = async (messageId: string, rating: 'up' | 'down') => {
-    try {
-      const { error } = await supabase
-        .from('ai_chat_history')
-        .update({ rating })
-        .eq('id', messageId);
-
-      if (error) throw error;
-
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId ? { ...msg, rating } : msg
-      ));
-
-      toast({
-        title: "Feedback saved",
-        description: "Thank you for your feedback!"
-      });
-    } catch (error) {
-      console.error('Error saving rating:', error);
     }
   };
 
@@ -254,7 +231,6 @@ const AIAssistantChat = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRating(message.id, 'up')}
                         className={`h-6 px-2 ${message.rating === 'up' ? 'text-green-600' : ''}`}
                       >
                         <ThumbsUp className="w-3 h-3" />
@@ -262,7 +238,6 @@ const AIAssistantChat = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRating(message.id, 'down')}
                         className={`h-6 px-2 ${message.rating === 'down' ? 'text-red-600' : ''}`}
                       >
                         <ThumbsDown className="w-3 h-3" />
