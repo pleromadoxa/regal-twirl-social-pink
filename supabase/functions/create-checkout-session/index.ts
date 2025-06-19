@@ -1,54 +1,85 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@14.21.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const { tier, billing, price, userId } = await req.json();
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+  );
 
-    const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        'payment_method_types[]': 'card',
-        'line_items[0][price_data][currency]': 'usd',
-        'line_items[0][price_data][product_data][name]': `Regal ${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan`,
-        'line_items[0][price_data][unit_amount]': (price * 100).toString(),
-        'line_items[0][price_data][recurring][interval]': billing === 'yearly' ? 'year' : 'month',
-        'line_items[0][quantity]': '1',
-        'mode': 'subscription',
-        'success_url': 'https://yourapp.com/premium/success',
-        'cancel_url': 'https://yourapp.com/premium/cancel',
-        'client_reference_id': userId,
-        'metadata[tier]': tier,
-        'metadata[billing]': billing,
-      }),
+  try {
+    const authHeader = req.headers.get("Authorization")!;
+    const token = authHeader.replace("Bearer ", "");
+    const { data } = await supabaseClient.auth.getUser(token);
+    const user = data.user;
+    if (!user?.email) throw new Error("User not authenticated");
+
+    const { planName, price, isYearly, userId, userEmail } = await req.json();
+
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2023-10-16",
     });
 
-    const session = await response.json();
+    // Check if customer exists
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    let customerId;
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+    }
+
+    // Create subscription checkout session
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      customer_email: customerId ? undefined : user.email,
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { 
+              name: `Regal Premium ${planName}`,
+              description: planName ===  'Business' 
+                ? 'Access to AI Studio, Business Analytics, Ads Manager, and all Pro features'
+                : 'Professional business pages, enhanced analytics, and premium features'
+            },
+            unit_amount: price * 100, // Convert to cents
+            recurring: { 
+              interval: isYearly ? "year" : "month",
+              interval_count: 1
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "subscription",
+      success_url: `${req.headers.get("origin")}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.get("origin")}/subscription-canceled`,
+      metadata: {
+        userId: userId,
+        planName: planName,
+        planType: planName.toLowerCase()
+      }
+    });
 
     return new Response(JSON.stringify({ url: session.url }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
     });
   } catch (error) {
     console.error('Error creating checkout session:', error);
     return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });

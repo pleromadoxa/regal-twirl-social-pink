@@ -3,9 +3,11 @@ import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import PremiumDialog from "@/components/PremiumDialog";
 import { 
   Home, 
   Search, 
@@ -19,23 +21,62 @@ import {
   Sparkles,
   Pin,
   BarChart3,
-  Megaphone
+  Megaphone,
+  Crown
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const SidebarNav = () => {
   const { user, signOut } = useAuth();
   const { unreadCount } = useNotifications();
+  const { myPages } = useBusinessPages();
   const [profile, setProfile] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
-      setProfile({
-        avatar_url: user.user_metadata?.avatar_url,
-        username: user.user_metadata?.name || user.email?.split('@')[0]
-      });
+      fetchProfile();
+      checkAdminAccess();
     }
   }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      setProfile({
+        ...data,
+        avatar_url: user.user_metadata?.avatar_url || data?.avatar_url,
+        username: data?.username || user.user_metadata?.name || user.email?.split('@')[0]
+      });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      setProfile({
+        avatar_url: user.user_metadata?.avatar_url,
+        username: user.user_metadata?.name || user.email?.split('@')[0],
+        premium_tier: 'free'
+      });
+    }
+  };
+
+  const checkAdminAccess = async () => {
+    if (!user) return;
+    
+    try {
+      const isUserAdmin = user.email === 'pleromadoxa@gmail.com';
+      setIsAdmin(isUserAdmin);
+    } catch (error) {
+      console.error('Error checking admin access:', error);
+      setIsAdmin(false);
+    }
+  };
 
   const handleProfileClick = () => {
     if (user) {
@@ -45,6 +86,53 @@ const SidebarNav = () => {
 
   const handleSettingsClick = () => {
     navigate('/settings');
+  };
+
+  const isPremiumUser = profile?.premium_tier === 'pro' || profile?.premium_tier === 'business';
+  const isBusinessUser = profile?.premium_tier === 'business';
+  const hasBusinessPages = myPages && myPages.length > 0;
+
+  // Filter navigation items based on user permissions
+  const getFilteredNavItems = () => {
+    const baseItems = [
+      { name: 'Home', icon: Home, path: '/home', accent: 'from-purple-500 to-purple-600' },
+      { name: 'Explore', icon: Search, path: '/explore', accent: 'from-blue-500 to-cyan-500' },
+      { name: 'Notifications', icon: Bell, path: '/notifications', accent: 'from-orange-500 to-red-500' },
+      { name: 'Games', icon: Gamepad2, path: '/games', accent: 'from-green-500 to-emerald-500' },
+      { name: 'Messages', icon: MessageCircle, path: '/messages', accent: 'from-pink-500 to-rose-500' },
+      { name: 'Music', icon: Music, path: '/music', accent: 'from-violet-500 to-purple-600' },
+      { name: 'Pinned', icon: Pin, path: '/pinned', accent: 'from-teal-500 to-cyan-600' },
+    ];
+
+    // Add premium-only items
+    if (isPremiumUser || isAdmin) {
+      baseItems.push({
+        name: 'Professional', 
+        icon: Briefcase, 
+        path: '/professional', 
+        accent: 'from-indigo-500 to-blue-600'
+      });
+    }
+
+    // Add business-only items (only if user has business pages)
+    if ((hasBusinessPages || isAdmin)) {
+      baseItems.push(
+        { name: 'Business Analytics', icon: BarChart3, path: '/business-analytics', accent: 'from-teal-500 to-cyan-600' },
+        { name: 'Ads Manager', icon: Megaphone, path: '/ads-manager', accent: 'from-red-500 to-pink-600' }
+      );
+    }
+
+    // Add AI Studio for business tier users only
+    if (isBusinessUser || isAdmin) {
+      baseItems.push({
+        name: 'AI Studio', 
+        icon: Sparkles, 
+        path: '/ai-studio', 
+        accent: 'from-yellow-500 to-orange-500'
+      });
+    }
+
+    return baseItems;
   };
 
   return (
@@ -71,19 +159,7 @@ const SidebarNav = () => {
 
       {/* Navigation Items */}
       <nav className="flex-1 px-4 space-y-2">
-        {[
-          { name: 'Home', icon: Home, path: '/home', accent: 'from-purple-500 to-purple-600' },
-          { name: 'Explore', icon: Search, path: '/explore', accent: 'from-blue-500 to-cyan-500' },
-          { name: 'Notifications', icon: Bell, path: '/notifications', accent: 'from-orange-500 to-red-500' },
-          { name: 'Games', icon: Gamepad2, path: '/games', accent: 'from-green-500 to-emerald-500' },
-          { name: 'Messages', icon: MessageCircle, path: '/messages', accent: 'from-pink-500 to-rose-500' },
-          { name: 'Professional', icon: Briefcase, path: '/professional', accent: 'from-indigo-500 to-blue-600' },
-          { name: 'Business Analytics', icon: BarChart3, path: '/business-analytics', accent: 'from-teal-500 to-cyan-600' },
-          { name: 'Ads Manager', icon: Megaphone, path: '/ads-manager', accent: 'from-red-500 to-pink-600' },
-          { name: 'Music', icon: Music, path: '/music', accent: 'from-violet-500 to-purple-600' },
-          { name: 'AI Studio', icon: Sparkles, path: '/ai-studio', accent: 'from-yellow-500 to-orange-500' },
-          { name: 'Pinned', icon: Pin, path: '/pinned', accent: 'from-teal-500 to-cyan-600' },
-        ].map((item) => (
+        {getFilteredNavItems().map((item) => (
           <NavLink
             key={item.name}
             to={item.path}
@@ -107,6 +183,20 @@ const SidebarNav = () => {
         ))}
       </nav>
 
+      {/* Premium Button */}
+      {!isPremiumUser && !isAdmin && (
+        <div className="px-4 mb-4">
+          <PremiumDialog
+            trigger={
+              <Button className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg">
+                <Crown className="w-4 h-4 mr-2" />
+                Upgrade to Premium
+              </Button>
+            }
+          />
+        </div>
+      )}
+
       {/* Profile Section at Bottom */}
       {user && (
         <div className="mt-auto px-4 border-t border-gradient-to-r from-purple-200 via-purple-300 to-pink-200 dark:from-purple-700 dark:via-purple-600 dark:to-pink-700 pt-4 bg-gradient-to-r from-purple-50/30 to-pink-50/20 dark:from-purple-950/30 dark:to-pink-950/20 rounded-t-xl">
@@ -124,11 +214,20 @@ const SidebarNav = () => {
               </Avatar>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                @{profile?.username}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                  @{profile?.username}
+                </p>
+                {isPremiumUser && (
+                  <Crown className="w-3 h-3 text-amber-500" />
+                )}
+                {isAdmin && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0">Admin</Badge>
+                )}
+              </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {user.email}
+                {profile?.premium_tier === 'business' ? 'Business Plan' : 
+                 profile?.premium_tier === 'pro' ? 'Pro Plan' : 'Free Plan'}
               </p>
             </div>
           </div>

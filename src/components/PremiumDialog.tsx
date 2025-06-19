@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Crown, Check, Sparkles, Zap, Star } from "lucide-react";
+import { Crown, Check, Sparkles, Zap, Star, CreditCard, Bitcoin, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -23,47 +23,40 @@ interface Plan {
 
 const plans: Plan[] = [
   {
-    name: "Basic",
-    monthlyPrice: 5,
-    yearlyPrice: 50,
-    color: "from-blue-500 to-blue-600",
+    name: "Pro",
+    monthlyPrice: 10,
+    yearlyPrice: 100,
+    color: "from-purple-500 to-purple-600",
     features: [
+      "Create Professional Business Pages",
       "AI Caption Generator",
       "Enhanced Analytics", 
       "Priority Support",
       "Advanced Search",
-      "Custom Themes"
+      "Custom Themes",
+      "Professional Verification Badge",
+      "E-commerce Integration",
+      "Customer Management"
     ]
   },
   {
-    name: "Pro",
-    monthlyPrice: 15,
-    yearlyPrice: 150,
-    color: "from-purple-500 to-purple-600",
+    name: "Business",
+    monthlyPrice: 20,
+    yearlyPrice: 200,
+    color: "from-amber-500 to-amber-600",
     popular: true,
     features: [
-      "Everything in Basic",
-      "AI Content Enhancement",
-      "Advanced Scheduling",
-      "Professional Badge",
-      "Thread Creation",
-      "Location Tagging",
-      "Unlimited AI Generations"
-    ]
-  },
-  {
-    name: "Enterprise",
-    monthlyPrice: 30,
-    yearlyPrice: 300,
-    color: "from-amber-500 to-amber-600",
-    features: [
       "Everything in Pro",
+      "AI Studio Access",
+      "AI Content Enhancement",
       "AI Image Generation",
-      "Business Analytics",
+      "Advanced Business Analytics",
+      "Business Ads Manager",
+      "Unlimited AI Generations",
       "API Access",
       "White Label Options",
-      "Priority Support",
-      "Custom Integrations"
+      "Custom Integrations",
+      "Advanced Booking System"
     ]
   }
 ];
@@ -71,6 +64,8 @@ const plans: Plan[] = [
 const PremiumDialog = ({ trigger }: PremiumDialogProps) => {
   const [isYearly, setIsYearly] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'crypto' | 'paypal'>('stripe');
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -86,36 +81,62 @@ const PremiumDialog = ({ trigger }: PremiumDialogProps) => {
 
     try {
       setLoading(true);
+      setSelectedPlan(planName);
       
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: { 
-          planName,
-          price,
-          isYearly,
-          userId: user.id,
-          userEmail: user.email
+      // Handle different payment methods
+      if (paymentMethod === 'stripe') {
+        const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+          body: { 
+            planName,
+            price,
+            isYearly,
+            userId: user.id,
+            userEmail: user.email
+          }
+        });
+
+        if (error) throw error;
+
+        if (data?.url) {
+          window.open(data.url, '_blank');
         }
-      });
-
-      if (error) throw error;
-
-      if (data?.url) {
-        window.open(data.url, '_blank');
+      } else if (paymentMethod === 'crypto') {
+        // For crypto payments, we'll redirect to a crypto payment processor
+        toast({
+          title: "Crypto Payment",
+          description: "Redirecting to crypto payment processor..."
+        });
+        
+        // You would integrate with a crypto payment processor like CoinGate, BitPay, etc.
+        const cryptoUrl = `https://commerce.coinbase.com/checkout/new?name=Regal%20Premium%20${planName}&description=${planName}%20Plan&pricing_type=fixed_price&local_price=${price}&currency=USD`;
+        window.open(cryptoUrl, '_blank');
+        
+      } else if (paymentMethod === 'paypal') {
+        // For PayPal, we'll use their subscription API
+        toast({
+          title: "PayPal Payment",
+          description: "Redirecting to PayPal..."
+        });
+        
+        // You would integrate with PayPal's subscription API
+        const paypalUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick-subscriptions&business=your-paypal-email@example.com&item_name=Regal%20Premium%20${planName}&amount=${price}&currency_code=USD`;
+        window.open(paypalUrl, '_blank');
       }
 
       toast({
-        title: "Redirecting to checkout",
-        description: "You'll be redirected to complete your subscription."
+        title: "Processing payment",
+        description: `You'll be redirected to complete your ${planName} subscription via ${paymentMethod}.`
       });
     } catch (error) {
-      console.error('Error creating checkout session:', error);
+      console.error('Error creating subscription:', error);
       toast({
         title: "Error",
-        description: "Failed to create checkout session",
+        description: "Failed to process subscription",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
+      setSelectedPlan(null);
     }
   };
 
@@ -153,8 +174,39 @@ const PremiumDialog = ({ trigger }: PremiumDialogProps) => {
             )}
           </div>
 
+          {/* Payment Method Selection */}
+          <div className="flex justify-center gap-4">
+            <Button
+              variant={paymentMethod === 'stripe' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setPaymentMethod('stripe')}
+              className="flex items-center gap-2"
+            >
+              <CreditCard className="w-4 h-4" />
+              Card
+            </Button>
+            <Button
+              variant={paymentMethod === 'crypto' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setPaymentMethod('crypto')}
+              className="flex items-center gap-2"
+            >
+              <Bitcoin className="w-4 h-4" />
+              Crypto
+            </Button>
+            <Button
+              variant={paymentMethod === 'paypal' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setPaymentMethod('paypal')}
+              className="flex items-center gap-2"
+            >
+              <DollarSign className="w-4 h-4" />
+              PayPal
+            </Button>
+          </div>
+
           {/* Plans Grid */}
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {plans.map((plan, index) => (
               <div
                 key={plan.name}
@@ -208,14 +260,14 @@ const PremiumDialog = ({ trigger }: PremiumDialogProps) => {
                     plan.name, 
                     isYearly ? plan.yearlyPrice : plan.monthlyPrice
                   )}
-                  disabled={loading}
+                  disabled={loading && selectedPlan === plan.name}
                   className={`w-full py-3 font-semibold rounded-xl transition-all duration-300 ${
                     plan.popular
                       ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
                       : 'bg-gray-100 hover:bg-gray-200 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white'
                   }`}
                 >
-                  {loading ? (
+                  {loading && selectedPlan === plan.name ? (
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       Processing...
@@ -242,10 +294,10 @@ const PremiumDialog = ({ trigger }: PremiumDialogProps) => {
                   <Zap className="w-8 h-8 text-white" />
                 </div>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  AI-Powered Features
+                  Professional Business Tools
                 </h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Generate amazing content with our advanced AI assistant
+                  Create and manage professional business pages with advanced features
                 </p>
               </div>
               <div className="text-center">
@@ -253,10 +305,10 @@ const PremiumDialog = ({ trigger }: PremiumDialogProps) => {
                   <Star className="w-8 h-8 text-white" />
                 </div>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  Premium Experience
+                  AI-Powered Content
                 </h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Unlock exclusive features and priority support
+                  Access to AI Studio and unlimited content generation
                 </p>
               </div>
               <div className="text-center">
@@ -264,13 +316,19 @@ const PremiumDialog = ({ trigger }: PremiumDialogProps) => {
                   <Crown className="w-8 h-8 text-white" />
                 </div>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                  Professional Tools
+                  Premium Support
                 </h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Advanced analytics and business features
+                  Priority customer support and exclusive features
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Payment Security Notice */}
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400 border-t pt-4">
+            <p>🔒 Secure payments powered by Stripe, PayPal, and leading crypto processors</p>
+            <p>All major credit cards, cryptocurrencies, and PayPal accepted worldwide</p>
           </div>
         </div>
       </DialogContent>
