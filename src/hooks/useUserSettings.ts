@@ -27,53 +27,152 @@ export const useUserSettings = () => {
 
   // Fetch user_settings from supabase
   const fetchSettings = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setSettings(null);
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
-    const { data, error } = await supabase
-      .from('user_settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (error) {
+    console.log('Fetching user settings for user:', user.id);
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching user settings:', error);
+        toast({
+          title: "Error loading settings",
+          description: error.message,
+          variant: "destructive",
+        });
+        setSettings(null);
+      } else if (data) {
+        console.log('User settings loaded:', data);
+        setSettings(data);
+      } else {
+        // No settings found, create default settings
+        console.log('No settings found, creating default settings');
+        await createDefaultSettings();
+      }
+    } catch (error) {
+      console.error('Unexpected error fetching settings:', error);
       toast({
         title: "Error loading settings",
-        description: error.message,
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
       setSettings(null);
-    } else {
-      setSettings(data);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [user, toast]);
+
+  // Create default settings for new users
+  const createDefaultSettings = async () => {
+    if (!user) return;
+
+    console.log('Creating default settings for user:', user.id);
+    
+    const defaultSettings = {
+      user_id: user.id,
+      email_notifications: true,
+      push_notifications: true,
+      private_account: false,
+      show_online_status: true,
+      follows_notifications: true,
+      likes_notifications: true,
+      mentions_notifications: true,
+      messages_notifications: true,
+      allow_messages: true,
+      discoverable: true,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .insert(defaultSettings)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating default settings:', error);
+        toast({
+          title: "Error creating settings",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log('Default settings created:', data);
+        setSettings(data);
+        toast({
+          title: "Settings initialized",
+          description: "Your notification preferences have been set to default values.",
+        });
+      }
+    } catch (error) {
+      console.error('Unexpected error creating settings:', error);
+    }
+  };
 
   useEffect(() => {
     fetchSettings();
-    // Optionally: add Supabase realtime listener for live updates
-    // Clean up on unload
-    // ...
   }, [fetchSettings]);
 
   // Update any field and sync to supabase
   const updateSetting = async (key: keyof UserSettings, value: boolean) => {
-    if (!user || !settings) return;
-    const { error } = await supabase
-      .from('user_settings')
-      .update({ [key]: value })
-      .eq('user_id', user.id);
-    if (error) {
+    if (!user || !settings) {
       toast({
-        title: "Failed to update setting",
-        description: error.message,
+        title: "Error",
+        description: "User not authenticated or settings not loaded",
         variant: "destructive",
       });
       return;
     }
+
+    console.log(`Updating setting ${key} to ${value} for user:`, user.id);
+
+    // Optimistic update
+    const previousSettings = settings;
     setSettings(prev => prev ? { ...prev, [key]: value } : prev);
-    toast({
-      title: "Settings updated",
-      description: "Your setting was updated successfully.",
-    });
+
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .update({ [key]: value })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error updating setting:', error);
+        // Revert optimistic update
+        setSettings(previousSettings);
+        toast({
+          title: "Failed to update setting",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log(`Setting ${key} updated successfully`);
+      toast({
+        title: "Setting updated",
+        description: "Your notification preference was updated successfully.",
+      });
+    } catch (error) {
+      console.error('Unexpected error updating setting:', error);
+      // Revert optimistic update
+      setSettings(previousSettings);
+      toast({
+        title: "Failed to update setting",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
   };
 
   return {

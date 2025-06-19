@@ -11,7 +11,7 @@ import PrivacySettings from '@/components/settings/PrivacySettings';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
 
 const Settings = () => {
-  const { settings, loading: settingsLoading } = useUserSettings();
+  const { loading: settingsLoading } = useUserSettings();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
@@ -23,6 +23,11 @@ const Settings = () => {
             <div className="flex items-center gap-3 mb-6">
               <SettingsIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
+              {settingsLoading && (
+                <div className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                  Loading...
+                </div>
+              )}
             </div>
 
             <Tabs defaultValue="account" className="w-full">
@@ -45,25 +50,24 @@ const Settings = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="account" className="space-y-6">
-                <AccountSettings />
-              </TabsContent>
+              <div className="mt-6">
+                <TabsContent value="account" className="space-y-6">
+                  <AccountSettings />
+                </TabsContent>
 
-              <TabsContent value="notifications" className="space-y-6">
-                <NotificationSettings />
-              </TabsContent>
+                <TabsContent value="notifications" className="space-y-6">
+                  <NotificationSettings />
+                </TabsContent>
 
-              <TabsContent value="privacy" className="space-y-6">
-                <PrivacySettings />
-              </TabsContent>
+                <TabsContent value="privacy" className="space-y-6">
+                  <PrivacySettings />
+                </TabsContent>
 
-              <TabsContent value="appearance" className="space-y-6">
-                <AppearanceSettings />
-              </TabsContent>
+                <TabsContent value="appearance" className="space-y-6">
+                  <AppearanceSettings />
+                </TabsContent>
+              </div>
             </Tabs>
-            {settingsLoading && (
-              <div className="mt-3 text-center text-xs text-gray-500">Loading your settings...</div>
-            )}
           </div>
         </main>
       </div>
