@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +24,7 @@ import BusinessDashboard from "./pages/BusinessDashboard";
 import BusinessAnalytics from "./pages/BusinessAnalytics";
 import AdsManager from "./pages/AdsManager";
 import AIStudio from "./pages/AIStudio";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +74,7 @@ const AuthenticatedRoutes = () => {
         <Route path="/business-analytics" element={<AuthWrapper><BusinessAnalytics /></AuthWrapper>} />
         <Route path="/ads-manager" element={<AuthWrapper><AdsManager /></AuthWrapper>} />
         <Route path="/ai-studio" element={<AuthWrapper><AIStudio /></AuthWrapper>} />
+        <Route path="/admin" element={<AuthWrapper><AdminDashboard /></AuthWrapper>} />
       </Routes>
     </NotificationsProvider>
   );
