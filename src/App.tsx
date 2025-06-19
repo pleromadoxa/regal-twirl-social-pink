@@ -20,6 +20,8 @@ import Games from "./pages/Games";
 import Music from "./pages/Music";
 import Pinned from "./pages/Pinned";
 import ProfessionalAccounts from "./pages/ProfessionalAccounts";
+import ProfessionalAccountProfile from "./pages/ProfessionalAccountProfile";
+import BusinessManagement from "./pages/BusinessManagement";
 import BusinessDashboard from "./pages/BusinessDashboard";
 import BusinessAnalytics from "./pages/BusinessAnalytics";
 import AdsManager from "./pages/AdsManager";
@@ -70,6 +72,8 @@ const AuthenticatedRoutes = () => {
         <Route path="/music" element={<AuthWrapper><Music /></AuthWrapper>} />
         <Route path="/pinned" element={<AuthWrapper><Pinned /></AuthWrapper>} />
         <Route path="/professional" element={<AuthWrapper><ProfessionalAccounts /></AuthWrapper>} />
+        <Route path="/professional/:pageId" element={<AuthWrapper><ProfessionalAccountProfile /></AuthWrapper>} />
+        <Route path="/business-management" element={<AuthWrapper><BusinessManagement /></AuthWrapper>} />
         <Route path="/business/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
         <Route path="/business-analytics" element={<AuthWrapper><BusinessAnalytics /></AuthWrapper>} />
         <Route path="/ads-manager" element={<AuthWrapper><AdsManager /></AuthWrapper>} />

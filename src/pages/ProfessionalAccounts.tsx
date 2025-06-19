@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +31,7 @@ const ProfessionalAccounts = () => {
   const navigate = useNavigate();
 
   const handleViewProfile = (pageId: string) => {
-    console.log('Navigating to profile:', pageId);
+    console.log('Navigating to professional profile:', pageId);
     navigate(`/professional/${pageId}`);
   };
 
