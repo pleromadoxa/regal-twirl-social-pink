@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,6 +7,7 @@ import AdminMusicSection from '@/components/AdminMusicSection';
 import AdminUsersSection from '@/components/AdminUsersSection';
 import AdminAnalytics from '@/components/AdminAnalytics';
 import AdminMusicUpload from '@/components/AdminMusicUpload';
+import AdminSupportTickets from '@/components/AdminSupportTickets';
 import { 
   Users, 
   MessageSquare, 
@@ -19,7 +19,8 @@ import {
   BarChart3,
   Activity,
   Upload,
-  Globe
+  Globe,
+  Ticket
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -187,7 +188,7 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
                 Overview
@@ -207,6 +208,10 @@ const AdminDashboard = () => {
               <TabsTrigger value="upload" className="flex items-center gap-2">
                 <Upload className="w-4 h-4" />
                 Upload
+              </TabsTrigger>
+              <TabsTrigger value="support" className="flex items-center gap-2">
+                <Ticket className="w-4 h-4" />
+                Support
               </TabsTrigger>
               <TabsTrigger value="messages" className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
@@ -357,6 +362,10 @@ const AdminDashboard = () => {
 
             <TabsContent value="upload">
               <AdminMusicUpload />
+            </TabsContent>
+
+            <TabsContent value="support">
+              <AdminSupportTickets />
             </TabsContent>
 
             <TabsContent value="messages">

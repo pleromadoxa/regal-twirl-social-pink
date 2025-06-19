@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import VerificationBadge from './VerificationBadge';
 import UserVerificationDialog from './UserVerificationDialog';
+import UserActivityDialog from './UserActivityDialog';
 
 interface User {
   id: string;
@@ -56,6 +58,7 @@ const AdminUsersSection = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [verificationDialogOpen, setVerificationDialogOpen] = useState(false);
+  const [activityDialogOpen, setActivityDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -113,6 +116,11 @@ const AdminUsersSection = () => {
   const openVerificationDialog = (user: User) => {
     setSelectedUser(user);
     setVerificationDialogOpen(true);
+  };
+
+  const openActivityDialog = (user: User) => {
+    setSelectedUser(user);
+    setActivityDialogOpen(true);
   };
 
   const UserVerificationBadge = ({ user }: { user: User }) => {
@@ -276,7 +284,7 @@ const AdminUsersSection = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setSelectedUser(user)}
+                              onClick={() => openActivityDialog(user)}
                             >
                               <Activity className="w-4 h-4 mr-1" />
                               View Activity
@@ -337,6 +345,15 @@ const AdminUsersSection = () => {
           setSelectedUser(null);
         }}
         onUpdate={handleUserUpdate}
+      />
+
+      <UserActivityDialog
+        user={selectedUser}
+        isOpen={activityDialogOpen}
+        onClose={() => {
+          setActivityDialogOpen(false);
+          setSelectedUser(null);
+        }}
       />
     </>
   );
