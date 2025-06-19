@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -137,7 +136,7 @@ const Hashtag = () => {
                     </p>
                   </div>
                 ) : (
-                  <PostsList posts={filteredPosts} />
+                  <PostsList />
                 )}
               </TabsContent>
 
@@ -157,7 +156,7 @@ const Hashtag = () => {
                     </p>
                   </div>
                 ) : (
-                  <PostsList posts={popularPosts} />
+                  <PostsList />
                 )}
               </TabsContent>
 

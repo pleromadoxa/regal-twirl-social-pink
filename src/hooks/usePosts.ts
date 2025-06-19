@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,14 +27,14 @@ export interface Post {
     is_verified: boolean;
     verification_level: string;
     premium_tier?: string;
-  };
+  } | null;
   business_pages?: {
     id: string;
     page_name: string;
     page_avatar_url: string;
     page_type: string;
     is_verified: boolean;
-  };
+  } | null;
 }
 
 export const usePosts = () => {
@@ -73,7 +72,14 @@ export const usePosts = () => {
 
       // Add user interaction flags
       const postsWithUserData = await Promise.all((data || []).map(async (post) => {
-        if (!user) return { ...post, user_liked: false, user_retweeted: false, user_pinned: false };
+        if (!user) return { 
+          ...post, 
+          user_liked: false, 
+          user_retweeted: false, 
+          user_pinned: false,
+          profiles: post.profiles || null,
+          business_pages: post.business_pages || null
+        };
 
         // Check if user liked this post
         const { data: likeData } = await supabase
@@ -103,7 +109,9 @@ export const usePosts = () => {
           ...post,
           user_liked: !!likeData,
           user_retweeted: !!retweetData,
-          user_pinned: !!pinnedData
+          user_pinned: !!pinnedData,
+          profiles: post.profiles || null,
+          business_pages: post.business_pages || null
         };
       }));
 
@@ -171,11 +179,13 @@ export const usePosts = () => {
       if (error) throw error;
 
       // Add user interaction flags for new post
-      const newPost = {
+      const newPost: Post = {
         ...data,
         user_liked: false,
         user_retweeted: false,
-        user_pinned: false
+        user_pinned: false,
+        profiles: data.profiles || null,
+        business_pages: data.business_pages || null
       };
 
       // Add the new post to the beginning of the posts array

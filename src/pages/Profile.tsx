@@ -28,10 +28,13 @@ const Profile = () => {
   const { profile, loading, isFollowing, toggleFollow } = useProfile(userId);
   const { verificationLevel } = useVerifiedStatus(profile);
   const { galleryItems, loading: galleryLoading } = useGallery(userId);
-  const { posts: userPosts, loading: postsLoading } = usePosts({ userId });
+  const { posts: allPosts, loading: postsLoading } = usePosts();
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  // Filter posts for this specific user
+  const userPosts = allPosts.filter(post => post.user_id === userId);
 
   if (!user) {
     return null;
@@ -252,7 +255,7 @@ const Profile = () => {
             </TabsList>
 
             <TabsContent value="posts" className="mt-0">
-              <PostsList userId={userId} />
+              <PostsList />
             </TabsContent>
 
             <TabsContent value="replies" className="mt-0">
