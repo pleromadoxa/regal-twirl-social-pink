@@ -57,10 +57,15 @@ export const useBusinessPages = () => {
         console.error('Error fetching user business pages:', userError);
         setMyPages([]);
       } else {
-        setMyPages(userPages || []);
+        // Ensure data matches interface
+        const formattedUserPages = (userPages || []).map(page => ({
+          ...page,
+          is_active: page.is_active ?? true
+        }));
+        setMyPages(formattedUserPages);
       }
 
-      // Fetch all pages for directory
+      // Fetch all pages for directory  
       const { data: allPages, error: allError } = await supabase
         .from('business_pages')
         .select('*')
@@ -71,7 +76,12 @@ export const useBusinessPages = () => {
         console.error('Error fetching all business pages:', allError);
         setPages([]);
       } else {
-        setPages(allPages || []);
+        // Ensure data matches interface
+        const formattedAllPages = (allPages || []).map(page => ({
+          ...page,
+          is_active: page.is_active ?? true
+        }));
+        setPages(formattedAllPages);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -82,7 +92,7 @@ export const useBusinessPages = () => {
     }
   };
 
-  const createPage = async (pageData: Record<string, any>) => {
+  const createPage = async (pageData: Partial<BusinessPage>) => {
     if (!user) {
       toast({
         title: "Error",
@@ -145,7 +155,10 @@ export const useBusinessPages = () => {
         return [];
       }
 
-      return data || [];
+      return (data || []).map(page => ({
+        ...page,
+        is_active: page.is_active ?? true
+      }));
     } catch (error) {
       console.error('Error:', error);
       return [];

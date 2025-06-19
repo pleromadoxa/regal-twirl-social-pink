@@ -55,14 +55,15 @@ const ReportPostDialog = ({ postId, trigger }: ReportPostDialogProps) => {
 
     setLoading(true);
     try {
-      // Use type assertion to work around TypeScript issues until types are regenerated
-      const { error } = await (supabase as any)
+      // Insert into post_reports table directly
+      const { error } = await supabase
         .from('post_reports')
         .insert({
           post_id: postId,
           reporter_id: user.id,
           reason: reason,
-          details: details.trim() || null
+          details: details.trim() || null,
+          status: 'pending'
         });
 
       if (error) {

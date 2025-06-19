@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -78,15 +77,10 @@ const AdminSubscriptionSection = () => {
     try {
       setLoading(true);
       
+      // Fetch subscribers and try to get profile data
       const { data: subscribersData, error } = await supabase
         .from('subscribers')
-        .select(`
-          *,
-          profiles!inner (
-            username,
-            display_name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -99,13 +93,30 @@ const AdminSubscriptionSection = () => {
         return;
       }
 
-      const validSubscribers = subscribersData?.map(sub => ({
-        ...sub,
-        profiles: sub.profiles || null
-      })) || [];
+      // Get profile data separately due to potential relation issues
+      const subscribersWithProfiles = await Promise.all(
+        (subscribersData || []).map(async (subscriber) => {
+          if (subscriber.user_id) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('username, display_name')
+              .eq('id', subscriber.user_id)
+              .single();
+            
+            return {
+              ...subscriber,
+              profiles: profileData || null
+            };
+          }
+          return {
+            ...subscriber,
+            profiles: null
+          };
+        })
+      );
 
-      setSubscribers(validSubscribers);
-      calculateStats(validSubscribers);
+      setSubscribers(subscribersWithProfiles);
+      calculateStats(subscribersWithProfiles);
     } catch (error) {
       console.error('Error:', error);
       toast({

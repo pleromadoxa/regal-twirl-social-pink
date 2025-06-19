@@ -6,14 +6,15 @@ import RightSidebar from '@/components/RightSidebar';
 import { useProfile } from '@/hooks/useProfile';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Calendar, Link as LinkIcon, Users, Heart, Edit } from 'lucide-react';
+import { MapPin, Calendar, Link as LinkIcon, Crown } from 'lucide-react';
 import PostsList from '@/components/PostsList';
 import ProfileActions from '@/components/ProfileActions';
 import VerificationBadge from '@/components/VerificationBadge';
 import ProfileEditDialog from '@/components/ProfileEditDialog';
+import SubscriptionBadge from '@/components/SubscriptionBadge';
+import UpgradeSubscriptionDialog from '@/components/UpgradeSubscriptionDialog';
 
 const Profile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -65,6 +66,8 @@ const Profile = () => {
   }
 
   const isOwnProfile = user.id === userId;
+  const isPremiumUser = profile.premium_tier !== 'free';
+  const canUpgrade = isOwnProfile && (profile.premium_tier === 'free' || profile.premium_tier === 'pro');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
@@ -103,7 +106,6 @@ const Profile = () => {
                           variant="outline"
                           className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
                         >
-                          <Edit className="w-4 h-4 mr-2" />
                           Edit Profile
                         </Button>
                       }
@@ -120,15 +122,33 @@ const Profile = () => {
               </div>
 
               <div className="mt-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-2">
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {profile.display_name || profile.username}
                   </h1>
                   {profile.verification_level && (
                     <VerificationBadge level={profile.verification_level as any} />
                   )}
+                  {isPremiumUser && (
+                    <Crown className="w-5 h-5 text-amber-500" />
+                  )}
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">@{profile.username}</p>
+                
+                <div className="flex items-center gap-2 mb-3">
+                  <p className="text-gray-600 dark:text-gray-400">@{profile.username}</p>
+                  <SubscriptionBadge tier={profile.premium_tier || 'free'} showIcon={false} />
+                  {canUpgrade && (
+                    <UpgradeSubscriptionDialog 
+                      currentTier={profile.premium_tier || 'free'}
+                      trigger={
+                        <Button variant="outline" size="sm" className="ml-2">
+                          <Crown className="w-3 h-3 mr-1" />
+                          Upgrade
+                        </Button>
+                      }
+                    />
+                  )}
+                </div>
                 
                 {profile.bio && (
                   <p className="mt-3 text-gray-900 dark:text-gray-100">{profile.bio}</p>

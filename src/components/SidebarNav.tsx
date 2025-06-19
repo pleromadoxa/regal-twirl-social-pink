@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,8 +13,7 @@ import {
   Bell, 
   MessageCircle, 
   Briefcase, 
-  Settings, 
-  LogOut,
+  Settings,
   Gamepad2,
   Music,
   Sparkles,
@@ -27,7 +25,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 
 const SidebarNav = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { unreadCount } = useNotifications();
   const { myPages } = useBusinessPages();
   const [profile, setProfile] = useState<any>(null);
@@ -299,10 +297,6 @@ const SidebarNav = () => {
             >
               <Settings className="w-4 h-4 mr-2 group-hover:rotate-45 transition-transform duration-300" />
               Settings
-            </Button>
-            <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-gradient-to-r hover:from-red-100/60 hover:to-orange-100/40 dark:hover:from-red-900/40 dark:hover:to-orange-900/20 transition-all duration-300 group" onClick={signOut}>
-              <LogOut className="w-4 h-4 mr-2 group-hover:translate-x-1 transition-transform duration-300" />
-              Logout
             </Button>
           </div>
         </div>
