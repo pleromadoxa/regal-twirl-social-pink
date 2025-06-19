@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +8,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import BusinessDashboardTabs from '@/components/business/BusinessDashboardTabs';
+import EcommerceDashboard from '@/components/business/EcommerceDashboard';
+import ITServicesDashboard from '@/components/business/ITServicesDashboard';
+import ImportExportDashboard from '@/components/business/ImportExportDashboard';
 import ProfileActions from '@/components/ProfileActions';
 import SidebarNav from '@/components/SidebarNav';
 import { 
@@ -22,9 +23,12 @@ import {
   ShoppingCart,
   Package,
   Heart,
+  MessageCircle,
   Share2,
   ExternalLink,
   Award,
+  TrendingUp,
+  Sparkles,
   Settings,
   BarChart3
 } from 'lucide-react';
@@ -35,6 +39,7 @@ const ProfessionalAccountProfile = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [businessPage, setBusinessPage] = useState<any>(null);
+  const [ownerProfile, setOwnerProfile] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -50,6 +55,7 @@ const ProfessionalAccountProfile = () => {
     try {
       console.log('Fetching business page for ID:', pageId);
       
+      // First fetch the business page
       const { data: businessData, error: businessError } = await supabase
         .from('business_pages')
         .select('*')
@@ -63,6 +69,21 @@ const ProfessionalAccountProfile = () => {
       
       console.log('Fetched business page:', businessData);
       setBusinessPage(businessData);
+
+      // Then fetch the owner profile separately
+      if (businessData?.owner_id) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('username, display_name, avatar_url')
+          .eq('id', businessData.owner_id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching owner profile:', profileError);
+        } else {
+          setOwnerProfile(profileData);
+        }
+      }
 
       // Fetch products for the shop
       const { data: productsData } = await supabase
@@ -98,6 +119,7 @@ const ProfessionalAccountProfile = () => {
 
       setIsFollowing(!!data);
     } catch (error) {
+      // User is not following
       setIsFollowing(false);
     }
   };
@@ -199,7 +221,7 @@ const ProfessionalAccountProfile = () => {
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Business Header */}
           <div className="relative mb-8">
-            {/* Banner */}
+            {/* Banner - Use page_banner_url or fallback to banner_url */}
             <div className="h-48 md:h-64 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg overflow-hidden shadow-2xl">
               {(businessPage?.page_banner_url || businessPage?.banner_url) ? (
                 <img 
@@ -217,6 +239,7 @@ const ProfessionalAccountProfile = () => {
 
             {/* Profile Info */}
             <div className="absolute -bottom-16 left-8 flex items-end gap-6">
+              {/* Use page_avatar_url or fallback to avatar_url, but not the owner's personal avatar */}
               <Avatar className="w-32 h-32 border-4 border-white shadow-2xl">
                 <AvatarImage src={businessPage?.page_avatar_url || businessPage?.avatar_url} />
                 <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl">
@@ -235,6 +258,7 @@ const ProfessionalAccountProfile = () => {
                     </Badge>
                   )}
                   <Badge className={`${getStatusColor(businessPage?.shop_status || 'open')} shadow-lg`}>
+                    <Sparkles className="w-3 h-3 mr-1" />
                     {businessPage?.shop_status || 'open'}
                   </Badge>
                 </div>
@@ -476,11 +500,19 @@ const ProfessionalAccountProfile = () => {
 
             <TabsContent value="dashboard">
               {isOwner ? (
-                <BusinessDashboardTabs businessPage={businessPage} />
+                businessPage?.business_type === 'ecommerce' ? (
+                  <EcommerceDashboard businessPage={businessPage} />
+                ) : businessPage?.business_type === 'it_services' ? (
+                  <ITServicesDashboard businessPage={businessPage} />
+                ) : businessPage?.business_type === 'import_export' ? (
+                  <ImportExportDashboard businessPage={businessPage} />
+                ) : (
+                  <EcommerceDashboard businessPage={businessPage} />
+                )
               ) : (
                 <Card>
                   <CardContent className="p-8 text-center">
-                    <BarChart3 className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                    <TrendingUp className="w-16 h-16 mx-auto text-gray-300 mb-4" />
                     <h3 className="text-lg font-semibold text-gray-600 mb-2">Access Restricted</h3>
                     <p className="text-gray-500">Only business owners can view the dashboard.</p>
                   </CardContent>
