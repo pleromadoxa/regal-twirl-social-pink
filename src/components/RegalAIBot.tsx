@@ -23,7 +23,7 @@ const RegalAIBot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: "Hi! I'm Regal AI Support. How can I help you today? I can assist with account settings, features, troubleshooting, and general questions about Regal Network.",
+      content: "Hi! I'm Regal AI Support, your intelligent assistant for Regal Network. I can help you with account management, content creation, platform features, troubleshooting, business tools, verification processes, premium features, and much more. What can I assist you with today?",
       isUser: false,
       timestamp: new Date()
     }
@@ -55,9 +55,52 @@ const RegalAIBot = () => {
     setIsLoading(true);
 
     try {
+      const enhancedPrompt = `You are Regal AI Support, an advanced and intelligent customer support assistant for Regal Network - a premium Christian social media platform. You are knowledgeable, helpful, and professional.
+
+PLATFORM KNOWLEDGE:
+- Regal Network is a Christian social media platform with features like posts, stories, reels, messaging, business pages, verification system, premium subscriptions, AI tools, music sharing, and professional networking
+- Users can get verified with different levels: Verified (blue checkmark), Professional (purple), Business (green), VIP (gold crown)
+- Premium tiers include Free, Pro, and Business with different features
+- Platform includes AI content generation, image creation, and assistant features
+- Business tools include analytics, ads manager, e-commerce integration
+- Music section for Christian artists and content
+- Professional directory for networking
+
+SUPPORT CAPABILITIES:
+- Account settings and profile management
+- Verification processes and requirements
+- Premium subscription features and billing
+- Content creation and posting guidelines
+- Business page setup and management
+- Troubleshooting technical issues
+- AI tools usage and features
+- Platform navigation and features
+- Privacy and security settings
+- Community guidelines and policies
+- Professional networking features
+- Music upload and sharing
+- Messaging and communication features
+
+ESCALATION PROTOCOL:
+- If you cannot resolve an issue or need human intervention, provide the support email: support@myregal.online
+- For complex technical issues, billing problems, or account security concerns, direct users to contact support@myregal.online
+- Always be helpful and try to solve issues first before escalating
+
+TONE & STYLE:
+- Be friendly, professional, and empathetic
+- Provide clear, step-by-step instructions
+- Use bullet points for complex information
+- Be concise but thorough
+- Show genuine care for user experience
+- Maintain Christian values of kindness and service
+
+Current user question: ${inputMessage}
+
+Provide a helpful, detailed response. If you cannot fully assist with their request, acknowledge this and provide the support email for further assistance.`;
+
       const { data, error } = await supabase.functions.invoke('ai-assistant-chat', {
         body: {
-          message: `You are Regal AI Support, a helpful customer support assistant for Regal Network - a Christian social media platform. Help users with: account settings, features, troubleshooting, navigation, professional accounts, business tools, AI features, and general platform questions. Be friendly, professional, and concise. Current user question: ${inputMessage}`,
+          message: enhancedPrompt,
           conversationHistory: messages.slice(-10).map(msg => ({
             role: msg.isUser ? 'user' : 'assistant',
             content: msg.content
@@ -67,9 +110,19 @@ const RegalAIBot = () => {
 
       if (error) throw error;
 
+      let botResponse = data.response || "I apologize, but I'm having trouble responding right now. Please try again or contact our support team directly at support@myregal.online.";
+
+      // Enhance response with support email if needed
+      if (inputMessage.toLowerCase().includes('support') || 
+          inputMessage.toLowerCase().includes('contact') ||
+          inputMessage.toLowerCase().includes('help') ||
+          inputMessage.toLowerCase().includes('email')) {
+        botResponse += "\n\n📧 For additional support, you can reach our team at: support@myregal.online";
+      }
+
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: data.response || "I apologize, but I'm having trouble responding right now. Please try again or contact our support team directly.",
+        content: botResponse,
         isUser: false,
         timestamp: new Date()
       };
@@ -82,7 +135,7 @@ const RegalAIBot = () => {
           user_id: user.id,
           generation_type: 'assistant',
           prompt: inputMessage,
-          result: data.response,
+          result: botResponse,
           model_used: 'gpt-4o-mini'
         });
       }
@@ -90,7 +143,7 @@ const RegalAIBot = () => {
       console.error('Error sending message to AI bot:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm sorry, I'm experiencing technical difficulties. Please try again later or contact our support team directly.",
+        content: "I'm sorry, I'm experiencing technical difficulties. Please try again later or contact our support team directly at support@myregal.online for immediate assistance.",
         isUser: false,
         timestamp: new Date()
       };
@@ -163,7 +216,7 @@ const RegalAIBot = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div
-                      className={`max-w-[70%] p-2 rounded-lg text-sm ${
+                      className={`max-w-[70%] p-2 rounded-lg text-sm whitespace-pre-wrap ${
                         message.isUser
                           ? 'bg-blue-500 text-white'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
@@ -199,7 +252,7 @@ const RegalAIBot = () => {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Ask me anything..."
+                  placeholder="Ask me anything about Regal Network..."
                   className="flex-1"
                   disabled={isLoading}
                 />
