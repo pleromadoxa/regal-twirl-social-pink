@@ -74,14 +74,23 @@ const SidebarNav = () => {
       const isUserAdmin = user.email === 'pleromadoxa@gmail.com';
       setIsAdmin(isUserAdmin);
       
-      // Admins automatically get business tier premium
+      // Admins automatically get business tier premium and stay on it
       if (isUserAdmin) {
-        await supabase
+        // Only update if not already business tier to prevent constant updates
+        const { data: currentProfile } = await supabase
           .from('profiles')
-          .update({ premium_tier: 'business' })
-          .eq('id', user.id);
+          .select('premium_tier')
+          .eq('id', user.id)
+          .single();
         
-        setProfile(prev => prev ? { ...prev, premium_tier: 'business' } : null);
+        if (currentProfile?.premium_tier !== 'business') {
+          await supabase
+            .from('profiles')
+            .update({ premium_tier: 'business' })
+            .eq('id', user.id);
+          
+          setProfile(prev => prev ? { ...prev, premium_tier: 'business' } : null);
+        }
       }
     } catch (error) {
       console.error('Error checking admin access:', error);
@@ -91,6 +100,11 @@ const SidebarNav = () => {
 
   const checkSubscriptionStatus = async () => {
     if (!user) return;
+    
+    // Skip subscription checks for admin users - they stay on business plan
+    if (isAdmin) {
+      return;
+    }
     
     try {
       // Check subscription status from subscribers table
@@ -124,18 +138,16 @@ const SidebarNav = () => {
             premium_tier: premiumTier 
           } : null);
         } else {
-          // Subscription expired, reset to free (unless admin)
-          if (!isAdmin) {
-            await supabase
-              .from('profiles')
-              .update({ premium_tier: 'free' })
-              .eq('id', user.id);
-              
-            setProfile(prev => prev ? { ...prev, premium_tier: 'free' } : null);
-          }
+          // Subscription expired, reset to free
+          await supabase
+            .from('profiles')
+            .update({ premium_tier: 'free' })
+            .eq('id', user.id);
+            
+          setProfile(prev => prev ? { ...prev, premium_tier: 'free' } : null);
         }
-      } else if (!isAdmin) {
-        // No subscription and not admin, ensure they're on free tier
+      } else {
+        // No subscription, ensure they're on free tier
         await supabase
           .from('profiles')
           .update({ premium_tier: 'free' })
