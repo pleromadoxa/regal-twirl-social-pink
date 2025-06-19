@@ -76,6 +76,11 @@ const AdminUsersSection = () => {
       setUsers(data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch users",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -128,7 +133,7 @@ const AdminUsersSection = () => {
     const verificationLevel = user.verification_level as 'verified' | 'vip' | 'business' | 'professional' | null;
     
     // Don't show badge if verification is explicitly set to null or if there's no verification level
-    if (!verificationLevel || verificationLevel === 'none') return null;
+    if (!verificationLevel || verificationLevel === 'none' || !user.is_verified) return null;
     
     return <VerificationBadge level={verificationLevel} />;
   };
@@ -139,7 +144,7 @@ const AdminUsersSection = () => {
   );
 
   const totalUsers = users.length;
-  const verifiedUsers = users.filter(u => u.is_verified || u.verification_level).length;
+  const verifiedUsers = users.filter(u => u.is_verified && u.verification_level).length;
   const premiumUsers = users.filter(u => u.premium_tier !== 'free').length;
   const newUsersToday = users.filter(u => 
     new Date(u.created_at).toDateString() === new Date().toDateString()

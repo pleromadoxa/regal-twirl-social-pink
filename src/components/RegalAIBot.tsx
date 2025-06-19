@@ -23,7 +23,7 @@ const RegalAIBot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: "Hi! I'm Regal AI Support, your intelligent assistant for Regal Network. I can help you with account management, content creation, platform features, troubleshooting, business tools, verification processes, premium features, and much more. What can I assist you with today?",
+      content: `Hi${user?.display_name ? ` ${user.display_name}` : user?.username ? ` ${user.username}` : ''}! I'm Regal AI Support, your intelligent assistant for Regal Network. I can help you with account management, content creation, platform features, troubleshooting, business tools, verification processes, premium features, and much more. What can I assist you with today?`,
       isUser: false,
       timestamp: new Date()
     }
@@ -55,16 +55,61 @@ const RegalAIBot = () => {
     setIsLoading(true);
 
     try {
-      const enhancedPrompt = `You are Regal AI Support, an advanced and intelligent customer support assistant for Regal Network - a premium Christian social media platform. You are knowledgeable, helpful, and professional.
+      const userName = user?.display_name || user?.username || 'there';
+      const enhancedPrompt = `You are Regal AI Support, an advanced and intelligent customer support assistant for Regal Network - a premium Christian social media platform. You are knowledgeable, helpful, and professional. Always address the user as ${userName}.
 
 PLATFORM KNOWLEDGE:
 - Regal Network is a Christian social media platform with features like posts, stories, reels, messaging, business pages, verification system, premium subscriptions, AI tools, music sharing, and professional networking
 - Users can get verified with different levels: Verified (blue checkmark), Professional (purple), Business (green), VIP (gold crown)
-- Premium tiers include Free, Pro, and Business with different features
+- Premium tiers include Free, Pro ($9.99/month), and Business ($19.99/month) with different features
 - Platform includes AI content generation, image creation, and assistant features
 - Business tools include analytics, ads manager, e-commerce integration
 - Music section for Christian artists and content
 - Professional directory for networking
+- Real-time messaging with voice/video calls
+- Stories that expire after 24 hours
+- Reels for short-form video content
+- Group messaging and conversations
+- Support for image, video, and audio posts
+- Hashtag following and trending topics
+- Pin posts feature for important content
+- Follow system for connecting with other users
+
+PREMIUM FEATURES TO SUGGEST:
+- Pro Plan ($9.99/month): Unlimited AI generations, advanced analytics, priority support, custom verification badge, ad-free experience
+- Business Plan ($19.99/month): All Pro features plus business page creation, e-commerce tools, advanced ad targeting, invoicing system, booking management
+- Premium users get enhanced AI tools, better reach, and exclusive features
+
+BUSINESS ACCOUNT BENEFITS:
+- Create professional business pages
+- Sell products and services directly
+- Accept bookings and appointments  
+- Generate and send invoices
+- Advanced analytics and insights
+- Targeted advertising campaigns
+- Customer messaging system
+- E-commerce integration
+- Multiple currency support
+
+SOCIAL MEDIA FEATURES:
+- Posts with text, images, videos, and audio
+- Stories (24-hour expiring content)
+- Reels (short-form videos)
+- Real-time messaging
+- Voice and video calls
+- Group conversations
+- Follow/unfollow users
+- Like, comment, and share posts
+- Hashtag system
+- Trending topics
+- Pin posts
+- User verification system
+- Professional networking
+- Music sharing and discovery
+- Gallery for organizing media
+- Live streaming capabilities
+- Event creation and management
+- Polls and interactive content
 
 SUPPORT CAPABILITIES:
 - Account settings and profile management
@@ -80,6 +125,7 @@ SUPPORT CAPABILITIES:
 - Professional networking features
 - Music upload and sharing
 - Messaging and communication features
+- E-commerce and business tools
 
 ESCALATION PROTOCOL:
 - If you cannot resolve an issue or need human intervention, provide the support email: support@myregal.online
@@ -93,6 +139,7 @@ TONE & STYLE:
 - Be concise but thorough
 - Show genuine care for user experience
 - Maintain Christian values of kindness and service
+- Always address the user by their name when possible
 
 Current user question: ${inputMessage}
 
@@ -110,14 +157,25 @@ Provide a helpful, detailed response. If you cannot fully assist with their requ
 
       if (error) throw error;
 
-      let botResponse = data.response || "I apologize, but I'm having trouble responding right now. Please try again or contact our support team directly at support@myregal.online.";
+      let botResponse = data.response || `I apologize ${userName}, but I'm having trouble responding right now. Please try again or contact our support team directly at support@myregal.online.`;
 
       // Enhance response with support email if needed
       if (inputMessage.toLowerCase().includes('support') || 
           inputMessage.toLowerCase().includes('contact') ||
           inputMessage.toLowerCase().includes('help') ||
-          inputMessage.toLowerCase().includes('email')) {
-        botResponse += "\n\n📧 For additional support, you can reach our team at: support@myregal.online";
+          inputMessage.toLowerCase().includes('email') ||
+          inputMessage.toLowerCase().includes('human') ||
+          inputMessage.toLowerCase().includes('agent')) {
+        botResponse += "\n\n📧 For additional support or to speak with a human agent, you can reach our team at: support@myregal.online";
+      }
+
+      // Suggest premium features for relevant queries
+      if ((inputMessage.toLowerCase().includes('premium') || 
+           inputMessage.toLowerCase().includes('upgrade') ||
+           inputMessage.toLowerCase().includes('pro') ||
+           inputMessage.toLowerCase().includes('business')) && 
+           !botResponse.includes('premium') && !botResponse.includes('upgrade')) {
+        botResponse += "\n\n✨ Consider upgrading to our Pro ($9.99/month) or Business ($19.99/month) plans for enhanced features, unlimited AI generations, and priority support!";
       }
 
       const botMessage: Message = {
@@ -143,7 +201,7 @@ Provide a helpful, detailed response. If you cannot fully assist with their requ
       console.error('Error sending message to AI bot:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm sorry, I'm experiencing technical difficulties. Please try again later or contact our support team directly at support@myregal.online for immediate assistance.",
+        content: `I'm sorry ${user?.display_name || user?.username || ''}, I'm experiencing technical difficulties. Please try again later or contact our support team directly at support@myregal.online for immediate assistance.`,
         isUser: false,
         timestamp: new Date()
       };

@@ -47,8 +47,8 @@ interface SupportTicketDialogProps {
 const SupportTicketDialog = ({ ticket, isOpen, onClose, onUpdate }: SupportTicketDialogProps) => {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
-  const [status, setStatus] = useState(ticket?.status || 'open');
-  const [priority, setPriority] = useState(ticket?.priority || 'medium');
+  const [status, setStatus] = useState<'open' | 'in_progress' | 'resolved' | 'closed'>(ticket?.status || 'open');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>(ticket?.priority || 'medium');
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'chat' | 'email'>('details');
@@ -239,7 +239,7 @@ const SupportTicketDialog = ({ ticket, isOpen, onClose, onUpdate }: SupportTicke
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
-                    <Select value={status} onValueChange={setStatus}>
+                    <Select value={status} onValueChange={(value: 'open' | 'in_progress' | 'resolved' | 'closed') => setStatus(value)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -254,7 +254,7 @@ const SupportTicketDialog = ({ ticket, isOpen, onClose, onUpdate }: SupportTicke
 
                   <div className="space-y-2">
                     <Label htmlFor="priority">Priority</Label>
-                    <Select value={priority} onValueChange={setPriority}>
+                    <Select value={priority} onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => setPriority(value)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
