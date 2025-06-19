@@ -27,7 +27,7 @@ const Profile = () => {
   const { user } = useAuth();
   const { profile, loading, isFollowing, toggleFollow } = useProfile(userId);
   const { verificationLevel } = useVerifiedStatus(profile);
-  const { galleryItems, loading: galleryLoading } = useGallery();
+  const { galleryItems, loading: galleryLoading } = useGallery(userId);
   const { posts: userPosts, loading: postsLoading } = usePosts({ userId });
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
