@@ -16,6 +16,7 @@ import BusinessMessages from '@/components/business/BusinessMessages';
 import BusinessEarnings from '@/components/business/BusinessEarnings';
 import BusinessOverview from '@/components/business/BusinessOverview';
 import BusinessAdsManager from '@/components/business/BusinessAdsManager';
+import BusinessBoostManager from '@/components/business/BusinessBoostManager';
 import EcommerceDashboard from '@/components/business/EcommerceDashboard';
 import ITServicesDashboard from '@/components/business/ITServicesDashboard';
 import ImportExportDashboard from '@/components/business/ImportExportDashboard';
@@ -27,7 +28,7 @@ interface BusinessDashboardTabsProps {
 const BusinessDashboardTabs = ({ businessPage }: BusinessDashboardTabsProps) => {
   return (
     <Tabs defaultValue="overview" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-6 bg-white/50 dark:bg-slate-800/50">
+      <TabsList className="grid w-full grid-cols-7 bg-white/50 dark:bg-slate-800/50">
         <TabsTrigger value="overview" className="flex items-center gap-2">
           <BarChart3 className="w-4 h-4" />
           Overview
@@ -52,6 +53,10 @@ const BusinessDashboardTabs = ({ businessPage }: BusinessDashboardTabsProps) => 
             </TabsTrigger>
           </>
         )}
+        <TabsTrigger value="boost" className="flex items-center gap-2">
+          <Megaphone className="w-4 h-4" />
+          Boost
+        </TabsTrigger>
         <TabsTrigger value="ads" className="flex items-center gap-2">
           <Megaphone className="w-4 h-4" />
           Ads
@@ -93,6 +98,10 @@ const BusinessDashboardTabs = ({ businessPage }: BusinessDashboardTabsProps) => 
           </TabsContent>
         </>
       )}
+
+      <TabsContent value="boost">
+        <BusinessBoostManager businessPage={businessPage} />
+      </TabsContent>
 
       <TabsContent value="ads">
         <BusinessAdsManager businessPage={businessPage} />

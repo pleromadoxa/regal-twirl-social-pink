@@ -63,13 +63,12 @@ export const PostActions = ({
 }: PostActionsProps) => {
   const { myPages } = useBusinessPages();
 
-  const hasBusinessPages = myPages && myPages.length > 0;
-  
-  // Check if post is eligible for boosting (professional/business page posts only)
-  const isEligibleForBoosting = isOwnPost && hasBusinessPages && (
+  // Check if post is eligible for boosting (professional/business posts only)
+  const isEligibleForBoosting = isOwnPost && (
     postedAsPage || // Post was made as a business page
     userPremiumTier === 'professional' || // User has professional tier
-    userPremiumTier === 'business' // User has business tier
+    userPremiumTier === 'business' || // User has business tier
+    (myPages && myPages.length > 0) // User has business pages
   );
 
   return (
@@ -171,7 +170,7 @@ export const PostActions = ({
               <Trash2 className="w-4 h-4 mr-2" />
               Delete Post
             </DropdownMenuItem>
-            )}
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
