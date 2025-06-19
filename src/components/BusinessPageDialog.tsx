@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Plus, Building, User, Briefcase, Users, Store, Code, Globe, TrendingUp, Stethoscope, GraduationCap, DollarSign, MoreHorizontal, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -61,8 +62,8 @@ const professionalTypes = [
 const organizationTypes = [
   { value: 'education', label: 'Educational Institution', icon: GraduationCap },
   { value: 'healthcare', label: 'Healthcare Organization', icon: Stethoscope },
-  { value: 'other', label: 'Non-Profit Organization', icon: Users },
-  { value: 'other', label: 'Government Agency', icon: Building },
+  { value: 'non-profit', label: 'Non-Profit Organization', icon: Users },
+  { value: 'government', label: 'Government Agency', icon: Building },
   { value: 'other', label: 'Other', icon: MoreHorizontal },
 ];
 
@@ -272,7 +273,6 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                       Organization Account
                     </div>
                   </SelectItem>
-                  {/* NEVER render value="" SelectItem */}
                 </SelectContent>
               </Select>
             </div>
@@ -293,7 +293,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                   </SelectTrigger>
                   <SelectContent>
                     {getTypeOptions()
-                      .filter(type => typeof type.value === "string" && type.value.trim() !== "")
+                      .filter(type => type.value && type.value.trim() !== "")
                       .map(type => (
                         <SelectItem key={type.value} value={type.value}>
                           <div className="flex items-center">
@@ -302,7 +302,6 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                           </div>
                         </SelectItem>
                       ))}
-                    {/* No item with value="" */}
                   </SelectContent>
                 </Select>
               </div>
@@ -321,7 +320,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   {currencies
-                    .filter(currency => !!currency.code)
+                    .filter(currency => currency.code && currency.code.trim() !== "")
                     .map(currency => (
                       <SelectItem key={currency.code} value={currency.code}>
                         <div className="flex items-center gap-2">
@@ -331,7 +330,6 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                         </div>
                       </SelectItem>
                     ))}
-                  {/* NEVER render value="" item */}
                 </SelectContent>
               </Select>
             </div>
