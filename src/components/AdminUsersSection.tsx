@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import VerificationBadge from './VerificationBadge';
 import UserVerificationDialog from './UserVerificationDialog';
-import { useVerifiedStatus } from '@/hooks/useVerifiedStatus';
 
 interface User {
   id: string;
@@ -121,7 +119,8 @@ const AdminUsersSection = () => {
     // Use the user's verification_level from the database if available
     const verificationLevel = user.verification_level as 'verified' | 'vip' | 'business' | 'professional' | null;
     
-    if (!verificationLevel) return null;
+    // Don't show badge if verification is explicitly set to null or if there's no verification level
+    if (!verificationLevel || verificationLevel === 'none') return null;
     
     return <VerificationBadge level={verificationLevel} />;
   };

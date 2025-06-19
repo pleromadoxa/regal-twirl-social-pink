@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -30,12 +30,12 @@ interface UserVerificationDialogProps {
 const UserVerificationDialog = ({ user, isOpen, onClose, onUpdate }: UserVerificationDialogProps) => {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
-  const [verificationLevel, setVerificationLevel] = useState(user?.verification_level || '');
+  const [verificationLevel, setVerificationLevel] = useState(user?.verification_level || 'none');
   const [notes, setNotes] = useState(user?.verification_notes || '');
   const [loading, setLoading] = useState(false);
 
   const verificationOptions = [
-    { value: '', label: 'No Verification', icon: X, color: 'text-gray-500' },
+    { value: 'none', label: 'No Verification', icon: X, color: 'text-gray-500' },
     { value: 'verified', label: 'Verified', icon: Shield, color: 'text-blue-600' },
     { value: 'professional', label: 'Professional', icon: Briefcase, color: 'text-purple-600' },
     { value: 'business', label: 'Business', icon: Building, color: 'text-green-600' },
@@ -47,12 +47,13 @@ const UserVerificationDialog = ({ user, isOpen, onClose, onUpdate }: UserVerific
 
     setLoading(true);
     try {
+      const isRevoking = verificationLevel === 'none' || verificationLevel === '';
       const updates = {
-        verification_level: verificationLevel || null,
+        verification_level: isRevoking ? null : verificationLevel,
         verification_notes: notes || null,
-        is_verified: verificationLevel ? true : false,
-        verified_at: verificationLevel ? new Date().toISOString() : null,
-        verified_by: verificationLevel ? currentUser.id : null
+        is_verified: !isRevoking,
+        verified_at: !isRevoking ? new Date().toISOString() : null,
+        verified_by: !isRevoking ? currentUser.id : null
       };
 
       const { error } = await supabase
@@ -67,7 +68,7 @@ const UserVerificationDialog = ({ user, isOpen, onClose, onUpdate }: UserVerific
 
       toast({
         title: "Verification updated",
-        description: `User verification has been updated successfully.`
+        description: `User verification has been ${isRevoking ? 'revoked' : 'updated'} successfully.`
       });
     } catch (error) {
       console.error('Error updating verification:', error);
@@ -80,6 +81,14 @@ const UserVerificationDialog = ({ user, isOpen, onClose, onUpdate }: UserVerific
       setLoading(false);
     }
   };
+
+  // Set initial verification level when dialog opens
+  React.useEffect(() => {
+    if (user && isOpen) {
+      setVerificationLevel(user.verification_level || 'none');
+      setNotes(user.verification_notes || '');
+    }
+  }, [user, isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -110,17 +119,27 @@ const UserVerificationDialog = ({ user, isOpen, onClose, onUpdate }: UserVerific
                   <SelectValue placeholder="Select verification level" />
                 </SelectTrigger>
                 <SelectContent>
-                  {verificationOptions.map((option) => {
-                    const Icon = option.icon;
-                    return (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center gap-2">
-                          <Icon className={`w-4 h-4 ${option.color}`} />
-                          <span>{option.label}</span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
+                  {verificationOptions
+                    .filter(option => 
+                      option && 
+                      option.value && 
+                      option.label && 
+                      typeof option.value === 'string' && 
+                      typeof option.label === 'string' &&
+                      option.value.trim() !== '' && 
+                      option.label.trim() !== ''
+                    )
+                    .map((option) => {
+                      const Icon = option.icon;
+                      return (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex items-center gap-2">
+                            <Icon className={`w-4 h-4 ${option.color}`} />
+                            <span>{option.label}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                 </SelectContent>
               </Select>
             </div>
