@@ -128,6 +128,12 @@ const ProfessionalUsersWidget = () => {
     return user && account.owner_id === user.id;
   };
 
+  const handleManageClick = (e: React.MouseEvent, pageId: string) => {
+    e.stopPropagation();
+    console.log('Navigating to business dashboard:', pageId);
+    navigate(`/business/${pageId}`);
+  };
+
   if (loading) {
     return (
       <Card className="bg-white/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-700">
@@ -212,10 +218,7 @@ const ProfessionalUsersWidget = () => {
                     variant="outline"
                     size="sm"
                     className="rounded-xl border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/business/${account.id}`);
-                    }}
+                    onClick={(e) => handleManageClick(e, account.id)}
                   >
                     Manage
                   </Button>

@@ -41,6 +41,10 @@ const SidebarNav = () => {
     }
   };
 
+  const handleSettingsClick = () => {
+    navigate('/settings');
+  };
+
   return (
     <div className="fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-white via-purple-50/30 to-pink-50/20 dark:from-slate-900 dark:via-purple-950/20 dark:to-pink-950/10 border-r border-gradient-to-b from-purple-200 via-purple-300 to-pink-200 dark:from-purple-800 dark:via-purple-700 dark:to-pink-800 py-4 px-3 flex flex-col z-50 shadow-lg shadow-purple-100/50 dark:shadow-purple-900/20">
       {/* Logo and App Name */}
@@ -126,7 +130,12 @@ const SidebarNav = () => {
           </div>
           
           <div className="space-y-1">
-            <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-gradient-to-r hover:from-purple-100/60 hover:to-pink-100/40 dark:hover:from-purple-700/40 dark:hover:to-pink-700/20 transition-all duration-300 group">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full justify-start hover:bg-gradient-to-r hover:from-purple-100/60 hover:to-pink-100/40 dark:hover:from-purple-700/40 dark:hover:to-pink-700/20 transition-all duration-300 group"
+              onClick={handleSettingsClick}
+            >
               <Settings className="w-4 h-4 mr-2 group-hover:rotate-45 transition-transform duration-300" />
               Settings
             </Button>
