@@ -160,9 +160,9 @@ const PostCard = ({
               likesCount={post.likes_count}
               retweetsCount={post.retweets_count}
               repliesCount={post.replies_count}
-              userLiked={post.user_liked}
-              userRetweeted={post.user_retweeted}
-              userPinned={post.user_pinned}
+              userLiked={post.user_liked || false}
+              userRetweeted={post.user_retweeted || false}
+              userPinned={post.user_pinned || false}
               onLike={() => onLike(post.id)}
               onRetweet={() => onRetweet(post.id)}
               onPin={() => onPin(post.id)}

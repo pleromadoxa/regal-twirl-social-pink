@@ -17,6 +17,9 @@ export interface Post {
   audio_url?: string;
   posted_as_page?: string;
   sponsored_post_id?: string;
+  user_liked?: boolean;
+  user_retweeted?: boolean;
+  user_pinned?: boolean;
   profiles?: {
     id: string;
     username: string;
@@ -24,6 +27,7 @@ export interface Post {
     avatar_url: string;
     is_verified: boolean;
     verification_level: string;
+    premium_tier?: string;
   };
   business_pages?: {
     id: string;
@@ -52,7 +56,8 @@ export const usePosts = () => {
             display_name,
             avatar_url,
             is_verified,
-            verification_level
+            verification_level,
+            premium_tier
           ),
           business_pages:posted_as_page (
             id,
@@ -66,7 +71,43 @@ export const usePosts = () => {
 
       if (error) throw error;
 
-      setPosts(data || []);
+      // Add user interaction flags
+      const postsWithUserData = await Promise.all((data || []).map(async (post) => {
+        if (!user) return { ...post, user_liked: false, user_retweeted: false, user_pinned: false };
+
+        // Check if user liked this post
+        const { data: likeData } = await supabase
+          .from('likes')
+          .select('id')
+          .eq('post_id', post.id)
+          .eq('user_id', user.id)
+          .single();
+
+        // Check if user retweeted this post
+        const { data: retweetData } = await supabase
+          .from('retweets')
+          .select('id')
+          .eq('post_id', post.id)
+          .eq('user_id', user.id)
+          .single();
+
+        // Check if user pinned this post
+        const { data: pinnedData } = await supabase
+          .from('pinned_posts')
+          .select('id')
+          .eq('post_id', post.id)
+          .eq('user_id', user.id)
+          .single();
+
+        return {
+          ...post,
+          user_liked: !!likeData,
+          user_retweeted: !!retweetData,
+          user_pinned: !!pinnedData
+        };
+      }));
+
+      setPosts(postsWithUserData);
     } catch (error) {
       console.error('Error fetching posts:', error);
       toast({
@@ -114,7 +155,8 @@ export const usePosts = () => {
             display_name,
             avatar_url,
             is_verified,
-            verification_level
+            verification_level,
+            premium_tier
           ),
           business_pages:posted_as_page (
             id,
@@ -128,15 +170,23 @@ export const usePosts = () => {
 
       if (error) throw error;
 
+      // Add user interaction flags for new post
+      const newPost = {
+        ...data,
+        user_liked: false,
+        user_retweeted: false,
+        user_pinned: false
+      };
+
       // Add the new post to the beginning of the posts array
-      setPosts(prevPosts => [data, ...prevPosts]);
+      setPosts(prevPosts => [newPost, ...prevPosts]);
 
       toast({
         title: "Success",
         description: "Post created successfully",
       });
 
-      return data;
+      return newPost;
     } catch (error) {
       console.error('Error creating post:', error);
       toast({
@@ -148,6 +198,158 @@ export const usePosts = () => {
     }
   };
 
+  const toggleLike = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      if (post.user_liked) {
+        // Unlike
+        await supabase
+          .from('likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+      } else {
+        // Like
+        await supabase
+          .from('likes')
+          .insert({ post_id: postId, user_id: user.id });
+      }
+
+      // Update local state
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === postId 
+            ? { 
+                ...p, 
+                user_liked: !p.user_liked,
+                likes_count: p.user_liked ? p.likes_count - 1 : p.likes_count + 1
+              }
+            : p
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update like",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const toggleRetweet = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      if (post.user_retweeted) {
+        // Un-retweet
+        await supabase
+          .from('retweets')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+      } else {
+        // Retweet
+        await supabase
+          .from('retweets')
+          .insert({ post_id: postId, user_id: user.id });
+      }
+
+      // Update local state
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === postId 
+            ? { 
+                ...p, 
+                user_retweeted: !p.user_retweeted,
+                retweets_count: p.user_retweeted ? p.retweets_count - 1 : p.retweets_count + 1
+              }
+            : p
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling retweet:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update retweet",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const togglePin = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      if (post.user_pinned) {
+        // Unpin
+        await supabase
+          .from('pinned_posts')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+      } else {
+        // Pin
+        await supabase
+          .from('pinned_posts')
+          .insert({ post_id: postId, user_id: user.id });
+      }
+
+      // Update local state
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === postId 
+            ? { ...p, user_pinned: !p.user_pinned }
+            : p
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling pin:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update pin",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deletePost = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', user.id);
+
+      // Update local state
+      setPosts(prevPosts => prevPosts.filter(p => p.id !== postId));
+
+      toast({
+        title: "Success",
+        description: "Post deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete post",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     fetchPosts();
   }, []);
@@ -156,6 +358,10 @@ export const usePosts = () => {
     posts,
     loading,
     createPost,
+    toggleLike,
+    toggleRetweet,
+    togglePin,
+    deletePost,
     refetch: fetchPosts
   };
 };
