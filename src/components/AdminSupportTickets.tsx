@@ -93,7 +93,7 @@ const AdminSupportTickets = () => {
             priority: report.reason === 'spam' || report.reason === 'harassment' ? 'high' : 'medium',
             category: 'Content Moderation',
             created_at: report.created_at,
-            updated_at: report.updated_at,
+            updated_at: report.reviewed_at || report.created_at, // Use reviewed_at as updated_at, fallback to created_at
             user_name: profileData?.display_name || profileData?.username || 'Anonymous User',
             user_email: `${profileData?.username || 'user'}@example.com`
           });
