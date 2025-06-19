@@ -3,9 +3,9 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Ticket } from 'lucide-react';
 import { useSupportTickets } from '@/hooks/useSupportTickets';
-import { SupportTicket, SupportTicketStats } from '@/types/supportTickets';
+import type { SupportTicket, SupportTicketStats } from '@/types/supportTickets';
 import SupportTicketDialog from './SupportTicketDialog';
-import SupportTicketStats from './support/SupportTicketStats';
+import SupportTicketStatsCards from './support/SupportTicketStatsCards';
 import SupportTicketsList from './support/SupportTicketsList';
 import SupportTicketsFilters from './support/SupportTicketsFilters';
 
@@ -47,7 +47,7 @@ const AdminSupportTickets = () => {
     <>
       <div className="space-y-6">
         {/* Statistics Cards */}
-        <SupportTicketStats stats={stats} />
+        <SupportTicketStatsCards stats={stats} />
 
         <Card>
           <CardHeader>

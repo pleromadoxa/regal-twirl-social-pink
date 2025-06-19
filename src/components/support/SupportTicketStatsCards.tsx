@@ -6,13 +6,13 @@ import {
   Clock,
   CheckCircle
 } from 'lucide-react';
-import { SupportTicketStats } from '@/types/supportTickets';
+import type { SupportTicketStats } from '@/types/supportTickets';
 
-interface SupportTicketStatsProps {
+interface SupportTicketStatsCardsProps {
   stats: SupportTicketStats;
 }
 
-const SupportTicketStats = ({ stats }: SupportTicketStatsProps) => {
+const SupportTicketStatsCards = ({ stats }: SupportTicketStatsCardsProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <Card>
@@ -74,4 +74,4 @@ const SupportTicketStats = ({ stats }: SupportTicketStatsProps) => {
   );
 };
 
-export default SupportTicketStats;
+export default SupportTicketStatsCards;
