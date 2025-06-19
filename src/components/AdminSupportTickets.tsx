@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,41 +52,53 @@ const AdminSupportTickets = () => {
 
   const fetchTickets = async () => {
     try {
-      // Fetch real support tickets from post_reports as a proxy for support tickets
-      const { data: reportData, error } = await supabase
+      console.log('Fetching support tickets...');
+      
+      // First, get all post reports
+      const { data: reportData, error: reportError } = await supabase
         .from('post_reports')
-        .select(`
-          id,
-          reporter_id,
-          reason,
-          details,
-          status,
-          created_at,
-          updated_at,
-          profiles!post_reports_reporter_id_fkey (
-            display_name,
-            username
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (reportError) {
+        console.error('Error fetching post reports:', reportError);
+        throw reportError;
+      }
 
-      // Transform post_reports into support tickets format
-      const transformedTickets: SupportTicket[] = reportData?.map((report: any) => ({
-        id: report.id,
-        user_id: report.reporter_id,
-        subject: `Content Report: ${report.reason}`,
-        description: report.details || `Report submitted for ${report.reason}`,
-        status: report.status === 'pending' ? 'open' : 
-               report.status === 'reviewed' ? 'resolved' : 'closed',
-        priority: report.reason === 'spam' || report.reason === 'harassment' ? 'high' : 'medium',
-        category: 'Content Moderation',
-        created_at: report.created_at,
-        updated_at: report.updated_at,
-        user_name: report.profiles?.display_name || report.profiles?.username || 'Anonymous User',
-        user_email: `${report.profiles?.username || 'user'}@example.com`
-      })) || [];
+      console.log('Post reports fetched:', reportData?.length || 0);
+
+      // Get user profiles separately for each report
+      const transformedTickets: SupportTicket[] = [];
+
+      if (reportData && reportData.length > 0) {
+        for (const report of reportData) {
+          // Fetch user profile for each report
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('display_name, username')
+            .eq('id', report.reporter_id)
+            .single();
+
+          if (profileError) {
+            console.warn('Could not fetch profile for reporter:', report.reporter_id, profileError);
+          }
+
+          transformedTickets.push({
+            id: report.id,
+            user_id: report.reporter_id,
+            subject: `Content Report: ${report.reason}`,
+            description: report.details || `Report submitted for ${report.reason}`,
+            status: report.status === 'pending' ? 'open' : 
+                   report.status === 'reviewed' ? 'resolved' : 'closed',
+            priority: report.reason === 'spam' || report.reason === 'harassment' ? 'high' : 'medium',
+            category: 'Content Moderation',
+            created_at: report.created_at,
+            updated_at: report.updated_at,
+            user_name: profileData?.display_name || profileData?.username || 'Anonymous User',
+            user_email: `${profileData?.username || 'user'}@example.com`
+          });
+        }
+      }
 
       // Add some mock technical support tickets to demonstrate the system
       const mockTechnicalTickets: SupportTicket[] = [
@@ -120,7 +131,10 @@ const AdminSupportTickets = () => {
         }
       ];
 
-      setTickets([...transformedTickets, ...mockTechnicalTickets]);
+      const allTickets = [...transformedTickets, ...mockTechnicalTickets];
+      console.log('Total tickets processed:', allTickets.length);
+      setTickets(allTickets);
+
     } catch (error) {
       console.error('Error fetching support tickets:', error);
       toast({
