@@ -10,6 +10,8 @@ export interface Notification {
   message: string;
   read: boolean;
   created_at: string;
+  actor_id?: string;
+  post_id?: string;
   actor_profile?: {
     display_name: string;
     username?: string;
@@ -85,9 +87,17 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch notifications with actor profile information
+      const { data: notificationsData, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select(`
+          *,
+          actor_profile:profiles!notifications_actor_id_fkey(
+            display_name,
+            username,
+            avatar_url
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -96,10 +106,39 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
         return;
       }
 
-      setNotifications(data || []);
-      const unread = data?.filter(n => !n.read).length || 0;
+      // Process notifications to ensure actor_profile is properly set
+      const processedNotifications = await Promise.all(
+        (notificationsData || []).map(async (notification) => {
+          let actorProfile = notification.actor_profile;
+
+          // If actor_profile is null but we have actor_id, fetch it manually
+          if (!actorProfile && notification.actor_id) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('display_name, username, avatar_url')
+              .eq('id', notification.actor_id)
+              .single();
+
+            if (profileData) {
+              actorProfile = profileData;
+            }
+          }
+
+          return {
+            ...notification,
+            actor_profile: actorProfile || {
+              display_name: 'Unknown User',
+              username: 'unknown',
+              avatar_url: null
+            }
+          };
+        })
+      );
+
+      setNotifications(processedNotifications);
+      const unread = processedNotifications.filter(n => !n.read).length;
       setUnreadCount(unread);
-      console.log('Notifications fetched:', data?.length, 'unread:', unread);
+      console.log('Notifications fetched:', processedNotifications.length, 'unread:', unread);
     } catch (error) {
       console.error('Error in fetchNotifications:', error);
     } finally {
@@ -141,7 +180,7 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     try {
       const { error } = await supabase
         .from('notifications')
-        .update({ read: true })
+        .update({ read: true, read_at: new Date().toISOString() })
         .eq('id', notificationId)
         .eq('user_id', user.id);
 
@@ -150,7 +189,16 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
         return;
       }
 
-      fetchNotifications();
+      // Update local state immediately
+      setNotifications(prev => 
+        prev.map(n => 
+          n.id === notificationId 
+            ? { ...n, read: true } 
+            : n
+        )
+      );
+      
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error in markAsRead:', error);
     }
@@ -162,7 +210,7 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     try {
       const { error } = await supabase
         .from('notifications')
-        .update({ read: true })
+        .update({ read: true, read_at: new Date().toISOString() })
         .eq('user_id', user.id)
         .eq('read', false);
 
@@ -171,7 +219,11 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
         return;
       }
 
-      fetchNotifications();
+      // Update local state immediately
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, read: true }))
+      );
+      setUnreadCount(0);
     } catch (error) {
       console.error('Error in markAllAsRead:', error);
     }
