@@ -4,8 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
+import AuthWrapper from "./components/AuthWrapper";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
@@ -24,6 +25,65 @@ import AIStudio from "./pages/AIStudio";
 
 const queryClient = new QueryClient();
 
+// Loading component
+const LoadingScreen = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900">
+    <div className="text-center">
+      <div className="relative mb-8">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-lg opacity-20 animate-pulse"></div>
+        <img 
+          src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png" 
+          alt="Regal Network Logo" 
+          className="h-16 w-auto mx-auto relative z-10" 
+        />
+      </div>
+      <h1 className="font-bold text-xl bg-gradient-to-r from-purple-600 via-purple-700 to-pink-600 bg-clip-text text-transparent dark:from-purple-400 dark:via-purple-300 dark:to-pink-400 mb-2">
+        Regal Network
+      </h1>
+      <p className="text-gray-600 dark:text-gray-400 mb-4">Loading...</p>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+    </div>
+  </div>
+);
+
+// App Routes component that uses auth
+const AppRoutes = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to={user ? "/home" : "/auth"} replace />} />
+        <Route path="/auth" element={user ? <Navigate to="/home" replace /> : <Auth />} />
+        {user ? (
+          <>
+            <Route path="/home" element={<AuthWrapper><Index /></AuthWrapper>} />
+            <Route path="/profile/:userId" element={<AuthWrapper><Profile /></AuthWrapper>} />
+            <Route path="/settings" element={<AuthWrapper><Settings /></AuthWrapper>} />
+            <Route path="/explore" element={<AuthWrapper><Explore /></AuthWrapper>} />
+            <Route path="/messages" element={<AuthWrapper><Messages /></AuthWrapper>} />
+            <Route path="/notifications" element={<AuthWrapper><Notifications /></AuthWrapper>} />
+            <Route path="/games" element={<AuthWrapper><Games /></AuthWrapper>} />
+            <Route path="/music" element={<AuthWrapper><Music /></AuthWrapper>} />
+            <Route path="/pinned" element={<AuthWrapper><Pinned /></AuthWrapper>} />
+            <Route path="/professional" element={<AuthWrapper><ProfessionalAccounts /></AuthWrapper>} />
+            <Route path="/business/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
+            <Route path="/business-analytics" element={<AuthWrapper><BusinessAnalytics /></AuthWrapper>} />
+            <Route path="/ads-manager" element={<AuthWrapper><AdsManager /></AuthWrapper>} />
+            <Route path="/ai-studio" element={<AuthWrapper><AIStudio /></AuthWrapper>} />
+          </>
+        ) : (
+          <Route path="*" element={<Navigate to="/auth" replace />} />
+        )}
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -32,26 +92,7 @@ function App() {
           <NotificationsProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Navigate to="/home" replace />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/home" element={<Index />} />
-                <Route path="/profile/:userId" element={<Profile />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/explore" element={<Explore />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/games" element={<Games />} />
-                <Route path="/music" element={<Music />} />
-                <Route path="/pinned" element={<Pinned />} />
-                <Route path="/professional" element={<ProfessionalAccounts />} />
-                <Route path="/business/:pageId" element={<BusinessDashboard />} />
-                <Route path="/business-analytics" element={<BusinessAnalytics />} />
-                <Route path="/ads-manager" element={<AdsManager />} />
-                <Route path="/ai-studio" element={<AIStudio />} />
-              </Routes>
-            </BrowserRouter>
+            <AppRoutes />
           </NotificationsProvider>
         </AuthProvider>
       </TooltipProvider>
