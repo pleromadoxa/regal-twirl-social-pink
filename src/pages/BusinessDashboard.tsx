@@ -4,30 +4,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import SidebarNav from '@/components/SidebarNav';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { 
-  BarChart3, 
-  FileText, 
-  ShoppingCart, 
-  MessageSquare, 
-  DollarSign,
-  Package,
-  Users,
-  TrendingUp,
-  ArrowLeft,
-  Megaphone
-} from 'lucide-react';
-import BusinessInvoices from '@/components/business/BusinessInvoices';
-import BusinessProducts from '@/components/business/BusinessProducts';
-import BusinessOrders from '@/components/business/BusinessOrders';
-import BusinessMessages from '@/components/business/BusinessMessages';
-import BusinessEarnings from '@/components/business/BusinessEarnings';
-import BusinessOverview from '@/components/business/BusinessOverview';
-import BusinessAdsManager from '@/components/business/BusinessAdsManager';
-import EcommerceDashboard from '@/components/business/EcommerceDashboard';
-import ITServicesDashboard from '@/components/business/ITServicesDashboard';
-import ImportExportDashboard from '@/components/business/ImportExportDashboard';
+import BusinessDashboardHeader from '@/components/business/BusinessDashboardHeader';
+import BusinessDashboardTabs from '@/components/business/BusinessDashboardTabs';
+import BusinessDashboardLoading from '@/components/business/BusinessDashboardLoading';
+import BusinessDashboardError from '@/components/business/BusinessDashboardError';
 
 const BusinessDashboard = () => {
   const { pageId } = useParams();
@@ -81,47 +61,17 @@ const BusinessDashboard = () => {
 
   if (loading) {
     console.log('Still loading business pages...');
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-        <SidebarNav />
-        <div className="flex-1 ml-80 mr-96 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading business dashboard...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <BusinessDashboardLoading />;
   }
 
   if (!currentPage && !loading) {
     console.log('No current page found, showing retry option');
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-        <SidebarNav />
-        <div className="flex-1 ml-80 mr-96 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Business Page Not Found
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              The requested business page could not be found or hasn't loaded yet.
-            </p>
-            <div className="space-x-4">
-              <Button onClick={() => refetch()}>
-                Try Again
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/professional')}>
-                Back to Professional Accounts
-              </Button>
-            </div>
-            <div className="mt-4 text-sm text-gray-500">
-              <p>Page ID: {pageId}</p>
-              <p>Available Pages: {myPages.length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <BusinessDashboardError 
+        pageId={pageId}
+        availablePages={myPages.length}
+        onRetry={refetch}
+      />
     );
   }
 
@@ -130,105 +80,10 @@ const BusinessDashboard = () => {
       <SidebarNav />
       
       <div className="flex-1 ml-80 mr-96 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
-        {/* Header */}
-        <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/professional')}
-              className="p-2"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                {currentPage?.page_name} - Business Dashboard
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-1">
-                Manage your {currentPage?.business_type || 'business'} business
-              </p>
-            </div>
-          </div>
-        </div>
-
+        <BusinessDashboardHeader businessPage={currentPage} />
+        
         <div className="p-6">
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-white/50 dark:bg-slate-800/50">
-              <TabsTrigger value="overview" className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="earnings" className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                Earnings
-              </TabsTrigger>
-              <TabsTrigger value="invoices" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Invoices
-              </TabsTrigger>
-              {currentPage?.business_type === 'ecommerce' && (
-                <>
-                  <TabsTrigger value="products" className="flex items-center gap-2">
-                    <Package className="w-4 h-4" />
-                    Products
-                  </TabsTrigger>
-                  <TabsTrigger value="orders" className="flex items-center gap-2">
-                    <ShoppingCart className="w-4 h-4" />
-                    Orders
-                  </TabsTrigger>
-                </>
-              )}
-              <TabsTrigger value="ads" className="flex items-center gap-2">
-                <Megaphone className="w-4 h-4" />
-                Ads
-              </TabsTrigger>
-              <TabsTrigger value="messages" className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                Messages
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview">
-              {currentPage?.business_type === 'ecommerce' ? (
-                <EcommerceDashboard businessPage={currentPage} />
-              ) : currentPage?.business_type === 'it_services' ? (
-                <ITServicesDashboard businessPage={currentPage} />
-              ) : currentPage?.business_type === 'import_export' ? (
-                <ImportExportDashboard businessPage={currentPage} />
-              ) : (
-                <BusinessOverview businessPage={currentPage} />
-              )}
-            </TabsContent>
-
-            <TabsContent value="earnings">
-              <BusinessEarnings businessPage={currentPage} />
-            </TabsContent>
-
-            <TabsContent value="invoices">
-              <BusinessInvoices businessPage={currentPage} />
-            </TabsContent>
-
-            {currentPage?.business_type === 'ecommerce' && (
-              <>
-                <TabsContent value="products">
-                  <BusinessProducts businessPage={currentPage} />
-                </TabsContent>
-
-                <TabsContent value="orders">
-                  <BusinessOrders businessPage={currentPage} />
-                </TabsContent>
-              </>
-            )}
-
-            <TabsContent value="ads">
-              <BusinessAdsManager businessPage={currentPage} />
-            </TabsContent>
-
-            <TabsContent value="messages">
-              <BusinessMessages businessPage={currentPage} />
-            </TabsContent>
-          </Tabs>
+          <BusinessDashboardTabs businessPage={currentPage} />
         </div>
       </div>
     </div>
