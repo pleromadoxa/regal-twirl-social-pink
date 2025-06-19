@@ -57,10 +57,10 @@ export const useBusinessPages = () => {
         console.error('Error fetching user business pages:', userError);
         setMyPages([]);
       } else {
-        // Ensure data matches interface
         const formattedUserPages = (userPages || []).map(page => ({
           ...page,
-          is_active: page.is_active ?? true
+          is_active: true, // Default value since business_pages table doesn't have is_active
+          featured_products: Array.isArray(page.featured_products) ? page.featured_products : []
         }));
         setMyPages(formattedUserPages);
       }
@@ -69,17 +69,16 @@ export const useBusinessPages = () => {
       const { data: allPages, error: allError } = await supabase
         .from('business_pages')
         .select('*')
-        .eq('is_active', true)
         .order('created_at', { ascending: false });
 
       if (allError) {
         console.error('Error fetching all business pages:', allError);
         setPages([]);
       } else {
-        // Ensure data matches interface
         const formattedAllPages = (allPages || []).map(page => ({
           ...page,
-          is_active: page.is_active ?? true
+          is_active: true, // Default value since business_pages table doesn't have is_active
+          featured_products: Array.isArray(page.featured_products) ? page.featured_products : []
         }));
         setPages(formattedAllPages);
       }
@@ -106,9 +105,15 @@ export const useBusinessPages = () => {
       const { data, error } = await supabase
         .from('business_pages')
         .insert([{
-          ...pageData,
+          page_name: pageData.page_name,
+          description: pageData.description,
+          page_type: pageData.page_type,
           owner_id: user.id,
-          is_active: true
+          business_type: pageData.business_type,
+          email: pageData.email,
+          phone: pageData.phone,
+          website: pageData.website,
+          address: pageData.address
         }])
         .select()
         .single();
@@ -147,7 +152,6 @@ export const useBusinessPages = () => {
         .from('business_pages')
         .select('*')
         .or(`page_name.ilike.%${query}%,description.ilike.%${query}%,page_type.ilike.%${query}%`)
-        .eq('is_active', true)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -157,7 +161,8 @@ export const useBusinessPages = () => {
 
       return (data || []).map(page => ({
         ...page,
-        is_active: page.is_active ?? true
+        is_active: true,
+        featured_products: Array.isArray(page.featured_products) ? page.featured_products : []
       }));
     } catch (error) {
       console.error('Error:', error);
