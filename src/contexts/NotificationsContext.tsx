@@ -87,17 +87,10 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     
     setLoading(true);
     try {
-      // Fetch notifications with actor profile information
+      // Fetch notifications first
       const { data: notificationsData, error } = await supabase
         .from('notifications')
-        .select(`
-          *,
-          actor_profile:profiles!notifications_actor_id_fkey(
-            display_name,
-            username,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -106,13 +99,17 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
         return;
       }
 
-      // Process notifications to ensure actor_profile is properly set
+      // Process notifications and fetch actor profiles separately
       const processedNotifications = await Promise.all(
         (notificationsData || []).map(async (notification) => {
-          let actorProfile = notification.actor_profile;
+          let actorProfile = {
+            display_name: 'Unknown User',
+            username: 'unknown',
+            avatar_url: null
+          };
 
-          // If actor_profile is null but we have actor_id, fetch it manually
-          if (!actorProfile && notification.actor_id) {
+          // If we have actor_id, fetch the profile
+          if (notification.actor_id) {
             const { data: profileData } = await supabase
               .from('profiles')
               .select('display_name, username, avatar_url')
@@ -120,18 +117,18 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
               .single();
 
             if (profileData) {
-              actorProfile = profileData;
+              actorProfile = {
+                display_name: profileData.display_name || profileData.username || 'Unknown User',
+                username: profileData.username || undefined,
+                avatar_url: profileData.avatar_url || null
+              };
             }
           }
 
           return {
             ...notification,
-            actor_profile: actorProfile || {
-              display_name: 'Unknown User',
-              username: 'unknown',
-              avatar_url: null
-            }
-          };
+            actor_profile: actorProfile
+          } as Notification;
         })
       );
 
