@@ -1,178 +1,184 @@
 
 import { useState } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
-import { PostActions } from '@/components/PostActions';
-import { PostIndicators } from '@/components/PostIndicators';
-import VerificationBadge from '@/components/VerificationBadge';
-import UserLink from '@/components/UserLink';
-import ThreadContent from './ThreadContent';
-import RetweetIndicator from './RetweetIndicator';
-import SponsoredIndicator from './SponsoredIndicator';
-import { getVerificationLevel, isThreadPost, hasAudioContent } from '@/utils/postUtils';
+import { useAuth } from '@/contexts/AuthContext';
 import { Post } from '@/hooks/usePosts';
+import PostActions from './PostActions';
+import PostComments from './PostComments';
+import RetweetIndicator from './RetweetIndicator';
+import VerificationBadge from './VerificationBadge';
+import PostIndicators from './PostIndicators';
+import SponsoredIndicator from './SponsoredIndicator';
+import { getVerificationLevel } from '@/utils/postUtils';
 
 interface PostCardProps {
   post: Post;
-  user: any;
-  retweetUsers: {[key: string]: any[]};
-  sponsoredPosts: {[key: string]: any};
-  businessPages: {[key: string]: any};
   onLike: (postId: string) => void;
   onRetweet: (postId: string) => void;
   onPin: (postId: string) => void;
   onDelete: (postId: string) => void;
-  onComment: (postId: string) => void;
   onShare: (postId: string) => void;
-  onImageClick: (images: string[], index: number) => void;
+  retweetedBy?: any;
+  retweetUsers?: any[];
+  businessPages?: {[key: string]: any};
+  sponsoredInfo?: any;
 }
 
-const PostCard = ({
-  post,
-  user,
-  retweetUsers,
-  sponsoredPosts,
-  businessPages,
-  onLike,
-  onRetweet,
-  onPin,
-  onDelete,
-  onComment,
+const PostCard = ({ 
+  post, 
+  onLike, 
+  onRetweet, 
+  onPin, 
+  onDelete, 
   onShare,
-  onImageClick
+  retweetedBy,
+  retweetUsers = [],
+  businessPages = {},
+  sponsoredInfo
 }: PostCardProps) => {
+  const { user } = useAuth();
+  const [showComments, setShowComments] = useState(false);
+  
+  const isOwnPost = user?.id === post.user_id;
   const verificationLevel = getVerificationLevel(post.profiles);
-  const isThread = isThreadPost(post.content);
-  const hasAudio = hasAudioContent(post.content);
-  const businessPage = post.posted_as_page ? businessPages[post.posted_as_page] : null;
+  
+  // Get business page info if post was made as a page
+  const businessPageInfo = post.posted_as_page ? businessPages[post.posted_as_page] : null;
+  
+  // Determine display info (use business page info if available, otherwise user profile)
+  const displayName = businessPageInfo?.page_name || post.profiles?.display_name || post.profiles?.username || 'Unknown User';
+  const username = businessPageInfo?.page_name ? `@${businessPageInfo.page_name.toLowerCase().replace(/\s+/g, '')}` : `@${post.profiles?.username || 'unknown'}`;
+  const avatarUrl = businessPageInfo?.avatar_url || post.profiles?.avatar_url;
+  const isVerified = businessPageInfo?.is_verified || post.profiles?.is_verified;
+
+  const handleComment = () => {
+    setShowComments(!showComments);
+  };
 
   return (
-    <Card 
-      className={`hover:shadow-xl transition-all duration-500 relative z-20 border border-slate-200 dark:border-slate-700 ${
-        isThread 
-          ? 'bg-gradient-to-br from-white/95 via-purple-50/80 to-pink-50/80 dark:from-slate-800/95 dark:via-purple-900/30 dark:to-pink-900/20 backdrop-blur-xl border-purple-200/50 dark:border-purple-700/50 shadow-lg' 
-          : 'bg-white dark:bg-slate-800'
-      }`}
-    >
-      <CardContent className="p-6 relative z-30">
-        {/* Sponsored Post Indicator */}
-        <SponsoredIndicator sponsoredInfo={sponsoredPosts[post.id]} />
+    <Card className="border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-slate-800/90 transition-all duration-200">
+      <CardContent className="p-4">
+        {/* Sponsored Indicator */}
+        <SponsoredIndicator sponsoredInfo={sponsoredInfo} />
         
-        {/* Enhanced Retweet indicator */}
-        <RetweetIndicator users={retweetUsers[post.id]} currentUserId={user?.id} />
-        
-        <PostIndicators 
-          isThread={isThread} 
-          hasAudio={hasAudio}
-          className="relative z-40"
+        {/* Retweet Indicator */}
+        <RetweetIndicator 
+          retweetedBy={retweetedBy} 
+          retweetUsers={retweetUsers}
+          isCurrentUser={retweetedBy?.isCurrentUser}
         />
         
-        <div className="flex items-start space-x-3">
-          <UserLink 
-            userId={post.user_id}
-            showAvatar={true}
-            avatarUrl={businessPage ? businessPage.avatar_url : post.profiles.avatar_url}
-            displayName={businessPage ? businessPage.page_name : post.profiles.display_name}
-            username={businessPage ? businessPage.page_name.toLowerCase().replace(/\s+/g, '') : post.profiles.username}
-            className="w-12 h-12"
-          />
+        <div className="flex space-x-3">
+          <Avatar className="w-10 h-10 ring-2 ring-purple-200 dark:ring-purple-700">
+            <AvatarImage src={avatarUrl} alt={displayName} />
+            <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-400 text-white font-semibold">
+              {displayName?.charAt(0)?.toUpperCase() || 'U'}
+            </AvatarFallback>
+          </Avatar>
           
-          <div className="flex-1 min-w-0 relative z-40">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2 mb-1">
-              <div className="flex items-center gap-2">
-                <UserLink 
-                  userId={post.user_id}
-                  className="font-semibold text-slate-900 dark:text-slate-100 truncate hover:underline"
-                >
-                  {businessPage 
-                    ? businessPage.page_name 
-                    : post.profiles.display_name || post.profiles.username
-                  }
-                </UserLink>
-                {businessPage?.is_verified && (
-                  <VerificationBadge level="business" showText={false} />
-                )}
-                {!businessPage && verificationLevel && (
-                  <VerificationBadge level={verificationLevel} showText={false} />
-                )}
-                {businessPage && (
-                  <Badge variant="outline" className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700 px-1.5 py-0.5 text-xs">
-                    {businessPage.page_type}
-                  </Badge>
-                )}
-              </div>
-              <UserLink 
-                userId={post.user_id}
-                className="text-slate-500 dark:text-slate-400 hover:underline"
-              >
-                @{businessPage ? businessPage.page_name.toLowerCase().replace(/\s+/g, '') : post.profiles.username}
-              </UserLink>
-              <span className="text-slate-400 dark:text-slate-500 text-sm">
+              <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                {displayName}
+              </p>
+              <VerificationBadge 
+                isVerified={isVerified}
+                verificationLevel={verificationLevel}
+                size="sm"
+              />
+              {businessPageInfo && (
+                <Badge variant="secondary" className="text-xs">
+                  {businessPageInfo.page_type}
+                </Badge>
+              )}
+              <span className="text-slate-500 dark:text-slate-400 text-sm truncate">
+                {username}
+              </span>
+              <span className="text-slate-500 dark:text-slate-400 text-sm">•</span>
+              <span className="text-slate-500 dark:text-slate-400 text-sm whitespace-nowrap">
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
               </span>
             </div>
             
-            {isThread ? (
-              <div className={`relative z-40 mb-4 p-6 rounded-xl bg-gradient-to-br from-white/60 to-transparent dark:from-slate-800/60 dark:to-transparent backdrop-blur-sm border border-white/20 dark:border-slate-600/20`}>
-                <ThreadContent content={post.content} />
+            <div className="space-y-3">
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <PostIndicators content={post.content} />
+                <p className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words">
+                  {post.content}
+                </p>
               </div>
-            ) : (
-              <p className="text-slate-700 dark:text-slate-300 leading-relaxed relative z-40 mb-3">
-                {post.content}
-              </p>
-            )}
-            
-            {/* Display images with preview functionality */}
-            {post.image_urls && post.image_urls.length > 0 && (
-              <div className={`grid gap-2 mb-3 rounded-lg overflow-hidden ${
-                post.image_urls.length === 1 ? 'grid-cols-1' : 
-                post.image_urls.length === 2 ? 'grid-cols-2' : 
-                post.image_urls.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
-              }`}>
-                {post.image_urls.map((imageUrl: string, index: number) => (
-                  <div 
-                    key={index} 
-                    className={`relative cursor-pointer group ${
-                      post.image_urls.length === 3 && index === 0 ? 'col-span-2' : ''
-                    }`}
-                    onClick={() => onImageClick(post.image_urls, index)}
-                  >
-                    <img
-                      src={imageUrl}
-                      alt={`Post image ${index + 1}`}
-                      className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-all duration-300 group-hover:scale-[1.02]"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-full px-3 py-1 text-sm font-medium">
-                        Click to view
-                      </div>
+              
+              {/* Images */}
+              {post.image_urls && post.image_urls.length > 0 && (
+                <div className={`grid gap-2 rounded-lg overflow-hidden ${
+                  post.image_urls.length === 1 ? 'grid-cols-1' : 
+                  post.image_urls.length === 2 ? 'grid-cols-2' : 
+                  post.image_urls.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
+                }`}>
+                  {post.image_urls.slice(0, 4).map((url, index) => (
+                    <div 
+                      key={index} 
+                      className={`relative ${
+                        post.image_urls!.length === 3 && index === 0 ? 'row-span-2' : ''
+                      }`}
+                    >
+                      <img
+                        src={url}
+                        alt={`Post image ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg max-h-80"
+                        loading="lazy"
+                      />
+                      {post.image_urls!.length > 4 && index === 3 && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+                          <span className="text-white font-semibold text-lg">
+                            +{post.image_urls!.length - 4}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+              
+              {/* Audio */}
+              {post.audio_url && (
+                <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-4">
+                  <audio controls className="w-full">
+                    <source src={post.audio_url} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
+              )}
+            </div>
+            
+            <PostActions
+              postId={post.id}
+              userId={post.user_id}
+              likesCount={post.likes_count}
+              retweetsCount={post.retweets_count}
+              repliesCount={post.replies_count}
+              userLiked={post.user_liked}
+              userRetweeted={post.user_retweeted}
+              userPinned={post.user_pinned}
+              onLike={() => onLike(post.id)}
+              onRetweet={() => onRetweet(post.id)}
+              onPin={() => onPin(post.id)}
+              onDelete={() => onDelete(post.id)}
+              onComment={handleComment}
+              onShare={() => onShare(post.id)}
+              isOwnPost={isOwnPost}
+              postedAsPage={post.posted_as_page}
+              userPremiumTier={post.profiles?.premium_tier}
+            />
+            
+            {showComments && (
+              <div className="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
+                <PostComments postId={post.id} />
               </div>
             )}
-            
-            <div className="relative z-40">
-              <PostActions 
-                postId={post.id}
-                userId={post.user_id}
-                likesCount={post.likes_count}
-                retweetsCount={post.retweets_count}
-                repliesCount={post.replies_count}
-                userLiked={post.user_liked}
-                userRetweeted={post.user_retweeted}
-                userPinned={post.user_pinned}
-                onLike={() => onLike(post.id)}
-                onRetweet={() => onRetweet(post.id)}
-                onPin={() => onPin(post.id)}
-                onDelete={() => onDelete(post.id)}
-                onComment={() => onComment(post.id)}
-                onShare={() => onShare(post.id)}
-                isOwnPost={user?.id === post.user_id}
-              />
-            </div>
           </div>
         </div>
       </CardContent>

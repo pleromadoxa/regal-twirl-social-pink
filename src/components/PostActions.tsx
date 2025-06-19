@@ -38,6 +38,8 @@ interface PostActionsProps {
   onComment: () => void;
   onShare: () => void;
   isOwnPost: boolean;
+  postedAsPage?: string;
+  userPremiumTier?: string;
 }
 
 export const PostActions = ({
@@ -55,11 +57,20 @@ export const PostActions = ({
   onDelete,
   onComment,
   onShare,
-  isOwnPost
+  isOwnPost,
+  postedAsPage,
+  userPremiumTier
 }: PostActionsProps) => {
   const { myPages } = useBusinessPages();
 
   const hasBusinessPages = myPages && myPages.length > 0;
+  
+  // Check if post is eligible for boosting (professional/business page posts only)
+  const isEligibleForBoosting = isOwnPost && hasBusinessPages && (
+    postedAsPage || // Post was made as a business page
+    userPremiumTier === 'professional' || // User has professional tier
+    userPremiumTier === 'business' // User has business tier
+  );
 
   return (
     <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
@@ -128,8 +139,8 @@ export const PostActions = ({
             </DropdownMenuItem>
           )}
 
-          {/* Boost Post - only for own posts with business pages */}
-          {isOwnPost && hasBusinessPages && (
+          {/* Boost Post - only for eligible professional/business posts */}
+          {isEligibleForBoosting && (
             <BoostPostDialog
               postId={postId}
               trigger={
