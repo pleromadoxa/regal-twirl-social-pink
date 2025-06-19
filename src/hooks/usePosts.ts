@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +9,7 @@ export interface Post {
   user_id: string;
   content: string;
   image_urls?: string[];
+  audio_url?: string;
   created_at: string;
   updated_at: string;
   likes_count: number;

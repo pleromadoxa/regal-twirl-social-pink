@@ -66,9 +66,8 @@ const PostCard = ({
         
         {/* Retweet Indicator */}
         <RetweetIndicator 
-          retweetedBy={retweetedBy} 
-          retweetUsers={retweetUsers}
-          isCurrentUser={retweetedBy?.isCurrentUser}
+          users={retweetUsers}
+          currentUserId={user?.id}
         />
         
         <div className="flex space-x-3">
@@ -85,9 +84,8 @@ const PostCard = ({
                 {displayName}
               </p>
               <VerificationBadge 
-                isVerified={isVerified}
-                verificationLevel={verificationLevel}
-                size="sm"
+                level={verificationLevel}
+                showText={false}
               />
               {businessPageInfo && (
                 <Badge variant="secondary" className="text-xs">
@@ -105,7 +103,9 @@ const PostCard = ({
             
             <div className="space-y-3">
               <div className="prose prose-sm max-w-none dark:prose-invert">
-                <PostIndicators content={post.content} />
+                <PostIndicators 
+                  hasAudio={!!post.audio_url}
+                />
                 <p className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words">
                   {post.content}
                 </p>
@@ -176,7 +176,11 @@ const PostCard = ({
             
             {showComments && (
               <div className="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
-                <PostComments postId={post.id} />
+                <PostComments 
+                  postId={post.id} 
+                  isOpen={showComments}
+                  onClose={() => setShowComments(false)}
+                />
               </div>
             )}
           </div>
