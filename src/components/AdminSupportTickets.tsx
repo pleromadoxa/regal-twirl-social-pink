@@ -53,11 +53,47 @@ const AdminSupportTickets = () => {
 
   const fetchTickets = async () => {
     try {
-      // Mock support tickets data - in real implementation, this would come from Supabase
-      const mockTickets: SupportTicket[] = [
+      // Fetch real support tickets from post_reports as a proxy for support tickets
+      const { data: reportData, error } = await supabase
+        .from('post_reports')
+        .select(`
+          id,
+          reporter_id,
+          reason,
+          details,
+          status,
+          created_at,
+          updated_at,
+          profiles!post_reports_reporter_id_fkey (
+            display_name,
+            username
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform post_reports into support tickets format
+      const transformedTickets: SupportTicket[] = reportData?.map((report: any) => ({
+        id: report.id,
+        user_id: report.reporter_id,
+        subject: `Content Report: ${report.reason}`,
+        description: report.details || `Report submitted for ${report.reason}`,
+        status: report.status === 'pending' ? 'open' : 
+               report.status === 'reviewed' ? 'resolved' : 'closed',
+        priority: report.reason === 'spam' || report.reason === 'harassment' ? 'high' : 'medium',
+        category: 'Content Moderation',
+        created_at: report.created_at,
+        updated_at: report.updated_at,
+        user_name: report.profiles?.display_name || report.profiles?.username || 'Anonymous User',
+        user_email: `${report.profiles?.username || 'user'}@example.com`
+      })) || [];
+
+      // Add some mock technical support tickets to demonstrate the system
+      const mockTechnicalTickets: SupportTicket[] = [
         {
-          id: '1',
-          user_id: 'user1',
+          id: 'tech_1',
+          user_id: 'mock_user_1',
           subject: 'Unable to upload profile picture',
           description: 'I am trying to upload a new profile picture but it keeps failing. The image is less than 5MB and in JPG format.',
           status: 'open',
@@ -69,8 +105,8 @@ const AdminSupportTickets = () => {
           user_name: 'John Doe'
         },
         {
-          id: '2',
-          user_id: 'user2',
+          id: 'billing_1',
+          user_id: 'mock_user_2',
           subject: 'Billing issue with premium subscription',
           description: 'I was charged twice for my premium subscription this month. Can you please help me get a refund?',
           status: 'in_progress',
@@ -81,36 +117,10 @@ const AdminSupportTickets = () => {
           user_email: 'jane@example.com',
           user_name: 'Jane Smith',
           assigned_to: 'admin1'
-        },
-        {
-          id: '3',
-          user_id: 'user3',
-          subject: 'Account verification request',
-          description: 'I would like to get my account verified. I am a musician with over 10k followers on other platforms.',
-          status: 'resolved',
-          priority: 'low',
-          category: 'Verification',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 43200000).toISOString(),
-          user_email: 'mike@example.com',
-          user_name: 'Mike Johnson'
-        },
-        {
-          id: '4',
-          user_id: 'user4',
-          subject: 'Inappropriate content report',
-          description: 'There is a user posting inappropriate content that violates community guidelines.',
-          status: 'open',
-          priority: 'urgent',
-          category: 'Content Moderation',
-          created_at: new Date(Date.now() - 1800000).toISOString(),
-          updated_at: new Date(Date.now() - 1800000).toISOString(),
-          user_email: 'sarah@example.com',
-          user_name: 'Sarah Wilson'
         }
       ];
-      
-      setTickets(mockTickets);
+
+      setTickets([...transformedTickets, ...mockTechnicalTickets]);
     } catch (error) {
       console.error('Error fetching support tickets:', error);
       toast({

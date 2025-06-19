@@ -35,6 +35,7 @@ interface DashboardStats {
   activeUsers: number;
   totalPosts: number;
   totalCountries: number;
+  supportTickets: number;
 }
 
 interface ActivityItem {
@@ -54,7 +55,8 @@ const AdminDashboard = () => {
     newUsersToday: 0,
     activeUsers: 0,
     totalPosts: 0,
-    totalCountries: 0
+    totalCountries: 0,
+    supportTickets: 0
   });
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,6 +105,33 @@ const AdminDashboard = () => {
         .select('*', { count: 'exact', head: true })
         .eq('is_online', true);
 
+      // Calculate global reach from user locations (get unique locations)
+      const { data: locationData } = await supabase
+        .from('profiles')
+        .select('location')
+        .not('location', 'is', null);
+
+      // Extract unique countries from location data
+      const uniqueCountries = new Set();
+      if (locationData) {
+        locationData.forEach(profile => {
+          if (profile.location) {
+            // Extract country from location string (assuming format like "City, Country")
+            const parts = profile.location.split(',');
+            if (parts.length > 1) {
+              const country = parts[parts.length - 1].trim();
+              uniqueCountries.add(country);
+            }
+          }
+        });
+      }
+
+      // Count support tickets from post_reports as a proxy
+      const { count: supportTicketsCount } = await supabase
+        .from('post_reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
       setStats({
         totalUsers: usersCount || 0,
         totalTracks: tracksCount || 0,
@@ -111,7 +140,8 @@ const AdminDashboard = () => {
         newUsersToday: newUsersCount || 0,
         activeUsers: activeUsersCount || 0,
         totalPosts: postsCount || 0,
-        totalCountries: 45 // Mock data - you can implement real geo tracking
+        totalCountries: uniqueCountries.size || 0,
+        supportTickets: supportTicketsCount || 0
       });
 
       // Fetch recent activity
@@ -343,9 +373,9 @@ const AdminDashboard = () => {
                         <Badge variant="default">{stats.activeUsers} online</Badge>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm">Reports Queue</span>
-                        <Badge variant={stats.totalReports > 10 ? "destructive" : "default"}>
-                          {stats.totalReports} pending
+                        <span className="text-sm">Support Tickets</span>
+                        <Badge variant={stats.supportTickets > 10 ? "destructive" : "default"}>
+                          {stats.supportTickets} pending
                         </Badge>
                       </div>
                     </div>
