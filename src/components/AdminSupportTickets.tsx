@@ -6,15 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Ticket, 
   Search,
-  MessageSquare,
   Clock,
   CheckCircle,
   AlertCircle,
-  Mail
+  XCircle,
+  User,
+  Calendar,
+  Filter
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,9 +42,10 @@ const AdminSupportTickets = () => {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     fetchTickets();
@@ -50,42 +53,78 @@ const AdminSupportTickets = () => {
 
   const fetchTickets = async () => {
     try {
-      // Mock data for now - you can replace this with real Supabase queries
+      // Mock support tickets data - in real implementation, this would come from Supabase
       const mockTickets: SupportTicket[] = [
         {
           id: '1',
           user_id: 'user1',
-          subject: 'Cannot upload profile picture',
-          description: 'Getting an error when trying to upload my profile picture. Please help!',
+          subject: 'Unable to upload profile picture',
+          description: 'I am trying to upload a new profile picture but it keeps failing. The image is less than 5MB and in JPG format.',
           status: 'open',
           priority: 'medium',
           category: 'Technical',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          user_email: 'user@example.com',
+          user_email: 'john@example.com',
           user_name: 'John Doe'
         },
         {
           id: '2',
           user_id: 'user2',
-          subject: 'Account verification issue',
-          description: 'My account verification has been pending for weeks. Can you help?',
+          subject: 'Billing issue with premium subscription',
+          description: 'I was charged twice for my premium subscription this month. Can you please help me get a refund?',
           status: 'in_progress',
           priority: 'high',
-          category: 'Account',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 3600000).toISOString(),
-          assigned_to: 'admin1',
+          category: 'Billing',
+          created_at: new Date(Date.now() - 3600000).toISOString(),
+          updated_at: new Date(Date.now() - 1800000).toISOString(),
           user_email: 'jane@example.com',
-          user_name: 'Jane Smith'
+          user_name: 'Jane Smith',
+          assigned_to: 'admin1'
+        },
+        {
+          id: '3',
+          user_id: 'user3',
+          subject: 'Account verification request',
+          description: 'I would like to get my account verified. I am a musician with over 10k followers on other platforms.',
+          status: 'resolved',
+          priority: 'low',
+          category: 'Verification',
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          updated_at: new Date(Date.now() - 43200000).toISOString(),
+          user_email: 'mike@example.com',
+          user_name: 'Mike Johnson'
+        },
+        {
+          id: '4',
+          user_id: 'user4',
+          subject: 'Inappropriate content report',
+          description: 'There is a user posting inappropriate content that violates community guidelines.',
+          status: 'open',
+          priority: 'urgent',
+          category: 'Content Moderation',
+          created_at: new Date(Date.now() - 1800000).toISOString(),
+          updated_at: new Date(Date.now() - 1800000).toISOString(),
+          user_email: 'sarah@example.com',
+          user_name: 'Sarah Wilson'
         }
       ];
+      
       setTickets(mockTickets);
     } catch (error) {
-      console.error('Error fetching tickets:', error);
+      console.error('Error fetching support tickets:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch support tickets",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTicketUpdate = () => {
+    fetchTickets(); // Refresh tickets after update
   };
 
   const openTicketDialog = (ticket: SupportTicket) => {
@@ -99,29 +138,41 @@ const AdminSupportTickets = () => {
       case 'in_progress': return 'default';
       case 'resolved': return 'secondary';
       case 'closed': return 'outline';
-      default: return 'secondary';
+      default: return 'default';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'text-red-600';
-      case 'high': return 'text-orange-600';
-      case 'medium': return 'text-yellow-600';
-      case 'low': return 'text-green-600';
-      default: return 'text-gray-600';
+      case 'urgent': return 'destructive';
+      case 'high': return 'default';
+      case 'medium': return 'secondary';
+      case 'low': return 'outline';
+      default: return 'default';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'open': return <AlertCircle className="w-4 h-4" />;
+      case 'in_progress': return <Clock className="w-4 h-4" />;
+      case 'resolved': return <CheckCircle className="w-4 h-4" />;
+      case 'closed': return <XCircle className="w-4 h-4" />;
+      default: return <AlertCircle className="w-4 h-4" />;
     }
   };
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ticket.user_name?.toLowerCase().includes(searchTerm.toLowerCase());
+                         ticket.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         ticket.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
     
-    if (activeTab === 'all') return matchesSearch;
-    return matchesSearch && ticket.status === activeTab;
+    return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  const ticketStats = {
+  const stats = {
     total: tickets.length,
     open: tickets.filter(t => t.status === 'open').length,
     inProgress: tickets.filter(t => t.status === 'in_progress').length,
@@ -140,7 +191,7 @@ const AdminSupportTickets = () => {
                   <Ticket className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{ticketStats.total}</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
                   <p className="text-sm text-muted-foreground">Total Tickets</p>
                 </div>
               </div>
@@ -154,7 +205,7 @@ const AdminSupportTickets = () => {
                   <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{ticketStats.open}</p>
+                  <p className="text-2xl font-bold">{stats.open}</p>
                   <p className="text-sm text-muted-foreground">Open Tickets</p>
                 </div>
               </div>
@@ -168,7 +219,7 @@ const AdminSupportTickets = () => {
                   <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{ticketStats.inProgress}</p>
+                  <p className="text-2xl font-bold">{stats.inProgress}</p>
                   <p className="text-sm text-muted-foreground">In Progress</p>
                 </div>
               </div>
@@ -182,7 +233,7 @@ const AdminSupportTickets = () => {
                   <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{ticketStats.resolved}</p>
+                  <p className="text-2xl font-bold">{stats.resolved}</p>
                   <p className="text-sm text-muted-foreground">Resolved</p>
                 </div>
               </div>
@@ -190,87 +241,119 @@ const AdminSupportTickets = () => {
           </Card>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="all">All Tickets</TabsTrigger>
-            <TabsTrigger value="open">Open</TabsTrigger>
-            <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-            <TabsTrigger value="resolved">Resolved</TabsTrigger>
-          </TabsList>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Ticket className="w-5 h-5" />
+              Support Tickets
+            </CardTitle>
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search tickets..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
 
-          <TabsContent value={activeTab}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Ticket className="w-5 h-5" />
-                  Support Tickets
-                </CardTitle>
-                <div className="flex items-center gap-4">
-                  <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      placeholder="Search tickets..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filter by priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priority</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[600px]">
+              {loading ? (
+                <div className="text-center py-12">
+                  <Ticket className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500">Loading support tickets...</p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[600px]">
-                  {loading ? (
+              ) : (
+                <div className="space-y-4">
+                  {filteredTickets.map((ticket) => (
+                    <div 
+                      key={ticket.id} 
+                      className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+                      onClick={() => openTicketDialog(ticket)}
+                    >
+                      <Avatar className="w-10 h-10">
+                        <AvatarFallback>
+                          {ticket.user_name?.[0] || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold truncate">{ticket.subject}</h4>
+                          <Badge variant={getStatusColor(ticket.status)} className="flex items-center gap-1">
+                            {getStatusIcon(ticket.status)}
+                            {ticket.status.replace('_', ' ')}
+                          </Badge>
+                          <Badge variant={getPriorityColor(ticket.priority)}>
+                            {ticket.priority}
+                          </Badge>
+                          <Badge variant="outline">{ticket.category}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2 truncate">
+                          {ticket.description}
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {ticket.user_name}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(ticket.created_at).toLocaleDateString()}
+                          </span>
+                          {ticket.assigned_to && (
+                            <span>Assigned to: {ticket.assigned_to}</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {filteredTickets.length === 0 && !loading && (
                     <div className="text-center py-12">
                       <Ticket className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                      <p className="text-gray-500">Loading tickets...</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {filteredTickets.map((ticket) => (
-                        <div key={ticket.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" onClick={() => openTicketDialog(ticket)}>
-                          <Avatar className="w-10 h-10">
-                            <AvatarFallback>
-                              {ticket.user_name?.[0] || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-semibold">{ticket.subject}</h4>
-                              <Badge variant={getStatusColor(ticket.status)}>
-                                {ticket.status.replace('_', ' ')}
-                              </Badge>
-                              <span className={`text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
-                                {ticket.priority.toUpperCase()}
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-2">{ticket.user_name} • {ticket.user_email}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-300 truncate">{ticket.description}</p>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                              <span>Category: {ticket.category}</span>
-                              <span>Created: {new Date(ticket.created_at).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline">
-                              <MessageSquare className="w-4 h-4 mr-1" />
-                              Chat
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              <Mail className="w-4 h-4 mr-1" />
-                              Email
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                      <h3 className="text-lg font-semibold text-gray-600 mb-2">No tickets found</h3>
+                      <p className="text-gray-500">No support tickets match your current filters.</p>
                     </div>
                   )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                </div>
+              )}
+            </ScrollArea>
+          </CardContent>
+        </Card>
       </div>
 
       <SupportTicketDialog
@@ -280,7 +363,7 @@ const AdminSupportTickets = () => {
           setTicketDialogOpen(false);
           setSelectedTicket(null);
         }}
-        onUpdate={() => fetchTickets()}
+        onUpdate={handleTicketUpdate}
       />
     </>
   );

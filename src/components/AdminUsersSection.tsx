@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Users, 
   Search,
@@ -16,7 +17,10 @@ import {
   XCircle,
   Calendar,
   Activity,
-  Settings
+  Settings,
+  UserX,
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +43,9 @@ interface User {
   premium_tier: string;
   created_at: string;
   updated_at: string;
+  account_status?: 'active' | 'blocked' | 'suspended' | 'limited';
+  status_reason?: string;
+  status_until?: string;
 }
 
 interface ActivityLog {
@@ -118,6 +125,38 @@ const AdminUsersSection = () => {
     ));
   };
 
+  const handleStatusChange = async (userId: string, newStatus: 'active' | 'blocked' | 'suspended' | 'limited', reason?: string, until?: string) => {
+    try {
+      const updates = {
+        account_status: newStatus,
+        status_reason: reason || null,
+        status_until: until || null,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      handleUserUpdate(userId, updates);
+      
+      toast({
+        title: "Status updated",
+        description: `User account status changed to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user status",
+        variant: "destructive"
+      });
+    }
+  };
+
   const openVerificationDialog = (user: User) => {
     setSelectedUser(user);
     setVerificationDialogOpen(true);
@@ -129,13 +168,29 @@ const AdminUsersSection = () => {
   };
 
   const UserVerificationBadge = ({ user }: { user: User }) => {
-    // Use the user's verification_level from the database if available
     const verificationLevel = user.verification_level as 'verified' | 'vip' | 'business' | 'professional' | null;
     
-    // Don't show badge if verification is explicitly set to null or if there's no verification level
-    if (!verificationLevel || verificationLevel === 'none' || !user.is_verified) return null;
+    if (!verificationLevel || !user.is_verified) return null;
     
     return <VerificationBadge level={verificationLevel} />;
+  };
+
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case 'blocked': return 'destructive';
+      case 'suspended': return 'destructive';
+      case 'limited': return 'secondary';
+      default: return 'default';
+    }
+  };
+
+  const getStatusIcon = (status?: string) => {
+    switch (status) {
+      case 'blocked': return <Ban className="w-4 h-4" />;
+      case 'suspended': return <UserX className="w-4 h-4" />;
+      case 'limited': return <Clock className="w-4 h-4" />;
+      default: return <CheckCircle className="w-4 h-4" />;
+    }
   };
 
   const filteredUsers = users.filter(user =>
@@ -262,6 +317,10 @@ const AdminUsersSection = () => {
                               <Badge variant={user.premium_tier === 'free' ? 'secondary' : 'default'}>
                                 {user.premium_tier}
                               </Badge>
+                              <Badge variant={getStatusColor(user.account_status)} className="flex items-center gap-1">
+                                {getStatusIcon(user.account_status)}
+                                {user.account_status || 'active'}
+                              </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground mb-2">@{user.username}</p>
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -275,16 +334,53 @@ const AdminUsersSection = () => {
                                 Admin note: {user.verification_notes}
                               </p>
                             )}
+                            {user.status_reason && (
+                              <p className="text-xs text-red-600 mt-1">
+                                Status reason: {user.status_reason}
+                              </p>
+                            )}
                           </div>
                           
                           <div className="flex items-center gap-2">
+                            <Select onValueChange={(value) => handleStatusChange(user.id, value as any)}>
+                              <SelectTrigger className="w-32">
+                                <SelectValue placeholder="Change Status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active">
+                                  <div className="flex items-center gap-2">
+                                    <CheckCircle className="w-4 h-4 text-green-600" />
+                                    Active
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="limited">
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-yellow-600" />
+                                    Limited
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="suspended">
+                                  <div className="flex items-center gap-2">
+                                    <UserX className="w-4 h-4 text-orange-600" />
+                                    Suspended
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="blocked">
+                                  <div className="flex items-center gap-2">
+                                    <Ban className="w-4 h-4 text-red-600" />
+                                    Blocked
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => openVerificationDialog(user)}
                             >
                               <Settings className="w-4 h-4 mr-1" />
-                              Manage Verification
+                              Manage
                             </Button>
                             <Button
                               size="sm"
@@ -292,7 +388,7 @@ const AdminUsersSection = () => {
                               onClick={() => openActivityDialog(user)}
                             >
                               <Activity className="w-4 h-4 mr-1" />
-                              View Activity
+                              Activity
                             </Button>
                           </div>
                         </div>

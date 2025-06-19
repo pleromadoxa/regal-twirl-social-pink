@@ -20,17 +20,23 @@ const RegalAIBot = () => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: `Hi${user?.display_name ? ` ${user.display_name}` : user?.username ? ` ${user.username}` : ''}! I'm Regal AI Support, your intelligent assistant for Regal Network. I can help you with account management, content creation, platform features, troubleshooting, business tools, verification processes, premium features, and much more. What can I assist you with today?`,
-      isUser: false,
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Initialize welcome message when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      const welcomeMessage: Message = {
+        id: '1',
+        content: `Hi there! I'm Regal AI Support, your intelligent assistant for Regal Network. I can help you with account management, content creation, platform features, troubleshooting, business tools, verification processes, premium features, and much more. What can I assist you with today?`,
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [user]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -55,8 +61,24 @@ const RegalAIBot = () => {
     setIsLoading(true);
 
     try {
-      const userName = user?.display_name || user?.username || 'there';
+      // Get user profile data for personalization
+      let userProfile = null;
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('display_name, username, premium_tier, is_verified, verification_level')
+          .eq('id', user.id)
+          .single();
+        userProfile = data;
+      }
+
+      const userName = userProfile?.display_name || userProfile?.username || 'there';
       const enhancedPrompt = `You are Regal AI Support, an advanced and intelligent customer support assistant for Regal Network - a premium Christian social media platform. You are knowledgeable, helpful, and professional. Always address the user as ${userName}.
+
+USER CONTEXT:
+- User Name: ${userName}
+- Premium Tier: ${userProfile?.premium_tier || 'free'}
+- Verification Status: ${userProfile?.is_verified ? `Verified (${userProfile.verification_level})` : 'Not verified'}
 
 PLATFORM KNOWLEDGE:
 - Regal Network is a Christian social media platform with features like posts, stories, reels, messaging, business pages, verification system, premium subscriptions, AI tools, music sharing, and professional networking
@@ -178,6 +200,15 @@ Provide a helpful, detailed response. If you cannot fully assist with their requ
         botResponse += "\n\n✨ Consider upgrading to our Pro ($9.99/month) or Business ($19.99/month) plans for enhanced features, unlimited AI generations, and priority support!";
       }
 
+      // Suggest business account for business-related queries
+      if ((inputMessage.toLowerCase().includes('sell') || 
+           inputMessage.toLowerCase().includes('business') ||
+           inputMessage.toLowerCase().includes('store') ||
+           inputMessage.toLowerCase().includes('product')) && 
+           !botResponse.includes('business page') && userProfile?.premium_tier === 'free') {
+        botResponse += "\n\n🏢 Want to sell products or services? Create a business page with our Business Plan ($19.99/month) to access e-commerce tools, invoicing, booking management, and more!";
+      }
+
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: botResponse,
@@ -201,7 +232,7 @@ Provide a helpful, detailed response. If you cannot fully assist with their requ
       console.error('Error sending message to AI bot:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `I'm sorry ${user?.display_name || user?.username || ''}, I'm experiencing technical difficulties. Please try again later or contact our support team directly at support@myregal.online for immediate assistance.`,
+        content: `I'm sorry, I'm experiencing technical difficulties. Please try again later or contact our support team directly at support@myregal.online for immediate assistance.`,
         isUser: false,
         timestamp: new Date()
       };
