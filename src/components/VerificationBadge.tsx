@@ -3,12 +3,17 @@ import { Badge } from '@/components/ui/badge';
 import { Crown, Award, Building, Briefcase, Shield } from 'lucide-react';
 
 interface VerificationBadgeProps {
-  level: 'verified' | 'vip' | 'business' | 'professional';
+  level: 'verified' | 'vip' | 'business' | 'professional' | null;
   className?: string;
   showText?: boolean;
 }
 
 const VerificationBadge = ({ level, className = "", showText = true }: VerificationBadgeProps) => {
+  // Return null if no level is provided
+  if (!level) {
+    return null;
+  }
+
   const getBadgeConfig = () => {
     switch (level) {
       case 'verified':
@@ -34,6 +39,13 @@ const VerificationBadge = ({ level, className = "", showText = true }: Verificat
           icon: Briefcase,
           text: 'Professional Verified',
           className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+        };
+      default:
+        // Default case for any unexpected values
+        return {
+          icon: Shield,
+          text: 'Verified',
+          className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
         };
     }
   };
