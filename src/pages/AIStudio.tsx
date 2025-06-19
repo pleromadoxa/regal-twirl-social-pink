@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
@@ -22,7 +21,10 @@ import {
   Download,
   Send,
   Copy,
-  RefreshCw
+  RefreshCw,
+  TrendingUp,
+  Zap,
+  Brain
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -49,6 +51,13 @@ const AIStudio = () => {
   const [imageStyle, setImageStyle] = useState('realistic');
   const [generatedImage, setGeneratedImage] = useState('');
   const [imageLoading, setImageLoading] = useState(false);
+  const [generationStats, setGenerationStats] = useState({
+    total: 0,
+    content: 0,
+    text: 0,
+    image: 0,
+    today: 0
+  });
 
   useEffect(() => {
     if (myPages.length > 0 && !selectedPage) {
@@ -58,6 +67,7 @@ const AIStudio = () => {
 
   useEffect(() => {
     fetchGenerations();
+    fetchGenerationStats();
   }, [user]);
 
   const fetchGenerations = async () => {
@@ -75,6 +85,41 @@ const AIStudio = () => {
       setGenerations(data || []);
     } catch (error) {
       console.error('Error fetching generations:', error);
+    }
+  };
+
+  const fetchGenerationStats = async () => {
+    if (!user) return;
+
+    try {
+      // Get total generations
+      const { data: totalData, error: totalError } = await supabase
+        .from('ai_generations')
+        .select('id, generation_type, created_at')
+        .eq('user_id', user.id);
+
+      if (totalError) throw totalError;
+
+      const total = totalData?.length || 0;
+      const content = totalData?.filter(g => g.generation_type === 'content').length || 0;
+      const text = totalData?.filter(g => g.generation_type === 'text').length || 0;
+      const image = totalData?.filter(g => g.generation_type === 'image').length || 0;
+      
+      // Get today's generations
+      const today = new Date().toISOString().split('T')[0];
+      const todayCount = totalData?.filter(g => 
+        g.created_at && g.created_at.split('T')[0] === today
+      ).length || 0;
+
+      setGenerationStats({
+        total,
+        content,
+        text,
+        image,
+        today: todayCount
+      });
+    } catch (error) {
+      console.error('Error fetching generation stats:', error);
     }
   };
 
@@ -113,6 +158,7 @@ const AIStudio = () => {
 
       setResult(resultText);
       fetchGenerations();
+      fetchGenerationStats();
       
       toast({
         title: "Success",
@@ -142,6 +188,7 @@ const AIStudio = () => {
       const generated = await generateText(textPrompt);
       if (generated) {
         setTextResult(generated);
+        fetchGenerationStats();
         toast({
           title: "Success",
           description: "Text generated successfully"
@@ -221,6 +268,7 @@ const AIStudio = () => {
           });
           
           fetchGenerations();
+          fetchGenerationStats();
         }
 
         toast({
@@ -323,13 +371,89 @@ const AIStudio = () => {
               </Badge>
             </div>
             <Button 
-              onClick={fetchGenerations}
+              onClick={() => {
+                fetchGenerations();
+                fetchGenerationStats();
+              }}
               variant="outline"
               className="gap-2"
             >
               <RefreshCw className="w-4 h-4" />
-              Refresh History
+              Refresh
             </Button>
+          </div>
+
+          {/* Generation Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-purple-100 text-sm font-medium">Total Generations</p>
+                    <p className="text-2xl font-bold">{generationStats.total}</p>
+                  </div>
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100 text-sm font-medium">Content Created</p>
+                    <p className="text-2xl font-bold">{generationStats.content}</p>
+                  </div>
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <MessageSquare className="w-6 h-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-green-100 text-sm font-medium">Text Generated</p>
+                    <p className="text-2xl font-bold">{generationStats.text}</p>
+                  </div>
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-pink-500 to-pink-600 text-white border-0 shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-pink-100 text-sm font-medium">Images Created</p>
+                    <p className="text-2xl font-bold">{generationStats.image}</p>
+                  </div>
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <Image className="w-6 h-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-amber-500 to-orange-500 text-white border-0 shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-amber-100 text-sm font-medium">Today's Count</p>
+                    <p className="text-2xl font-bold">{generationStats.today}</p>
+                  </div>
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <Tabs defaultValue="content" className="w-full">
@@ -701,7 +825,10 @@ const AIStudio = () => {
             </TabsContent>
 
             <TabsContent value="advanced" className="space-y-6 mt-6">
-              <AIContentGenerator onGenerationComplete={fetchGenerations} />
+              <AIContentGenerator onGenerationComplete={() => {
+                fetchGenerations();
+                fetchGenerationStats();
+              }} />
             </TabsContent>
           </Tabs>
         </div>
