@@ -104,7 +104,7 @@ export const useBusinessPages = () => {
     try {
       const { data, error } = await supabase
         .from('business_pages')
-        .insert([{
+        .insert({
           page_name: pageData.page_name,
           description: pageData.description,
           page_type: pageData.page_type,
@@ -114,7 +114,7 @@ export const useBusinessPages = () => {
           phone: pageData.phone,
           website: pageData.website,
           address: pageData.address
-        }])
+        })
         .select()
         .single();
 

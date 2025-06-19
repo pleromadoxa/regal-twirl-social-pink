@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -73,14 +74,13 @@ const SidebarNav = () => {
       const isUserAdmin = user.email === 'pleromadoxa@gmail.com';
       setIsAdmin(isUserAdmin);
       
-      // Update admin profile to have premium tier
+      // Admins automatically get business tier premium
       if (isUserAdmin) {
         await supabase
           .from('profiles')
           .update({ premium_tier: 'business' })
           .eq('id', user.id);
         
-        // Update profile state
         setProfile(prev => prev ? { ...prev, premium_tier: 'business' } : null);
       }
     } catch (error) {
@@ -107,27 +107,41 @@ const SidebarNav = () => {
         if (subscriptionEnd > now) {
           setSubscriptionData(subscription);
           
-          // Update profile premium tier based on subscription
+          // Update profile premium tier based on active subscription
+          const tierMapping = {
+            'Pro': 'pro',
+            'Business': 'business'
+          };
+          const premiumTier = tierMapping[subscription.subscription_tier] || 'pro';
+          
           await supabase
             .from('profiles')
-            .update({ 
-              premium_tier: subscription.subscription_tier?.toLowerCase() || 'pro' 
-            })
+            .update({ premium_tier: premiumTier })
             .eq('id', user.id);
             
           setProfile(prev => prev ? { 
             ...prev, 
-            premium_tier: subscription.subscription_tier?.toLowerCase() || 'pro' 
+            premium_tier: premiumTier 
           } : null);
         } else {
-          // Subscription expired, reset to free
-          await supabase
-            .from('profiles')
-            .update({ premium_tier: 'free' })
-            .eq('id', user.id);
-            
-          setProfile(prev => prev ? { ...prev, premium_tier: 'free' } : null);
+          // Subscription expired, reset to free (unless admin)
+          if (!isAdmin) {
+            await supabase
+              .from('profiles')
+              .update({ premium_tier: 'free' })
+              .eq('id', user.id);
+              
+            setProfile(prev => prev ? { ...prev, premium_tier: 'free' } : null);
+          }
         }
+      } else if (!isAdmin) {
+        // No subscription and not admin, ensure they're on free tier
+        await supabase
+          .from('profiles')
+          .update({ premium_tier: 'free' })
+          .eq('id', user.id);
+          
+        setProfile(prev => prev ? { ...prev, premium_tier: 'free' } : null);
       }
     } catch (error) {
       console.error('Error checking subscription status:', error);
@@ -144,6 +158,8 @@ const SidebarNav = () => {
     navigate('/settings');
   };
 
+  // Check if user has valid subscription or is admin
+  const hasValidSubscription = (subscriptionData?.subscribed && subscriptionData?.subscription_end && new Date(subscriptionData.subscription_end) > new Date()) || isAdmin;
   const isPremiumUser = profile?.premium_tier === 'pro' || profile?.premium_tier === 'business';
   const isBusinessUser = profile?.premium_tier === 'business';
   const hasBusinessPages = myPages && myPages.length > 0;
@@ -160,8 +176,8 @@ const SidebarNav = () => {
       { name: 'Pinned', icon: Pin, path: '/pinned', accent: 'from-teal-500 to-cyan-600' },
     ];
 
-    // Add premium-only items (only for paid users or admins)
-    if ((isPremiumUser && subscriptionData?.subscribed) || isAdmin) {
+    // Professional - only for paid users or admins
+    if (hasValidSubscription && isPremiumUser) {
       baseItems.push({
         name: 'Professional', 
         icon: Briefcase, 
@@ -170,16 +186,16 @@ const SidebarNav = () => {
       });
     }
 
-    // Add business-only items (only if user has business pages and valid subscription)
-    if ((hasBusinessPages && ((subscriptionData?.subscribed && subscriptionData?.subscription_tier === 'Business') || isAdmin))) {
+    // Business features - only for business tier users with valid subscription or admins
+    if (hasBusinessPages && ((hasValidSubscription && subscriptionData?.subscription_tier === 'Business') || isAdmin)) {
       baseItems.push(
         { name: 'Business Analytics', icon: BarChart3, path: '/business-analytics', accent: 'from-teal-500 to-cyan-600' },
         { name: 'Ads Manager', icon: Megaphone, path: '/ads-manager', accent: 'from-red-500 to-pink-600' }
       );
     }
 
-    // Add AI Studio for business tier users only (with valid subscription)
-    if ((isBusinessUser && subscriptionData?.subscribed && subscriptionData?.subscription_tier === 'Business') || isAdmin) {
+    // AI Studio - only for business tier users with valid subscription or admins
+    if ((hasValidSubscription && isBusinessUser && subscriptionData?.subscription_tier === 'Business') || isAdmin) {
       baseItems.push({
         name: 'AI Studio', 
         icon: Sparkles, 
@@ -240,7 +256,7 @@ const SidebarNav = () => {
       </nav>
 
       {/* Premium Button - Only show for non-premium users and non-admins */}
-      {!isPremiumUser && !isAdmin && (
+      {!hasValidSubscription && !isAdmin && (
         <div className="px-4 mb-4">
           <PremiumDialog
             trigger={
