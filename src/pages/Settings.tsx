@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import RegalAIBot from '@/components/RegalAIBot';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -264,6 +266,7 @@ const Settings = () => {
       </div>
 
       <RightSidebar />
+      <RegalAIBot />
     </div>
   );
 };

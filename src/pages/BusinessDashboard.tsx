@@ -32,7 +32,7 @@ import ImportExportDashboard from '@/components/business/ImportExportDashboard';
 const BusinessDashboard = () => {
   const { pageId } = useParams();
   const { user } = useAuth();
-  const { myPages, loading } = useBusinessPages();
+  const { myPages, loading, refetch } = useBusinessPages();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState<any>(null);
 
@@ -51,7 +51,13 @@ const BusinessDashboard = () => {
       return;
     }
 
-    if (pageId && !loading && myPages.length > 0) {
+    if (pageId && !loading) {
+      if (myPages.length === 0) {
+        console.log('No pages loaded, attempting to refetch...');
+        refetch();
+        return;
+      }
+      
       console.log('Looking for page with ID:', pageId);
       console.log('Available pages:', myPages.map(p => ({ id: p.id, name: p.page_name })));
       
@@ -60,14 +66,18 @@ const BusinessDashboard = () => {
         console.log('Page found:', page.page_name);
         setCurrentPage(page);
       } else {
-        console.log('Page not found in available pages, redirecting to professional');
-        navigate('/professional');
+        console.log('Page not found in available pages. Available IDs:', myPages.map(p => p.id));
+        console.log('Looking for ID:', pageId);
+        // Don't redirect immediately, give it another chance to load
+        setTimeout(() => {
+          if (myPages.length === 0) {
+            console.log('Still no pages after timeout, redirecting to professional');
+            navigate('/professional');
+          }
+        }, 2000);
       }
-    } else if (pageId && !loading && myPages.length === 0) {
-      console.log('No pages available, redirecting to professional');
-      navigate('/professional');
     }
-  }, [user, pageId, myPages, navigate, loading]);
+  }, [user, pageId, myPages, navigate, loading, refetch]);
 
   if (loading) {
     console.log('Still loading business pages...');
@@ -75,14 +85,17 @@ const BusinessDashboard = () => {
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
         <div className="flex-1 ml-80 mr-96 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Loading business dashboard...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!currentPage) {
-    console.log('No current page found, showing error state');
+  if (!currentPage && !loading) {
+    console.log('No current page found, showing retry option');
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
         <SidebarNav />
@@ -92,11 +105,20 @@ const BusinessDashboard = () => {
               Business Page Not Found
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              The requested business page could not be found.
+              The requested business page could not be found or hasn't loaded yet.
             </p>
-            <Button onClick={() => navigate('/professional')}>
-              Back to Professional Accounts
-            </Button>
+            <div className="space-x-4">
+              <Button onClick={() => refetch()}>
+                Try Again
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/professional')}>
+                Back to Professional Accounts
+              </Button>
+            </div>
+            <div className="mt-4 text-sm text-gray-500">
+              <p>Page ID: {pageId}</p>
+              <p>Available Pages: {myPages.length}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -121,10 +143,10 @@ const BusinessDashboard = () => {
             </Button>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                {currentPage.page_name} - Business Dashboard
+                {currentPage?.page_name} - Business Dashboard
               </h1>
               <p className="text-slate-600 dark:text-slate-400 mt-1">
-                Manage your {currentPage.business_type} business
+                Manage your {currentPage?.business_type || 'business'} business
               </p>
             </div>
           </div>
@@ -145,7 +167,7 @@ const BusinessDashboard = () => {
                 <FileText className="w-4 h-4" />
                 Invoices
               </TabsTrigger>
-              {currentPage.business_type === 'ecommerce' && (
+              {currentPage?.business_type === 'ecommerce' && (
                 <>
                   <TabsTrigger value="products" className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
@@ -168,11 +190,11 @@ const BusinessDashboard = () => {
             </TabsList>
 
             <TabsContent value="overview">
-              {currentPage.business_type === 'ecommerce' ? (
+              {currentPage?.business_type === 'ecommerce' ? (
                 <EcommerceDashboard businessPage={currentPage} />
-              ) : currentPage.business_type === 'it_services' ? (
+              ) : currentPage?.business_type === 'it_services' ? (
                 <ITServicesDashboard businessPage={currentPage} />
-              ) : currentPage.business_type === 'import_export' ? (
+              ) : currentPage?.business_type === 'import_export' ? (
                 <ImportExportDashboard businessPage={currentPage} />
               ) : (
                 <BusinessOverview businessPage={currentPage} />
@@ -187,7 +209,7 @@ const BusinessDashboard = () => {
               <BusinessInvoices businessPage={currentPage} />
             </TabsContent>
 
-            {currentPage.business_type === 'ecommerce' && (
+            {currentPage?.business_type === 'ecommerce' && (
               <>
                 <TabsContent value="products">
                   <BusinessProducts businessPage={currentPage} />
