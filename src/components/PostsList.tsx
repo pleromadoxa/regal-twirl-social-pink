@@ -5,7 +5,7 @@ import PostCard from './PostCard';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const PostsList = () => {
-  const { posts, loading, toggleLike, toggleRetweet, togglePin, deletePost } = usePosts();
+  const { posts, loading, toggleLike, toggleRetweet, togglePin, deletePost, trackPostView } = usePosts();
   const { toast } = useToast();
 
   const handleShare = async (postId: string) => {
@@ -80,6 +80,7 @@ const PostsList = () => {
           onPin={togglePin}
           onDelete={deletePost}
           onShare={handleShare}
+          onTrackView={trackPostView}
         />
       ))}
     </div>

@@ -1416,6 +1416,48 @@ export type Database = {
           },
         ]
       }
+      post_views: {
+        Row: {
+          id: string
+          ip_address: unknown | null
+          post_id: string
+          user_agent: string | null
+          viewed_at: string
+          viewer_id: string | null
+        }
+        Insert: {
+          id?: string
+          ip_address?: unknown | null
+          post_id: string
+          user_agent?: string | null
+          viewed_at?: string
+          viewer_id?: string | null
+        }
+        Update: {
+          id?: string
+          ip_address?: unknown | null
+          post_id?: string
+          user_agent?: string | null
+          viewed_at?: string
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           audio_url: string | null
@@ -1428,8 +1470,10 @@ export type Database = {
           replies_count: number | null
           retweets_count: number | null
           sponsored_post_id: string | null
+          trending_score: number | null
           updated_at: string
           user_id: string
+          views_count: number | null
         }
         Insert: {
           audio_url?: string | null
@@ -1442,8 +1486,10 @@ export type Database = {
           replies_count?: number | null
           retweets_count?: number | null
           sponsored_post_id?: string | null
+          trending_score?: number | null
           updated_at?: string
           user_id: string
+          views_count?: number | null
         }
         Update: {
           audio_url?: string | null
@@ -1456,8 +1502,10 @@ export type Database = {
           replies_count?: number | null
           retweets_count?: number | null
           sponsored_post_id?: string | null
+          trending_score?: number | null
           updated_at?: string
           user_id?: string
+          views_count?: number | null
         }
         Relationships: [
           {
@@ -2184,6 +2232,16 @@ export type Database = {
         Args: { group_id: string; member_ids: string[]; creator_id: string }
         Returns: undefined
       }
+      calculate_trending_score: {
+        Args: {
+          views_count: number
+          likes_count: number
+          retweets_count: number
+          replies_count: number
+          created_at: string
+        }
+        Returns: number
+      }
       cleanup_expired_stories: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -2217,6 +2275,10 @@ export type Database = {
       is_group_member: {
         Args: { group_id: string; user_id: string }
         Returns: boolean
+      }
+      update_trending_scores: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       update_user_presence: {
         Args: { user_id: string; is_online: boolean }

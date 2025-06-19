@@ -12,6 +12,8 @@ export interface Post {
   likes_count: number;
   retweets_count: number;
   replies_count: number;
+  views_count: number;
+  trending_score: number;
   image_urls?: string[];
   audio_url?: string;
   posted_as_page?: string;
@@ -43,15 +45,22 @@ export const usePosts = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchPosts = async () => {
+  const fetchPosts = async (sortBy: 'recent' | 'trending' = 'recent') => {
     try {
       console.log('Fetching posts...');
       
-      // First get all posts
-      const { data: postsData, error: postsError } = await supabase
+      // Build the query with proper sorting
+      let query = supabase
         .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
+
+      if (sortBy === 'trending') {
+        query = query.order('trending_score', { ascending: false });
+      } else {
+        query = query.order('created_at', { ascending: false });
+      }
+
+      const { data: postsData, error: postsError } = await query;
 
       if (postsError) {
         console.error('Error fetching posts:', postsError);
@@ -103,6 +112,8 @@ export const usePosts = () => {
       const postsWithUserData = await Promise.all(postsData.map(async (post) => {
         const basePost = {
           ...post,
+          views_count: post.views_count || 0,
+          trending_score: post.trending_score || 0,
           profiles: profilesMap.get(post.user_id) || null,
           business_pages: post.posted_as_page ? businessPagesMap.get(post.posted_as_page) || null : null,
           user_liked: false,
@@ -155,6 +166,34 @@ export const usePosts = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const trackPostView = async (postId: string) => {
+    try {
+      // Insert view record
+      await supabase
+        .from('post_views')
+        .insert({
+          post_id: postId,
+          viewer_id: user?.id || null,
+          viewed_at: new Date().toISOString()
+        });
+
+      // Update local state to reflect the view
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === postId 
+            ? { ...p, views_count: p.views_count + 1 }
+            : p
+        )
+      );
+
+      // Update trending scores periodically
+      await supabase.rpc('update_trending_scores');
+    } catch (error) {
+      // Silently handle view tracking errors to not disrupt user experience
+      console.error('Error tracking post view:', error);
     }
   };
 
@@ -211,6 +250,8 @@ export const usePosts = () => {
       // Add user interaction flags for new post
       const newPost: Post = {
         ...data,
+        views_count: data.views_count || 0,
+        trending_score: data.trending_score || 0,
         user_liked: false,
         user_retweeted: false,
         user_pinned: false,
@@ -271,6 +312,9 @@ export const usePosts = () => {
             : p
         )
       );
+
+      // Update trending scores
+      await supabase.rpc('update_trending_scores');
     } catch (error) {
       console.error('Error toggling like:', error);
       toast({
@@ -314,6 +358,9 @@ export const usePosts = () => {
             : p
         )
       );
+
+      // Update trending scores
+      await supabase.rpc('update_trending_scores');
     } catch (error) {
       console.error('Error toggling retweet:', error);
       toast({
@@ -402,6 +449,7 @@ export const usePosts = () => {
     toggleRetweet,
     togglePin,
     deletePost,
+    trackPostView,
     refetch: fetchPosts
   };
 };

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import VerificationBadge from './VerificationBadge';
 import PostIndicators from './PostIndicators';
 import SponsoredIndicator from './SponsoredIndicator';
 import { getVerificationLevel } from '@/utils/postUtils';
+import { Eye } from 'lucide-react';
 
 interface PostCardProps {
   post: Post;
@@ -21,6 +22,7 @@ interface PostCardProps {
   onPin: (postId: string) => void;
   onDelete: (postId: string) => void;
   onShare: (postId: string) => void;
+  onTrackView?: (postId: string) => void;
   retweetedBy?: any;
   retweetUsers?: any[];
   businessPages?: {[key: string]: any};
@@ -34,6 +36,7 @@ const PostCard = ({
   onPin, 
   onDelete, 
   onShare,
+  onTrackView,
   retweetedBy,
   retweetUsers = [],
   businessPages = {},
@@ -41,6 +44,8 @@ const PostCard = ({
 }: PostCardProps) => {
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
+  const [hasTrackedView, setHasTrackedView] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
   
   const isOwnPost = user?.id === post.user_id;
   const verificationLevel = getVerificationLevel(post.profiles);
@@ -54,12 +59,43 @@ const PostCard = ({
   const avatarUrl = businessPageInfo?.avatar_url || post.profiles?.avatar_url;
   const isVerified = businessPageInfo?.is_verified || post.profiles?.is_verified;
 
+  // Track view when post becomes visible
+  useEffect(() => {
+    if (!hasTrackedView && onTrackView && cardRef.current) {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting && !hasTrackedView) {
+            onTrackView(post.id);
+            setHasTrackedView(true);
+          }
+        },
+        { threshold: 0.5 } // Track when 50% of the post is visible
+      );
+
+      observer.observe(cardRef.current);
+
+      return () => observer.disconnect();
+    }
+  }, [post.id, onTrackView, hasTrackedView]);
+
   const handleComment = () => {
     setShowComments(!showComments);
   };
 
+  const formatViewCount = (count: number) => {
+    if (count >= 1000000) {
+      return `${(count / 1000000).toFixed(1)}M`;
+    } else if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}K`;
+    }
+    return count.toString();
+  };
+
   return (
-    <Card className="border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-slate-800/90 transition-all duration-200">
+    <Card 
+      ref={cardRef}
+      className="border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-slate-800/90 transition-all duration-200"
+    >
       <CardContent className="p-4">
         {/* Sponsored Indicator */}
         <SponsoredIndicator sponsoredInfo={sponsoredInfo} />
@@ -152,6 +188,12 @@ const PostCard = ({
                   </audio>
                 </div>
               )}
+
+              {/* View Count */}
+              <div className="flex items-center text-slate-500 dark:text-slate-400 text-sm space-x-1">
+                <Eye className="w-4 h-4" />
+                <span>{formatViewCount(post.views_count)} views</span>
+              </div>
             </div>
             
             <PostActions
