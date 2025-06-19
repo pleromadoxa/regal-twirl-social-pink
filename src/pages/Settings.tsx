@@ -3,15 +3,18 @@ import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import RegalAIBot from '@/components/RegalAIBot';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, User, Bell, Shield, Palette } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Shield, Palette, Terminal } from 'lucide-react';
 import { useUserSettings } from '@/hooks/useUserSettings';
+import { useSidebarProfile } from '@/hooks/useSidebarProfile';
 import AccountSettings from '@/components/settings/AccountSettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import PrivacySettings from '@/components/settings/PrivacySettings';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
+import SystemSettings from '@/components/SystemSettings';
 
 const Settings = () => {
   const { loading: settingsLoading } = useUserSettings();
+  const { profile, isAdmin } = useSidebarProfile();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
@@ -31,7 +34,7 @@ const Settings = () => {
             </div>
 
             <Tabs defaultValue="account" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'}`}>
                 <TabsTrigger value="account" className="flex items-center gap-2">
                   <User className="w-4 h-4" />
                   Account
@@ -48,6 +51,12 @@ const Settings = () => {
                   <Palette className="w-4 h-4" />
                   Appearance
                 </TabsTrigger>
+                {isAdmin && (
+                  <TabsTrigger value="system" className="flex items-center gap-2">
+                    <Terminal className="w-4 h-4" />
+                    System
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <div className="mt-6">
@@ -66,6 +75,12 @@ const Settings = () => {
                 <TabsContent value="appearance" className="space-y-6">
                   <AppearanceSettings />
                 </TabsContent>
+
+                {isAdmin && (
+                  <TabsContent value="system" className="space-y-6">
+                    <SystemSettings />
+                  </TabsContent>
+                )}
               </div>
             </Tabs>
           </div>

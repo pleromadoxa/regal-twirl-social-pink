@@ -71,6 +71,20 @@ serve(async (req) => {
       }
     });
 
+    // When successful, create a transaction record
+    if (session.url) {
+      await supabaseClient.from('transactions').insert({
+        customer_email: user.email,
+        amount: price,
+        currency: 'USD',
+        status: 'pending',
+        subscription_tier: planName,
+        transaction_id: `txn_${session.id}`,
+        stripe_payment_intent_id: session.payment_intent || null,
+        user_id: userId
+      });
+    }
+
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

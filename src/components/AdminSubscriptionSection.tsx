@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,10 +29,12 @@ import {
   Download,
   RefreshCw,
   DollarSign,
-  FileText
+  FileText,
+  Settings
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import SystemSettings from '@/components/SystemSettings';
 
 interface Subscriber {
   id: string;
@@ -59,6 +60,7 @@ interface Transaction {
   status: string;
   subscription_tier: string;
   transaction_id: string;
+  stripe_payment_intent_id?: string;
   created_at: string;
   user_id?: string;
 }
@@ -155,34 +157,26 @@ const AdminSubscriptionSection = () => {
   };
 
   const fetchTransactions = async () => {
-    // Mock transaction data since we don't have a transactions table yet
-    // In a real implementation, you would fetch from your transactions table
-    const mockTransactions: Transaction[] = [
-      {
-        id: '1',
-        customer_email: 'user1@example.com',
-        amount: 9.99,
-        currency: 'USD',
-        status: 'completed',
-        subscription_tier: 'Pro',
-        transaction_id: 'txn_1234567890',
-        created_at: new Date().toISOString(),
-        user_id: 'user1'
-      },
-      {
-        id: '2',
-        customer_email: 'user2@example.com',
-        amount: 19.99,
-        currency: 'USD',
-        status: 'completed',
-        subscription_tier: 'Business',
-        transaction_id: 'txn_0987654321',
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        user_id: 'user2'
+    try {
+      const { data: transactionsData, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch transaction data",
+          variant: "destructive"
+        });
+        return;
       }
-    ];
-    
-    setTransactions(mockTransactions);
+
+      setTransactions(transactionsData || []);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    }
   };
 
   const calculateStats = (data: Subscriber[]) => {
@@ -200,7 +194,7 @@ const AdminSubscriptionSection = () => {
       revenue: 0,
       monthlyRevenue: 0,
       averageRevenue: 0,
-      transactionCount: 0
+      transactionCount: transactions.length
     };
 
     data.forEach(subscriber => {
@@ -233,7 +227,6 @@ const AdminSubscriptionSection = () => {
 
     newStats.monthlyRevenue = newStats.revenue;
     newStats.averageRevenue = newStats.active > 0 ? newStats.revenue / newStats.active : 0;
-    newStats.transactionCount = transactions.length;
 
     setStats(newStats);
   };
@@ -290,6 +283,8 @@ const AdminSubscriptionSection = () => {
       return <Badge variant="secondary">Pending</Badge>;
     } else if (status === 'failed') {
       return <Badge variant="destructive">Failed</Badge>;
+    } else if (status === 'refunded') {
+      return <Badge variant="outline">Refunded</Badge>;
     }
     return <Badge variant="outline">{status}</Badge>;
   };
@@ -315,10 +310,11 @@ const AdminSubscriptionSection = () => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="subscribers">Subscribers</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="settings">System Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -564,7 +560,13 @@ const AdminSubscriptionSection = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.length === 0 ? (
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          Loading transactions...
+                        </TableCell>
+                      </TableRow>
+                    ) : transactions.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8">
                           No transactions found
@@ -595,6 +597,10 @@ const AdminSubscriptionSection = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-6">
+          <SystemSettings />
         </TabsContent>
       </Tabs>
     </div>
