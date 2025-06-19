@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,7 +29,7 @@ const AdminMusicUpload = () => {
     'Pop', 'Rock', 'Hip Hop', 'R&B', 'Jazz', 'Classical', 'Electronic', 
     'Country', 'Folk', 'Blues', 'Reggae', 'Alternative', 'Indie', 'Metal',
     'Funk', 'Soul', 'Gospel', 'Latin', 'World', 'Other'
-  ];
+  ].filter(genre => genre && genre.trim() !== ''); // Filter out any empty values
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -298,11 +297,13 @@ const AdminMusicUpload = () => {
                   <SelectValue placeholder="Select genre" />
                 </SelectTrigger>
                 <SelectContent>
-                  {genres.map((genre) => (
-                    <SelectItem key={genre} value={genre}>
-                      {genre}
-                    </SelectItem>
-                  ))}
+                  {genres
+                    .filter(genre => genre && genre.trim() !== '')
+                    .map((genre) => (
+                      <SelectItem key={genre} value={genre}>
+                        {genre}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>

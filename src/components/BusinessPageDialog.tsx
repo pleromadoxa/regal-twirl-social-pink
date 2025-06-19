@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Plus, Building, User, Briefcase, Users, Store, Code, Globe, TrendingUp, Stethoscope, GraduationCap, DollarSign, MoreHorizontal, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -190,6 +189,19 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
   const shouldShowTypeField = formData.page_type === 'business';
   const shouldRequireTypeField = formData.page_type === 'business';
 
+  // Filter function to ensure no empty values
+  const filterValidOptions = (options: any[]) => {
+    return options.filter(option => 
+      option && 
+      option.value && 
+      typeof option.value === 'string' && 
+      option.value.trim() !== '' &&
+      option.label &&
+      typeof option.label === 'string' &&
+      option.label.trim() !== ''
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -292,16 +304,14 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                     <SelectValue placeholder={`Select ${formData.page_type === 'business' ? 'business' : formData.page_type} type`} />
                   </SelectTrigger>
                   <SelectContent>
-                    {getTypeOptions()
-                      .filter(type => type.value && type.value.trim() !== "")
-                      .map(type => (
-                        <SelectItem key={type.value} value={type.value}>
-                          <div className="flex items-center">
-                            {getBusinessTypeIcon(type.value)}
-                            {type.label}
-                          </div>
-                        </SelectItem>
-                      ))}
+                    {filterValidOptions(getTypeOptions()).map(type => (
+                      <SelectItem key={type.value} value={type.value}>
+                        <div className="flex items-center">
+                          {getBusinessTypeIcon(type.value)}
+                          {type.label}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -320,7 +330,14 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   {currencies
-                    .filter(currency => currency.code && currency.code.trim() !== "")
+                    .filter(currency => 
+                      currency && 
+                      currency.code && 
+                      typeof currency.code === 'string' && 
+                      currency.code.trim() !== '' &&
+                      currency.name &&
+                      currency.symbol
+                    )
                     .map(currency => (
                       <SelectItem key={currency.code} value={currency.code}>
                         <div className="flex items-center gap-2">
