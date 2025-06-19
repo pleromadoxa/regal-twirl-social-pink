@@ -30,8 +30,7 @@ import {
   TrendingUp,
   Sparkles,
   Settings,
-  BarChart3,
-  Eye
+  BarChart3
 } from 'lucide-react';
 
 const ProfessionalAccountProfile = () => {
@@ -184,11 +183,6 @@ const ProfessionalAccountProfile = () => {
     navigate(`/business/${pageId}`);
   };
 
-  const handleViewProfile = () => {
-    console.log('Opening professional page in new tab for pageId:', pageId);
-    window.open(`/professional/${pageId}`, '_blank');
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -327,15 +321,6 @@ const ProfessionalAccountProfile = () => {
                   >
                     <BarChart3 className="w-4 h-4 mr-2" />
                     Analytics
-                  </Button>
-                  <Button 
-                    size="sm"
-                    variant="outline"
-                    onClick={handleViewProfile}
-                    className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-lg"
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    View
                   </Button>
                 </div>
               )}
