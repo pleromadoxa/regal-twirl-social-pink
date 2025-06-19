@@ -298,9 +298,6 @@ const SidebarNav = () => {
                 {isPremiumUser && (
                   <Crown className="w-3 h-3 text-amber-500" />
                 )}
-                {isAdmin && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0">Admin</Badge>
-                )}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                 {profile?.premium_tier === 'business' ? 'Business Plan' : 
