@@ -47,6 +47,36 @@ const LoadingScreen = () => (
   </div>
 );
 
+// AuthenticatedRoutes component that wraps authenticated routes with NotificationsProvider
+const AuthenticatedRoutes = () => {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return (
+    <NotificationsProvider>
+      <Routes>
+        <Route path="/home" element={<AuthWrapper><Index /></AuthWrapper>} />
+        <Route path="/profile/:userId" element={<AuthWrapper><Profile /></AuthWrapper>} />
+        <Route path="/settings" element={<AuthWrapper><Settings /></AuthWrapper>} />
+        <Route path="/explore" element={<AuthWrapper><Explore /></AuthWrapper>} />
+        <Route path="/messages" element={<AuthWrapper><Messages /></AuthWrapper>} />
+        <Route path="/notifications" element={<AuthWrapper><Notifications /></AuthWrapper>} />
+        <Route path="/games" element={<AuthWrapper><Games /></AuthWrapper>} />
+        <Route path="/music" element={<AuthWrapper><Music /></AuthWrapper>} />
+        <Route path="/pinned" element={<AuthWrapper><Pinned /></AuthWrapper>} />
+        <Route path="/professional" element={<AuthWrapper><ProfessionalAccounts /></AuthWrapper>} />
+        <Route path="/business/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
+        <Route path="/business-analytics" element={<AuthWrapper><BusinessAnalytics /></AuthWrapper>} />
+        <Route path="/ads-manager" element={<AuthWrapper><AdsManager /></AuthWrapper>} />
+        <Route path="/ai-studio" element={<AuthWrapper><AIStudio /></AuthWrapper>} />
+      </Routes>
+    </NotificationsProvider>
+  );
+};
+
 // App Routes component that uses auth
 const AppRoutes = () => {
   const { user, loading } = useAuth();
@@ -60,26 +90,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={user ? <Navigate to="/home" replace /> : <Auth />} />
-        {user ? (
-          <>
-            <Route path="/home" element={<AuthWrapper><Index /></AuthWrapper>} />
-            <Route path="/profile/:userId" element={<AuthWrapper><Profile /></AuthWrapper>} />
-            <Route path="/settings" element={<AuthWrapper><Settings /></AuthWrapper>} />
-            <Route path="/explore" element={<AuthWrapper><Explore /></AuthWrapper>} />
-            <Route path="/messages" element={<AuthWrapper><Messages /></AuthWrapper>} />
-            <Route path="/notifications" element={<AuthWrapper><Notifications /></AuthWrapper>} />
-            <Route path="/games" element={<AuthWrapper><Games /></AuthWrapper>} />
-            <Route path="/music" element={<AuthWrapper><Music /></AuthWrapper>} />
-            <Route path="/pinned" element={<AuthWrapper><Pinned /></AuthWrapper>} />
-            <Route path="/professional" element={<AuthWrapper><ProfessionalAccounts /></AuthWrapper>} />
-            <Route path="/business/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
-            <Route path="/business-analytics" element={<AuthWrapper><BusinessAnalytics /></AuthWrapper>} />
-            <Route path="/ads-manager" element={<AuthWrapper><AdsManager /></AuthWrapper>} />
-            <Route path="/ai-studio" element={<AuthWrapper><AIStudio /></AuthWrapper>} />
-          </>
-        ) : (
-          <Route path="*" element={<Navigate to="/auth" replace />} />
-        )}
+        <Route path="/*" element={<AuthenticatedRoutes />} />
       </Routes>
     </BrowserRouter>
   );
@@ -90,11 +101,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <NotificationsProvider>
-            <Toaster />
-            <Sonner />
-            <AppRoutes />
-          </NotificationsProvider>
+          <Toaster />
+          <Sonner />
+          <AppRoutes />
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
