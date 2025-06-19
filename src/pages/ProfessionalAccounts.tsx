@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +35,7 @@ const ProfessionalAccounts = () => {
   };
 
   const handleDashboard = (pageId: string) => {
-    console.log('Navigating to dashboard:', pageId);
+    console.log('Navigating to business dashboard:', pageId);
     navigate(`/business/${pageId}`);
   };
 
@@ -156,11 +155,7 @@ const ProfessionalAccounts = () => {
                         variant="outline" 
                         size="sm" 
                         className="flex-1"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleViewProfile(page.id);
-                        }}
+                        onClick={() => handleViewProfile(page.id)}
                       >
                         <Globe className="w-3 h-3 mr-1" />
                         View
@@ -168,11 +163,7 @@ const ProfessionalAccounts = () => {
                       <Button 
                         size="sm" 
                         className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleDashboard(page.id);
-                        }}
+                        onClick={() => handleDashboard(page.id)}
                       >
                         <BarChart3 className="w-3 h-3 mr-1" />
                         Dashboard
@@ -180,11 +171,7 @@ const ProfessionalAccounts = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleEditPage(page.id);
-                        }}
+                        onClick={() => handleEditPage(page.id)}
                       >
                         <Settings className="w-3 h-3" />
                       </Button>
