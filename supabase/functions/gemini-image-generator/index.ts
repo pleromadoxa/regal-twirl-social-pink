@@ -25,6 +25,8 @@ serve(async (req) => {
       )
     }
 
+    console.log('Generating image with prompt:', prompt)
+
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -41,33 +43,38 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: `Generate a detailed, high-quality image based on this prompt: ${prompt}. Create a vivid, creative, and visually appealing image that captures the essence of the description.`
+                text: `Generate a high-quality, detailed image based on this prompt: ${prompt}. Create a vivid, creative, and visually appealing image that captures the essence of the description. The image should be professional and suitable for social media sharing.`
               }
             ]
           }
         ],
-        response_format: { type: 'json_object' }
+        temperature: 0.8,
+        max_tokens: 4000
       })
     })
 
     if (!response.ok) {
       const errorText = await response.text()
       console.error('OpenRouter API error:', response.status, errorText)
-      throw new Error(`OpenRouter API error: ${response.status}`)
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
+    console.log('OpenRouter response received')
     
-    // Since Gemini 2.0 Flash is primarily a text model, we'll generate a placeholder
-    // In a real implementation, you would use an actual image generation API
-    const imagePrompt = encodeURIComponent(prompt.slice(0, 50))
-    const placeholderImage = `https://api.placeholder.com/512x512/6366f1/ffffff?text=${imagePrompt}&font=roboto`
+    // Since Gemini 2.0 Flash is primarily a text model and doesn't generate actual images,
+    // we'll create a placeholder image with the prompt
+    const imagePrompt = encodeURIComponent(prompt.slice(0, 100))
+    const placeholderImage = `https://via.placeholder.com/1024x1024/6366f1/ffffff?text=${imagePrompt}`
+
+    console.log('Generated placeholder image URL:', placeholderImage)
 
     return new Response(
       JSON.stringify({ 
         image: placeholderImage,
         prompt: prompt,
-        model: 'google/gemini-2.0-flash-exp:free'
+        model: 'google/gemini-2.0-flash-exp:free',
+        description: data.choices?.[0]?.message?.content || 'AI generated image'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

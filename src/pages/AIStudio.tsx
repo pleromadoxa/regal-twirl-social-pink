@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AIAssistantChat from '@/components/AIAssistantChat';
 import AIContentGenerator from '@/components/AIContentGenerator';
 import AIImageGenerator from '@/components/AIImageGenerator';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Bot, 
   FileText, 
@@ -21,6 +22,43 @@ import {
 
 const AIStudio = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState({
+    chats: 0,
+    content: 0,
+    images: 0,
+    totalGenerations: 0
+  });
+
+  useEffect(() => {
+    if (user) {
+      fetchAIStats();
+    }
+  }, [user]);
+
+  const fetchAIStats = async () => {
+    try {
+      const { data: generations, error } = await supabase
+        .from('ai_generations')
+        .select('generation_type')
+        .eq('user_id', user?.id);
+
+      if (error) {
+        console.error('Error fetching AI stats:', error);
+        return;
+      }
+
+      const stats = {
+        chats: generations?.filter(g => g.generation_type === 'chat' || g.generation_type === 'assistant').length || 0,
+        content: generations?.filter(g => ['caption', 'enhancement', 'hashtags', 'summary', 'response_suggestions', 'translation'].includes(g.generation_type)).length || 0,
+        images: generations?.filter(g => g.generation_type === 'image').length || 0,
+        totalGenerations: generations?.length || 0
+      };
+
+      setStats(stats);
+    } catch (error) {
+      console.error('Error fetching AI stats:', error);
+    }
+  };
 
   if (!user) {
     return null;
@@ -56,7 +94,7 @@ const AIStudio = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-purple-100">AI Chats</p>
-                        <p className="text-2xl font-bold">124</p>
+                        <p className="text-2xl font-bold">{stats.chats}</p>
                       </div>
                       <MessageSquare className="w-8 h-8 text-purple-200" />
                     </div>
@@ -68,7 +106,7 @@ const AIStudio = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-pink-100">Content Generated</p>
-                        <p className="text-2xl font-bold">89</p>
+                        <p className="text-2xl font-bold">{stats.content}</p>
                       </div>
                       <FileText className="w-8 h-8 text-pink-200" />
                     </div>
@@ -80,7 +118,7 @@ const AIStudio = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-blue-100">Images Created</p>
-                        <p className="text-2xl font-bold">45</p>
+                        <p className="text-2xl font-bold">{stats.images}</p>
                       </div>
                       <Image className="w-8 h-8 text-blue-200" />
                     </div>
@@ -91,12 +129,10 @@ const AIStudio = () => {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-green-100">Premium Features</p>
-                        <p className="text-2xl font-bold">
-                          <Crown className="w-6 h-6 inline" />
-                        </p>
+                        <p className="text-green-100">Total Generations</p>
+                        <p className="text-2xl font-bold">{stats.totalGenerations}</p>
                       </div>
-                      <Zap className="w-8 h-8 text-green-200" />
+                      <TrendingUp className="w-8 h-8 text-green-200" />
                     </div>
                   </CardContent>
                 </Card>
@@ -121,15 +157,15 @@ const AIStudio = () => {
               </TabsList>
 
               <TabsContent value="chat" className="space-y-6">
-                <AIAssistantChat />
+                <AIAssistantChat onGenerationComplete={fetchAIStats} />
               </TabsContent>
 
               <TabsContent value="content" className="space-y-6">
-                <AIContentGenerator />
+                <AIContentGenerator onGenerationComplete={fetchAIStats} />
               </TabsContent>
 
               <TabsContent value="images" className="space-y-6">
-                <AIImageGenerator />
+                <AIImageGenerator onGenerationComplete={fetchAIStats} />
               </TabsContent>
             </Tabs>
           </div>

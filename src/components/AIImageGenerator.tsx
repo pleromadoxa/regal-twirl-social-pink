@@ -7,15 +7,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Image, Download, Wand2 } from 'lucide-react';
+import { usePosts } from '@/hooks/usePosts';
+import { Image, Download, Wand2, Send } from 'lucide-react';
 
-const AIImageGenerator = () => {
+interface AIImageGeneratorProps {
+  onGenerationComplete?: () => void;
+}
+
+const AIImageGenerator = ({ onGenerationComplete }: AIImageGeneratorProps) => {
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('realistic');
   const [generatedImage, setGeneratedImage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [posting, setPosting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { createPost } = usePosts();
 
   const handleGenerate = async () => {
     if (!prompt.trim() || loading) return;
@@ -43,6 +50,8 @@ const AIImageGenerator = () => {
             result: data.image,
             generation_type: 'image'
           });
+          
+          onGenerationComplete?.();
         }
 
         toast({
@@ -62,6 +71,31 @@ const AIImageGenerator = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePostToFeed = async () => {
+    if (!generatedImage || !prompt.trim()) return;
+
+    setPosting(true);
+    try {
+      // Create post with image and caption
+      const postContent = `🎨 AI Generated Art: ${prompt}\n\n#AIGenerated #DigitalArt #RegalAI`;
+      await createPost(postContent);
+      
+      toast({
+        title: "Posted to Feed",
+        description: "Your AI-generated image has been shared to your feed!"
+      });
+    } catch (error) {
+      console.error('Error posting to feed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to post to feed. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setPosting(false);
     }
   };
 
@@ -172,10 +206,31 @@ const AIImageGenerator = () => {
           <CardTitle className="flex items-center justify-between">
             Generated Image
             {generatedImage && (
-              <Button variant="outline" size="sm" onClick={downloadImage}>
-                <Download className="w-4 h-4 mr-1" />
-                Download
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handlePostToFeed}
+                  disabled={posting}
+                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                >
+                  {posting ? (
+                    <>
+                      <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin mr-1" />
+                      Posting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-1" />
+                      Post to Feed
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" size="sm" onClick={downloadImage}>
+                  <Download className="w-4 h-4 mr-1" />
+                  Download
+                </Button>
+              </div>
             )}
           </CardTitle>
         </CardHeader>
