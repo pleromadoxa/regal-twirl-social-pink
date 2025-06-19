@@ -9,6 +9,7 @@ import { NotificationsProvider } from "./contexts/NotificationsContext";
 import AuthWrapper from "./components/AuthWrapper";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Landing from "./pages/Landing";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Explore from "./pages/Explore";
@@ -57,7 +58,7 @@ const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to={user ? "/home" : "/auth"} replace />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/auth" element={user ? <Navigate to="/home" replace /> : <Auth />} />
         {user ? (
           <>

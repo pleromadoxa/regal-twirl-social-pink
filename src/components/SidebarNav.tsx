@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,16 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const SidebarNav = () => {
   const { user } = useAuth();
-  
-  // Safely get notifications with fallback
-  let unreadCount = 0;
-  try {
-    const notifications = useNotifications();
-    unreadCount = notifications.unreadCount;
-  } catch (error) {
-    console.log('Notifications not available yet:', error);
-  }
-  
+  const { unreadCount } = useNotifications();
   const { myPages } = useBusinessPages();
   const [profile, setProfile] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);

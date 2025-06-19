@@ -12,6 +12,7 @@ export interface Notification {
   created_at: string;
   actor_profile?: {
     display_name: string;
+    username?: string;
     avatar_url?: string;
   };
   data?: any;
