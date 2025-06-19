@@ -15,11 +15,13 @@ import VerificationBadge from '@/components/VerificationBadge';
 import ProfileEditDialog from '@/components/ProfileEditDialog';
 import SubscriptionBadge from '@/components/SubscriptionBadge';
 import UpgradeSubscriptionDialog from '@/components/UpgradeSubscriptionDialog';
+import { useVerifiedStatus } from '@/hooks/useVerifiedStatus';
 
 const Profile = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
-  const { profile, loading } = useProfile(userId);
+  const { profile, loading, isFollowing, toggleFollow } = useProfile(userId);
+  const { verificationLevel } = useVerifiedStatus(profile);
 
   if (!user) {
     return null;
@@ -116,6 +118,8 @@ const Profile = () => {
                       userId={profile.id}
                       username={profile.username}
                       isOwnProfile={isOwnProfile}
+                      isFollowing={isFollowing}
+                      onFollowToggle={toggleFollow}
                     />
                   )}
                 </div>
@@ -126,8 +130,8 @@ const Profile = () => {
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {profile.display_name || profile.username}
                   </h1>
-                  {profile.verification_level && (
-                    <VerificationBadge level={profile.verification_level as any} />
+                  {verificationLevel && (
+                    <VerificationBadge level={verificationLevel} />
                   )}
                   {isPremiumUser && (
                     <Crown className="w-5 h-5 text-amber-500" />

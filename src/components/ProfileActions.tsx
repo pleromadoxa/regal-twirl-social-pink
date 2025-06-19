@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, Phone, Video, UserPlus, UserCheck } from 'lucide-react';
@@ -88,8 +89,8 @@ const ProfileActions = ({ userId, username, isOwnProfile = false, isFollowing = 
     }
   };
 
-  // Don't show any buttons on own profile
-  if (isOwnProfile) {
+  // Don't show any buttons on own profile - this is the key fix
+  if (isOwnProfile || (user && user.id === userId)) {
     return null;
   }
 

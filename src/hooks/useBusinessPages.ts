@@ -59,7 +59,7 @@ export const useBusinessPages = () => {
       } else {
         const formattedUserPages = (userPages || []).map(page => ({
           ...page,
-          is_active: true, // Default value since business_pages table doesn't have is_active
+          is_active: true,
           featured_products: Array.isArray(page.featured_products) ? page.featured_products : []
         }));
         setMyPages(formattedUserPages);
@@ -77,7 +77,7 @@ export const useBusinessPages = () => {
       } else {
         const formattedAllPages = (allPages || []).map(page => ({
           ...page,
-          is_active: true, // Default value since business_pages table doesn't have is_active
+          is_active: true,
           featured_products: Array.isArray(page.featured_products) ? page.featured_products : []
         }));
         setPages(formattedAllPages);
@@ -102,19 +102,26 @@ export const useBusinessPages = () => {
     }
 
     try {
+      // Prepare the insert data, ensuring business_type is properly typed
+      const insertData: any = {
+        page_name: pageData.page_name,
+        description: pageData.description,
+        page_type: pageData.page_type,
+        owner_id: user.id,
+        email: pageData.email,
+        phone: pageData.phone,
+        website: pageData.website,
+        address: pageData.address
+      };
+
+      // Only add business_type if it's provided and valid
+      if (pageData.business_type) {
+        insertData.business_type = pageData.business_type;
+      }
+
       const { data, error } = await supabase
         .from('business_pages')
-        .insert({
-          page_name: pageData.page_name,
-          description: pageData.description,
-          page_type: pageData.page_type,
-          owner_id: user.id,
-          business_type: pageData.business_type,
-          email: pageData.email,
-          phone: pageData.phone,
-          website: pageData.website,
-          address: pageData.address
-        })
+        .insert(insertData)
         .select()
         .single();
 
