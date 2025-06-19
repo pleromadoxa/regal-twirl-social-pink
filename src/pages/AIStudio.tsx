@@ -37,7 +37,7 @@ const AIStudio = () => {
   const { user } = useAuth();
   const { myPages } = useBusinessPages();
   const { toast } = useToast();
-  const { generateText, enhanceText, loading: openRouterLoading } = useOpenRouterAI();
+  const { generateText, enhanceText, generateResearch, loading: openRouterLoading } = useOpenRouterAI();
   const { generateCaption, enhanceContent, generateHashtags, translateContent, summarizeContent, loading: aiLoading } = useAI();
   
   const [selectedPage, setSelectedPage] = useState<string>('');
@@ -58,6 +58,11 @@ const AIStudio = () => {
     image: 0,
     today: 0
   });
+  const [researchPrompt, setResearchPrompt] = useState('');
+  const [researchResult, setResearchResult] = useState('');
+  const [selectedResearchModel, setSelectedResearchModel] = useState('tngtech/deepseek-r1t-chimera:free');
+  const [editingGeneration, setEditingGeneration] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
 
   useEffect(() => {
     if (myPages.length > 0 && !selectedPage) {
@@ -185,7 +190,7 @@ const AIStudio = () => {
     }
 
     try {
-      const generated = await generateText(textPrompt);
+      const generated = await generateText(textPrompt, 'text');
       if (generated) {
         setTextResult(generated);
         fetchGenerationStats();
@@ -291,6 +296,36 @@ const AIStudio = () => {
     }
   };
 
+  const handleResearchGeneration = async () => {
+    if (!researchPrompt.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a research topic",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const generated = await generateResearch(researchPrompt, selectedResearchModel);
+      if (generated) {
+        setResearchResult(generated);
+        fetchGenerationStats();
+        toast({
+          title: "Success",
+          description: "Research generated successfully"
+        });
+      }
+    } catch (error) {
+      console.error('Error generating research:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate research",
+        variant: "destructive"
+      });
+    }
+  };
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -343,6 +378,43 @@ const AIStudio = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleEditGeneration = (generation: any) => {
+    setEditingGeneration(generation.id);
+    setEditingText(generation.result);
+  };
+
+  const handleSaveEdit = async (generationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('ai_generations')
+        .update({ result: editingText })
+        .eq('id', generationId);
+
+      if (error) throw error;
+
+      setEditingGeneration(null);
+      setEditingText('');
+      fetchGenerations();
+      
+      toast({
+        title: "Saved",
+        description: "Generation updated successfully"
+      });
+    } catch (error) {
+      console.error('Error updating generation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update generation",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingGeneration(null);
+    setEditingText('');
   };
 
   if (!user) {
@@ -457,7 +529,7 @@ const AIStudio = () => {
           </div>
 
           <Tabs defaultValue="content" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 h-12">
+            <TabsList className="grid w-full grid-cols-5 h-12">
               <TabsTrigger value="content" className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
                 Content AI
@@ -465,6 +537,10 @@ const AIStudio = () => {
               <TabsTrigger value="text" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Text AI
+              </TabsTrigger>
+              <TabsTrigger value="research" className="flex items-center gap-2">
+                <Brain className="w-4 h-4" />
+                Research AI
               </TabsTrigger>
               <TabsTrigger value="images" className="flex items-center gap-2">
                 <Image className="w-4 h-4" />
@@ -617,20 +693,58 @@ const AIStudio = () => {
                       <div className="space-y-4 max-h-96 overflow-y-auto">
                         {generations.slice(0, 10).map((generation) => (
                           <div key={generation.id} className="border rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="outline" className="text-xs">
-                                {generation.generation_type}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(generation.created_at).toLocaleDateString()}
-                              </span>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {generation.generation_type}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(generation.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEditGeneration(generation)}
+                                className="h-6 px-2"
+                              >
+                                Edit
+                              </Button>
                             </div>
                             <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                               {generation.prompt}
                             </p>
-                            <p className="text-sm line-clamp-3">
-                              {generation.result}
-                            </p>
+                            {editingGeneration === generation.id ? (
+                              <div className="space-y-2">
+                                <Textarea
+                                  value={editingText}
+                                  onChange={(e) => setEditingText(e.target.value)}
+                                  rows={3}
+                                  className="text-sm"
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSaveEdit(generation.id)}
+                                    className="h-6 px-2"
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleCancelEdit}
+                                    className="h-6 px-2"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm line-clamp-3">
+                                {generation.result}
+                              </p>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -654,7 +768,7 @@ const AIStudio = () => {
                     Advanced Text AI
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Generate and enhance text with advanced AI models
+                    Generate and enhance text with advanced AI models (DeepSeek Chat V3)
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -713,6 +827,91 @@ const AIStudio = () => {
                         value={textResult}
                         onChange={(e) => setTextResult(e.target.value)}
                         rows={8}
+                        className="mt-2"
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="research" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-indigo-600" />
+                    AI Research Assistant
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Generate comprehensive research with advanced reasoning models
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Research Topic</Label>
+                    <Textarea
+                      value={researchPrompt}
+                      onChange={(e) => setResearchPrompt(e.target.value)}
+                      placeholder="Enter the topic you want to research..."
+                      rows={4}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Research Model</Label>
+                    <Select value={selectedResearchModel} onValueChange={setSelectedResearchModel}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tngtech/deepseek-r1t-chimera:free">
+                          DeepSeek R1T Chimera (Recommended)
+                        </SelectItem>
+                        <SelectItem value="microsoft/mai-ds-r1:free">
+                          Microsoft MAI-DS-R1
+                        </SelectItem>
+                        <SelectItem value="deepseek/deepseek-r1-0528-qwen3-8b:free">
+                          DeepSeek R1 Qwen3-8B
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button 
+                    onClick={handleResearchGeneration}
+                    disabled={openRouterLoading}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 h-12"
+                  >
+                    {openRouterLoading ? (
+                      <>
+                        <Brain className="w-4 h-4 mr-2 animate-spin" />
+                        Researching...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="w-4 h-4 mr-2" />
+                        Generate Research
+                      </>
+                    )}
+                  </Button>
+
+                  {researchResult && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label>Research Results</Label>
+                        <Button
+                          onClick={() => copyToClipboard(researchResult)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Copy className="w-4 h-4 mr-1" />
+                          Copy
+                        </Button>
+                      </div>
+                      <Textarea
+                        value={researchResult}
+                        onChange={(e) => setResearchResult(e.target.value)}
+                        rows={12}
                         className="mt-2"
                       />
                     </div>

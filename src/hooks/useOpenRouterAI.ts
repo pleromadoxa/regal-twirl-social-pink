@@ -2,12 +2,14 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useOpenRouterAI = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const generateText = async (prompt: string): Promise<string | null> => {
+  const generateText = async (prompt: string, type: string = 'generate', model?: string): Promise<string | null> => {
     if (!prompt.trim()) {
       toast({
         title: "Prompt required",
@@ -20,7 +22,7 @@ export const useOpenRouterAI = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('openrouter-ai', {
-        body: { prompt, type: 'generate' }
+        body: { prompt, type, model }
       });
 
       if (error) {
@@ -31,6 +33,18 @@ export const useOpenRouterAI = () => {
           variant: "destructive"
         });
         return null;
+      }
+
+      // Save generation history
+      if (user) {
+        await supabase
+          .from('ai_generations')
+          .insert({
+            user_id: user.id,
+            generation_type: type,
+            prompt,
+            result: data.generatedText
+          });
       }
 
       return data.generatedText;
@@ -48,48 +62,17 @@ export const useOpenRouterAI = () => {
   };
 
   const enhanceText = async (text: string): Promise<string | null> => {
-    if (!text.trim()) {
-      toast({
-        title: "Text required",
-        description: "Please enter text to enhance",
-        variant: "destructive"
-      });
-      return null;
-    }
+    return generateText(text, 'enhance');
+  };
 
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('openrouter-ai', {
-        body: { prompt: text, type: 'enhance' }
-      });
-
-      if (error) {
-        console.error('Error enhancing text:', error);
-        toast({
-          title: "Enhancement failed",
-          description: "Failed to enhance text. Please try again.",
-          variant: "destructive"
-        });
-        return null;
-      }
-
-      return data.generatedText;
-    } catch (error) {
-      console.error('Error in enhanceText:', error);
-      toast({
-        title: "Enhancement failed",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      });
-      return null;
-    } finally {
-      setLoading(false);
-    }
+  const generateResearch = async (topic: string, model?: string): Promise<string | null> => {
+    return generateText(topic, 'research', model);
   };
 
   return {
     generateText,
     enhanceText,
+    generateResearch,
     loading
   };
 };
