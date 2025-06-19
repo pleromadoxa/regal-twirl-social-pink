@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -160,7 +159,7 @@ const SidebarNav = () => {
 
   // Check if user has valid subscription or is admin
   const hasValidSubscription = (subscriptionData?.subscribed && subscriptionData?.subscription_end && new Date(subscriptionData.subscription_end) > new Date()) || isAdmin;
-  const isPremiumUser = profile?.premium_tier === 'pro' || profile?.premium_tier === 'business';
+  const isPremiumUser = profile?.premium_tier !== 'free';
   const isBusinessUser = profile?.premium_tier === 'business';
   const hasBusinessPages = myPages && myPages.length > 0;
 
@@ -176,7 +175,7 @@ const SidebarNav = () => {
       { name: 'Pinned', icon: Pin, path: '/pinned', accent: 'from-teal-500 to-cyan-600' },
     ];
 
-    // Professional - only for paid users or admins
+    // Professional - only for premium users (paid subscription or admin)
     if (hasValidSubscription && isPremiumUser) {
       baseItems.push({
         name: 'Professional', 
@@ -186,10 +185,16 @@ const SidebarNav = () => {
       });
     }
 
-    // Business features - only for business tier users with valid subscription or admins
+    // Business Analytics - only for business tier users with valid subscription or admins
     if (hasBusinessPages && ((hasValidSubscription && subscriptionData?.subscription_tier === 'Business') || isAdmin)) {
       baseItems.push(
-        { name: 'Business Analytics', icon: BarChart3, path: '/business-analytics', accent: 'from-teal-500 to-cyan-600' },
+        { name: 'Business Analytics', icon: BarChart3, path: '/business-analytics', accent: 'from-teal-500 to-cyan-600' }
+      );
+    }
+
+    // Ads Manager - only for business tier users with valid subscription or admins
+    if (hasBusinessPages && ((hasValidSubscription && subscriptionData?.subscription_tier === 'Business') || isAdmin)) {
+      baseItems.push(
         { name: 'Ads Manager', icon: Megaphone, path: '/ads-manager', accent: 'from-red-500 to-pink-600' }
       );
     }
