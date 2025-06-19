@@ -1,252 +1,90 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface Post {
   id: string;
-  user_id: string;
   content: string;
-  image_urls?: string[];
-  audio_url?: string;
+  user_id: string;
   created_at: string;
   updated_at: string;
   likes_count: number;
   retweets_count: number;
   replies_count: number;
-  user_liked?: boolean;
-  user_retweeted?: boolean;
-  user_pinned?: boolean;
-  posted_as_page?: string; // Add this field for professional account posts
-  profiles: {
+  image_urls?: string[];
+  audio_url?: string;
+  posted_as_page?: string;
+  sponsored_post_id?: string;
+  profiles?: {
+    id: string;
     username: string;
     display_name: string;
     avatar_url: string;
     is_verified: boolean;
-    premium_tier: string;
+    verification_level: string;
+  };
+  business_pages?: {
+    id: string;
+    page_name: string;
+    page_avatar_url: string;
+    page_type: string;
+    is_verified: boolean;
   };
 }
 
-interface UsePostsOptions {
-  userId?: string;
-}
-
-export const usePosts = (options: UsePostsOptions = {}) => {
+export const usePosts = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const enrichPostWithUserData = async (post: any, profilesMap: Map<string, any>) => {
-    let userLiked = false;
-    let userRetweeted = false;
-    let userPinned = false;
-
-    if (user) {
-      const [likesData, retweetsData, pinnedData] = await Promise.all([
-        supabase
-          .from('likes')
-          .select('post_id')
-          .eq('user_id', user.id)
-          .eq('post_id', post.id),
-        supabase
-          .from('retweets')
-          .select('post_id')
-          .eq('user_id', user.id)
-          .eq('post_id', post.id),
-        supabase
-          .from('pinned_posts')
-          .select('post_id')
-          .eq('user_id', user.id)
-          .eq('post_id', post.id)
-      ]);
-
-      userLiked = (likesData.data?.length || 0) > 0;
-      userRetweeted = (retweetsData.data?.length || 0) > 0;
-      userPinned = (pinnedData.data?.length || 0) > 0;
-    }
-
-    return {
-      ...post,
-      user_liked: userLiked,
-      user_retweeted: userRetweeted,
-      user_pinned: userPinned,
-      likes_count: post.likes_count || 0,
-      retweets_count: post.retweets_count || 0,
-      replies_count: post.replies_count || 0,
-      image_urls: post.image_urls || [],
-      profiles: profilesMap.get(post.user_id) || {
-        username: 'unknown',
-        display_name: 'Unknown User',
-        avatar_url: '',
-        is_verified: false,
-        premium_tier: 'free'
-      }
-    };
-  };
-
   const fetchPosts = async () => {
     try {
-      setLoading(true);
-      
-      let query = supabase
+      const { data, error } = await supabase
         .from('posts')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            username,
+            display_name,
+            avatar_url,
+            is_verified,
+            verification_level
+          ),
+          business_pages:posted_as_page (
+            id,
+            page_name,
+            page_avatar_url,
+            page_type,
+            is_verified
+          )
+        `)
         .order('created_at', { ascending: false });
 
-      // Filter by userId if provided
-      if (options.userId) {
-        query = query.eq('user_id', options.userId);
-      }
+      if (error) throw error;
 
-      const { data: postsData, error: postsError } = await query;
-
-      if (postsError) {
-        console.error('Error fetching posts:', postsError);
-        return;
-      }
-
-      if (!postsData || postsData.length === 0) {
-        setPosts([]);
-        return;
-      }
-
-      const userIds = [...new Set(postsData.map(post => post.user_id))];
-
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url, is_verified, premium_tier')
-        .in('id', userIds);
-
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-      }
-
-      const profilesMap = new Map(
-        (profilesData || []).map(profile => [profile.id, profile])
-      );
-
-      if (user) {
-        const postIds = postsData.map(post => post.id);
-        
-        const [likesData, retweetsData, pinnedData] = await Promise.all([
-          supabase
-            .from('likes')
-            .select('post_id')
-            .eq('user_id', user.id)
-            .in('post_id', postIds),
-          supabase
-            .from('retweets')
-            .select('post_id')
-            .eq('user_id', user.id)
-            .in('post_id', postIds),
-          supabase
-            .from('pinned_posts')
-            .select('post_id')
-            .eq('user_id', user.id)
-            .in('post_id', postIds)
-        ]);
-
-        const userLikedPosts = new Set(likesData.data?.map(like => like.post_id) || []);
-        const userRetweetedPosts = new Set(retweetsData.data?.map(retweet => retweet.post_id) || []);
-        const userPinnedPosts = new Set(pinnedData.data?.map(pinned => pinned.post_id) || []);
-
-        const enrichedPosts: Post[] = postsData.map(post => ({
-          ...post,
-          user_liked: userLikedPosts.has(post.id),
-          user_retweeted: userRetweetedPosts.has(post.id),
-          user_pinned: userPinnedPosts.has(post.id),
-          likes_count: post.likes_count || 0,
-          retweets_count: post.retweets_count || 0,
-          replies_count: post.replies_count || 0,
-          image_urls: post.image_urls || [],
-          profiles: profilesMap.get(post.user_id) || {
-            username: 'unknown',
-            display_name: 'Unknown User',
-            avatar_url: '',
-            is_verified: false,
-            premium_tier: 'free'
-          }
-        }));
-
-        setPosts(enrichedPosts);
-      } else {
-        const enrichedPosts: Post[] = postsData.map(post => ({
-          ...post,
-          likes_count: post.likes_count || 0,
-          retweets_count: post.retweets_count || 0,
-          replies_count: post.replies_count || 0,
-          image_urls: post.image_urls || [],
-          profiles: profilesMap.get(post.user_id) || {
-            username: 'unknown',
-            display_name: 'Unknown User',
-            avatar_url: '',
-            is_verified: false,
-            premium_tier: 'free'
-          }
-        }));
-        
-        setPosts(enrichedPosts);
-      }
+      setPosts(data || []);
     } catch (error) {
-      console.error('Error in fetchPosts:', error);
+      console.error('Error fetching posts:', error);
+      toast({
+        title: "Error fetching posts",
+        description: "Failed to load posts",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleNewPost = async (payload: any) => {
-    console.log('New post received:', payload);
-    const newPost = payload.new;
-    
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('id, username, display_name, avatar_url, is_verified, premium_tier')
-      .eq('id', newPost.user_id)
-      .single();
-
-    const profilesMap = new Map();
-    if (profileData) {
-      profilesMap.set(profileData.id, profileData);
-    }
-
-    const enrichedPost = await enrichPostWithUserData(newPost, profilesMap);
-    
-    // Add the new post to the beginning of the posts array for instant visibility
-    setPosts(prevPosts => [enrichedPost, ...prevPosts]);
-    
-    // Show a toast notification for new posts (only if not from current user)
-    if (user && newPost.user_id !== user.id) {
-      toast({
-        title: "New post",
-        description: `@${profileData?.username || 'someone'} just posted`,
-        duration: 3000,
-      });
-    }
-  };
-
-  const handlePostUpdate = async (payload: any) => {
-    console.log('Post updated:', payload);
-    const updatedPost = payload.new;
-    
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === updatedPost.id 
-          ? { ...post, ...updatedPost }
-          : post
-      )
-    );
-  };
-
-  const handlePostDelete = (payload: any) => {
-    console.log('Post deleted:', payload);
-    const deletedPostId = payload.old.id;
-    
-    setPosts(prevPosts => prevPosts.filter(post => post.id !== deletedPostId));
-  };
-
-  const createPost = async (content: string, imageUrls: string[] = [], selectedAccount: 'personal' | string = 'personal') => {
+  const createPost = async (
+    content: string, 
+    imageUrls: string[] = [], 
+    selectedAccount: 'personal' | string = 'personal',
+    audioUrl?: string
+  ) => {
     if (!user) {
       toast({
         title: "Authentication required",
@@ -258,268 +96,66 @@ export const usePosts = (options: UsePostsOptions = {}) => {
 
     try {
       const postData: any = {
+        content,
         user_id: user.id,
-        content: content.trim(),
         image_urls: imageUrls.length > 0 ? imageUrls : null,
+        audio_url: audioUrl || null,
+        posted_as_page: selectedAccount !== 'personal' ? selectedAccount : null
       };
 
-      if (selectedAccount !== 'personal') {
-        postData.posted_as_page = selectedAccount;
-      }
-
-      const { data: newPostData, error } = await supabase
+      const { data, error } = await supabase
         .from('posts')
         .insert([postData])
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            username,
+            display_name,
+            avatar_url,
+            is_verified,
+            verification_level
+          ),
+          business_pages:posted_as_page (
+            id,
+            page_name,
+            page_avatar_url,
+            page_type,
+            is_verified
+          )
+        `)
         .single();
 
-      if (error) {
-        console.error('Error creating post:', error);
-        toast({
-          title: "Error creating post",
-          description: error.message,
-          variant: "destructive"
-        });
-        return;
-      }
+      if (error) throw error;
 
-      // Get user profile for the new post
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url, is_verified, premium_tier')
-        .eq('id', user.id)
-        .single();
-
-      // Create enriched post object for instant display
-      const enrichedNewPost = {
-        ...newPostData,
-        user_liked: false,
-        user_retweeted: false,
-        user_pinned: false,
-        likes_count: 0,
-        retweets_count: 0,
-        replies_count: 0,
-        image_urls: newPostData.image_urls || [],
-        profiles: profileData || {
-          username: 'unknown',
-          display_name: 'Unknown User',
-          avatar_url: '',
-          is_verified: false,
-          premium_tier: 'free'
-        }
-      };
-
-      // Instantly add the new post to the timeline for immediate visibility
-      setPosts(prevPosts => [enrichedNewPost, ...prevPosts]);
+      // Add the new post to the beginning of the posts array
+      setPosts(prevPosts => [data, ...prevPosts]);
 
       toast({
-        title: "Post created!",
-        description: "Your post has been published successfully."
+        title: "Success",
+        description: "Post created successfully",
       });
 
+      return data;
     } catch (error) {
-      console.error('Error in createPost:', error);
+      console.error('Error creating post:', error);
       toast({
-        title: "Something went wrong",
-        description: "Please try again later.",
+        title: "Error creating post",
+        description: error instanceof Error ? error.message : "Failed to create post",
         variant: "destructive"
       });
-    }
-  };
-
-  const deletePost = async (postId: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('posts')
-        .delete()
-        .eq('id', postId)
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Error deleting post:', error);
-        toast({
-          title: "Error deleting post",
-          description: error.message,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      toast({
-        title: "Post deleted",
-        description: "Your post has been deleted successfully."
-      });
-
-    } catch (error) {
-      console.error('Error in deletePost:', error);
-      toast({
-        title: "Something went wrong",
-        description: "Please try again later.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const toggleLike = async (postId: string) => {
-    if (!user) return;
-
-    const post = posts.find(p => p.id === postId);
-    if (!post) return;
-
-    try {
-      if (post.user_liked) {
-        await supabase
-          .from('likes')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('post_id', postId);
-      } else {
-        await supabase
-          .from('likes')
-          .insert([{ user_id: user.id, post_id: postId }]);
-      }
-
-      setPosts(posts.map(p => 
-        p.id === postId 
-          ? { 
-              ...p, 
-              user_liked: !p.user_liked,
-              likes_count: p.user_liked ? p.likes_count - 1 : p.likes_count + 1
-            }
-          : p
-      ));
-    } catch (error) {
-      console.error('Error toggling like:', error);
-    }
-  };
-
-  const toggleRetweet = async (postId: string) => {
-    if (!user) return;
-
-    const post = posts.find(p => p.id === postId);
-    if (!post) return;
-
-    try {
-      if (post.user_retweeted) {
-        await supabase
-          .from('retweets')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('post_id', postId);
-      } else {
-        await supabase
-          .from('retweets')
-          .insert([{ user_id: user.id, post_id: postId }]);
-      }
-
-      setPosts(posts.map(p => 
-        p.id === postId 
-          ? { 
-              ...p, 
-              user_retweeted: !p.user_retweeted,
-              retweets_count: p.user_retweeted ? p.retweets_count - 1 : p.retweets_count + 1
-            }
-          : p
-      ));
-    } catch (error) {
-      console.error('Error toggling retweet:', error);
-    }
-  };
-
-  const togglePin = async (postId: string) => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to pin posts",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const post = posts.find(p => p.id === postId);
-    if (!post) return;
-
-    try {
-      if (post.user_pinned) {
-        await supabase
-          .from('pinned_posts')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('post_id', postId);
-
-        toast({
-          title: "Post unpinned",
-          description: "Post removed from your pinned posts."
-        });
-      } else {
-        await supabase
-          .from('pinned_posts')
-          .insert({
-            user_id: user.id,
-            post_id: postId
-          });
-
-        toast({
-          title: "Post pinned",
-          description: "Post added to your pinned posts."
-        });
-      }
-
-      setPosts(posts.map(p => 
-        p.id === postId 
-          ? { ...p, user_pinned: !p.user_pinned }
-          : p
-      ));
-    } catch (error) {
-      console.error('Error toggling pin:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update pin status",
-        variant: "destructive"
-      });
+      throw error;
     }
   };
 
   useEffect(() => {
     fetchPosts();
-
-    const channelName = `posts-realtime-${Date.now()}-${Math.random()}`;
-    
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'posts'
-      }, handleNewPost)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'posts'
-      }, handlePostUpdate)
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'posts'
-      }, handlePostDelete)
-      .subscribe();
-
-    return () => {
-      console.log('Cleaning up posts channel subscription');
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, options.userId]);
+  }, []);
 
   return {
     posts,
     loading,
     createPost,
-    deletePost,
-    toggleLike,
-    toggleRetweet,
-    togglePin,
     refetch: fetchPosts
   };
 };

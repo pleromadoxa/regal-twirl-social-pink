@@ -1,9 +1,11 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePosts } from "@/hooks/usePosts";
+import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AccountSwitcher from "@/components/AccountSwitcher";
@@ -40,6 +42,7 @@ const TweetComposer = () => {
   const { toast } = useToast();
   const { createPost } = usePosts();
   const { user } = useAuth();
+  const { profile } = useProfile();
   const audioRef = useRef<HTMLAudioElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const maxLength = 280;
@@ -184,7 +187,7 @@ const TweetComposer = () => {
             combinedContent += `\n🎵 Audio message attached`;
           }
           
-          await createPost(combinedContent, mediaUrls, selectedAccount);
+          await createPost(combinedContent, mediaUrls, selectedAccount, audioUrl);
           setThreadTweets([""]);
           setIsThreadMode(false);
           resetForm();
@@ -203,7 +206,7 @@ const TweetComposer = () => {
             finalContent += `\n🎵 Audio message attached`;
           }
           
-          await createPost(finalContent, mediaUrls, selectedAccount);
+          await createPost(finalContent, mediaUrls, selectedAccount, audioUrl);
           resetForm();
         }
       }
@@ -360,14 +363,19 @@ const TweetComposer = () => {
 
   if (!user) return null;
 
+  // Get the correct avatar URL - prioritize profile avatar, then user metadata
+  const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url;
+  const displayName = profile?.display_name || profile?.username || user.email;
+  const fallbackLetter = displayName?.charAt(0).toUpperCase() || 'U';
+
   return (
     <div className="p-6 space-y-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
       <div className="flex space-x-4">
         <div className="w-12">
           <Avatar className="ring-2 ring-purple-300 dark:ring-purple-500 transition-all duration-500 hover:ring-pink-400 dark:hover:ring-pink-400 shadow-lg hover:scale-110 hover:shadow-2xl">
-            <AvatarImage src={user.user_metadata?.avatar_url || "/placeholder.svg"} />
+            <AvatarImage src={avatarUrl} alt={displayName} />
             <AvatarFallback className="bg-gradient-to-br from-purple-500 via-blue-500 to-pink-500 text-white font-semibold">
-              {user.email?.charAt(0).toUpperCase()}
+              {fallbackLetter}
             </AvatarFallback>
           </Avatar>
         </div>
@@ -398,8 +406,14 @@ const TweetComposer = () => {
                 value={tweetText}
                 onChange={handleTextChange}
                 placeholder="What's happening?"
-                className="w-full text-xl placeholder:text-purple-500 dark:placeholder:text-purple-400 border-0 resize-none outline-none bg-transparent dark:text-slate-100 min-h-[100px] transition-all duration-300 focus:bg-purple-50/50 dark:focus:bg-purple-800/50 rounded-xl p-3 hover:shadow-lg"
+                className="w-full text-xl placeholder:text-purple-500 dark:placeholder:text-purple-400 border-0 resize-none outline-none bg-transparent dark:text-slate-100 min-h-[100px] transition-all duration-300 focus:bg-purple-50/50 dark:focus:bg-purple-800/50 rounded-xl p-3 hover:shadow-lg overflow-hidden"
                 maxLength={maxLength + 50}
+                style={{ height: 'auto' }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = `${target.scrollHeight}px`;
+                }}
               />
               
               <UserMentions

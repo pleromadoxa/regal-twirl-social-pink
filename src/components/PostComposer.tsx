@@ -5,11 +5,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePosts } from '@/hooks/usePosts';
+import { useProfile } from '@/hooks/useProfile';
 
 const PostComposer = () => {
   const [content, setContent] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const { user } = useAuth();
+  const { profile } = useProfile();
   const { createPost } = usePosts();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,13 +26,18 @@ const PostComposer = () => {
 
   if (!user) return null;
 
+  // Get the correct avatar URL - prioritize profile avatar, then user metadata
+  const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url;
+  const displayName = profile?.display_name || profile?.username || user.email;
+  const fallbackLetter = displayName?.charAt(0).toUpperCase() || 'U';
+
   return (
     <div className="border-b border-slate-200 dark:border-slate-700 p-6">
       <div className="flex space-x-4">
         <Avatar className="ring-2 ring-slate-200 dark:ring-slate-600">
-          <AvatarImage src="/placeholder.svg" />
+          <AvatarImage src={avatarUrl} alt={displayName} />
           <AvatarFallback className="bg-purple-500 text-white font-semibold">
-            {user.email?.charAt(0).toUpperCase()}
+            {fallbackLetter}
           </AvatarFallback>
         </Avatar>
         
