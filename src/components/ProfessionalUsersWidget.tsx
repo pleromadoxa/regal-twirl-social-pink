@@ -20,6 +20,7 @@ interface BusinessPage {
   is_verified: boolean;
   owner_id: string;
   user_following?: boolean;
+  business_type?: string;
 }
 
 const ProfessionalUsersWidget = () => {
@@ -43,7 +44,7 @@ const ProfessionalUsersWidget = () => {
         .from('business_pages')
         .select('*')
         .order('followers_count', { ascending: false })
-        .limit(3);
+        .limit(4);
 
       if (error) throw error;
 
@@ -163,30 +164,26 @@ const ProfessionalUsersWidget = () => {
       </CardHeader>
       <CardContent>
         {professionalAccounts.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {professionalAccounts.map((account) => (
-              <div key={account.id} className="flex items-center justify-between p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors">
+              <div key={account.id} className="flex items-center justify-between p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors group cursor-pointer">
                 <div 
-                  className="flex items-center space-x-3 flex-1 cursor-pointer" 
-                  onClick={() => navigate(`/professional-account/${account.id}`)}
+                  className="flex items-center space-x-3 flex-1" 
+                  onClick={() => navigate(`/professional/${account.id}`)}
                 >
-                  {/* Use page_avatar_url first, then fallback to avatar_url */}
-                  <Avatar className="w-12 h-12">
+                  <Avatar className="w-12 h-12 border-2 border-purple-200 group-hover:border-purple-400 transition-colors">
                     <AvatarImage src={account.page_avatar_url || account.avatar_url || undefined} />
-                    <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white">
+                    <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white font-semibold">
                       {account.page_name[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold text-slate-900 dark:text-slate-100 truncate hover:text-purple-600 transition-colors">
+                      <p className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-purple-600 transition-colors">
                         {account.page_name}
                       </p>
                       {account.is_verified && (
-                        <Badge variant="verified" className="flex items-center gap-1">
-                          <Crown className="w-3 h-3" />
-                          Verified
-                        </Badge>
+                        <Crown className="w-4 h-4 text-yellow-500" />
                       )}
                     </div>
                     <div className="flex items-center gap-2">
@@ -194,6 +191,11 @@ const ProfessionalUsersWidget = () => {
                       <Badge variant="outline" className="text-xs">
                         {account.page_type.charAt(0).toUpperCase() + account.page_type.slice(1)}
                       </Badge>
+                      {account.business_type && (
+                        <Badge variant="outline" className="text-xs">
+                          {account.business_type}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-500">
                       {account.followers_count} followers
@@ -208,16 +210,18 @@ const ProfessionalUsersWidget = () => {
                 {isOwnAccount(account) ? (
                   <Button
                     variant="outline"
+                    size="sm"
                     className="rounded-xl border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/edit-professional-account/${account.id}`);
+                      navigate(`/business/${account.id}`);
                     }}
                   >
-                    Mine
+                    Manage
                   </Button>
                 ) : (
                   <Button
+                    size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleFollow(account.id);
@@ -235,7 +239,7 @@ const ProfessionalUsersWidget = () => {
             ))}
             <Button
               variant="outline"
-              className="w-full rounded-xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20"
+              className="w-full rounded-xl border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-900/20 mt-4"
               onClick={() => navigate('/professional')}
             >
               View all professional accounts

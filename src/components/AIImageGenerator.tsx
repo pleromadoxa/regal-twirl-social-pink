@@ -24,34 +24,34 @@ const AIImageGenerator = () => {
     try {
       const enhancedPrompt = `${style} style: ${prompt.trim()}`;
       
-      const { data, error } = await supabase.functions.invoke('openrouter-ai', {
+      const { data, error } = await supabase.functions.invoke('gemini-image-generator', {
         body: {
-          prompt: enhancedPrompt,
-          type: 'image'
+          prompt: enhancedPrompt
         }
       });
 
       if (error) throw error;
 
-      // For now, we'll generate a placeholder since OpenRouter doesn't do images
-      // You could integrate with DALL-E or another image service here
-      const placeholderImage = `https://via.placeholder.com/512x512/6366f1/ffffff?text=${encodeURIComponent(prompt.slice(0, 20))}`;
-      setGeneratedImage(placeholderImage);
-      
-      // Save to history
-      if (user) {
-        await supabase.from('ai_generations').insert({
-          user_id: user.id,
-          prompt: prompt.trim(),
-          result: placeholderImage,
-          generation_type: 'image'
-        });
-      }
+      if (data.image) {
+        setGeneratedImage(data.image);
+        
+        // Save to history
+        if (user) {
+          await supabase.from('ai_generations').insert({
+            user_id: user.id,
+            prompt: prompt.trim(),
+            result: data.image,
+            generation_type: 'image'
+          });
+        }
 
-      toast({
-        title: "Image Generated",
-        description: "Your image placeholder has been generated!"
-      });
+        toast({
+          title: "Image Generated",
+          description: "Your image has been generated successfully!"
+        });
+      } else {
+        throw new Error('No image returned from API');
+      }
 
     } catch (error) {
       console.error('Error generating image:', error);
@@ -69,16 +69,32 @@ const AIImageGenerator = () => {
     if (!generatedImage) return;
 
     try {
-      const response = await fetch(generatedImage);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `generated-image-${Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Handle base64 images
+      if (generatedImage.startsWith('data:image')) {
+        const link = document.createElement('a');
+        link.href = generatedImage;
+        link.download = `generated-image-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // Handle URL images
+        const response = await fetch(generatedImage);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `generated-image-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
+      
+      toast({
+        title: "Downloaded",
+        description: "Image downloaded successfully"
+      });
     } catch (error) {
       console.error('Error downloading image:', error);
       toast({
@@ -96,7 +112,7 @@ const AIImageGenerator = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Image className="w-5 h-5 text-purple-600" />
-            Image Generator
+            AI Image Generator
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -124,6 +140,8 @@ const AIImageGenerator = () => {
                 <SelectItem value="vintage">Vintage</SelectItem>
                 <SelectItem value="minimalist">Minimalist</SelectItem>
                 <SelectItem value="cyberpunk">Cyberpunk</SelectItem>
+                <SelectItem value="photographic">Photographic</SelectItem>
+                <SelectItem value="digital art">Digital Art</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -167,14 +185,17 @@ const AIImageGenerator = () => {
               <img 
                 src={generatedImage} 
                 alt="Generated image" 
-                className="w-full h-auto rounded-lg shadow-lg"
+                className="w-full h-auto rounded-lg shadow-lg max-h-96 object-contain mx-auto"
               />
             </div>
           ) : (
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[400px] flex items-center justify-center">
-              <p className="text-gray-500 dark:text-gray-400 text-center">
-                Your generated image will appear here
-              </p>
+              <div className="text-center">
+                <Image className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">
+                  Your generated image will appear here
+                </p>
+              </div>
             </div>
           )}
         </CardContent>
