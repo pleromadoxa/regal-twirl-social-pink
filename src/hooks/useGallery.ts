@@ -1,53 +1,56 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 export interface GalleryItem {
   id: string;
   user_id: string;
   title: string;
-  description: string | null;
+  description?: string;
   file_url: string;
   file_type: string;
-  file_size: number | null;
+  file_size?: number;
   span_config: string;
   display_order: number;
   created_at: string;
   updated_at: string;
 }
 
-export interface MediaItemType {
-  id: number;
-  type: string;
-  title: string;
-  desc: string;
-  url: string;
-  span: string;
-}
-
 export const useGallery = (userId?: string) => {
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
   const { toast } = useToast();
 
   const fetchGalleryItems = async () => {
     try {
       setLoading(true);
       
-      const targetUserId = userId || user?.id;
-      if (!targetUserId) return;
-
-      const { data, error } = await supabase
+      let query = supabase
         .from('gallery_items')
         .select('*')
-        .eq('user_id', targetUserId)
-        .order('display_order', { ascending: true });
+        .order('display_order', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      // If userId is provided, filter by that user, otherwise get current user's items
+      if (userId) {
+        query = query.eq('user_id', userId);
+      } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          query = query.eq('user_id', user.id);
+        }
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching gallery items:', error);
+        toast({
+          title: "Error loading gallery",
+          description: "Failed to load gallery items",
+          variant: "destructive"
+        });
         return;
       }
 
@@ -59,141 +62,162 @@ export const useGallery = (userId?: string) => {
     }
   };
 
-  const uploadGalleryItem = async (file: File, title: string, description: string) => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to upload gallery items",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const uploadGalleryItem = async (
+    file: File,
+    title: string,
+    description?: string,
+    spanConfig?: string
+  ): Promise<boolean> => {
     try {
-      // Upload file to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${user.id}/gallery/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('gallery-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to upload gallery items",
+          variant: "destructive"
         });
+        return false;
+      }
+
+      // Upload file to storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(fileName, file);
 
       if (uploadError) {
         console.error('Upload error:', uploadError);
-        throw uploadError;
+        toast({
+          title: "Upload failed",
+          description: uploadError.message,
+          variant: "destructive"
+        });
+        return false;
       }
 
       // Get public URL
-      const { data } = supabase.storage
-        .from('gallery-images')
-        .getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage
+        .from('gallery')
+        .getPublicUrl(uploadData.path);
 
-      // Determine file type
-      const fileType = file.type.startsWith('video/') ? 'video' : 'image';
-      
-      // Generate random span configuration
-      const spanConfigs = [
-        'md:col-span-1 md:row-span-2 sm:col-span-1 sm:row-span-2',
-        'md:col-span-2 md:row-span-2 sm:col-span-2 sm:row-span-2',
-        'md:col-span-1 md:row-span-3 sm:col-span-1 sm:row-span-3',
-      ];
-      const randomSpan = spanConfigs[Math.floor(Math.random() * spanConfigs.length)];
-
-      // Save metadata to database
+      // Save to database
       const { error: dbError } = await supabase
         .from('gallery_items')
-        .insert([
-          {
-            user_id: user.id,
-            title,
-            description,
-            file_url: data.publicUrl,
-            file_type: fileType,
-            file_size: file.size,
-            span_config: randomSpan,
-            display_order: galleryItems.length
-          }
-        ]);
+        .insert({
+          user_id: user.id,
+          title,
+          description,
+          file_url: publicUrl,
+          file_type: file.type.startsWith('image/') ? 'image' : 'video',
+          file_size: file.size,
+          span_config: spanConfig || 'md:col-span-1 md:row-span-2 sm:col-span-1 sm:row-span-2'
+        });
 
       if (dbError) {
         console.error('Database error:', dbError);
-        throw dbError;
+        toast({
+          title: "Save failed",
+          description: dbError.message,
+          variant: "destructive"
+        });
+        return false;
       }
 
       toast({
         title: "Upload successful",
-        description: "Your gallery item has been uploaded successfully."
+        description: "Gallery item uploaded successfully"
       });
 
       // Refresh gallery items
       fetchGalleryItems();
+      return true;
     } catch (error) {
       console.error('Error uploading gallery item:', error);
       toast({
         title: "Upload failed",
-        description: "Please try again later.",
+        description: "An unexpected error occurred",
         variant: "destructive"
       });
+      return false;
     }
   };
 
-  const deleteGalleryItem = async (itemId: string) => {
-    if (!user) return;
-
+  const deleteGalleryItem = async (itemId: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      // Get the item to delete the file from storage
+      const { data: item } = await supabase
+        .from('gallery_items')
+        .select('file_url, user_id')
+        .eq('id', itemId)
+        .single();
+
+      if (!item || item.user_id !== user.id) {
+        toast({
+          title: "Permission denied",
+          description: "You can only delete your own gallery items",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
         .from('gallery_items')
         .delete()
         .eq('id', itemId)
         .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error deleting gallery item:', error);
-        throw error;
+      if (dbError) {
+        console.error('Database delete error:', dbError);
+        toast({
+          title: "Delete failed",
+          description: dbError.message,
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Delete file from storage
+      const fileName = item.file_url.split('/').pop();
+      if (fileName) {
+        await supabase.storage
+          .from('gallery')
+          .remove([`${user.id}/${fileName}`]);
       }
 
       toast({
         title: "Item deleted",
-        description: "Gallery item has been deleted successfully."
+        description: "Gallery item deleted successfully"
       });
 
       // Refresh gallery items
       fetchGalleryItems();
+      return true;
     } catch (error) {
-      console.error('Error in deleteGalleryItem:', error);
+      console.error('Error deleting gallery item:', error);
       toast({
         title: "Delete failed",
-        description: "Please try again later.",
+        description: "An unexpected error occurred",
         variant: "destructive"
       });
+      return false;
     }
-  };
-
-  const transformToMediaItems = (items: GalleryItem[]): MediaItemType[] => {
-    return items.map((item, index) => ({
-      id: index + 1,
-      type: item.file_type,
-      title: item.title,
-      desc: item.description || '',
-      url: item.file_url,
-      span: item.span_config
-    }));
   };
 
   useEffect(() => {
     fetchGalleryItems();
-  }, [user, userId]);
+  }, [userId]);
 
   return {
     galleryItems,
     loading,
     uploadGalleryItem,
     deleteGalleryItem,
-    transformToMediaItems,
     refetch: fetchGalleryItems
   };
 };

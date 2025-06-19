@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,7 +26,11 @@ export interface Post {
   };
 }
 
-export const usePosts = () => {
+interface UsePostsOptions {
+  userId?: string;
+}
+
+export const usePosts = (options: UsePostsOptions = {}) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -39,7 +42,6 @@ export const usePosts = () => {
     let userPinned = false;
 
     if (user) {
-      // Check if user liked, retweeted, or pinned this post
       const [likesData, retweetsData, pinnedData] = await Promise.all([
         supabase
           .from('likes')
@@ -86,11 +88,17 @@ export const usePosts = () => {
     try {
       setLoading(true);
       
-      // First, get all posts including the new image_urls column
-      const { data: postsData, error: postsError } = await supabase
+      let query = supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Filter by userId if provided
+      if (options.userId) {
+        query = query.eq('user_id', options.userId);
+      }
+
+      const { data: postsData, error: postsError } = await query;
 
       if (postsError) {
         console.error('Error fetching posts:', postsError);
@@ -102,10 +110,8 @@ export const usePosts = () => {
         return;
       }
 
-      // Get all unique user IDs from posts
       const userIds = [...new Set(postsData.map(post => post.user_id))];
 
-      // Fetch profiles for all users
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url, is_verified, premium_tier')
@@ -115,13 +121,11 @@ export const usePosts = () => {
         console.error('Error fetching profiles:', profilesError);
       }
 
-      // Create a map of user_id to profile for easy lookup
       const profilesMap = new Map(
         (profilesData || []).map(profile => [profile.id, profile])
       );
 
       if (user) {
-        // Get user likes, retweets, and pinned posts
         const postIds = postsData.map(post => post.id);
         
         const [likesData, retweetsData, pinnedData] = await Promise.all([
@@ -190,12 +194,10 @@ export const usePosts = () => {
     }
   };
 
-  // Handle real-time new posts
   const handleNewPost = async (payload: any) => {
     console.log('New post received:', payload);
     const newPost = payload.new;
     
-    // Fetch the profile for the new post author
     const { data: profileData } = await supabase
       .from('profiles')
       .select('id, username, display_name, avatar_url, is_verified, premium_tier')
@@ -207,13 +209,12 @@ export const usePosts = () => {
       profilesMap.set(profileData.id, profileData);
     }
 
-    // Enrich the new post with user data
     const enrichedPost = await enrichPostWithUserData(newPost, profilesMap);
     
-    // Add the new post to the beginning of the posts array
+    // Add the new post to the beginning of the posts array for instant visibility
     setPosts(prevPosts => [enrichedPost, ...prevPosts]);
     
-    // Show a toast notification for new posts (optional, only if not from current user)
+    // Show a toast notification for new posts (only if not from current user)
     if (user && newPost.user_id !== user.id) {
       toast({
         title: "New post",
@@ -223,7 +224,6 @@ export const usePosts = () => {
     }
   };
 
-  // Handle real-time post updates (likes, retweets, etc.)
   const handlePostUpdate = async (payload: any) => {
     console.log('Post updated:', payload);
     const updatedPost = payload.new;
@@ -237,7 +237,6 @@ export const usePosts = () => {
     );
   };
 
-  // Handle real-time post deletions
   const handlePostDelete = (payload: any) => {
     console.log('Post deleted:', payload);
     const deletedPostId = payload.old.id;
@@ -262,14 +261,15 @@ export const usePosts = () => {
         image_urls: imageUrls.length > 0 ? imageUrls : null,
       };
 
-      // Add professional account info if not posting as personal
       if (selectedAccount !== 'personal') {
         postData.posted_as_page = selectedAccount;
       }
 
-      const { error } = await supabase
+      const { data: newPostData, error } = await supabase
         .from('posts')
-        .insert([postData]);
+        .insert([postData])
+        .select('*')
+        .single();
 
       if (error) {
         console.error('Error creating post:', error);
@@ -281,12 +281,40 @@ export const usePosts = () => {
         return;
       }
 
+      // Get user profile for the new post
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, is_verified, premium_tier')
+        .eq('id', user.id)
+        .single();
+
+      // Create enriched post object for instant display
+      const enrichedNewPost = {
+        ...newPostData,
+        user_liked: false,
+        user_retweeted: false,
+        user_pinned: false,
+        likes_count: 0,
+        retweets_count: 0,
+        replies_count: 0,
+        image_urls: newPostData.image_urls || [],
+        profiles: profileData || {
+          username: 'unknown',
+          display_name: 'Unknown User',
+          avatar_url: '',
+          is_verified: false,
+          premium_tier: 'free'
+        }
+      };
+
+      // Instantly add the new post to the timeline for immediate visibility
+      setPosts(prevPosts => [enrichedNewPost, ...prevPosts]);
+
       toast({
         title: "Post created!",
         description: "Your post has been published successfully."
       });
 
-      // Note: We don't need to manually refresh posts here anymore since real-time will handle it
     } catch (error) {
       console.error('Error in createPost:', error);
       toast({
@@ -305,7 +333,7 @@ export const usePosts = () => {
         .from('posts')
         .delete()
         .eq('id', postId)
-        .eq('user_id', user.id); // Ensure users can only delete their own posts
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error deleting post:', error);
@@ -322,7 +350,6 @@ export const usePosts = () => {
         description: "Your post has been deleted successfully."
       });
 
-      // Note: Real-time will handle removing the post from the list
     } catch (error) {
       console.error('Error in deletePost:', error);
       toast({
@@ -341,20 +368,17 @@ export const usePosts = () => {
 
     try {
       if (post.user_liked) {
-        // Unlike
         await supabase
           .from('likes')
           .delete()
           .eq('user_id', user.id)
           .eq('post_id', postId);
       } else {
-        // Like
         await supabase
           .from('likes')
           .insert([{ user_id: user.id, post_id: postId }]);
       }
 
-      // Update local state immediately
       setPosts(posts.map(p => 
         p.id === postId 
           ? { 
@@ -377,20 +401,17 @@ export const usePosts = () => {
 
     try {
       if (post.user_retweeted) {
-        // Un-retweet
         await supabase
           .from('retweets')
           .delete()
           .eq('user_id', user.id)
           .eq('post_id', postId);
       } else {
-        // Retweet
         await supabase
           .from('retweets')
           .insert([{ user_id: user.id, post_id: postId }]);
       }
 
-      // Update local state immediately
       setPosts(posts.map(p => 
         p.id === postId 
           ? { 
@@ -420,7 +441,6 @@ export const usePosts = () => {
 
     try {
       if (post.user_pinned) {
-        // Unpin the post
         await supabase
           .from('pinned_posts')
           .delete()
@@ -432,7 +452,6 @@ export const usePosts = () => {
           description: "Post removed from your pinned posts."
         });
       } else {
-        // Pin the post
         await supabase
           .from('pinned_posts')
           .insert({
@@ -446,7 +465,6 @@ export const usePosts = () => {
         });
       }
 
-      // Update local state immediately
       setPosts(posts.map(p => 
         p.id === postId 
           ? { ...p, user_pinned: !p.user_pinned }
@@ -465,10 +483,8 @@ export const usePosts = () => {
   useEffect(() => {
     fetchPosts();
 
-    // Create a unique channel name to avoid conflicts
     const channelName = `posts-realtime-${Date.now()}-${Math.random()}`;
     
-    // Set up real-time subscription for posts
     const channel = supabase
       .channel(channelName)
       .on('postgres_changes', {
@@ -488,12 +504,11 @@ export const usePosts = () => {
       }, handlePostDelete)
       .subscribe();
 
-    // Cleanup subscription on unmount
     return () => {
       console.log('Cleaning up posts channel subscription');
       supabase.removeChannel(channel);
     };
-  }, [user?.id]); // Only depend on user.id to prevent unnecessary re-subscriptions
+  }, [user?.id, options.userId]);
 
   return {
     posts,
