@@ -12,6 +12,7 @@ export interface SupportTicket {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   category: string;
   created_at: string;
+  updated_at: string;
   reviewed_at: string;
   assigned_to?: string;
   user_email?: string;
@@ -57,6 +58,7 @@ export const useSupportTickets = () => {
         priority: 'medium' as const,
         category: 'Content Report',
         created_at: report.created_at,
+        updated_at: report.reviewed_at || report.created_at,
         reviewed_at: report.reviewed_at || report.created_at,
         assigned_to: report.reviewed_by,
         post_id: report.post_id,

@@ -1,4 +1,3 @@
-
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import SidebarNav from '@/components/SidebarNav';
@@ -28,7 +27,7 @@ const Profile = () => {
   const { user } = useAuth();
   const { profile, loading, isFollowing, toggleFollow } = useProfile(userId);
   const { verificationLevel } = useVerifiedStatus(profile);
-  const { galleryItems, loading: galleryLoading } = useGallery(userId);
+  const { galleryItems, loading: galleryLoading } = useGallery();
   const { posts: userPosts, loading: postsLoading } = usePosts({ userId });
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
