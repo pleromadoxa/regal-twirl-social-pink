@@ -42,9 +42,9 @@ interface Subscriber {
   created_at: string;
   updated_at: string;
   profiles?: {
-    username: string;
-    display_name: string;
-  };
+    username?: string;
+    display_name?: string;
+  } | null;
 }
 
 interface SubscriptionStats {
@@ -82,7 +82,7 @@ const AdminSubscriptionSection = () => {
         .from('subscribers')
         .select(`
           *,
-          profiles (
+          profiles!inner (
             username,
             display_name
           )
@@ -99,8 +99,13 @@ const AdminSubscriptionSection = () => {
         return;
       }
 
-      setSubscribers(subscribersData || []);
-      calculateStats(subscribersData || []);
+      const validSubscribers = subscribersData?.map(sub => ({
+        ...sub,
+        profiles: sub.profiles || null
+      })) || [];
+
+      setSubscribers(validSubscribers);
+      calculateStats(validSubscribers);
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -142,10 +147,10 @@ const AdminSubscriptionSection = () => {
 
         if (subscriber.subscription_tier === 'Pro') {
           newStats.pro++;
-          newStats.revenue += 10; // Assuming $10 for Pro
+          newStats.revenue += 10;
         } else if (subscriber.subscription_tier === 'Business') {
           newStats.business++;
-          newStats.revenue += 20; // Assuming $20 for Business
+          newStats.revenue += 20;
         }
       } else {
         newStats.expired++;
@@ -236,7 +241,7 @@ const AdminSubscriptionSection = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.active}</div>
-            <p className="text-xs text-muted-foreference">
+            <p className="text-xs text-muted-foreground">
               {stats.expiringSoon} expiring soon
             </p>
           </CardContent>
@@ -269,7 +274,7 @@ const AdminSubscriptionSection = () => {
         </Card>
       </div>
 
-      {/* Filters and Search */}
+      {/* Subscription Management */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">

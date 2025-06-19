@@ -12,7 +12,23 @@ interface BusinessPage {
   owner_id: string;
   is_active: boolean;
   created_at: string;
-  // Add other properties as needed
+  updated_at: string;
+  avatar_url?: string;
+  banner_url?: string;
+  page_avatar_url?: string;
+  page_banner_url?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  address?: string;
+  is_verified?: boolean;
+  business_type?: string;
+  followers_count?: number;
+  default_currency?: string;
+  shop_settings?: any;
+  shop_active?: boolean;
+  featured_products?: any[];
+  shop_status?: string;
 }
 
 export const useBusinessPages = () => {

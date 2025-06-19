@@ -32,12 +32,14 @@ const SidebarNav = () => {
   const { myPages } = useBusinessPages();
   const [profile, setProfile] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
       fetchProfile();
       checkAdminAccess();
+      checkSubscriptionStatus();
     }
   }, [user]);
 
@@ -72,9 +74,65 @@ const SidebarNav = () => {
     try {
       const isUserAdmin = user.email === 'pleromadoxa@gmail.com';
       setIsAdmin(isUserAdmin);
+      
+      // Update admin profile to have premium tier
+      if (isUserAdmin) {
+        await supabase
+          .from('profiles')
+          .update({ premium_tier: 'business' })
+          .eq('id', user.id);
+        
+        // Update profile state
+        setProfile(prev => prev ? { ...prev, premium_tier: 'business' } : null);
+      }
     } catch (error) {
       console.error('Error checking admin access:', error);
       setIsAdmin(false);
+    }
+  };
+
+  const checkSubscriptionStatus = async () => {
+    if (!user) return;
+    
+    try {
+      // Check subscription status from subscribers table
+      const { data: subscription } = await supabase
+        .from('subscribers')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (subscription && subscription.subscribed) {
+        const now = new Date();
+        const subscriptionEnd = new Date(subscription.subscription_end);
+        
+        if (subscriptionEnd > now) {
+          setSubscriptionData(subscription);
+          
+          // Update profile premium tier based on subscription
+          await supabase
+            .from('profiles')
+            .update({ 
+              premium_tier: subscription.subscription_tier?.toLowerCase() || 'pro' 
+            })
+            .eq('id', user.id);
+            
+          setProfile(prev => prev ? { 
+            ...prev, 
+            premium_tier: subscription.subscription_tier?.toLowerCase() || 'pro' 
+          } : null);
+        } else {
+          // Subscription expired, reset to free
+          await supabase
+            .from('profiles')
+            .update({ premium_tier: 'free' })
+            .eq('id', user.id);
+            
+          setProfile(prev => prev ? { ...prev, premium_tier: 'free' } : null);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking subscription status:', error);
     }
   };
 
@@ -104,8 +162,8 @@ const SidebarNav = () => {
       { name: 'Pinned', icon: Pin, path: '/pinned', accent: 'from-teal-500 to-cyan-600' },
     ];
 
-    // Add premium-only items
-    if (isPremiumUser || isAdmin) {
+    // Add premium-only items (only for paid users or admins)
+    if ((isPremiumUser && subscriptionData?.subscribed) || isAdmin) {
       baseItems.push({
         name: 'Professional', 
         icon: Briefcase, 
@@ -114,16 +172,16 @@ const SidebarNav = () => {
       });
     }
 
-    // Add business-only items (only if user has business pages)
-    if ((hasBusinessPages || isAdmin)) {
+    // Add business-only items (only if user has business pages and valid subscription)
+    if ((hasBusinessPages && ((subscriptionData?.subscribed && subscriptionData?.subscription_tier === 'Business') || isAdmin))) {
       baseItems.push(
         { name: 'Business Analytics', icon: BarChart3, path: '/business-analytics', accent: 'from-teal-500 to-cyan-600' },
         { name: 'Ads Manager', icon: Megaphone, path: '/ads-manager', accent: 'from-red-500 to-pink-600' }
       );
     }
 
-    // Add AI Studio for business tier users only
-    if (isBusinessUser || isAdmin) {
+    // Add AI Studio for business tier users only (with valid subscription)
+    if ((isBusinessUser && subscriptionData?.subscribed && subscriptionData?.subscription_tier === 'Business') || isAdmin) {
       baseItems.push({
         name: 'AI Studio', 
         icon: Sparkles, 
@@ -183,7 +241,7 @@ const SidebarNav = () => {
         ))}
       </nav>
 
-      {/* Premium Button */}
+      {/* Premium Button - Only show for non-premium users and non-admins */}
       {!isPremiumUser && !isAdmin && (
         <div className="px-4 mb-4">
           <PremiumDialog
