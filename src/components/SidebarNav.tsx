@@ -17,7 +17,9 @@ import {
   Gamepad2,
   Music,
   Sparkles,
-  Pin
+  Pin,
+  BarChart3,
+  Megaphone
 } from 'lucide-react';
 
 const SidebarNav = () => {
@@ -76,6 +78,8 @@ const SidebarNav = () => {
           { name: 'Games', icon: Gamepad2, path: '/games', accent: 'from-green-500 to-emerald-500' },
           { name: 'Messages', icon: MessageCircle, path: '/messages', accent: 'from-pink-500 to-rose-500' },
           { name: 'Professional', icon: Briefcase, path: '/professional', accent: 'from-indigo-500 to-blue-600' },
+          { name: 'Business Analytics', icon: BarChart3, path: '/business-analytics', accent: 'from-teal-500 to-cyan-600' },
+          { name: 'Ads Manager', icon: Megaphone, path: '/ads-manager', accent: 'from-red-500 to-pink-600' },
           { name: 'Music', icon: Music, path: '/music', accent: 'from-violet-500 to-purple-600' },
           { name: 'AI Studio', icon: Sparkles, path: '/ai-studio', accent: 'from-yellow-500 to-orange-500' },
           { name: 'Pinned', icon: Pin, path: '/pinned', accent: 'from-teal-500 to-cyan-600' },
