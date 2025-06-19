@@ -4,10 +4,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface BusinessPage {
+  id: string;
+  page_name: string;
+  description: string;
+  page_type: string;
+  owner_id: string;
+  is_active: boolean;
+  created_at: string;
+  // Add other properties as needed
+}
+
 export const useBusinessPages = () => {
   const { user } = useAuth();
-  const [myPages, setMyPages] = useState<any[]>([]);
-  const [pages, setPages] = useState<any[]>([]);
+  const [myPages, setMyPages] = useState<BusinessPage[]>([]);
+  const [pages, setPages] = useState<BusinessPage[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -55,7 +66,7 @@ export const useBusinessPages = () => {
     }
   };
 
-  const createPage = async (pageData: any) => {
+  const createPage = async (pageData: Record<string, any>) => {
     if (!user) {
       toast({
         title: "Error",
@@ -91,7 +102,6 @@ export const useBusinessPages = () => {
         description: "Business page created successfully",
       });
 
-      // Refresh the pages
       fetchPages();
       return data;
     } catch (error) {
@@ -110,7 +120,7 @@ export const useBusinessPages = () => {
       const { data, error } = await supabase
         .from('business_pages')
         .select('*')
-        .or(`name.ilike.%${query}%,description.ilike.%${query}%,category.ilike.%${query}%`)
+        .or(`page_name.ilike.%${query}%,description.ilike.%${query}%,page_type.ilike.%${query}%`)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 

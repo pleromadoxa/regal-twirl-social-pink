@@ -8,6 +8,7 @@ import AdminUsersSection from '@/components/AdminUsersSection';
 import AdminAnalytics from '@/components/AdminAnalytics';
 import AdminMusicUpload from '@/components/AdminMusicUpload';
 import AdminSupportTickets from '@/components/AdminSupportTickets';
+import AdminSubscriptionSection from '@/components/AdminSubscriptionSection';
 import { 
   Users, 
   MessageSquare, 
@@ -20,7 +21,8 @@ import {
   Activity,
   Upload,
   Globe,
-  Ticket
+  Ticket,
+  CreditCard
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -188,7 +190,7 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-9">
+            <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
                 Overview
@@ -200,6 +202,10 @@ const AdminDashboard = () => {
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Users
+              </TabsTrigger>
+              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Subscriptions
               </TabsTrigger>
               <TabsTrigger value="music" className="flex items-center gap-2">
                 <Music className="w-4 h-4" />
@@ -299,7 +305,7 @@ const AdminDashboard = () => {
                               activity.color === 'blue' ? 'bg-blue-500' : 'bg-orange-500'
                             }`}></div>
                             <p className="text-sm">
-                              {activity.type === 'user_joined' ? 
+                              {activity.type === 'user_joined'  ? 
                                 `New user registered: ${activity.user}` :
                                 `${activity.user} created a new post`
                               }
@@ -354,6 +360,10 @@ const AdminDashboard = () => {
 
             <TabsContent value="users">
               <AdminUsersSection />
+            </TabsContent>
+
+            <TabsContent value="subscriptions">
+              <AdminSubscriptionSection />
             </TabsContent>
 
             <TabsContent value="music">
