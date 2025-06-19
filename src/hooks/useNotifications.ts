@@ -1,4 +1,3 @@
 
-// This file now re-exports the notifications context hook
-export { useNotifications } from '@/contexts/NotificationsContext';
-export type { Notification } from '@/contexts/NotificationsContext';
+// This file now re-exports the notifications context hook and types
+export { useNotifications, type Notification } from '@/contexts/NotificationsContext';

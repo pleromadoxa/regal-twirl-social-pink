@@ -27,7 +27,16 @@ import { supabase } from '@/integrations/supabase/client';
 
 const SidebarNav = () => {
   const { user } = useAuth();
-  const { unreadCount } = useNotifications();
+  
+  // Safely get notifications with fallback
+  let unreadCount = 0;
+  try {
+    const notifications = useNotifications();
+    unreadCount = notifications.unreadCount;
+  } catch (error) {
+    console.log('Notifications not available yet:', error);
+  }
+  
   const { myPages } = useBusinessPages();
   const [profile, setProfile] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);

@@ -3,9 +3,24 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+  actor_profile?: {
+    display_name: string;
+    avatar_url?: string;
+  };
+  data?: any;
+}
+
 interface NotificationsContextType {
   unreadCount: number;
-  notifications: any[];
+  notifications: Notification[];
+  loading: boolean;
   markAsRead: (notificationId: string) => void;
   markAllAsRead: () => void;
   refreshNotifications: () => void;
@@ -26,16 +41,17 @@ interface NotificationsProviderProps {
 }
 
 export const NotificationsProvider = ({ children }: NotificationsProviderProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    console.log('NotificationsProvider effect running, user:', user, 'loading:', loading, 'initialized:', initialized);
+    console.log('NotificationsProvider effect running, user:', user, 'authLoading:', authLoading, 'initialized:', initialized);
     
     // Don't initialize if auth is still loading
-    if (loading) {
+    if (authLoading) {
       return;
     }
 
@@ -44,6 +60,7 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
       setUnreadCount(0);
       setNotifications([]);
       setInitialized(false);
+      setLoading(false);
       return;
     }
 
@@ -60,11 +77,12 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
         setInitialized(false);
       }
     };
-  }, [user, loading, initialized]);
+  }, [user, authLoading, initialized]);
 
   const fetchNotifications = async () => {
     if (!user) return;
     
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -83,6 +101,8 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
       console.log('Notifications fetched:', data?.length, 'unread:', unread);
     } catch (error) {
       console.error('Error in fetchNotifications:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -166,7 +186,8 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     <NotificationsContext.Provider
       value={{
         unreadCount,
-        notifications,
+        notifications, 
+        loading,
         markAsRead,
         markAllAsRead,
         refreshNotifications,
