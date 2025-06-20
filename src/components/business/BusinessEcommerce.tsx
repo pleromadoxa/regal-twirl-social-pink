@@ -103,7 +103,14 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrders(data || []);
+      
+      // Transform the data to match our Order interface
+      const transformedOrders = (data || []).map(order => ({
+        ...order,
+        items: Array.isArray(order.items) ? order.items : []
+      }));
+      
+      setOrders(transformedOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
