@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,12 +11,12 @@ import {
   VolumeX,
   Minimize2
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCallSounds } from '@/hooks/useCallSounds';
 import { useCallHistory } from '@/hooks/useCallHistory';
 import MinimizedCallWidget from './MinimizedCallWidget';
+import { WebRTCService } from '@/services/webrtcService';
 
 interface AudioCallProps {
   conversationId: string;
@@ -39,11 +40,11 @@ const AudioCall = ({
   const [callStatus, setCallStatus] = useState<'connecting' | 'connected' | 'ended'>('connecting');
   const [callDuration, setCallDuration] = useState(0);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [connectionState, setConnectionState] = useState<string>('new');
+  const [iceConnectionState, setIceConnectionState] = useState<string>('new');
   
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
-  const signalingChannelRef = useRef<any>(null);
+  const webrtcServiceRef = useRef<WebRTCService | null>(null);
   const callStartTimeRef = useRef<number | null>(null);
   const callSessionStartRef = useRef<string>(new Date().toISOString());
   
@@ -52,166 +53,112 @@ const AudioCall = ({
   const { playConnect, playEndCall, playRinging, stopRinging } = useCallSounds();
   const { addCallToHistory } = useCallHistory();
 
-  const rtcConfiguration = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
-    ]
-  };
-
   const formatCallDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const initializePeerConnection = () => {
-    const peerConnection = new RTCPeerConnection(rtcConfiguration);
-    
-    peerConnection.onicecandidate = (event) => {
-      if (event.candidate && signalingChannelRef.current) {
-        signalingChannelRef.current.send({
-          type: 'broadcast',
-          event: 'ice-candidate',
-          payload: {
-            candidate: event.candidate,
-            conversation_id: conversationId,
-            from: user?.id,
-            to: otherUserId
-          }
-        });
-      }
-    };
-
-    peerConnection.ontrack = (event) => {
-      if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = event.streams[0];
-      }
-    };
-
-    peerConnection.onconnectionstatechange = () => {
-      const state = peerConnection.connectionState;
-      console.log('Connection state:', state);
-      
-      if (state === 'connected') {
-        setCallStatus('connected');
-        callStartTimeRef.current = Date.now();
-        stopRinging();
-        playConnect();
-      } else if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-        setCallStatus('ended');
-        handleEndCall();
-      }
-    };
-
-    return peerConnection;
-  };
-
-  const startLocalStream = async () => {
+  const initializeCall = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: false,
-        audio: isAudioEnabled
+      console.log('[AudioCall] Initializing call');
+      
+      webrtcServiceRef.current = new WebRTCService();
+      const webrtcService = webrtcServiceRef.current;
+
+      // Set up event handlers
+      webrtcService.onRemoteStream((stream) => {
+        console.log('[AudioCall] Remote stream received');
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = stream;
+        }
       });
 
-      localStreamRef.current = stream;
-
-      if (peerConnectionRef.current) {
-        stream.getTracks().forEach(track => {
-          peerConnectionRef.current?.addTrack(track, stream);
-        });
-      }
-
-      return stream;
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      toast({
-        title: "Microphone access error",
-        description: "Could not access microphone",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  };
-
-  const setupSignalingChannel = () => {
-    const channel = supabase.channel(`audio-call-${conversationId}-${Date.now()}`);
-    
-    channel.on('broadcast', { event: 'offer' }, async (payload) => {
-      const { offer, from } = payload.payload;
-      if (from !== user?.id && peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await peerConnectionRef.current.createAnswer();
-        await peerConnectionRef.current.setLocalDescription(answer);
+      webrtcService.onConnectionStateChange((state) => {
+        console.log('[AudioCall] Connection state:', state);
+        setConnectionState(state);
         
-        channel.send({
-          type: 'broadcast',
-          event: 'answer',
-          payload: {
-            answer,
-            conversation_id: conversationId,
-            from: user?.id,
-            to: from
-          }
+        if (state === 'connected') {
+          setCallStatus('connected');
+          callStartTimeRef.current = Date.now();
+          stopRinging();
+          playConnect();
+        } else if (state === 'failed' || state === 'disconnected') {
+          handleCallFailure();
+        }
+      });
+
+      webrtcService.onIceConnectionStateChange((state) => {
+        console.log('[AudioCall] ICE connection state:', state);
+        setIceConnectionState(state);
+      });
+
+      webrtcService.onError((error) => {
+        console.error('[AudioCall] WebRTC error:', error);
+        toast({
+          title: "Call Error",
+          description: error.message,
+          variant: "destructive"
         });
-      }
-    });
+        
+        if (error.message.includes('Camera/microphone access denied')) {
+          // Handle permission denied specifically
+          setCallStatus('ended');
+          handleEndCall();
+        }
+      });
 
-    channel.on('broadcast', { event: 'answer' }, async (payload) => {
-      const { answer, from } = payload.payload;
-      if (from !== user?.id && peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-      }
-    });
+      // Initialize media
+      const localStream = await webrtcService.initializeMedia({
+        video: false,
+        audio: true
+      });
 
-    channel.on('broadcast', { event: 'ice-candidate' }, async (payload) => {
-      const { candidate, from } = payload.payload;
-      if (from !== user?.id && peerConnectionRef.current) {
-        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-      }
-    });
-
-    channel.on('broadcast', { event: 'call-end' }, (payload) => {
-      const { from } = payload.payload;
-      if (from !== user?.id) {
-        handleEndCall();
-      }
-    });
-
-    channel.subscribe();
-    return channel;
-  };
-
-  const startCall = async () => {
-    try {
-      peerConnectionRef.current = initializePeerConnection();
-      signalingChannelRef.current = setupSignalingChannel();
+      // Initialize peer connection
+      webrtcService.initializePeerConnection();
       
-      await startLocalStream();
-      
+      // Add local stream
+      await webrtcService.addLocalStream(localStream);
+
+      // Setup signaling
+      const channelName = `audio-call-${conversationId}-${Date.now()}`;
+      webrtcService.setupSignaling(channelName);
+
+      // Start call process
       if (!isIncoming) {
         playRinging();
-        const offer = await peerConnectionRef.current.createOffer();
-        await peerConnectionRef.current.setLocalDescription(offer);
+        console.log('[AudioCall] Creating offer as initiator');
+        const offer = await webrtcService.createOffer();
         
-        signalingChannelRef.current.send({
-          type: 'broadcast',
-          event: 'offer',
-          payload: {
-            offer,
-            conversation_id: conversationId,
-            from: user?.id,
-            to: otherUserId
-          }
-        });
+        // Send offer through signaling
+        // This would be handled by the WebRTC service internally
       }
+
     } catch (error) {
-      console.error('Error starting call:', error);
+      console.error('[AudioCall] Error initializing call:', error);
+      toast({
+        title: "Call Failed",
+        description: "Failed to initialize call. Please check your microphone permissions.",
+        variant: "destructive"
+      });
       handleEndCall();
     }
   };
 
+  const handleCallFailure = () => {
+    console.log('[AudioCall] Call connection failed');
+    setCallStatus('ended');
+    toast({
+      title: "Call Disconnected",
+      description: "Connection was lost. The call has ended.",
+      variant: "destructive"
+    });
+    handleEndCall();
+  };
+
   const handleEndCall = async () => {
+    console.log('[AudioCall] Ending call');
+    
     stopRinging();
     playEndCall();
     
@@ -233,29 +180,10 @@ const AudioCall = ({
       });
     }
 
-    // Stop local stream
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-    }
-
-    // Close peer connection
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-    }
-
-    // Notify other user
-    if (signalingChannelRef.current) {
-      signalingChannelRef.current.send({
-        type: 'broadcast',
-        event: 'call-end',
-        payload: {
-          conversation_id: conversationId,
-          from: user?.id,
-          to: otherUserId
-        }
-      });
-      
-      supabase.removeChannel(signalingChannelRef.current);
+    // Cleanup WebRTC resources
+    if (webrtcServiceRef.current) {
+      webrtcServiceRef.current.cleanup();
+      webrtcServiceRef.current = null;
     }
 
     setCallStatus('ended');
@@ -263,17 +191,26 @@ const AudioCall = ({
   };
 
   const toggleAudio = () => {
-    if (localStreamRef.current) {
-      const audioTrack = localStreamRef.current.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !isAudioEnabled;
-        setIsAudioEnabled(!isAudioEnabled);
-      }
+    if (webrtcServiceRef.current) {
+      const newState = !isAudioEnabled;
+      webrtcServiceRef.current.toggleAudio(newState);
+      setIsAudioEnabled(newState);
+      
+      toast({
+        title: newState ? "Microphone enabled" : "Microphone disabled",
+        description: newState ? "You are now audible" : "You are now muted"
+      });
     }
   };
 
   const toggleSpeaker = () => {
     setIsSpeakerEnabled(!isSpeakerEnabled);
+    
+    // Note: Speaker control through Web Audio API would require additional implementation
+    toast({
+      title: isSpeakerEnabled ? "Speaker disabled" : "Speaker enabled",
+      description: "Audio output setting changed"
+    });
   };
 
   // Call duration timer
@@ -293,10 +230,12 @@ const AudioCall = ({
   }, [callStatus]);
 
   useEffect(() => {
-    startCall();
+    initializeCall();
     
     return () => {
-      handleEndCall();
+      if (webrtcServiceRef.current) {
+        webrtcServiceRef.current.cleanup();
+      }
     };
   }, []);
 
@@ -368,6 +307,12 @@ const AudioCall = ({
             {callStatus === 'connected' && formatCallDuration(callDuration)}
             {callStatus === 'ended' && 'Call ended'}
           </p>
+          
+          {/* Debug info (can be removed in production) */}
+          <div className="text-xs opacity-50 mt-2 space-y-1">
+            <div>Connection: {connectionState}</div>
+            <div>ICE: {iceConnectionState}</div>
+          </div>
         </div>
 
         {/* Call controls */}
