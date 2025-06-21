@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,33 @@ const WebRTCCallManager = () => {
   const [showIncomingCall, setShowIncomingCall] = useState(false);
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
+
+  // Check if notifications are supported and request permission
+  const requestNotificationPermission = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        if (Notification.permission === 'default') {
+          const permission = await Notification.requestPermission();
+          console.log('Notification permission:', permission);
+        }
+      } catch (error) {
+        console.log('Notification permission request failed:', error);
+      }
+    }
+  };
+
+  // Show browser notification if supported
+  const showNotification = (title: string, options: NotificationOptions = {}) => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        return new Notification(title, options);
+      } catch (error) {
+        console.log('Failed to show notification:', error);
+        return null;
+      }
+    }
+    return null;
+  };
 
   useEffect(() => {
     if (loading || !user || isSubscribedRef.current) {
@@ -71,12 +99,12 @@ const WebRTCCallManager = () => {
           setIncomingCall(newCall);
           setShowIncomingCall(true);
 
-          if (Notification.permission === 'granted') {
-            new Notification(`Incoming ${newCall.call_type} call`, {
-              body: `${profile.display_name || profile.username} is calling you`,
-              icon: profile.avatar_url || '/placeholder.svg'
-            });
-          }
+          // Show notification if supported
+          showNotification(`Incoming ${newCall.call_type} call`, {
+            body: `${profile.display_name || profile.username} is calling you`,
+            icon: profile.avatar_url || '/placeholder.svg',
+            tag: 'incoming-call'
+          });
         }
       })
       .on('postgres_changes', {
@@ -99,10 +127,8 @@ const WebRTCCallManager = () => {
       });
     }
 
-    // Request notification perm
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    // Request notification permission
+    requestNotificationPermission();
 
     return () => {
       if (channelRef.current && isSubscribedRef.current) {
