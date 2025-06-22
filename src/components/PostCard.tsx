@@ -205,6 +205,7 @@ const PostCard = ({
               </div>
             </div>
             
+            {/* Post Actions - Always at the bottom before comments */}
             <PostActions
               postId={post.id}
               userId={post.user_id}
@@ -225,6 +226,7 @@ const PostCard = ({
               userPremiumTier={post.profiles?.premium_tier}
             />
             
+            {/* Comments section - Always at the very bottom */}
             {showComments && (
               <div className="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
                 <PostComments 
