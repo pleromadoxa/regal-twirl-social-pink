@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 export const useSidebarProfile = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -69,5 +69,5 @@ export const useSidebarProfile = () => {
     }
   };
 
-  return { profile, isAdmin, setProfile };
+  return { profile, isAdmin: !!isAdmin, setProfile };
 };
