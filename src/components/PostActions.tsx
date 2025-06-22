@@ -4,23 +4,23 @@ import { Button } from '@/components/ui/button';
 import { 
   Heart, 
   MessageCircle, 
-  Repeat, 
+  Repeat2, 
   Share, 
   Pin, 
-  MoreHorizontal, 
-  Trash2,
-  Megaphone,
-  Flag
+  Trash2, 
+  MoreHorizontal,
+  TrendingUp,
+  Megaphone
 } from 'lucide-react';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuTrigger, 
-  DropdownMenuItem 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
 import BoostPostDialog from './BoostPostDialog';
 import ReportPostDialog from './ReportPostDialog';
-import { useBusinessPages } from '@/hooks/useBusinessPages';
 
 interface PostActionsProps {
   postId: string;
@@ -28,9 +28,9 @@ interface PostActionsProps {
   likesCount: number;
   retweetsCount: number;
   repliesCount: number;
-  userLiked?: boolean;
-  userRetweeted?: boolean;
-  userPinned?: boolean;
+  userLiked: boolean;
+  userRetweeted: boolean;
+  userPinned: boolean;
   onLike: () => void;
   onRetweet: () => void;
   onPin: () => void;
@@ -42,7 +42,7 @@ interface PostActionsProps {
   userPremiumTier?: string;
 }
 
-export const PostActions = ({
+const PostActions = ({
   postId,
   userId,
   likesCount,
@@ -61,119 +61,138 @@ export const PostActions = ({
   postedAsPage,
   userPremiumTier
 }: PostActionsProps) => {
-  const { myPages } = useBusinessPages();
+  const { user } = useAuth();
+  const [showBoostDialog, setShowBoostDialog] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
-  // Check if post is eligible for boosting (professional/business posts only)
-  const isEligibleForBoosting = isOwnPost && (
-    postedAsPage || // Post was made as a business page
-    userPremiumTier === 'professional' || // User has professional tier
-    userPremiumTier === 'business' || // User has business tier
-    (myPages && myPages.length > 0) // User has business pages
-  );
+  const formatCount = (count: number) => {
+    if (count >= 1000000) {
+      return `${(count / 1000000).toFixed(1)}M`;
+    } else if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}K`;
+    }
+    return count.toString();
+  };
+
+  const canShowBoostOrAds = isOwnPost && (postedAsPage || userPremiumTier === 'premium' || userPremiumTier === 'pro');
 
   return (
-    <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
-      <div className="flex items-center space-x-1">
-        {/* Like Button */}
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={onLike}
-          className={`hover:bg-red-50 dark:hover:bg-red-900/20 ${
-            userLiked ? 'text-red-500 hover:text-red-600' : 'text-slate-500 hover:text-red-500'
-          }`}
-        >
-          <Heart className={`w-4 h-4 mr-1 ${userLiked ? 'fill-current' : ''}`} />
-          <span className="text-sm">{likesCount}</span>
-        </Button>
-
-        {/* Comment Button */}
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={onComment}
-          className="text-slate-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-        >
-          <MessageCircle className="w-4 h-4 mr-1" />
-          <span className="text-sm">{repliesCount}</span>
-        </Button>
-
-        {/* Retweet Button */}
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={onRetweet}
-          className={`hover:bg-green-50 dark:hover:bg-green-900/20 ${
-            userRetweeted ? 'text-green-500 hover:text-green-600' : 'text-slate-500 hover:text-green-500'
-          }`}
-        >
-          <Repeat className="w-4 h-4 mr-1" />
-          <span className="text-sm">{retweetsCount}</span>
-        </Button>
-
-        {/* Share Button */}
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={onShare}
-          className="text-slate-500 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-        >
-          <Share className="w-4 h-4" />
-        </Button>
-      </div>
-
-      {/* More Actions Dropdown */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700">
-            <MoreHorizontal className="w-4 h-4" />
+    <>
+      <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onComment}
+            className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors rounded-full p-2"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span className="ml-1 text-sm">{formatCount(repliesCount)}</span>
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          {/* Pin/Unpin - only for own posts */}
-          {isOwnPost && (
-            <DropdownMenuItem onClick={onPin}>
-              <Pin className="w-4 h-4 mr-2" />
-              {userPinned ? 'Unpin' : 'Pin'} Post
-            </DropdownMenuItem>
-          )}
+        </div>
 
-          {/* Boost Post - only for eligible professional/business posts */}
-          {isEligibleForBoosting && (
-            <BoostPostDialog
-              postId={postId}
-              trigger={
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <Megaphone className="w-4 h-4 mr-2" />
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onRetweet}
+            className={`transition-colors rounded-full p-2 ${
+              userRetweeted 
+                ? 'text-green-600 hover:text-green-700 bg-green-50 dark:bg-green-900/20' 
+                : 'text-slate-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+            }`}
+          >
+            <Repeat2 className="w-4 h-4" />
+            <span className="ml-1 text-sm">{formatCount(retweetsCount)}</span>
+          </Button>
+        </div>
+
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onLike}
+            className={`transition-colors rounded-full p-2 ${
+              userLiked 
+                ? 'text-red-600 hover:text-red-700 bg-red-50 dark:bg-red-900/20' 
+                : 'text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${userLiked ? 'fill-current' : ''}`} />
+            <span className="ml-1 text-sm">{formatCount(likesCount)}</span>
+          </Button>
+        </div>
+
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onShare}
+            className="text-slate-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors rounded-full p-2"
+          >
+            <Share className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors rounded-full p-2"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {user && (
+              <DropdownMenuItem onClick={onPin}>
+                <Pin className="w-4 h-4 mr-2" />
+                {userPinned ? 'Unpin' : 'Pin'}
+              </DropdownMenuItem>
+            )}
+            
+            {canShowBoostOrAds && (
+              <>
+                <DropdownMenuItem onClick={() => setShowBoostDialog(true)}>
+                  <TrendingUp className="w-4 h-4 mr-2" />
                   Boost Post
                 </DropdownMenuItem>
-              }
-            />
-          )}
-
-          {/* Report Post - only for others' posts */}
-          {!isOwnPost && (
-            <ReportPostDialog
-              postId={postId}
-              trigger={
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <Flag className="w-4 h-4 mr-2" />
-                  Report Post
+                <DropdownMenuItem onClick={() => setShowBoostDialog(true)}>
+                  <Megaphone className="w-4 h-4 mr-2" />
+                  Create Ad
                 </DropdownMenuItem>
-              }
-            />
-          )}
+              </>
+            )}
+            
+            {isOwnPost ? (
+              <DropdownMenuItem onClick={onDelete} className="text-red-600">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onClick={() => setShowReportDialog(true)} className="text-red-600">
+                <span className="w-4 h-4 mr-2">⚠️</span>
+                Report
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-          {/* Delete - only for own posts */}
-          {isOwnPost && (
-            <DropdownMenuItem onClick={onDelete} className="text-red-600 dark:text-red-400">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Post
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+      <BoostPostDialog
+        isOpen={showBoostDialog}
+        onClose={() => setShowBoostDialog(false)}
+        postId={postId}
+        postedAsPage={postedAsPage}
+      />
+
+      <ReportPostDialog
+        isOpen={showReportDialog}
+        onClose={() => setShowReportDialog(false)}
+        postId={postId}
+      />
+    </>
   );
 };
 

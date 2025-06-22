@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,11 +19,11 @@ import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import UserLink from '@/components/UserLink';
 import { usePosts } from '@/hooks/usePosts';
-import PostsList from '@/components/PostsList';
+import PostCard from '@/components/PostCard';
 
 const Hashtag = () => {
   const { hashtag } = useParams();
-  const { posts, loading } = usePosts();
+  const { posts, loading, handleLike, handleRetweet, handlePin, handleDelete, handleShare, handleTrackView } = usePosts();
   const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
   const [popularPosts, setPopularPosts] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -32,7 +33,7 @@ const Hashtag = () => {
     trending: true
   });
 
-  // Filter posts by hashtag
+  // Filter posts by hashtag with exact matching
   useEffect(() => {
     if (!hashtag || !posts.length) {
       setFilteredPosts([]);
@@ -40,7 +41,8 @@ const Hashtag = () => {
       return;
     }
 
-    const hashtagPattern = new RegExp(`#${hashtag}\\b`, 'i');
+    // Create more precise hashtag pattern that matches word boundaries
+    const hashtagPattern = new RegExp(`#${hashtag}(?=\\s|$|[^a-zA-Z0-9_])`, 'i');
     const filtered = posts.filter(post => 
       hashtagPattern.test(post.content)
     );
@@ -136,7 +138,20 @@ const Hashtag = () => {
                     </p>
                   </div>
                 ) : (
-                  <PostsList />
+                  <div className="space-y-4">
+                    {filteredPosts.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        onLike={handleLike}
+                        onRetweet={handleRetweet}
+                        onPin={handlePin}
+                        onDelete={handleDelete}
+                        onShare={handleShare}
+                        onTrackView={handleTrackView}
+                      />
+                    ))}
+                  </div>
                 )}
               </TabsContent>
 
@@ -156,7 +171,20 @@ const Hashtag = () => {
                     </p>
                   </div>
                 ) : (
-                  <PostsList />
+                  <div className="space-y-4">
+                    {popularPosts.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        onLike={handleLike}
+                        onRetweet={handleRetweet}
+                        onPin={handlePin}
+                        onDelete={handleDelete}
+                        onShare={handleShare}
+                        onTrackView={handleTrackView}
+                      />
+                    ))}
+                  </div>
                 )}
               </TabsContent>
 

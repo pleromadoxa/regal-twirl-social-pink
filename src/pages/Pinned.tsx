@@ -3,11 +3,20 @@ import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Pin, BookmarkIcon } from 'lucide-react';
-import PostsList from '@/components/PostsList';
+import PostCard from '@/components/PostCard';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
+import { usePosts } from '@/hooks/usePosts';
 
 const Pinned = () => {
   const { pinnedPosts, loading } = usePinnedPosts();
+  const { 
+    handleLike, 
+    handleRetweet, 
+    handlePin, 
+    handleDelete, 
+    handleShare,
+    handleTrackView
+  } = usePosts();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
@@ -53,20 +62,23 @@ const Pinned = () => {
             ) : (
               <div className="space-y-4">
                 {pinnedPosts.map((post) => (
-                  <Card key={post.id} className="relative">
+                  <div key={post.id} className="relative">
                     <div className="absolute top-4 right-4 z-10">
                       <div className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full text-xs font-medium">
                         <Pin className="w-3 h-3" />
                         Pinned
                       </div>
                     </div>
-                    <CardContent className="p-6">
-                      {/* Post content would be rendered here */}
-                      <div className="text-gray-600 dark:text-gray-400 text-sm">
-                        Post content for {post.id}
-                      </div>
-                    </CardContent>
-                  </Card>
+                    <PostCard
+                      post={post}
+                      onLike={handleLike}
+                      onRetweet={handleRetweet}
+                      onPin={handlePin}
+                      onDelete={handleDelete}
+                      onShare={handleShare}
+                      onTrackView={handleTrackView}
+                    />
+                  </div>
                 ))}
               </div>
             )}
