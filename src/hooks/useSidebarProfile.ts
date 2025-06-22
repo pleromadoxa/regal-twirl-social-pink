@@ -10,10 +10,27 @@ export const useSidebarProfile = () => {
 
   useEffect(() => {
     if (user) {
-      fetchProfile();
       checkAdminAccess();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user && isAdmin !== null) {
+      fetchProfile();
+    }
+  }, [user, isAdmin]);
+
+  const checkAdminAccess = async () => {
+    if (!user) return;
+    
+    try {
+      const isUserAdmin = user.email === 'pleromadoxa@gmail.com';
+      setIsAdmin(isUserAdmin);
+    } catch (error) {
+      console.error('Error checking admin access:', error);
+      setIsAdmin(false);
+    }
+  };
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -25,47 +42,30 @@ export const useSidebarProfile = () => {
         .eq('id', user.id)
         .single();
       
-      setProfile({
+      // Set profile with proper admin tier handling
+      const profileData = {
         ...data,
         avatar_url: user.user_metadata?.avatar_url || data?.avatar_url,
-        username: data?.username || user.user_metadata?.name || user.email?.split('@')[0]
-      });
+        username: data?.username || user.user_metadata?.name || user.email?.split('@')[0],
+        premium_tier: isAdmin ? 'business' : (data?.premium_tier || 'free')
+      };
+
+      setProfile(profileData);
+      
+      // Update database if admin user doesn't have business tier
+      if (isAdmin && data?.premium_tier !== 'business') {
+        await supabase
+          .from('profiles')
+          .update({ premium_tier: 'business' })
+          .eq('id', user.id);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
       setProfile({
         avatar_url: user.user_metadata?.avatar_url,
         username: user.user_metadata?.name || user.email?.split('@')[0],
-        premium_tier: 'free'
+        premium_tier: isAdmin ? 'business' : 'free'
       });
-    }
-  };
-
-  const checkAdminAccess = async () => {
-    if (!user) return;
-    
-    try {
-      const isUserAdmin = user.email === 'pleromadoxa@gmail.com';
-      setIsAdmin(isUserAdmin);
-      
-      if (isUserAdmin) {
-        const { data: currentProfile } = await supabase
-          .from('profiles')
-          .select('premium_tier')
-          .eq('id', user.id)
-          .single();
-        
-        if (currentProfile?.premium_tier !== 'business') {
-          await supabase
-            .from('profiles')
-            .update({ premium_tier: 'business' })
-            .eq('id', user.id);
-          
-          setProfile(prev => prev ? { ...prev, premium_tier: 'business' } : null);
-        }
-      }
-    } catch (error) {
-      console.error('Error checking admin access:', error);
-      setIsAdmin(false);
     }
   };
 

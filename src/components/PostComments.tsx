@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import { MessageCircle, Send } from 'lucide-react';
+import { MessageCircle, Send, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -129,19 +129,19 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[80vh] bg-white dark:bg-slate-800">
-        <CardContent className="p-6">
+      <Card className="w-full max-w-2xl max-h-[80vh] bg-white dark:bg-slate-800 flex flex-col">
+        <CardContent className="p-6 flex flex-col h-full">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <MessageCircle className="w-5 h-5" />
               Comments
             </h3>
             <Button variant="ghost" size="sm" onClick={onClose}>
-              ×
+              <X className="w-4 h-4" />
             </Button>
           </div>
 
-          <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
+          <div className="flex-1 space-y-4 max-h-96 overflow-y-auto mb-4">
             {loading ? (
               <div className="text-center py-4">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
@@ -178,7 +178,7 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
           </div>
 
           {user && (
-            <div className="flex space-x-3">
+            <div className="flex space-x-3 mt-auto border-t pt-4">
               <Avatar className="w-8 h-8">
                 <AvatarImage src="/placeholder.svg" />
                 <AvatarFallback>
