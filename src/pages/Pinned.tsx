@@ -6,17 +6,46 @@ import { Pin, BookmarkIcon } from 'lucide-react';
 import PostCard from '@/components/PostCard';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 import { usePosts } from '@/hooks/usePosts';
+import { useToast } from '@/hooks/use-toast';
 
 const Pinned = () => {
   const { pinnedPosts, loading } = usePinnedPosts();
-  const { 
-    handleLike, 
-    handleRetweet, 
-    handlePin, 
-    handleDelete, 
-    handleShare,
-    handleTrackView
-  } = usePosts();
+  const { toggleLike, toggleRetweet, togglePin, deletePost, trackPostView } = usePosts();
+  const { toast } = useToast();
+
+  const handleShare = async (postId: string) => {
+    const post = pinnedPosts.find(p => p.id === postId);
+    if (!post) return;
+
+    const shareUrl = `${window.location.origin}/post/${postId}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Check out this post',
+          text: post.content.substring(0, 100) + '...',
+          url: shareUrl,
+        });
+      } catch (error) {
+        // User cancelled sharing or error occurred
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link copied",
+          description: "Post link copied to clipboard",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to copy link",
+          variant: "destructive"
+        });
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
@@ -61,25 +90,41 @@ const Pinned = () => {
               </Card>
             ) : (
               <div className="space-y-4">
-                {pinnedPosts.map((post) => (
-                  <div key={post.id} className="relative">
-                    <div className="absolute top-4 right-4 z-10">
-                      <div className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full text-xs font-medium">
-                        <Pin className="w-3 h-3" />
-                        Pinned
+                {pinnedPosts.map((post) => {
+                  // Transform the Post from usePinnedPosts to match the Post interface from usePosts
+                  const transformedPost = {
+                    ...post,
+                    views_count: 0,
+                    trending_score: 0,
+                    user_liked: false,
+                    user_retweeted: false,
+                    user_pinned: true,
+                    business_pages: null,
+                    posted_as_page: null,
+                    sponsored_post_id: null,
+                    audio_url: null
+                  };
+
+                  return (
+                    <div key={post.id} className="relative">
+                      <div className="absolute top-4 right-4 z-10">
+                        <div className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full text-xs font-medium">
+                          <Pin className="w-3 h-3" />
+                          Pinned
+                        </div>
                       </div>
+                      <PostCard
+                        post={transformedPost}
+                        onLike={toggleLike}
+                        onRetweet={toggleRetweet}
+                        onPin={togglePin}
+                        onDelete={deletePost}
+                        onShare={handleShare}
+                        onTrackView={trackPostView}
+                      />
                     </div>
-                    <PostCard
-                      post={post}
-                      onLike={handleLike}
-                      onRetweet={handleRetweet}
-                      onPin={handlePin}
-                      onDelete={handleDelete}
-                      onShare={handleShare}
-                      onTrackView={handleTrackView}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ const BoostPostDialog = ({ postId, trigger }: BoostPostDialogProps) => {
   const { user } = useAuth();
   const { myPages } = useBusinessPages();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     businessPageId: '',
@@ -78,7 +79,7 @@ const BoostPostDialog = ({ postId, trigger }: BoostPostDialogProps) => {
         description: `Your post is now being promoted with a $${formData.budgetAmount} budget for ${formData.durationDays} days.`
       });
 
-      setIsOpen(false);
+      setOpen(false);
     } catch (error) {
       console.error('Error boosting post:', error);
       toast({
@@ -92,7 +93,7 @@ const BoostPostDialog = ({ postId, trigger }: BoostPostDialogProps) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
@@ -115,14 +116,13 @@ const BoostPostDialog = ({ postId, trigger }: BoostPostDialogProps) => {
                 <SelectValue placeholder="Choose a business page" />
               </SelectTrigger>
               <SelectContent>
-                {(myPages
+                {myPages
                   .filter(page => typeof page.id === "string" && page.id.trim() !== "")
                   .map((page) => (
                     <SelectItem key={page.id} value={page.id}>
                       {page.page_name} ({page.page_type})
                     </SelectItem>
-                  )))}
-                {/* No SelectItem with value=""! */}
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -259,7 +259,7 @@ const BoostPostDialog = ({ postId, trigger }: BoostPostDialogProps) => {
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
             <Button
-              onClick={() => setIsOpen(false)}
+              onClick={() => setOpen(false)}
               variant="outline"
               className="flex-1"
             >

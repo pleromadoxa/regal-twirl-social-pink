@@ -63,7 +63,6 @@ const PostActions = ({
 }: PostActionsProps) => {
   const { user } = useAuth();
   const [showBoostDialog, setShowBoostDialog] = useState(false);
-  const [showReportDialog, setShowReportDialog] = useState(false);
 
   const formatCount = (count: number) => {
     if (count >= 1000000) {
@@ -171,27 +170,26 @@ const PostActions = ({
                 Delete
               </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onClick={() => setShowReportDialog(true)} className="text-red-600">
-                <span className="w-4 h-4 mr-2">⚠️</span>
-                Report
-              </DropdownMenuItem>
+              <ReportPostDialog 
+                postId={postId}
+                trigger={
+                  <DropdownMenuItem className="text-red-600">
+                    <span className="w-4 h-4 mr-2">⚠️</span>
+                    Report
+                  </DropdownMenuItem>
+                }
+              />
             )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-      <BoostPostDialog
-        isOpen={showBoostDialog}
-        onClose={() => setShowBoostDialog(false)}
-        postId={postId}
-        postedAsPage={postedAsPage}
-      />
-
-      <ReportPostDialog
-        isOpen={showReportDialog}
-        onClose={() => setShowReportDialog(false)}
-        postId={postId}
-      />
+      {canShowBoostOrAds && (
+        <BoostPostDialog
+          postId={postId}
+          trigger={<div style={{ display: 'none' }} />}
+        />
+      )}
     </>
   );
 };

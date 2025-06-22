@@ -20,10 +20,12 @@ import RightSidebar from '@/components/RightSidebar';
 import UserLink from '@/components/UserLink';
 import { usePosts } from '@/hooks/usePosts';
 import PostCard from '@/components/PostCard';
+import { useToast } from '@/hooks/use-toast';
 
 const Hashtag = () => {
   const { hashtag } = useParams();
-  const { posts, loading, handleLike, handleRetweet, handlePin, handleDelete, handleShare, handleTrackView } = usePosts();
+  const { posts, loading, toggleLike, toggleRetweet, togglePin, deletePost, trackPostView } = usePosts();
+  const { toast } = useToast();
   const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
   const [popularPosts, setPopularPosts] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -70,6 +72,40 @@ const Hashtag = () => {
       topContributors: uniqueContributors
     }));
   }, [hashtag, posts]);
+
+  const handleShare = async (postId: string) => {
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    const shareUrl = `${window.location.origin}/post/${postId}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Check out this post',
+          text: post.content.substring(0, 100) + '...',
+          url: shareUrl,
+        });
+      } catch (error) {
+        // User cancelled sharing or error occurred
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link copied",
+          description: "Post link copied to clipboard",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to copy link",
+          variant: "destructive"
+        });
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
@@ -143,12 +179,12 @@ const Hashtag = () => {
                       <PostCard
                         key={post.id}
                         post={post}
-                        onLike={handleLike}
-                        onRetweet={handleRetweet}
-                        onPin={handlePin}
-                        onDelete={handleDelete}
+                        onLike={toggleLike}
+                        onRetweet={toggleRetweet}
+                        onPin={togglePin}
+                        onDelete={deletePost}
                         onShare={handleShare}
-                        onTrackView={handleTrackView}
+                        onTrackView={trackPostView}
                       />
                     ))}
                   </div>
@@ -176,12 +212,12 @@ const Hashtag = () => {
                       <PostCard
                         key={post.id}
                         post={post}
-                        onLike={handleLike}
-                        onRetweet={handleRetweet}
-                        onPin={handlePin}
-                        onDelete={handleDelete}
+                        onLike={toggleLike}
+                        onRetweet={toggleRetweet}
+                        onPin={togglePin}
+                        onDelete={deletePost}
                         onShare={handleShare}
-                        onTrackView={handleTrackView}
+                        onTrackView={trackPostView}
                       />
                     ))}
                   </div>
