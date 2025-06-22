@@ -28,6 +28,11 @@ const SidebarProfile = ({ profile, isPremiumUser, isAdmin }: SidebarProfileProps
 
   if (!user) return null;
 
+  // Get the correct tier display - admins should show business tier
+  const displayTier = isAdmin ? 'business' : (profile?.premium_tier || 'free');
+  const tierDisplayText = displayTier === 'business' ? 'Business Plan' : 
+                         displayTier === 'pro' ? 'Pro Plan' : 'Free Plan';
+
   return (
     <div className="mt-auto px-4 border-t border-gradient-to-r from-purple-200 via-purple-300 to-pink-200 dark:from-purple-700 dark:via-purple-600 dark:to-pink-700 pt-4 bg-gradient-to-r from-purple-50/30 to-pink-50/20 dark:from-purple-950/30 dark:to-pink-950/20 rounded-t-xl">
       <div 
@@ -56,8 +61,7 @@ const SidebarProfile = ({ profile, isPremiumUser, isAdmin }: SidebarProfileProps
             )}
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-            {profile?.premium_tier === 'business' ? 'Business Plan' : 
-             profile?.premium_tier === 'pro' ? 'Pro Plan' : 'Free Plan'}
+            {tierDisplayText}
           </p>
         </div>
       </div>

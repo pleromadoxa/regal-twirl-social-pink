@@ -128,82 +128,93 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[80vh] bg-white dark:bg-slate-800 flex flex-col">
-        <CardContent className="p-6 flex flex-col h-full">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <MessageCircle className="w-5 h-5" />
-              Comments
-            </h3>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl max-h-[90vh] bg-white dark:bg-slate-800 flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+          <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-900 dark:text-slate-100">
+            <MessageCircle className="w-5 h-5" />
+            Comments
+          </h3>
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
 
-          <div className="flex-1 space-y-4 max-h-96 overflow-y-auto mb-4">
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
             {loading ? (
-              <div className="text-center py-4">
+              <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+                <p className="text-sm text-slate-500 mt-2">Loading comments...</p>
               </div>
             ) : comments.length > 0 ? (
               comments.map((comment) => (
-                <div key={comment.id} className="flex space-x-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700">
-                  <Avatar className="w-8 h-8">
+                <div key={comment.id} className="flex space-x-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600">
+                  <Avatar className="w-8 h-8 flex-shrink-0">
                     <AvatarImage src={comment.profiles?.avatar_url} />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
                       {comment.profiles?.display_name?.[0] || comment.profiles?.username?.[0] || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <span className="font-semibold text-sm">
+                      <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
                         {comment.profiles?.display_name || comment.profiles?.username || 'Unknown User'}
                       </span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">
                         {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-700 dark:text-slate-300">
+                    <p className="text-sm text-slate-700 dark:text-slate-300 break-words">
                       {comment.content}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-slate-500">
-                No comments yet. Be the first to comment!
+              <div className="text-center py-8">
+                <MessageCircle className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                <p className="text-slate-500 dark:text-slate-400 font-medium">No comments yet</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Be the first to comment!</p>
               </div>
             )}
           </div>
 
           {user && (
-            <div className="flex space-x-3 mt-auto border-t pt-4">
-              <Avatar className="w-8 h-8">
-                <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback>
-                  {user.email?.[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 flex space-x-2">
-                <Input
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Write a comment..."
-                  onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment()}
-                  disabled={submitting}
-                />
-                <Button
-                  onClick={handleSubmitComment}
-                  disabled={!newComment.trim() || submitting}
-                  size="sm"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+            <div className="border-t border-slate-200 dark:border-slate-700 p-4">
+              <div className="flex space-x-3">
+                <Avatar className="w-8 h-8 flex-shrink-0">
+                  <AvatarImage src={user.user_metadata?.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
+                    {user.email?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 flex space-x-2">
+                  <Input
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Write a comment..."
+                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmitComment()}
+                    disabled={submitting}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleSubmitComment}
+                    disabled={!newComment.trim() || submitting}
+                    size="sm"
+                    className="px-3"
+                  >
+                    {submitting ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           )}
-        </CardContent>
+        </div>
       </Card>
     </div>
   );
