@@ -1,4 +1,3 @@
-
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -104,12 +103,12 @@ const Pinned = () => {
                     sponsored_post_id: null,
                     audio_url: null,
                     profiles: {
-                      id: post.profiles?.id || post.user_id,
+                      id: post.user_id, // Use user_id from the post instead
                       username: post.profiles?.username || 'unknown',
                       display_name: post.profiles?.display_name || 'Unknown User',
                       avatar_url: post.profiles?.avatar_url || '',
                       is_verified: post.profiles?.is_verified || false,
-                      verification_level: post.profiles?.verification_level || 'none',
+                      verification_level: 'none', // Set a default value since it's not in the profiles type
                       premium_tier: post.profiles?.premium_tier || 'free'
                     }
                   };
