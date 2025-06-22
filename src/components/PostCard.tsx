@@ -12,6 +12,7 @@ import RetweetIndicator from './RetweetIndicator';
 import VerificationBadge from './VerificationBadge';
 import PostIndicators from './PostIndicators';
 import SponsoredIndicator from './SponsoredIndicator';
+import ThreadContent from './ThreadContent';
 import { getVerificationLevel } from '@/utils/postUtils';
 import { Eye } from 'lucide-react';
 
@@ -59,6 +60,9 @@ const PostCard = ({
   const avatarUrl = businessPageInfo?.avatar_url || post.profiles?.avatar_url;
   const isVerified = businessPageInfo?.is_verified || post.profiles?.is_verified;
 
+  // Check if this is a thread post
+  const isThreadPost = post.content.includes('\n\n');
+
   // Track view when post becomes visible
   useEffect(() => {
     if (!hasTrackedView && onTrackView && cardRef.current) {
@@ -94,7 +98,7 @@ const PostCard = ({
   return (
     <Card 
       ref={cardRef}
-      className="border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-slate-800/90 transition-all duration-200"
+      className={`border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-slate-800/90 transition-all duration-200 ${isThreadPost ? 'overflow-visible' : ''}`}
     >
       <CardContent className="p-4">
         {/* Sponsored Indicator */}
@@ -142,9 +146,14 @@ const PostCard = ({
                 <PostIndicators 
                   hasAudio={!!post.audio_url}
                 />
-                <p className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words">
-                  {post.content}
-                </p>
+                {/* Use ThreadContent for thread posts, regular content for others */}
+                {isThreadPost ? (
+                  <ThreadContent content={post.content} />
+                ) : (
+                  <p className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words">
+                    {post.content}
+                  </p>
+                )}
               </div>
               
               {/* Images */}
@@ -192,7 +201,7 @@ const PostCard = ({
               {/* View Count */}
               <div className="flex items-center text-slate-500 dark:text-slate-400 text-sm space-x-1">
                 <Eye className="w-4 h-4" />
-                <span>{formatViewCount(post.views_count)} views</span>
+                <span>{formatViewCount(post.views_count || 0)} views</span>
               </div>
             </div>
             

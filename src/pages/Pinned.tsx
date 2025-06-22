@@ -102,7 +102,16 @@ const Pinned = () => {
                     business_pages: null,
                     posted_as_page: null,
                     sponsored_post_id: null,
-                    audio_url: null
+                    audio_url: null,
+                    profiles: {
+                      id: post.profiles?.id || post.user_id,
+                      username: post.profiles?.username || 'unknown',
+                      display_name: post.profiles?.display_name || 'Unknown User',
+                      avatar_url: post.profiles?.avatar_url || '',
+                      is_verified: post.profiles?.is_verified || false,
+                      verification_level: post.profiles?.verification_level || 'none',
+                      premium_tier: post.profiles?.premium_tier || 'free'
+                    }
                   };
 
                   return (
