@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useProfile } from '@/hooks/useProfile';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
+import { supabase } from '@/integrations/supabase/client';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +20,7 @@ import {
   Edit
 } from 'lucide-react';
 import VerificationBadge from '@/components/VerificationBadge';
+import { useVerifiedStatus } from '@/hooks/useVerifiedStatus';
 import BusinessShopSection from '@/components/business/BusinessShopSection';
 
 const ProfessionalAccountProfile = () => {
@@ -31,6 +32,8 @@ const ProfessionalAccountProfile = () => {
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+
+  const { verificationLevel } = useVerifiedStatus(page);
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -173,7 +176,7 @@ const ProfessionalAccountProfile = () => {
                     <div className="flex-1 text-white mb-4">
                       <div className="flex items-center gap-3 mb-2">
                         <h1 className="text-3xl font-bold">{page.page_name}</h1>
-                        {page.is_verified && <VerificationBadge />}
+                        <VerificationBadge level={verificationLevel} />
                         <Badge variant="secondary" className="bg-white/20 text-white">
                           {page.page_type?.charAt(0).toUpperCase() + page.page_type?.slice(1)}
                         </Badge>
