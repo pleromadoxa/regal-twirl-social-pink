@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,6 +58,10 @@ const BusinessDashboard = () => {
     }
   }, [user, pageId, myPages, navigate, loading, refetch]);
 
+  const handlePageUpdate = () => {
+    refetch();
+  };
+
   if (loading) {
     console.log('Still loading business pages...');
     return <BusinessDashboardLoading />;
@@ -83,7 +86,7 @@ const BusinessDashboard = () => {
         <BusinessDashboardHeader businessPage={currentPage} />
         
         <div className="p-6">
-          <BusinessDashboardTabs businessPage={currentPage} />
+          <BusinessDashboardTabs businessPage={currentPage} onPageUpdate={handlePageUpdate} />
         </div>
       </div>
     </div>
