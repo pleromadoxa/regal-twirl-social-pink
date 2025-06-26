@@ -3,6 +3,7 @@ import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import MessageThread from '@/components/MessageThread';
 import CallHistorySection from '@/components/CallHistorySection';
+import MessageSearch from '@/components/MessageSearch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +48,11 @@ const Messages = () => {
     }
   };
 
+  const handleStartConversation = (userId: string) => {
+    // This will be called when a user is selected from the search
+    startDirectConversation(userId);
+  };
+
   const filteredConversations = conversations.filter(conv => {
     if (!searchTerm) return true;
     const otherUser = conv.participant_1 === user?.id 
@@ -64,9 +70,7 @@ const Messages = () => {
             <MessageCircle className="w-5 h-5" />
             Messages
           </CardTitle>
-          <Button size="sm" variant="outline">
-            <Plus className="w-4 h-4" />
-          </Button>
+          <MessageSearch onStartConversation={handleStartConversation} />
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
