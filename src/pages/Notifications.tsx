@@ -3,7 +3,7 @@ import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, Heart, MessageCircle, Repeat, UserPlus, User, PhoneMissed } from 'lucide-react';
+import { Bell, Heart, MessageCircle, Repeat, UserPlus, User, PhoneMissed, Flame, AlertTriangle } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,6 +26,10 @@ const Notifications = () => {
         return <PhoneMissed className="w-5 h-5 text-red-500" />;
       case 'message':
         return <MessageCircle className="w-5 h-5 text-blue-500" />;
+      case 'streak_warning':
+        return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+      case 'streak_lost':
+        return <Flame className="w-5 h-5 text-red-500" />;
       default:
         return <Bell className="w-5 h-5 text-gray-500" />;
     }
@@ -35,6 +39,9 @@ const Notifications = () => {
     if (notification.type === 'missed_call') {
       const callType = notification.data?.call_type || 'call';
       return `Missed ${callType}`;
+    }
+    if (notification.type === 'streak_warning' || notification.type === 'streak_lost') {
+      return notification.message || 'Streak notification';
     }
     return notification.message || 'New notification';
   };
@@ -94,7 +101,7 @@ const Notifications = () => {
                     No notifications yet
                   </h2>
                   <p className="text-gray-500 dark:text-gray-500">
-                    When someone likes, comments, or follows you, you'll see it here.
+                    When someone likes, comments, follows you, or your chat streaks need attention, you'll see it here.
                   </p>
                 </CardContent>
               </Card>
@@ -130,7 +137,7 @@ const Notifications = () => {
                             <span className="text-sm font-medium truncate">
                               {notification.actor_profile?.display_name || 
                                notification.actor_profile?.username || 
-                               'Unknown User'}
+                               'System'}
                             </span>
                           </div>
                           <p className="text-sm text-gray-900 dark:text-gray-100">

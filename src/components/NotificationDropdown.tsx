@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Bell, User, Heart, Repeat, UserCheck, MessageCircle, PhoneMissed } from 'lucide-react';
+import { Bell, User, Heart, Repeat, UserCheck, MessageCircle, PhoneMissed, Flame, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -38,6 +38,10 @@ const NotificationDropdown = () => {
         return <MessageCircle className="w-4 h-4 text-blue-500" />;
       case 'missed_call':
         return <PhoneMissed className="w-4 h-4 text-red-500" />;
+      case 'streak_warning':
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      case 'streak_lost':
+        return <Flame className="w-4 h-4 text-red-500" />;
       default:
         return <User className="w-4 h-4 text-gray-500" />;
     }
@@ -47,6 +51,9 @@ const NotificationDropdown = () => {
     if (notification.type === 'missed_call') {
       const callType = notification.data?.call_type || 'call';
       return `Missed ${callType}`;
+    }
+    if (notification.type === 'streak_warning' || notification.type === 'streak_lost') {
+      return notification.message || 'Streak notification';
     }
     return notification.message || 'New notification';
   };

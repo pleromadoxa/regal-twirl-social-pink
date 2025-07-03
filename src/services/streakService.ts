@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { checkAndUpdateStreak, scheduleStreakWarnings } from './enhancedStreakService';
 
 export interface StreakData {
   conversationId: string;
@@ -12,76 +13,8 @@ export const calculateStreak = async (conversationId: string): Promise<number> =
   try {
     console.log('Calculating streak for conversation:', conversationId);
     
-    // First get the conversation details to find participants
-    const { data: conversation, error: convError } = await supabase
-      .from('conversations')
-      .select('participant_1, participant_2')
-      .eq('id', conversationId)
-      .single();
-
-    if (convError || !conversation) {
-      console.error('Error fetching conversation:', convError);
-      return 0;
-    }
-
-    // Get all messages for this conversation, ordered by date
-    const { data: messages, error } = await supabase
-      .from('messages')
-      .select('created_at, sender_id, recipient_id')
-      .or(`and(sender_id.eq.${conversation.participant_1},recipient_id.eq.${conversation.participant_2}),and(sender_id.eq.${conversation.participant_2},recipient_id.eq.${conversation.participant_1})`)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching messages for streak calculation:', error);
-      return 0;
-    }
-
-    if (!messages || messages.length === 0) {
-      console.log('No messages found for conversation:', conversationId);
-      return 0;
-    }
-
-    console.log('Found', messages.length, 'messages for streak calculation');
-
-    // Group messages by UTC date
-    const messagesByDate = new Map<string, boolean>();
-    messages.forEach(message => {
-      const utcDate = new Date(message.created_at).toISOString().split('T')[0];
-      messagesByDate.set(utcDate, true);
-    });
-
-    console.log('Messages grouped by date:', Array.from(messagesByDate.keys()));
-
-    // Calculate current streak
-    let currentStreak = 0;
-    const today = new Date();
-    
-    // Check if there's activity today or yesterday (to account for different timezones)
-    const todayUTC = today.toISOString().split('T')[0];
-    const yesterday = new Date(today);
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    const yesterdayUTC = yesterday.toISOString().split('T')[0];
-
-    let checkDate = new Date(today);
-    
-    // Start from today if there's activity, otherwise from yesterday
-    if (!messagesByDate.has(todayUTC)) {
-      checkDate.setUTCDate(checkDate.getUTCDate() - 1);
-    }
-
-    // Count consecutive days backwards
-    while (true) {
-      const dateStr = checkDate.toISOString().split('T')[0];
-      if (messagesByDate.has(dateStr)) {
-        currentStreak++;
-        checkDate.setUTCDate(checkDate.getUTCDate() - 1);
-      } else {
-        break;
-      }
-    }
-
-    console.log('Calculated streak:', currentStreak, 'for conversation:', conversationId);
-    return currentStreak;
+    const streakData = await checkAndUpdateStreak(conversationId);
+    return streakData.currentStreak;
   } catch (error) {
     console.error('Error calculating streak:', error);
     return 0;
@@ -90,21 +23,13 @@ export const calculateStreak = async (conversationId: string): Promise<number> =
 
 export const updateConversationStreak = async (conversationId: string): Promise<void> => {
   try {
-    const streak = await calculateStreak(conversationId);
+    // Use the enhanced streak checking function
+    const streakData = await checkAndUpdateStreak(conversationId);
     
-    const { error } = await supabase
-      .from('conversations')
-      .update({ 
-        streak_count: streak,
-        last_message_at: new Date().toISOString()
-      })
-      .eq('id', conversationId);
-
-    if (error) {
-      console.error('Error updating conversation streak:', error);
-    } else {
-      console.log('Updated conversation streak to:', streak);
-    }
+    console.log('Updated conversation streak:', streakData);
+    
+    // Schedule warnings if needed
+    await scheduleStreakWarnings();
   } catch (error) {
     console.error('Error updating conversation streak:', error);
   }

@@ -74,7 +74,7 @@ export const sendMessage = async (
     .single();
 
   if (conversation) {
-    // Update streak count for this conversation
+    // Update streak count for this conversation using enhanced service
     await updateConversationStreak(conversation.id);
   }
 
