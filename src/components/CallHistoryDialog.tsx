@@ -21,6 +21,10 @@ const CallHistoryDialog = () => {
   const { callHistory, loading, refetch } = useCallHistory();
   const { user } = useAuth();
 
+  const handleRefresh = () => {
+    refetch();
+  };
+
   const getCallIcon = (callType: string, callStatus: string, isOutgoing: boolean) => {
     if (callStatus === 'missed') {
       return <PhoneMissed className="w-4 h-4 text-red-500" />;
@@ -58,8 +62,8 @@ const CallHistoryDialog = () => {
     );
   };
 
-  const formatDuration = (seconds: number) => {
-    if (seconds === 0) return '-';
+  const formatDuration = (seconds: number | null) => {
+    if (!seconds || seconds === 0) return '-';
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -79,7 +83,7 @@ const CallHistoryDialog = () => {
               <History className="w-5 h-5" />
               Call History
             </DialogTitle>
-            <Button variant="ghost" size="sm" onClick={refetch}>
+            <Button variant="ghost" size="sm" onClick={handleRefresh}>
               <RefreshCw className="w-4 h-4" />
             </Button>
           </div>
@@ -95,12 +99,12 @@ const CallHistoryDialog = () => {
             <div className="space-y-3">
               {callHistory.map((call) => {
                 const isOutgoing = call.caller_id === user?.id;
-                const otherUser = isOutgoing ? call.recipient_profile : call.caller_profile;
+                const otherUser = isOutgoing ? call.recipient : call.caller;
                 
                 return (
                   <div key={call.id} className="flex items-center space-x-4 p-4 rounded-lg border hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={otherUser?.avatar_url} />
+                      <AvatarImage src={otherUser?.avatar_url || ''} />
                       <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
                         {(otherUser?.display_name || otherUser?.username || 'U')[0].toUpperCase()}
                       </AvatarFallback>
@@ -142,7 +146,7 @@ const CallHistoryDialog = () => {
               <p className="text-slate-500 dark:text-slate-400 mb-6">
                 Your call history will appear here once you make or receive calls.
               </p>
-              <Button variant="outline" onClick={refetch}>
+              <Button variant="outline" onClick={handleRefresh}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>

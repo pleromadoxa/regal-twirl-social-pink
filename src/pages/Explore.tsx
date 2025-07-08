@@ -1,121 +1,84 @@
 
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import SidebarNav from '@/components/SidebarNav';
-import RightSidebar from '@/components/RightSidebar';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, TrendingUp, Users, Hash, MapPin } from 'lucide-react';
-import PostsList from '@/components/PostsList';
+import { Search } from 'lucide-react';
 import UserSearch from '@/components/UserSearch';
-import TrendingWidget from '@/components/TrendingWidget';
+import SidebarNav from '@/components/SidebarNav';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Explore = () => {
-  const [searchParams] = useSearchParams();
-  const initialSearch = searchParams.get('search') || '';
-  const [searchQuery, setSearchQuery] = useState(initialSearch);
-
-  const handleHashtagClick = (hashtag: string) => {
-    setSearchQuery(hashtag);
-  };
+  const [searchQuery, setSearchQuery] = useState('');
+  const isMobile = useIsMobile();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SidebarNav />
       
-      <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <Search className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Explore</h1>
+      <div className={`${isMobile ? 'ml-0' : 'ml-80'} transition-all duration-300`}>
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              Explore Regal Network
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Discover amazing people and content in our community
+            </p>
+          </div>
+
+          <div className="relative mb-8">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Input
+              type="text"
+              placeholder="Search for users, topics, or hashtags..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 h-12 text-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-purple-200 dark:border-purple-800 focus:border-purple-400 dark:focus:border-purple-600"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-purple-200/50 dark:border-purple-800/50 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Search Results
+                </h2>
+                <UserSearch searchQuery={searchQuery} />
+              </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Search for posts, people, or hashtags..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm"
-              />
-            </div>
-
-            <Tabs defaultValue="posts" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="posts" className="flex items-center gap-2">
-                  <Hash className="w-4 h-4" />
-                  Posts
-                </TabsTrigger>
-                <TabsTrigger value="people" className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  People
-                </TabsTrigger>
-                <TabsTrigger value="trending" className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Trending
-                </TabsTrigger>
-                <TabsTrigger value="places" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Places
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="posts" className="mt-6">
-                {searchQuery ? (
-                  <div>
-                    <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                      Posts containing "{searchQuery}"
-                    </h2>
-                    <PostsList />
-                  </div>
-                ) : (
-                  <div>
-                    <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                      Trending Posts
-                    </h2>
-                    <PostsList />
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="people" className="mt-6">
-                <div>
-                  <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                    People
-                  </h2>
-                  <UserSearch showMessageButton={false} />
+            <div className="space-y-6">
+              {/* Trending Topics */}
+              <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-purple-200/50 dark:border-purple-800/50 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Trending Topics
+                </h3>
+                <div className="space-y-3">
+                  {['#Faith', '#Community', '#Prayer', '#Inspiration', '#Christian'].map((topic, index) => (
+                    <div key={topic} className="flex items-center justify-between p-3 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 cursor-pointer transition-colors">
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{topic}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{Math.floor(Math.random() * 1000) + 100} posts</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </TabsContent>
+              </div>
 
-              <TabsContent value="trending" className="mt-6">
-                <div>
-                  <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                    Trending Topics
-                  </h2>
-                  <TrendingWidget onHashtagClick={handleHashtagClick} />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="places" className="mt-6">
-                <div className="text-center py-12">
-                  <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h2 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
-                    Places feature coming soon
-                  </h2>
-                  <p className="text-gray-500 dark:text-gray-500">
-                    Discover posts from specific locations and venues.
+              {/* Suggestions */}
+              <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-purple-200/50 dark:border-purple-800/50 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Who to Follow
+                </h3>
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Search for users to see suggestions here
                   </p>
                 </div>
-              </TabsContent>
-            </Tabs>
+              </div>
+            </div>
           </div>
-        </main>
+        </div>
       </div>
-      
-      <RightSidebar />
     </div>
   );
 };

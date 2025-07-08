@@ -11,30 +11,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { useNotifications } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
-import { useAuth } from '@/contexts/AuthContext';
 
 const NotificationDropdown = () => {
-  const { user } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
-  
-  // Mock data for now since notifications context might not be available
-  const notifications = [];
-  const unreadCount = 0;
-  const loading = false;
 
-  const markAsRead = (notificationId: string) => {
-    console.log('Mark as read:', notificationId);
-  };
-
-  const markAllAsRead = () => {
-    console.log('Mark all as read');
-  };
-
-  // Don't render if no user
-  if (!user) {
-    return null;
-  }
+  console.log('NotificationDropdown render:', { 
+    notificationsCount: notifications.length, 
+    unreadCount, 
+    loading 
+  });
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -122,7 +110,7 @@ const NotificationDropdown = () => {
               No notifications yet
             </div>
           ) : (
-            notifications.slice(0, 10).map((notification: any) => (
+            notifications.slice(0, 10).map((notification) => (
               <DropdownMenuItem
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification.id)}
@@ -137,7 +125,7 @@ const NotificationDropdown = () => {
                       {notification.actor_profile?.avatar_url ? (
                         <img
                           src={notification.actor_profile.avatar_url}
-                          alt={notification.actor_profile.display_name}
+                          alt={notification.actor_profile.display_name || 'User'}
                           className="w-6 h-6 rounded-full"
                         />
                       ) : (
@@ -146,7 +134,7 @@ const NotificationDropdown = () => {
                         </div>
                       )}
                       <span className="text-sm font-medium truncate">
-                        {notification.actor_profile?.display_name || 'Unknown User'}
+                        {notification.actor_profile?.display_name || notification.actor_profile?.username || 'Unknown User'}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">

@@ -1,16 +1,16 @@
 
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
-  Maximize2, 
+  Phone, 
   PhoneOff, 
   Mic, 
-  MicOff,
-  Video,
-  VideoOff
+  MicOff, 
+  Video, 
+  VideoOff,
+  Maximize2 
 } from 'lucide-react';
 
 interface MinimizedCallWidgetProps {
@@ -38,114 +38,80 @@ const MinimizedCallWidget = ({
   onToggleAudio,
   onToggleVideo
 }: MinimizedCallWidgetProps) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [position, setPosition] = useState({ x: 20, y: 20 });
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    const rect = e.currentTarget.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      setPosition({
-        x: e.clientX - offsetX,
-        y: e.clientY - offsetY
-      });
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const widget = (
-    <Card 
-      className={`fixed bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 border-white/20 dark:border-slate-700/40 shadow-2xl cursor-grab ${isDragging ? 'cursor-grabbing' : ''}`}
-      style={{ 
-        left: position.x, 
-        top: position.y,
-        zIndex: 999999998,
-        minWidth: '280px'
-      }}
-    >
-      <CardContent className="p-3">
-        <div className="flex items-center gap-3">
-          {/* Drag handle and avatar */}
-          <div 
-            className="flex items-center gap-2 flex-1 cursor-grab"
-            onMouseDown={handleMouseDown}
-          >
-            <Avatar className="w-10 h-10 ring-2 ring-white/20 dark:ring-slate-700/40">
-              <AvatarImage src={otherUserAvatar} />
-              <AvatarFallback className="text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                {otherUserName[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                {otherUserName}
-              </p>
-              <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                <span>{duration}</span>
+  return (
+    <div className="fixed bottom-4 right-4 z-50">
+      <Card className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border shadow-lg">
+        <CardContent className="p-3">
+          <div className="flex items-center space-x-3">
+            {/* User Info */}
+            <div className="flex items-center space-x-2 flex-1">
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={otherUserAvatar} />
+                <AvatarFallback className="text-xs">
+                  {otherUserName[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
+                  {otherUserName}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {duration}
+                </p>
               </div>
             </div>
-          </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant={isAudioEnabled ? "ghost" : "destructive"}
-              size="sm"
-              onClick={onToggleAudio}
-              className="w-8 h-8 p-0 rounded-full"
-            >
-              {isAudioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-            </Button>
+            {/* Controls */}
+            <div className="flex items-center space-x-1">
+              {isExpanded && (
+                <>
+                  <Button
+                    variant={isAudioEnabled ? "default" : "destructive"}
+                    size="sm"
+                    onClick={onToggleAudio}
+                    className="w-8 h-8 p-0"
+                  >
+                    {isAudioEnabled ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
+                  </Button>
+                  
+                  {callType === 'video' && (
+                    <Button
+                      variant={isVideoEnabled ? "default" : "destructive"}
+                      size="sm"
+                      onClick={onToggleVideo}
+                      className="w-8 h-8 p-0"
+                    >
+                      {isVideoEnabled ? <Video className="w-3 h-3" /> : <VideoOff className="w-3 h-3" />}
+                    </Button>
+                  )}
+                </>
+              )}
 
-            {callType === 'video' && (
               <Button
-                variant={isVideoEnabled ? "ghost" : "destructive"}
+                variant="outline"
                 size="sm"
-                onClick={onToggleVideo}
-                className="w-8 h-8 p-0 rounded-full"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-8 h-8 p-0"
               >
-                {isVideoEnabled ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+                <Maximize2 className="w-3 h-3" />
               </Button>
-            )}
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onMaximize}
-              className="w-8 h-8 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/20"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </Button>
-
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={onEndCall}
-              className="w-8 h-8 p-0 rounded-full"
-            >
-              <PhoneOff className="w-4 h-4" />
-            </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={onEndCall}
+                className="w-8 h-8 p-0"
+              >
+                <PhoneOff className="w-3 h-3" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
-
-  // Render the widget in a portal to ensure it's above everything
-  return createPortal(widget, document.body);
 };
 
 export default MinimizedCallWidget;
