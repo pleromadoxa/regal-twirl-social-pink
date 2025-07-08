@@ -2,7 +2,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Toaster } from '@/components/ui/toaster';
+import Landing from '@/pages/Landing';
+import Auth from '@/pages/Auth';
 import Home from '@/pages/Home';
 import Profile from '@/pages/Profile';
 import Messages from '@/pages/Messages'; 
@@ -19,37 +22,42 @@ import ProfessionalAccountProfile from '@/pages/ProfessionalAccountProfile';
 import EditProfessionalAccount from '@/pages/EditProfessionalAccount';
 import BusinessDashboard from '@/pages/BusinessDashboard';
 import RegalAIEngine from '@/pages/RegalAIEngine';
+import AuthWrapper from '@/components/AuthWrapper';
 
 const queryClient = new QueryClient();
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <div className="App">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/gallery" element={<Gallery />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/reels" element={<Reels />} />
-              <Route path="/music" element={<Music />} />
-              <Route path="/games" element={<Games />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/professional" element={<Professional />} />
-              <Route path="/create-professional" element={<CreateProfessionalAccount />} />
-              <Route path="/professional/:pageId" element={<ProfessionalAccountProfile />} />
-              <Route path="/edit-professional/:pageId" element={<EditProfessionalAccount />} />
-              <Route path="/business-dashboard/:pageId" element={<BusinessDashboard />} />
-              <Route path="/ai-engine" element={<RegalAIEngine />} />
-            </Routes>
-            <Toaster />
-          </div>
-        </Router>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+            <div className="App min-h-screen w-full overflow-x-hidden">
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/home" element={<AuthWrapper><Home /></AuthWrapper>} />
+                <Route path="/profile" element={<AuthWrapper><Profile /></AuthWrapper>} />
+                <Route path="/messages" element={<AuthWrapper><Messages /></AuthWrapper>} />
+                <Route path="/notifications" element={<AuthWrapper><Notifications /></AuthWrapper>} />
+                <Route path="/gallery" element={<AuthWrapper><Gallery /></AuthWrapper>} />
+                <Route path="/settings" element={<AuthWrapper><Settings /></AuthWrapper>} />
+                <Route path="/reels" element={<AuthWrapper><Reels /></AuthWrapper>} />
+                <Route path="/music" element={<AuthWrapper><Music /></AuthWrapper>} />
+                <Route path="/games" element={<AuthWrapper><Games /></AuthWrapper>} />
+                <Route path="/search" element={<AuthWrapper><Search /></AuthWrapper>} />
+                <Route path="/professional" element={<AuthWrapper><Professional /></AuthWrapper>} />
+                <Route path="/create-professional" element={<AuthWrapper><CreateProfessionalAccount /></AuthWrapper>} />
+                <Route path="/professional/:pageId" element={<AuthWrapper><ProfessionalAccountProfile /></AuthWrapper>} />
+                <Route path="/edit-professional/:pageId" element={<AuthWrapper><EditProfessionalAccount /></AuthWrapper>} />
+                <Route path="/business-dashboard/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
+                <Route path="/ai-engine" element={<AuthWrapper><RegalAIEngine /></AuthWrapper>} />
+              </Routes>
+              <Toaster />
+            </div>
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
