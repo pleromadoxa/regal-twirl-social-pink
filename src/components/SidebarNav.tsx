@@ -21,10 +21,10 @@ import {
 
 const SidebarNav = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   
   const navItems = [
-    { icon: Home, label: 'Home', path: '/home' },
+    { icon: Home, label: 'Home', path: '/' },
     { icon: Search, label: 'Search', path: '/search' },
     { icon: MessageSquare, label: 'Messages', path: '/messages' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
@@ -49,7 +49,7 @@ const SidebarNav = () => {
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="p-6 border-b border-purple-200 dark:border-purple-800">
-          <Link to="/home" className="flex items-center space-x-3">
+          <Link to="/" className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-lg">L</span>
             </div>
@@ -124,17 +124,17 @@ const SidebarNav = () => {
               className="flex items-center space-x-3 p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
             >
               <Avatar className="w-10 h-10">
-                <AvatarImage src={user?.user_metadata?.avatar_url} />
+                <AvatarImage src={profile?.avatar_url} />
                 <AvatarFallback>
-                  {user?.user_metadata?.display_name?.[0] || user?.email?.[0] || 'U'}
+                  {profile?.display_name?.[0] || profile?.username?.[0] || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                  {user?.user_metadata?.display_name || user?.email || 'User'}
+                  {profile?.display_name || profile?.username || 'User'}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                  @{user?.user_metadata?.username || 'username'}
+                  @{profile?.username || 'username'}
                 </p>
               </div>
             </Link>
