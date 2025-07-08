@@ -1,5 +1,6 @@
 
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,6 +16,26 @@ interface CallHistoryEntry {
 
 export const useCallHistory = () => {
   const { toast } = useToast();
+
+  const { data: callHistory = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['call-history'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('call_history')
+        .select(`
+          *,
+          caller:profiles!call_history_caller_id_fkey(username, display_name, avatar_url),
+          recipient:profiles!call_history_recipient_id_fkey(username, display_name, avatar_url)
+        `)
+        .order('started_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching call history:', error);
+        throw error;
+      }
+      return data || [];
+    }
+  });
 
   const addCallToHistory = useCallback(async (callData: CallHistoryEntry) => {
     try {
@@ -37,6 +58,7 @@ export const useCallHistory = () => {
       }
 
       console.log('Call added to history successfully');
+      refetch(); // Refresh the call history after adding
     } catch (error) {
       console.error('Failed to add call to history:', error);
       toast({
@@ -45,7 +67,7 @@ export const useCallHistory = () => {
         variant: "destructive"
       });
     }
-  }, [toast]);
+  }, [toast, refetch]);
 
   const getCallHistory = useCallback(async () => {
     try {
@@ -67,6 +89,9 @@ export const useCallHistory = () => {
   }, []);
 
   return {
+    callHistory,
+    loading,
+    refetch,
     addCallToHistory,
     getCallHistory
   };
