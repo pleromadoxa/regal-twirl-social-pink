@@ -16,7 +16,6 @@ const RightSidebar = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     checkAdminAccess();
@@ -96,7 +95,7 @@ const RightSidebar = () => {
           </div>
 
           {/* Search */}
-          <UserSearch searchQuery={searchQuery} showMessageButton />
+          <UserSearch showMessageButton />
 
           {/* Trending */}
           <TrendingWidget onHashtagClick={handleHashtagClick} />

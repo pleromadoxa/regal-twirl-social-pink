@@ -74,12 +74,12 @@ const SidebarNav = () => {
           <div className="p-6 border-b border-purple-200 dark:border-purple-800">
             <Link to="/home" className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">R</span>
+                <span className="text-white font-bold text-lg">L</span>
               </div>
               {!isCollapsed && (
                 <div>
                   <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    Regal Network
+                    Love Tap
                   </h1>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Connect & Create</p>
                 </div>

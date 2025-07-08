@@ -17,7 +17,6 @@ export class WebRTCService {
   private remoteStream: MediaStream | null = null;
   private signalingChannel: any = null;
   private isInitiator: boolean = false;
-  private currentUserId: string | null = null;
   
   private readonly config: WebRTCConfig = {
     iceServers: [
@@ -38,16 +37,6 @@ export class WebRTCService {
 
   constructor() {
     console.log('[WebRTC] Service initialized');
-    this.getCurrentUserId();
-  }
-
-  private async getCurrentUserId(): Promise<void> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      this.currentUserId = user?.id || null;
-    } catch (error) {
-      console.error('[WebRTC] Error getting current user:', error);
-    }
   }
 
   async initializeMedia(constraints: MediaConstraints): Promise<MediaStream> {
@@ -287,18 +276,6 @@ export class WebRTCService {
     await this.peerConnection.setLocalDescription(offer);
     console.log('[WebRTC] Local description set (offer):', offer.type);
     
-    // Send offer through signaling
-    if (this.signalingChannel) {
-      this.signalingChannel.send({
-        type: 'broadcast',
-        event: 'offer',
-        payload: {
-          offer,
-          from: this.getUserId()
-        }
-      });
-    }
-    
     return offer;
   }
 
@@ -502,7 +479,8 @@ export class WebRTCService {
   }
 
   private getUserId(): string {
-    return this.currentUserId || 'unknown-user';
+    // This should return the current user's ID
+    return 'current-user-id'; // Replace with actual user ID logic
   }
 
   // Getters

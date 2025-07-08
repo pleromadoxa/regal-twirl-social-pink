@@ -14,10 +14,6 @@ const CallHistorySection = () => {
   const { user } = useAuth();
   const [showAll, setShowAll] = useState(false);
 
-  const handleRefresh = () => {
-    refetch();
-  };
-
   const getCallIcon = (callType: string, callStatus: string, isOutgoing: boolean) => {
     if (callStatus === 'missed') {
       return <PhoneMissed className="w-4 h-4 text-red-500" />;
@@ -55,8 +51,8 @@ const CallHistorySection = () => {
     );
   };
 
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds || seconds === 0) return '-';
+  const formatDuration = (seconds: number) => {
+    if (seconds === 0) return '-';
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -83,7 +79,7 @@ const CallHistorySection = () => {
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
           Your call history will appear here once you make or receive calls.
         </p>
-        <Button variant="outline" size="sm" onClick={handleRefresh}>
+        <Button variant="outline" size="sm" onClick={refetch}>
           <RefreshCw className="w-4 h-4 mr-2" />
           Refresh
         </Button>
@@ -96,7 +92,7 @@ const CallHistorySection = () => {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Recent Calls</h3>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={handleRefresh}>
+          <Button variant="ghost" size="sm" onClick={refetch}>
             <RefreshCw className="w-4 h-4" />
           </Button>
           {callHistory.length > 5 && (
@@ -114,14 +110,14 @@ const CallHistorySection = () => {
       <div className="space-y-2">
         {displayedCalls.map((call) => {
           const isOutgoing = call.caller_id === user?.id;
-          const otherUser = isOutgoing ? call.recipient : call.caller;
+          const otherUser = isOutgoing ? call.recipient_profile : call.caller_profile;
           
           return (
             <Card key={call.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={otherUser?.avatar_url || ''} />
+                    <AvatarImage src={otherUser?.avatar_url} />
                     <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm">
                       {(otherUser?.display_name || otherUser?.username || 'U')[0].toUpperCase()}
                     </AvatarFallback>
