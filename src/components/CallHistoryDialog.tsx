@@ -62,8 +62,8 @@ const CallHistoryDialog = () => {
     );
   };
 
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds || seconds === 0) return '-';
+  const formatDuration = (seconds: number) => {
+    if (seconds === 0) return '-';
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -106,7 +106,7 @@ const CallHistoryDialog = () => {
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={otherUser?.avatar_url || ''} />
                       <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                        {(otherUser?.display_name || otherUser?.username || 'U')[0]?.toUpperCase() || 'U'}
+                        {(otherUser?.display_name || otherUser?.username || 'U')[0].toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     
@@ -127,7 +127,7 @@ const CallHistoryDialog = () => {
                           {formatDistanceToNow(new Date(call.started_at), { addSuffix: true })}
                         </p>
                         <p className="text-sm text-slate-500 font-medium">
-                          Duration: {formatDuration(call.duration_seconds)}
+                          Duration: {formatDuration(call.duration_seconds || 0)}
                         </p>
                       </div>
                     </div>
