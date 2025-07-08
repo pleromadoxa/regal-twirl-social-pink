@@ -24,8 +24,8 @@ export const useCallHistory = () => {
         .from('call_history')
         .select(`
           *,
-          caller:caller_id(username, display_name, avatar_url),
-          recipient:recipient_id(username, display_name, avatar_url)
+          caller:profiles!call_history_caller_id_fkey(username, display_name, avatar_url),
+          recipient:profiles!call_history_recipient_id_fkey(username, display_name, avatar_url)
         `)
         .order('started_at', { ascending: false });
 
@@ -75,8 +75,8 @@ export const useCallHistory = () => {
         .from('call_history')
         .select(`
           *,
-          caller:caller_id(username, display_name, avatar_url),
-          recipient:recipient_id(users, display_name, avatar_url)
+          caller:profiles!call_history_caller_id_fkey(username, display_name, avatar_url),
+          recipient:profiles!call_history_recipient_id_fkey(username, display_name, avatar_url)
         `)
         .order('started_at', { ascending: false });
 

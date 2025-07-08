@@ -121,7 +121,7 @@ const CallHistorySection = () => {
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={otherUser?.avatar_url} />
+                    <AvatarImage src={otherUser?.avatar_url || ''} />
                     <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm">
                       {(otherUser?.display_name || otherUser?.username || 'U')[0].toUpperCase()}
                     </AvatarFallback>
