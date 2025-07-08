@@ -24,7 +24,7 @@ const SidebarNav = () => {
   const { user } = useAuth();
   
   const navItems = [
-    { icon: Home, label: 'Home', path: '/home' },
+    { icon: Home, label: 'Home', path: '/' },
     { icon: Search, label: 'Search', path: '/search' },
     { icon: MessageSquare, label: 'Messages', path: '/messages' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
@@ -49,7 +49,7 @@ const SidebarNav = () => {
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="p-6 border-b border-purple-200 dark:border-purple-800">
-          <Link to="/home" className="flex items-center space-x-3">
+          <Link to="/" className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-lg">L</span>
             </div>
