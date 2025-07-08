@@ -21,7 +21,7 @@ import {
 
 const SidebarNav = () => {
   const location = useLocation();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   
   const navItems = [
     { icon: Home, label: 'Home', path: '/' },
@@ -124,17 +124,17 @@ const SidebarNav = () => {
               className="flex items-center space-x-3 p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
             >
               <Avatar className="w-10 h-10">
-                <AvatarImage src={profile?.avatar_url} />
+                <AvatarImage src={user?.user_metadata?.avatar_url} />
                 <AvatarFallback>
-                  {profile?.display_name?.[0] || profile?.username?.[0] || 'U'}
+                  {user?.user_metadata?.display_name?.[0] || user?.email?.[0] || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                  {profile?.display_name || profile?.username || 'User'}
+                  {user?.user_metadata?.display_name || user?.email || 'User'}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                  @{profile?.username || 'username'}
+                  @{user?.user_metadata?.username || 'username'}
                 </p>
               </div>
             </Link>
