@@ -17,7 +17,6 @@ export class WebRTCService {
   private remoteStream: MediaStream | null = null;
   private signalingChannel: any = null;
   private isInitiator: boolean = false;
-  private currentUserId: string | null = null;
   
   private readonly config: WebRTCConfig = {
     iceServers: [
@@ -36,13 +35,8 @@ export class WebRTCService {
   private onIceConnectionStateChangeCallback?: (state: RTCIceConnectionState) => void;
   private onErrorCallback?: (error: Error) => void;
 
-  constructor(userId?: string) {
+  constructor() {
     console.log('[WebRTC] Service initialized');
-    this.currentUserId = userId || null;
-  }
-
-  setUserId(userId: string): void {
-    this.currentUserId = userId;
   }
 
   async initializeMedia(constraints: MediaConstraints): Promise<MediaStream> {
@@ -282,17 +276,6 @@ export class WebRTCService {
     await this.peerConnection.setLocalDescription(offer);
     console.log('[WebRTC] Local description set (offer):', offer.type);
     
-    if (this.signalingChannel) {
-      this.signalingChannel.send({
-        type: 'broadcast',
-        event: 'offer',
-        payload: {
-          offer,
-          from: this.getUserId()
-        }
-      });
-    }
-    
     return offer;
   }
 
@@ -306,17 +289,6 @@ export class WebRTCService {
     const answer = await this.peerConnection.createAnswer();
     await this.peerConnection.setLocalDescription(answer);
     console.log('[WebRTC] Local description set (answer):', answer.type);
-    
-    if (this.signalingChannel) {
-      this.signalingChannel.send({
-        type: 'broadcast',
-        event: 'answer',
-        payload: {
-          answer,
-          from: this.getUserId()
-        }
-      });
-    }
     
     return answer;
   }
@@ -338,6 +310,15 @@ export class WebRTCService {
       
       const answer = await this.createAnswer();
       
+      this.signalingChannel.send({
+        type: 'broadcast',
+        event: 'answer',
+        payload: {
+          answer,
+          from: this.getUserId(),
+          to: from
+        }
+      });
     } catch (error) {
       console.error('[WebRTC] Error handling offer:', error);
       if (this.onErrorCallback) {
@@ -402,16 +383,14 @@ export class WebRTCService {
       const offer = await this.peerConnection.createOffer({ iceRestart: true });
       await this.peerConnection.setLocalDescription(offer);
       
-      if (this.signalingChannel) {
-        this.signalingChannel.send({
-          type: 'broadcast',
-          event: 'offer',
-          payload: {
-            offer,
-            from: this.getUserId()
-          }
-        });
-      }
+      this.signalingChannel.send({
+        type: 'broadcast',
+        event: 'offer',
+        payload: {
+          offer,
+          from: this.getUserId()
+        }
+      });
     } catch (error) {
       console.error('[WebRTC] Error restarting ICE:', error);
     }
@@ -500,7 +479,8 @@ export class WebRTCService {
   }
 
   private getUserId(): string {
-    return this.currentUserId || 'anonymous';
+    // This should return the current user's ID
+    return 'current-user-id'; // Replace with actual user ID logic
   }
 
   // Getters
