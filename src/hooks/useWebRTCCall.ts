@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { WebRTCService } from '@/services/webrtcService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { createCall, endCall, ActiveCall } from '@/services/callService';
 
 export interface CallState {
   status: 'idle' | 'connecting' | 'connected' | 'ended' | 'failed';
@@ -37,6 +38,7 @@ export const useWebRTCCall = ({
   const webrtcServiceRef = useRef<WebRTCService | null>(null);
   const callStartTimeRef = useRef<number | null>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const activeCallRef = useRef<ActiveCall | null>(null);
 
   const [callState, setCallState] = useState<CallState>({
     status: 'idle',
@@ -76,10 +78,21 @@ export const useWebRTCCall = ({
   }, []);
 
   const initializeCall = useCallback(async () => {
+    if (!user) {
+      console.error('[useWebRTCCall] No user available');
+      return;
+    }
+
     try {
       console.log('[useWebRTCCall] Initializing call', { callType, conversationId });
       
       updateCallState({ status: 'connecting', error: null });
+
+      // Create call record if not incoming
+      if (!isIncoming) {
+        const call = await createCall(user.id, callType, [user.id, otherUserId]);
+        activeCallRef.current = call;
+      }
       
       const webrtcService = new WebRTCService();
       webrtcServiceRef.current = webrtcService;
@@ -104,7 +117,7 @@ export const useWebRTCCall = ({
           startDurationTimer();
         } else if (state === 'failed' || state === 'closed') {
           updateCallState({ status: 'failed', error: 'Connection failed' });
-          endCall();
+          endCallHandler();
         }
       });
 
@@ -170,12 +183,21 @@ export const useWebRTCCall = ({
         variant: "destructive"
       });
     }
-  }, [callType, conversationId, isIncoming, updateCallState, startDurationTimer, toast]);
+  }, [callType, conversationId, isIncoming, updateCallState, startDurationTimer, toast, user, otherUserId]);
 
-  const endCall = useCallback(async () => {
+  const endCallHandler = useCallback(async () => {
     console.log('[useWebRTCCall] Ending call');
     
     stopDurationTimer();
+    
+    // End call in database if we have an active call
+    if (activeCallRef.current) {
+      try {
+        await endCall(activeCallRef.current.id);
+      } catch (error) {
+        console.error('[useWebRTCCall] Error ending call in database:', error);
+      }
+    }
     
     if (webrtcServiceRef.current) {
       webrtcServiceRef.current.cleanup();
@@ -235,7 +257,7 @@ export const useWebRTCCall = ({
 
   return {
     callState,
-    endCall,
+    endCall: endCallHandler,
     toggleAudio,
     toggleVideo,
     initializeCall

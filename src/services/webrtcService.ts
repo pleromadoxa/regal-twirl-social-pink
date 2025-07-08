@@ -166,7 +166,7 @@ export class WebRTCService {
             event: 'ice-candidate',
             payload: {
               candidate: event.candidate,
-              from: this.getUserId()
+              from: this.getCurrentUserId()
             }
           });
         }
@@ -296,7 +296,7 @@ export class WebRTCService {
   private async handleOffer(payload: any): Promise<void> {
     const { offer, from } = payload.payload;
     
-    if (from === this.getUserId()) return;
+    if (from === this.getCurrentUserId()) return;
     
     console.log('[WebRTC] Received offer from:', from);
     
@@ -315,7 +315,7 @@ export class WebRTCService {
         event: 'answer',
         payload: {
           answer,
-          from: this.getUserId(),
+          from: this.getCurrentUserId(),
           to: from
         }
       });
@@ -330,7 +330,7 @@ export class WebRTCService {
   private async handleAnswer(payload: any): Promise<void> {
     const { answer, from } = payload.payload;
     
-    if (from === this.getUserId()) return;
+    if (from === this.getCurrentUserId()) return;
     
     console.log('[WebRTC] Received answer from:', from);
     
@@ -350,7 +350,7 @@ export class WebRTCService {
   private async handleIceCandidate(payload: any): Promise<void> {
     const { candidate, from } = payload.payload;
     
-    if (from === this.getUserId()) return;
+    if (from === this.getCurrentUserId()) return;
     
     console.log('[WebRTC] Received ICE candidate from:', from);
     
@@ -368,7 +368,7 @@ export class WebRTCService {
 
   private handleCallEnd(payload: any): void {
     const { from } = payload.payload;
-    if (from !== this.getUserId()) {
+    if (from !== this.getCurrentUserId()) {
       console.log('[WebRTC] Call ended by remote peer');
       this.cleanup();
     }
@@ -388,7 +388,7 @@ export class WebRTCService {
         event: 'offer',
         payload: {
           offer,
-          from: this.getUserId()
+          from: this.getCurrentUserId()
         }
       });
     } catch (error) {
@@ -478,9 +478,9 @@ export class WebRTCService {
     this.onErrorCallback = callback;
   }
 
-  private getUserId(): string {
-    // This should return the current user's ID
-    return 'current-user-id'; // Replace with actual user ID logic
+  private getCurrentUserId(): string {
+    // Get current user ID from Supabase auth
+    return supabase.auth.getUser().then(({ data: { user } }) => user?.id || 'anonymous-user');
   }
 
   // Getters
