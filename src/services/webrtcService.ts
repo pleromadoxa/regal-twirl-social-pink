@@ -13,7 +13,7 @@ export interface MediaConstraints {
 
 export class WebRTCService {
   private peerConnection: RTCPeerConnection | null = null;
-  private localStream: MediaStream | null = null;
+  private _localStream: MediaStream | null = null;
   private remoteStream: MediaStream | null = null;
   private signalingChannel: any = null;
   private isInitiator: boolean = false;
@@ -39,6 +39,11 @@ export class WebRTCService {
     console.log('[WebRTC] Service initialized');
   }
 
+  // Public getter for localStream
+  get localStream(): MediaStream | null {
+    return this._localStream;
+  }
+
   async initializeMedia(constraints: MediaConstraints): Promise<MediaStream> {
     console.log('[WebRTC] Requesting media access:', constraints);
     
@@ -58,14 +63,14 @@ export class WebRTCService {
         } : false
       };
 
-      this.localStream = await navigator.mediaDevices.getUserMedia(enhancedConstraints);
+      this._localStream = await navigator.mediaDevices.getUserMedia(enhancedConstraints);
       console.log('[WebRTC] Media access granted:', {
-        videoTracks: this.localStream.getVideoTracks().length,
-        audioTracks: this.localStream.getAudioTracks().length
+        videoTracks: this._localStream.getVideoTracks().length,
+        audioTracks: this._localStream.getAudioTracks().length
       });
 
       // Log track details
-      this.localStream.getTracks().forEach((track, index) => {
+      this._localStream.getTracks().forEach((track, index) => {
         console.log(`[WebRTC] Local track ${index}:`, {
           kind: track.kind,
           enabled: track.enabled,
@@ -75,10 +80,10 @@ export class WebRTCService {
       });
 
       if (this.onLocalStreamCallback) {
-        this.onLocalStreamCallback(this.localStream);
+        this.onLocalStreamCallback(this._localStream);
       }
 
-      return this.localStream;
+      return this._localStream;
     } catch (error) {
       console.error('[WebRTC] Media access error:', error);
       
@@ -296,7 +301,8 @@ export class WebRTCService {
   private async handleOffer(payload: any): Promise<void> {
     const { offer, from } = payload.payload;
     
-    if (from === this.getCurrentUserId()) return;
+    const currentUserId = await this.getCurrentUserId();
+    if (from === currentUserId) return;
     
     console.log('[WebRTC] Received offer from:', from);
     
@@ -315,7 +321,7 @@ export class WebRTCService {
         event: 'answer',
         payload: {
           answer,
-          from: this.getCurrentUserId(),
+          from: currentUserId,
           to: from
         }
       });
@@ -330,7 +336,8 @@ export class WebRTCService {
   private async handleAnswer(payload: any): Promise<void> {
     const { answer, from } = payload.payload;
     
-    if (from === this.getCurrentUserId()) return;
+    const currentUserId = await this.getCurrentUserId();
+    if (from === currentUserId) return;
     
     console.log('[WebRTC] Received answer from:', from);
     
@@ -350,7 +357,8 @@ export class WebRTCService {
   private async handleIceCandidate(payload: any): Promise<void> {
     const { candidate, from } = payload.payload;
     
-    if (from === this.getCurrentUserId()) return;
+    const currentUserId = await this.getCurrentUserId();
+    if (from === currentUserId) return;
     
     console.log('[WebRTC] Received ICE candidate from:', from);
     
@@ -368,10 +376,8 @@ export class WebRTCService {
 
   private handleCallEnd(payload: any): void {
     const { from } = payload.payload;
-    if (from !== this.getCurrentUserId()) {
-      console.log('[WebRTC] Call ended by remote peer');
-      this.cleanup();
-    }
+    console.log('[WebRTC] Call ended by remote peer:', from);
+    this.cleanup();
   }
 
   private async restartIce(): Promise<void> {
@@ -383,12 +389,13 @@ export class WebRTCService {
       const offer = await this.peerConnection.createOffer({ iceRestart: true });
       await this.peerConnection.setLocalDescription(offer);
       
+      const currentUserId = await this.getCurrentUserId();
       this.signalingChannel.send({
         type: 'broadcast',
         event: 'offer',
         payload: {
           offer,
-          from: this.getCurrentUserId()
+          from: currentUserId
         }
       });
     } catch (error) {
@@ -414,8 +421,8 @@ export class WebRTCService {
   }
 
   toggleAudio(enabled: boolean): void {
-    if (this.localStream) {
-      const audioTracks = this.localStream.getAudioTracks();
+    if (this._localStream) {
+      const audioTracks = this._localStream.getAudioTracks();
       audioTracks.forEach(track => {
         track.enabled = enabled;
         console.log('[WebRTC] Audio track enabled:', enabled);
@@ -424,8 +431,8 @@ export class WebRTCService {
   }
 
   toggleVideo(enabled: boolean): void {
-    if (this.localStream) {
-      const videoTracks = this.localStream.getVideoTracks();
+    if (this._localStream) {
+      const videoTracks = this._localStream.getVideoTracks();
       videoTracks.forEach(track => {
         track.enabled = enabled;
         console.log('[WebRTC] Video track enabled:', enabled);
@@ -436,12 +443,12 @@ export class WebRTCService {
   cleanup(): void {
     console.log('[WebRTC] Cleaning up resources');
     
-    if (this.localStream) {
-      this.localStream.getTracks().forEach(track => {
+    if (this._localStream) {
+      this._localStream.getTracks().forEach(track => {
         track.stop();
         console.log('[WebRTC] Stopped local track:', track.kind);
       });
-      this.localStream = null;
+      this._localStream = null;
     }
 
     if (this.peerConnection) {
@@ -478,9 +485,10 @@ export class WebRTCService {
     this.onErrorCallback = callback;
   }
 
-  private getCurrentUserId(): string {
+  private async getCurrentUserId(): Promise<string> {
     // Get current user ID from Supabase auth
-    return supabase.auth.getUser().then(({ data: { user } }) => user?.id || 'anonymous-user');
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.id || 'anonymous-user';
   }
 
   // Getters

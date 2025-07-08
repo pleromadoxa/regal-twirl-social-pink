@@ -72,6 +72,7 @@ const CallConnection = ({
         await service.initializeMedia(mediaConstraints);
         service.initializePeerConnection();
         
+        // Add local stream using the public getter
         if (service.localStream) {
           await service.addLocalStream(service.localStream);
         }
