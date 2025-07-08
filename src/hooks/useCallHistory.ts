@@ -14,26 +14,82 @@ interface CallHistoryEntry {
   ended_at: string;
 }
 
+interface Profile {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+interface CallHistoryWithProfiles {
+  id: string;
+  caller_id: string;
+  recipient_id: string;
+  conversation_id: string | null;
+  call_type: string;
+  call_status: string;
+  duration_seconds: number | null;
+  started_at: string;
+  ended_at: string | null;
+  created_at: string;
+  caller: Profile | null;
+  recipient: Profile | null;
+}
+
 export const useCallHistory = () => {
   const { toast } = useToast();
 
   const { data: callHistory = [], isLoading: loading, refetch } = useQuery({
     queryKey: ['call-history'],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async (): Promise<CallHistoryWithProfiles[]> => {
+      // First, fetch call history
+      const { data: callHistoryData, error: callHistoryError } = await supabase
         .from('call_history')
-        .select(`
-          *,
-          caller:profiles!call_history_caller_id_fkey(username, display_name, avatar_url),
-          recipient:profiles!call_history_recipient_id_fkey(username, display_name, avatar_url)
-        `)
+        .select('*')
         .order('started_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching call history:', error);
-        throw error;
+      if (callHistoryError) {
+        console.error('Error fetching call history:', callHistoryError);
+        throw callHistoryError;
       }
-      return data || [];
+
+      if (!callHistoryData || callHistoryData.length === 0) {
+        return [];
+      }
+
+      // Get unique user IDs from caller_id and recipient_id
+      const userIds = Array.from(new Set([
+        ...callHistoryData.map(call => call.caller_id),
+        ...callHistoryData.map(call => call.recipient_id)
+      ]));
+
+      // Fetch profiles for all users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        // Continue without profiles if there's an error
+      }
+
+      // Create a map of profiles by ID for quick lookup
+      const profilesMap = new Map<string, Profile>();
+      if (profilesData) {
+        profilesData.forEach(profile => {
+          profilesMap.set(profile.id, profile);
+        });
+      }
+
+      // Combine call history with profile data
+      const enrichedCallHistory: CallHistoryWithProfiles[] = callHistoryData.map(call => ({
+        ...call,
+        caller: profilesMap.get(call.caller_id) || null,
+        recipient: profilesMap.get(call.recipient_id) || null
+      }));
+
+      return enrichedCallHistory;
     }
   });
 
@@ -73,11 +129,7 @@ export const useCallHistory = () => {
     try {
       const { data, error } = await supabase
         .from('call_history')
-        .select(`
-          *,
-          caller:profiles!call_history_caller_id_fkey(username, display_name, avatar_url),
-          recipient:profiles!call_history_recipient_id_fkey(username, display_name, avatar_url)
-        `)
+        .select('*')
         .order('started_at', { ascending: false });
 
       if (error) throw error;

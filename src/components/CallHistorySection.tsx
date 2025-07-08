@@ -55,8 +55,8 @@ const CallHistorySection = () => {
     );
   };
 
-  const formatDuration = (seconds: number) => {
-    if (seconds === 0) return '-';
+  const formatDuration = (seconds: number | null) => {
+    if (!seconds || seconds === 0) return '-';
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -121,7 +121,7 @@ const CallHistorySection = () => {
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={otherUser?.avatar_url} />
+                    <AvatarImage src={otherUser?.avatar_url || ''} />
                     <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm">
                       {(otherUser?.display_name || otherUser?.username || 'U')[0].toUpperCase()}
                     </AvatarFallback>
@@ -144,7 +144,7 @@ const CallHistorySection = () => {
                         {formatDistanceToNow(new Date(call.started_at), { addSuffix: true })}
                       </span>
                       <span className="text-slate-500">
-                        {formatDuration(call.duration_seconds || 0)}
+                        {formatDuration(call.duration_seconds)}
                       </span>
                     </div>
                   </div>
