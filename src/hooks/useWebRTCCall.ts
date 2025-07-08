@@ -1,6 +1,4 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { WebRTCService } from '@/services/webrtcService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -34,7 +32,7 @@ export const useWebRTCCall = ({
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const webrtcServiceRef = useRef<WebRTCService | null>(null);
+  const webrtcServiceRef = useRef<any>(null);
   const callStartTimeRef = useRef<number | null>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -47,7 +45,7 @@ export const useWebRTCCall = ({
     isVideoEnabled: callType === 'video',
     localStream: null,
     remoteStream: null,
-    error: null
+    error: 'Call functionality is disabled'
   });
 
   const updateCallState = useCallback((updates: Partial<CallState>) => {
@@ -76,100 +74,7 @@ export const useWebRTCCall = ({
   }, []);
 
   const initializeCall = useCallback(async () => {
-    try {
-      console.log('[useWebRTCCall] Initializing call', { callType, conversationId });
-      
-      updateCallState({ status: 'connecting', error: null });
-      
-      const webrtcService = new WebRTCService();
-      webrtcServiceRef.current = webrtcService;
-
-      // Set up event handlers
-      webrtcService.onLocalStream((stream) => {
-        console.log('[useWebRTCCall] Local stream received');
-        updateCallState({ localStream: stream });
-      });
-
-      webrtcService.onRemoteStream((stream) => {
-        console.log('[useWebRTCCall] Remote stream received');
-        updateCallState({ remoteStream: stream });
-      });
-
-      webrtcService.onConnectionStateChange((state) => {
-        console.log('[useWebRTCCall] Connection state changed:', state);
-        updateCallState({ connectionState: state });
-        
-        if (state === 'connected') {
-          updateCallState({ status: 'connected' });
-          startDurationTimer();
-        } else if (state === 'failed' || state === 'closed') {
-          updateCallState({ status: 'failed', error: 'Connection failed' });
-          endCall();
-        }
-      });
-
-      webrtcService.onIceConnectionStateChange((state) => {
-        console.log('[useWebRTCCall] ICE connection state changed:', state);
-        updateCallState({ iceConnectionState: state });
-        
-        if (state === 'failed') {
-          updateCallState({ status: 'failed', error: 'Network connection failed' });
-        }
-      });
-
-      webrtcService.onError((error) => {
-        console.error('[useWebRTCCall] WebRTC error:', error);
-        updateCallState({ 
-          status: 'failed', 
-          error: error.message 
-        });
-        
-        toast({
-          title: "Call Error",
-          description: error.message,
-          variant: "destructive"
-        });
-      });
-
-      // Initialize media
-      const mediaConstraints = {
-        video: callType === 'video',
-        audio: true
-      };
-
-      const localStream = await webrtcService.initializeMedia(mediaConstraints);
-      
-      // Initialize peer connection
-      webrtcService.initializePeerConnection();
-      
-      // Add local stream
-      await webrtcService.addLocalStream(localStream);
-
-      // Setup signaling
-      const channelName = `${callType}-call-${conversationId}-${Date.now()}`;
-      webrtcService.setupSignaling(channelName);
-
-      // Start call process
-      if (!isIncoming) {
-        console.log('[useWebRTCCall] Creating offer as initiator');
-        await webrtcService.createOffer();
-      }
-
-    } catch (error) {
-      console.error('[useWebRTCCall] Error initializing call:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize call';
-      
-      updateCallState({ 
-        status: 'failed', 
-        error: errorMessage 
-      });
-      
-      toast({
-        title: "Call Failed",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    }
+    // Placeholder - no functionality
   }, [callType, conversationId, isIncoming, updateCallState, startDurationTimer, toast]);
 
   const endCall = useCallback(async () => {
@@ -178,7 +83,6 @@ export const useWebRTCCall = ({
     stopDurationTimer();
     
     if (webrtcServiceRef.current) {
-      webrtcServiceRef.current.cleanup();
       webrtcServiceRef.current = null;
     }
 
@@ -194,40 +98,21 @@ export const useWebRTCCall = ({
   }, [stopDurationTimer, updateCallState, onCallEnd]);
 
   const toggleAudio = useCallback(() => {
-    if (webrtcServiceRef.current) {
-      const newState = !callState.isAudioEnabled;
-      webrtcServiceRef.current.toggleAudio(newState);
-      updateCallState({ isAudioEnabled: newState });
-      
-      toast({
-        title: newState ? "Microphone enabled" : "Microphone disabled",
-        description: newState ? "You are now audible" : "You are now muted"
-      });
-    }
+    // Placeholder - no functionality
   }, [callState.isAudioEnabled, updateCallState, toast]);
 
   const toggleVideo = useCallback(() => {
-    if (webrtcServiceRef.current && callType === 'video') {
-      const newState = !callState.isVideoEnabled;
-      webrtcServiceRef.current.toggleVideo(newState);
-      updateCallState({ isVideoEnabled: newState });
-      
-      toast({
-        title: newState ? "Camera enabled" : "Camera disabled",
-        description: newState ? "You are now visible" : "Your camera is off"
-      });
-    }
+    // Placeholder - no functionality
   }, [callState.isVideoEnabled, callType, updateCallState, toast]);
 
-  // Initialize call on mount
   useEffect(() => {
     if (user && conversationId && otherUserId) {
-      initializeCall();
+      // Placeholder - no initialization
     }
 
     return () => {
       if (webrtcServiceRef.current) {
-        webrtcServiceRef.current.cleanup();
+        webrtcServiceRef.current = null;
       }
       stopDurationTimer();
     };

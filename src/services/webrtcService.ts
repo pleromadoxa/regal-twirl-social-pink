@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface WebRTCConfig {
@@ -51,79 +50,7 @@ export class WebRTCService {
   }
 
   async initializeMedia(constraints: MediaConstraints): Promise<MediaStream> {
-    console.log('[WebRTC] Requesting media access:', constraints);
-    
-    try {
-      // Enhanced constraints with better defaults
-      const enhancedConstraints = {
-        video: constraints.video ? {
-          width: { ideal: 1280, max: 1920 },
-          height: { ideal: 720, max: 1080 },
-          frameRate: { ideal: 30, max: 60 }
-        } : false,
-        audio: constraints.audio ? {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: { ideal: 48000 }
-        } : false
-      };
-
-      this.localStream = await navigator.mediaDevices.getUserMedia(enhancedConstraints);
-      console.log('[WebRTC] Media access granted:', {
-        videoTracks: this.localStream.getVideoTracks().length,
-        audioTracks: this.localStream.getAudioTracks().length
-      });
-
-      // Log track details
-      this.localStream.getTracks().forEach((track, index) => {
-        console.log(`[WebRTC] Local track ${index}:`, {
-          kind: track.kind,
-          enabled: track.enabled,
-          readyState: track.readyState,
-          settings: track.getSettings()
-        });
-      });
-
-      if (this.onLocalStreamCallback) {
-        this.onLocalStreamCallback(this.localStream);
-      }
-
-      return this.localStream;
-    } catch (error) {
-      console.error('[WebRTC] Media access error:', error);
-      
-      // Enhanced error handling with specific messages
-      let errorMessage = 'Failed to access camera/microphone';
-      if (error instanceof DOMException) {
-        switch (error.name) {
-          case 'NotAllowedError':
-            errorMessage = 'Camera/microphone access denied. Please allow permissions and try again.';
-            break;
-          case 'NotFoundError':
-            errorMessage = 'No camera or microphone found on this device.';
-            break;
-          case 'NotReadableError':
-            errorMessage = 'Camera/microphone is already in use by another application.';
-            break;
-          case 'OverconstrainedError':
-            errorMessage = 'Camera/microphone constraints cannot be satisfied.';
-            break;
-          case 'AbortError':
-            errorMessage = 'Media access was aborted.';
-            break;
-          case 'NotSupportedError':
-            errorMessage = 'Media access is not supported in this browser.';
-            break;
-        }
-      }
-      
-      const enhancedError = new Error(errorMessage);
-      if (this.onErrorCallback) {
-        this.onErrorCallback(enhancedError);
-      }
-      throw enhancedError;
-    }
+    return Promise.reject(new Error('WebRTC functionality is disabled'));
   }
 
   initializePeerConnection(): RTCPeerConnection {
@@ -131,7 +58,6 @@ export class WebRTCService {
     
     this.peerConnection = new RTCPeerConnection(this.config);
     
-    // Enhanced connection state monitoring
     this.peerConnection.onconnectionstatechange = () => {
       const state = this.peerConnection?.connectionState;
       console.log('[WebRTC] Connection state changed:', state);
@@ -140,7 +66,6 @@ export class WebRTCService {
         this.onConnectionStateChangeCallback(state!);
       }
       
-      // Handle connection failures
       if (state === 'failed' || state === 'disconnected') {
         console.error('[WebRTC] Connection failed or disconnected, attempting to restart');
         this.handleConnectionFailure();
@@ -155,14 +80,12 @@ export class WebRTCService {
         this.onIceConnectionStateChangeCallback(state!);
       }
       
-      // Enhanced ICE state handling
       if (state === 'failed') {
         console.error('[WebRTC] ICE connection failed, restarting ICE');
         this.restartIce();
       }
     };
 
-    // Enhanced ICE candidate handling
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
         console.log('[WebRTC] New ICE candidate:', {
@@ -186,7 +109,6 @@ export class WebRTCService {
       }
     };
 
-    // Enhanced track handling
     this.peerConnection.ontrack = (event) => {
       console.log('[WebRTC] Received remote track:', {
         kind: event.track.kind,
@@ -197,7 +119,6 @@ export class WebRTCService {
       if (event.streams && event.streams[0]) {
         this.remoteStream = event.streams[0];
         
-        // Log remote stream details
         this.remoteStream.getTracks().forEach((track, index) => {
           console.log(`[WebRTC] Remote track ${index}:`, {
             kind: track.kind,
@@ -212,7 +133,6 @@ export class WebRTCService {
       }
     };
 
-    // Monitor data channel state
     this.peerConnection.ondatachannel = (event) => {
       console.log('[WebRTC] Data channel received:', event.channel.label);
     };
@@ -227,7 +147,6 @@ export class WebRTCService {
 
     console.log('[WebRTC] Adding local stream tracks to peer connection');
     
-    // Remove existing tracks first
     const senders = this.peerConnection.getSenders();
     for (const sender of senders) {
       if (sender.track) {
@@ -236,7 +155,6 @@ export class WebRTCService {
       }
     }
 
-    // Add new tracks
     for (const track of stream.getTracks()) {
       console.log('[WebRTC] Adding track:', {
         kind: track.kind,
@@ -248,7 +166,6 @@ export class WebRTCService {
       console.log('[WebRTC] Track added successfully, sender:', sender);
     }
 
-    // Verify tracks were added
     const updatedSenders = this.peerConnection.getSenders();
     console.log('[WebRTC] Total senders after adding tracks:', updatedSenders.length);
   }
@@ -287,7 +204,6 @@ export class WebRTCService {
     await this.peerConnection.setLocalDescription(offer);
     console.log('[WebRTC] Local description set (offer):', offer.type);
     
-    // Send offer through signaling
     if (this.signalingChannel) {
       this.signalingChannel.send({
         type: 'broadcast',
@@ -422,10 +338,8 @@ export class WebRTCService {
   private handleConnectionFailure(): void {
     console.log('[WebRTC] Handling connection failure');
     
-    // Attempt to restart ICE first
     this.restartIce();
     
-    // If still failing after timeout, cleanup and notify
     setTimeout(() => {
       if (this.peerConnection?.connectionState === 'failed') {
         console.error('[WebRTC] Connection recovery failed');
@@ -480,7 +394,6 @@ export class WebRTCService {
     this.remoteStream = null;
   }
 
-  // Event handlers
   onLocalStream(callback: (stream: MediaStream) => void): void {
     this.onLocalStreamCallback = callback;
   }
@@ -505,7 +418,6 @@ export class WebRTCService {
     return this.currentUserId || 'unknown-user';
   }
 
-  // Getters
   get connectionState(): RTCPeerConnectionState | null {
     return this.peerConnection?.connectionState || null;
   }

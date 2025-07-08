@@ -26,20 +26,7 @@ const IncomingCallPopup = ({
   onDecline,
   isVisible
 }: IncomingCallPopupProps) => {
-  const [isRinging, setIsRinging] = useState(true);
-
-  useEffect(() => {
-    if (isVisible) {
-      setIsRinging(true);
-      // Auto-decline after 30 seconds
-      const timeout = setTimeout(() => {
-        onDecline();
-      }, 30000);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [isVisible, onDecline]);
-
+  // Component maintained for UI compatibility but no call functionality
   if (!isVisible) return null;
 
   return (
@@ -47,17 +34,12 @@ const IncomingCallPopup = ({
       <Card className="bg-white dark:bg-slate-800 shadow-2xl border-0 w-full max-w-md">
         <CardContent className="p-8 text-center">
           <div className="mb-6">
-            <div className={`relative inline-block ${isRinging ? 'animate-pulse' : ''}`}>
-              <Avatar className="w-24 h-24 mx-auto border-4 border-white/20">
-                <AvatarImage src={callerAvatar} />
-                <AvatarFallback className="text-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                  {callerName[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              {isRinging && (
-                <div className="absolute inset-0 rounded-full border-4 border-green-400 animate-ping"></div>
-              )}
-            </div>
+            <Avatar className="w-24 h-24 mx-auto border-4 border-white/20">
+              <AvatarImage src={callerAvatar} />
+              <AvatarFallback className="text-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                {callerName[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
           </div>
 
           <div className="mb-6">
