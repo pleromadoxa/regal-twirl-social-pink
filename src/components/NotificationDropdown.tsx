@@ -125,7 +125,7 @@ const NotificationDropdown = () => {
                       {notification.actor_profile?.avatar_url ? (
                         <img
                           src={notification.actor_profile.avatar_url}
-                          alt={notification.actor_profile.display_name}
+                          alt={notification.actor_profile.display_name || 'User'}
                           className="w-6 h-6 rounded-full"
                         />
                       ) : (
@@ -134,7 +134,7 @@ const NotificationDropdown = () => {
                         </div>
                       )}
                       <span className="text-sm font-medium truncate">
-                        {notification.actor_profile?.display_name || 'Unknown User'}
+                        {notification.actor_profile?.display_name || notification.actor_profile?.username || 'Unknown User'}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
