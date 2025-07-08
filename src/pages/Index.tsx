@@ -1,5 +1,6 @@
 
 import { useAuth } from "@/contexts/AuthContext";
+import { Navigate } from "react-router-dom";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
 import TweetComposer from "@/components/TweetComposer";
@@ -11,13 +12,21 @@ import { useState } from "react";
 import { useLocation } from "react-router-dom";
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [feedFilter, setFeedFilter] = useState<'all' | 'professional' | 'trending'>('all');
   const location = useLocation();
   const isReelsView = location.search.includes('tab=reels');
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
   if (!user) {
-    return null;
+    return <Navigate to="/auth" replace />;
   }
 
   return (

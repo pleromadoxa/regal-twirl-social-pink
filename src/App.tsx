@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { Toaster } from '@/components/ui/toaster';
 import Home from '@/pages/Home';
 import Profile from '@/pages/Profile';
@@ -19,6 +20,8 @@ import ProfessionalAccountProfile from '@/pages/ProfessionalAccountProfile';
 import EditProfessionalAccount from '@/pages/EditProfessionalAccount';
 import BusinessDashboard from '@/pages/BusinessDashboard';
 import RegalAIEngine from '@/pages/RegalAIEngine';
+import Auth from '@/pages/Auth';
+import Index from '@/pages/Index';
 
 const queryClient = new QueryClient();
 
@@ -26,29 +29,33 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
-          <div className="App">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/gallery" element={<Gallery />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/reels" element={<Reels />} />
-              <Route path="/music" element={<Music />} />
-              <Route path="/games" element={<Games />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/professional" element={<Professional />} />
-              <Route path="/create-professional" element={<CreateProfessionalAccount />} />
-              <Route path="/professional/:pageId" element={<ProfessionalAccountProfile />} />
-              <Route path="/edit-professional/:pageId" element={<EditProfessionalAccount />} />
-              <Route path="/business-dashboard/:pageId" element={<BusinessDashboard />} />
-              <Route path="/ai-engine" element={<RegalAIEngine />} />
-            </Routes>
-            <Toaster />
-          </div>
-        </Router>
+        <NotificationsProvider>
+          <Router>
+            <div className="App">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/home" element={<Home />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/gallery" element={<Gallery />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/reels" element={<Reels />} />
+                <Route path="/music" element={<Music />} />
+                <Route path="/games" element={<Games />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/professional" element={<Professional />} />
+                <Route path="/create-professional" element={<CreateProfessionalAccount />} />
+                <Route path="/professional/:pageId" element={<ProfessionalAccountProfile />} />
+                <Route path="/edit-professional/:pageId" element={<EditProfessionalAccount />} />
+                <Route path="/business-dashboard/:pageId" element={<BusinessDashboard />} />
+                <Route path="/ai-engine" element={<RegalAIEngine />} />
+              </Routes>
+              <Toaster />
+            </div>
+          </Router>
+        </NotificationsProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
