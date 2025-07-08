@@ -21,6 +21,10 @@ const CallHistoryDialog = () => {
   const { callHistory, loading, refetch } = useCallHistory();
   const { user } = useAuth();
 
+  const handleRefresh = () => {
+    refetch();
+  };
+
   const getCallIcon = (callType: string, callStatus: string, isOutgoing: boolean) => {
     if (callStatus === 'missed') {
       return <PhoneMissed className="w-4 h-4 text-red-500" />;
@@ -79,7 +83,7 @@ const CallHistoryDialog = () => {
               <History className="w-5 h-5" />
               Call History
             </DialogTitle>
-            <Button variant="ghost" size="sm" onClick={refetch}>
+            <Button variant="ghost" size="sm" onClick={handleRefresh}>
               <RefreshCw className="w-4 h-4" />
             </Button>
           </div>
@@ -95,7 +99,7 @@ const CallHistoryDialog = () => {
             <div className="space-y-3">
               {callHistory.map((call) => {
                 const isOutgoing = call.caller_id === user?.id;
-                const otherUser = isOutgoing ? call.recipient_profile : call.caller_profile;
+                const otherUser = isOutgoing ? call.recipient : call.caller;
                 
                 return (
                   <div key={call.id} className="flex items-center space-x-4 p-4 rounded-lg border hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
@@ -123,7 +127,7 @@ const CallHistoryDialog = () => {
                           {formatDistanceToNow(new Date(call.started_at), { addSuffix: true })}
                         </p>
                         <p className="text-sm text-slate-500 font-medium">
-                          Duration: {formatDuration(call.duration_seconds)}
+                          Duration: {formatDuration(call.duration_seconds || 0)}
                         </p>
                       </div>
                     </div>
@@ -142,7 +146,7 @@ const CallHistoryDialog = () => {
               <p className="text-slate-500 dark:text-slate-400 mb-6">
                 Your call history will appear here once you make or receive calls.
               </p>
-              <Button variant="outline" onClick={refetch}>
+              <Button variant="outline" onClick={handleRefresh}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>

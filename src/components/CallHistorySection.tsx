@@ -14,6 +14,10 @@ const CallHistorySection = () => {
   const { user } = useAuth();
   const [showAll, setShowAll] = useState(false);
 
+  const handleRefresh = () => {
+    refetch();
+  };
+
   const getCallIcon = (callType: string, callStatus: string, isOutgoing: boolean) => {
     if (callStatus === 'missed') {
       return <PhoneMissed className="w-4 h-4 text-red-500" />;
@@ -79,7 +83,7 @@ const CallHistorySection = () => {
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
           Your call history will appear here once you make or receive calls.
         </p>
-        <Button variant="outline" size="sm" onClick={refetch}>
+        <Button variant="outline" size="sm" onClick={handleRefresh}>
           <RefreshCw className="w-4 h-4 mr-2" />
           Refresh
         </Button>
@@ -92,7 +96,7 @@ const CallHistorySection = () => {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Recent Calls</h3>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={refetch}>
+          <Button variant="ghost" size="sm" onClick={handleRefresh}>
             <RefreshCw className="w-4 h-4" />
           </Button>
           {callHistory.length > 5 && (
@@ -110,7 +114,7 @@ const CallHistorySection = () => {
       <div className="space-y-2">
         {displayedCalls.map((call) => {
           const isOutgoing = call.caller_id === user?.id;
-          const otherUser = isOutgoing ? call.recipient_profile : call.caller_profile;
+          const otherUser = isOutgoing ? call.recipient : call.caller;
           
           return (
             <Card key={call.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
@@ -140,7 +144,7 @@ const CallHistorySection = () => {
                         {formatDistanceToNow(new Date(call.started_at), { addSuffix: true })}
                       </span>
                       <span className="text-slate-500">
-                        {formatDuration(call.duration_seconds)}
+                        {formatDuration(call.duration_seconds || 0)}
                       </span>
                     </div>
                   </div>
