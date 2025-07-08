@@ -104,7 +104,7 @@ const CallHistoryDialog = () => {
                 return (
                   <div key={call.id} className="flex items-center space-x-4 p-4 rounded-lg border hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={otherUser?.avatar_url || ''} />
+                      <AvatarImage src={otherUser?.avatar_url} />
                       <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
                         {(otherUser?.display_name || otherUser?.username || 'U')[0].toUpperCase()}
                       </AvatarFallback>

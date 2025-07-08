@@ -96,18 +96,7 @@ const RightSidebar = () => {
           </div>
 
           {/* Search */}
-          <div className="space-y-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-            <UserSearch searchQuery={searchQuery} showMessageButton />
-          </div>
+          <UserSearch searchQuery={searchQuery} showMessageButton />
 
           {/* Trending */}
           <TrendingWidget onHashtagClick={handleHashtagClick} />
