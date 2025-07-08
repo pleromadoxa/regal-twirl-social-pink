@@ -23,6 +23,7 @@ import EditProfessionalAccount from '@/pages/EditProfessionalAccount';
 import BusinessDashboard from '@/pages/BusinessDashboard';
 import RegalAIEngine from '@/pages/RegalAIEngine';
 import AuthWrapper from '@/components/AuthWrapper';
+import WebRTCCallManager from '@/components/WebRTCCallManager';
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ function App() {
                 <Route path="/ai-engine" element={<AuthWrapper><RegalAIEngine /></AuthWrapper>} />
               </Routes>
               <Toaster />
+              <WebRTCCallManager />
             </div>
           </Router>
         </AuthProvider>
