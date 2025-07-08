@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,18 +24,51 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email.trim() || !password) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!isLogin && (!username.trim() || !displayName.trim())) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       if (isLogin) {
+        console.log('Attempting to sign in with:', email);
         const { error } = await signIn(email, password);
+        
         if (error) {
+          console.error('Sign in error:', error);
+          let errorMessage = 'Failed to sign in';
+          
+          if (error.message?.includes('Invalid login credentials')) {
+            errorMessage = 'Invalid email or password';
+          } else if (error.message?.includes('Email not confirmed')) {
+            errorMessage = 'Please check your email and confirm your account';
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
           toast({
             title: "Error signing in",
-            description: error.message,
+            description: errorMessage,
             variant: "destructive"
           });
         } else {
+          console.log('Sign in successful, navigating to home');
           toast({
             title: "Welcome back!",
             description: "You have successfully signed in."
@@ -42,21 +76,39 @@ const Auth = () => {
           navigate('/home');
         }
       } else {
-        const { error } = await signUp(email, password, username, displayName);
+        console.log('Attempting to sign up with:', email);
+        const { error, needsConfirmation } = await signUp(email, password, username, displayName);
+        
         if (error) {
+          console.error('Sign up error:', error);
+          let errorMessage = 'Failed to create account';
+          
+          if (error.message?.includes('User already registered')) {
+            errorMessage = 'An account with this email already exists';
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
           toast({
-            title: "Error signing up",
-            description: error.message,
+            title: "Error creating account",
+            description: errorMessage,
             variant: "destructive"
+          });
+        } else if (needsConfirmation) {
+          toast({
+            title: "Check your email",
+            description: "We've sent you a confirmation link to complete your registration."
           });
         } else {
           toast({
-            title: "Check your email",
-            description: "We've sent you a confirmation link."
+            title: "Account created!",
+            description: "Welcome to the Christian Network."
           });
+          navigate('/home');
         }
       }
     } catch (error) {
+      console.error('Unexpected error:', error);
       toast({
         title: "Something went wrong",
         description: "Please try again later.",
@@ -180,6 +232,7 @@ const Auth = () => {
                     variant="link"
                     onClick={() => setIsLogin(!isLogin)}
                     className="text-purple-300 hover:text-purple-200"
+                    disabled={loading}
                   >
                     {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
                   </Button>
