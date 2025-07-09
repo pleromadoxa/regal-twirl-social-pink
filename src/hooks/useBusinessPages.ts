@@ -10,7 +10,6 @@ interface BusinessPage {
   description: string;
   page_type: string;
   owner_id: string;
-  is_active: boolean;
   created_at: string;
   updated_at: string;
   avatar_url?: string;
@@ -47,6 +46,8 @@ export const useBusinessPages = () => {
     }
 
     try {
+      console.log('Fetching business pages for user:', user.id);
+      
       // Fetch user's own pages
       const { data: userPages, error: userError } = await supabase
         .from('business_pages')
@@ -57,9 +58,9 @@ export const useBusinessPages = () => {
         console.error('Error fetching user business pages:', userError);
         setMyPages([]);
       } else {
+        console.log('User pages fetched:', userPages?.length || 0);
         const formattedUserPages = (userPages || []).map(page => ({
           ...page,
-          is_active: true,
           featured_products: Array.isArray(page.featured_products) ? page.featured_products : []
         }));
         setMyPages(formattedUserPages);
@@ -69,15 +70,16 @@ export const useBusinessPages = () => {
       const { data: allPages, error: allError } = await supabase
         .from('business_pages')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (allError) {
         console.error('Error fetching all business pages:', allError);
         setPages([]);
       } else {
+        console.log('All pages fetched:', allPages?.length || 0);
         const formattedAllPages = (allPages || []).map(page => ({
           ...page,
-          is_active: true,
           featured_products: Array.isArray(page.featured_products) ? page.featured_products : []
         }));
         setPages(formattedAllPages);
@@ -102,16 +104,19 @@ export const useBusinessPages = () => {
     }
 
     try {
-      // Prepare the insert data, ensuring business_type is properly typed
+      console.log('Creating business page:', pageData);
+      
+      // Prepare the insert data
       const insertData: any = {
         page_name: pageData.page_name,
         description: pageData.description,
-        page_type: pageData.page_type,
+        page_type: pageData.page_type || 'business',
         owner_id: user.id,
         email: pageData.email,
         phone: pageData.phone,
         website: pageData.website,
-        address: pageData.address
+        address: pageData.address,
+        followers_count: 0
       };
 
       // Only add business_type if it's provided and valid
@@ -135,6 +140,8 @@ export const useBusinessPages = () => {
         return null;
       }
 
+      console.log('Business page created successfully:', data);
+      
       toast({
         title: "Success",
         description: "Business page created successfully",
@@ -155,25 +162,81 @@ export const useBusinessPages = () => {
 
   const searchPages = async (query: string) => {
     try {
+      console.log('Searching pages with query:', query);
+      
       const { data, error } = await supabase
         .from('business_pages')
         .select('*')
-        .or(`page_name.ilike.%${query}%,description.ilike.%${query}%,page_type.ilike.%${query}%`)
-        .order('created_at', { ascending: false });
+        .or(`page_name.ilike.%${query}%,description.ilike.%${query}%,page_type.ilike.%${query}%,business_type.ilike.%${query}%`)
+        .order('created_at', { ascending: false })
+        .limit(20);
 
       if (error) {
         console.error('Error searching business pages:', error);
         return [];
       }
 
+      console.log('Search results:', data?.length || 0);
+      
       return (data || []).map(page => ({
         ...page,
-        is_active: true,
         featured_products: Array.isArray(page.featured_products) ? page.featured_products : []
       }));
     } catch (error) {
       console.error('Error:', error);
       return [];
+    }
+  };
+
+  const updatePage = async (pageId: string, updateData: Partial<BusinessPage>) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update a business page",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    try {
+      console.log('Updating business page:', pageId, updateData);
+      
+      const { error } = await supabase
+        .from('business_pages')
+        .update({
+          ...updateData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', pageId)
+        .eq('owner_id', user.id);
+
+      if (error) {
+        console.error('Error updating business page:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update business page",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      console.log('Business page updated successfully');
+      
+      toast({
+        title: "Success",
+        description: "Business page updated successfully",
+      });
+
+      fetchPages();
+      return true;
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+      return false;
     }
   };
 
@@ -192,6 +255,7 @@ export const useBusinessPages = () => {
     loading,
     refetch,
     createPage,
-    searchPages
+    searchPages,
+    updatePage
   };
 };

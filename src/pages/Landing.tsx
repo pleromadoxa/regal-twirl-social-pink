@@ -24,15 +24,15 @@ const Landing = () => {
         pointerColor="139, 92, 246"
       >
         <div className="absolute z-50 inset-0 flex flex-col items-center justify-center text-white font-bold px-4 pointer-events-none">
-          {/* Logo */}
+          {/* Logo - Very Big */}
           <div className="mb-8 pointer-events-auto">
             <div className="relative group">
               <img 
                 src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
                 alt="Regal Network Logo" 
-                className="h-40 w-auto mx-auto mb-6 transition-transform group-hover:scale-110 filter drop-shadow-2xl"
+                className="h-60 w-auto mx-auto mb-6 transition-transform group-hover:scale-110 filter drop-shadow-2xl"
               />
-              <div className="absolute -inset-6 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute -inset-8 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </div>
           </div>
 
@@ -54,7 +54,7 @@ const Landing = () => {
             <div className="flex items-center justify-center gap-2 mb-4">
               <Heart className="w-6 h-6 text-red-400" />
               <p className="text-xl md:text-2xl text-white/80 font-normal max-w-2xl mx-auto leading-relaxed">
-                Faith • Community • Connection
+                A Christian Social Network
               </p>
               <Heart className="w-6 h-6 text-red-400" />
             </div>
@@ -101,15 +101,15 @@ const Landing = () => {
           {/* Stats */}
           <div className="mt-12 grid grid-cols-3 gap-8 text-center">
             <div className="group">
-              <div className="text-3xl font-bold text-purple-300 group-hover:scale-110 transition-transform">2.1M+</div>
-              <div className="text-sm text-white/70">Active Users</div>
+              <div className="text-3xl font-bold text-purple-300 group-hover:scale-110 transition-transform">892K+</div>
+              <div className="text-sm text-white/70">Believers</div>
             </div>
             <div className="group">
-              <div className="text-3xl font-bold text-pink-300 group-hover:scale-110 transition-transform">50K+</div>
+              <div className="text-3xl font-bold text-pink-300 group-hover:scale-110 transition-transform">25K+</div>
               <div className="text-sm text-white/70">Daily Posts</div>
             </div>
             <div className="group">
-              <div className="text-3xl font-bold text-blue-300 group-hover:scale-110 transition-transform">180+</div>
+              <div className="text-3xl font-bold text-blue-300 group-hover:scale-110 transition-transform">150+</div>
               <div className="text-sm text-white/70">Countries</div>
             </div>
           </div>
