@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Plus, Building, User, Briefcase, Users, Store, Code, Globe, TrendingUp, Stethoscope, GraduationCap, DollarSign, MoreHorizontal, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -33,37 +34,39 @@ interface Currency {
   symbol: string;
 }
 
+type BusinessType = 'e-commerce' | 'it-services' | 'import-export' | 'p2p-trading' | 'consulting' | 'manufacturing' | 'retail' | 'restaurant' | 'real-estate' | 'healthcare' | 'education' | 'finance' | 'other';
+
 const businessTypes = [
-  { value: 'e-commerce', label: 'E-Commerce', icon: Store },
-  { value: 'it-services', label: 'IT Services', icon: Code },
-  { value: 'import-export', label: 'Import & Export', icon: Globe },
-  { value: 'p2p-trading', label: 'P2P Trading', icon: TrendingUp },
-  { value: 'consulting', label: 'Consulting', icon: Briefcase },
-  { value: 'manufacturing', label: 'Manufacturing', icon: Building },
-  { value: 'retail', label: 'Retail', icon: Store },
-  { value: 'restaurant', label: 'Restaurant', icon: Users },
-  { value: 'real-estate', label: 'Real Estate', icon: Building },
-  { value: 'healthcare', label: 'Healthcare', icon: Stethoscope },
-  { value: 'education', label: 'Education', icon: GraduationCap },
-  { value: 'finance', label: 'Finance', icon: DollarSign },
-  { value: 'other', label: 'Other', icon: MoreHorizontal },
+  { value: 'e-commerce' as BusinessType, label: 'E-Commerce', icon: Store },
+  { value: 'it-services' as BusinessType, label: 'IT Services', icon: Code },
+  { value: 'import-export' as BusinessType, label: 'Import & Export', icon: Globe },
+  { value: 'p2p-trading' as BusinessType, label: 'P2P Trading', icon: TrendingUp },
+  { value: 'consulting' as BusinessType, label: 'Consulting', icon: Briefcase },
+  { value: 'manufacturing' as BusinessType, label: 'Manufacturing', icon: Building },
+  { value: 'retail' as BusinessType, label: 'Retail', icon: Store },
+  { value: 'restaurant' as BusinessType, label: 'Restaurant', icon: Users },
+  { value: 'real-estate' as BusinessType, label: 'Real Estate', icon: Building },
+  { value: 'healthcare' as BusinessType, label: 'Healthcare', icon: Stethoscope },
+  { value: 'education' as BusinessType, label: 'Education', icon: GraduationCap },
+  { value: 'finance' as BusinessType, label: 'Finance', icon: DollarSign },
+  { value: 'other' as BusinessType, label: 'Other', icon: MoreHorizontal },
 ];
 
 const professionalTypes = [
-  { value: 'consulting', label: 'Consulting', icon: Briefcase },
-  { value: 'it-services', label: 'IT Services', icon: Code },
-  { value: 'healthcare', label: 'Healthcare', icon: Stethoscope },
-  { value: 'education', label: 'Education', icon: GraduationCap },
-  { value: 'finance', label: 'Finance', icon: DollarSign },
-  { value: 'other', label: 'Other', icon: MoreHorizontal },
+  { value: 'consulting' as BusinessType, label: 'Consulting', icon: Briefcase },
+  { value: 'it-services' as BusinessType, label: 'IT Services', icon: Code },
+  { value: 'healthcare' as BusinessType, label: 'Healthcare', icon: Stethoscope },
+  { value: 'education' as BusinessType, label: 'Education', icon: GraduationCap },
+  { value: 'finance' as BusinessType, label: 'Finance', icon: DollarSign },
+  { value: 'other' as BusinessType, label: 'Other', icon: MoreHorizontal },
 ];
 
 const organizationTypes = [
-  { value: 'education', label: 'Educational Institution', icon: GraduationCap },
-  { value: 'healthcare', label: 'Healthcare Organization', icon: Stethoscope },
-  { value: 'non-profit', label: 'Non-Profit Organization', icon: Users },
-  { value: 'government', label: 'Government Agency', icon: Building },
-  { value: 'other', label: 'Other', icon: MoreHorizontal },
+  { value: 'education' as BusinessType, label: 'Educational Institution', icon: GraduationCap },
+  { value: 'healthcare' as BusinessType, label: 'Healthcare Organization', icon: Stethoscope },
+  { value: 'other' as BusinessType, label: 'Non-Profit Organization', icon: Users },
+  { value: 'other' as BusinessType, label: 'Government Agency', icon: Building },
+  { value: 'other' as BusinessType, label: 'Other', icon: MoreHorizontal },
 ];
 
 const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
@@ -74,7 +77,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
   const [formData, setFormData] = useState({
     page_name: '',
     page_type: '' as 'business' | 'professional' | 'organization' | '',
-    business_type: '',
+    business_type: '' as BusinessType | '',
     default_currency: 'USD',
     description: '',
     website: '',
@@ -91,7 +94,7 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
   // Reset business_type when page_type changes
   useEffect(() => {
     if (formData.page_type) {
-      setFormData(prev => ({ ...prev, business_type: '' }));
+      setFormData(prev => ({ ...prev, business_type: '' as BusinessType | '' }));
     }
   }, [formData.page_type]);
 
@@ -111,7 +114,9 @@ const BusinessPageDialog = ({ trigger }: BusinessPageDialogProps) => {
     if (!formData.page_name.trim() || !formData.page_type) return;
 
     // For non-business accounts, set a default business_type if none selected
-    const businessType = formData.page_type === 'business' ? formData.business_type : (formData.business_type || 'other');
+    const businessType: BusinessType = formData.page_type === 'business' ? 
+      (formData.business_type as BusinessType || 'other') : 
+      (formData.business_type as BusinessType || 'other');
 
     if (formData.page_type === 'business' && !businessType) return;
 

@@ -12,10 +12,12 @@ import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, Building2, Store, Users, Briefcase } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+type BusinessType = 'e-commerce' | 'it-services' | 'import-export' | 'p2p-trading' | 'consulting' | 'manufacturing' | 'retail' | 'restaurant' | 'real-estate' | 'healthcare' | 'education' | 'finance' | 'other';
+
 interface BusinessPageData {
   page_name: string;
   description: string;
-  business_type: string;
+  business_type: BusinessType;
   email: string;
   phone: string;
   website: string;
@@ -36,14 +38,14 @@ const BusinessPageCreator = ({ onComplete, onCancel }: BusinessPageCreatorProps)
   const [formData, setFormData] = useState<BusinessPageData>({
     page_name: '',
     description: '',
-    business_type: '',
+    business_type: 'other',
     email: '',
     phone: '',
     website: '',
     address: ''
   });
 
-  const businessTypes = [
+  const businessTypes: { value: BusinessType; label: string; icon: any }[] = [
     { value: 'e-commerce', label: 'E-commerce', icon: Store },
     { value: 'it-services', label: 'IT Services', icon: Briefcase },
     { value: 'consulting', label: 'Consulting', icon: Users },
@@ -62,6 +64,13 @@ const BusinessPageCreator = ({ onComplete, onCancel }: BusinessPageCreatorProps)
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleBusinessTypeChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      business_type: value as BusinessType
     }));
   };
 
@@ -159,7 +168,7 @@ const BusinessPageCreator = ({ onComplete, onCancel }: BusinessPageCreatorProps)
                           ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-950'
                           : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
-                      onClick={() => handleInputChange('business_type', type.value)}
+                      onClick={() => handleBusinessTypeChange(type.value)}
                     >
                       <CardContent className="p-4 text-center">
                         <IconComponent className="w-8 h-8 mx-auto mb-2 text-purple-600" />
