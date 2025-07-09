@@ -126,7 +126,7 @@ export const useBusinessPages = () => {
       console.log('Creating business page with data:', pageData);
       
       // Prepare the insert data
-      const insertData = {
+      const insertData: any = {
         page_name: pageData.page_name?.trim(),
         description: pageData.description?.trim() || '',
         page_type: pageData.page_type || 'business',
@@ -205,15 +205,12 @@ export const useBusinessPages = () => {
     try {
       console.log('Updating business page:', pageId, updates);
       
-      // Prepare update data with proper type casting
-      const updateData: any = {
-        ...updates,
-        updated_at: new Date().toISOString()
-      };
-
       const { data, error } = await supabase
         .from('business_pages')
-        .update(updateData)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', pageId)
         .eq('owner_id', user.id)
         .select()

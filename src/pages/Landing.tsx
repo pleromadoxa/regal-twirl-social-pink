@@ -25,7 +25,7 @@ const Landing = () => {
         pointerColor="139, 92, 246"
       >
         <div className="absolute z-50 inset-0 flex flex-col items-center justify-center text-white font-bold px-4 pointer-events-none">
-          {/* Logo - Big in the middle, Regal Network on next line, slogan on next line */}
+          {/* Logo */}
           <div className="mb-8 pointer-events-auto">
             <div className="relative group">
               <RegalLogo 
@@ -37,15 +37,21 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* Welcome message */}
+          {/* Main heading */}
           <div className="text-center mb-12">
             <div className="flex items-center justify-center gap-3 mb-6">
               <Sparkles className="w-8 h-8 text-yellow-300 animate-pulse" />
-              <h1 className="text-4xl md:text-5xl lg:text-6xl bg-clip-text text-transparent drop-shadow-2xl bg-gradient-to-b from-white/90 to-white/60">
-                Welcome to our Community
+              <h1 className="text-6xl md:text-7xl lg:text-8xl bg-clip-text text-transparent drop-shadow-2xl bg-gradient-to-b from-white/90 to-white/60">
+                Welcome to
               </h1>
               <Sparkles className="w-8 h-8 text-yellow-300 animate-pulse" />
             </div>
+            <h2 className="text-5xl md:text-6xl lg:text-7xl mb-4">
+              <span className="bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
+                Regal
+              </span>
+              <span className="text-white/90"> Network</span>
+            </h2>
             <div className="flex items-center justify-center gap-2 mb-4">
               <Heart className="w-6 h-6 text-red-400" />
               <p className="text-xl md:text-2xl text-white/80 font-normal max-w-2xl mx-auto leading-relaxed">

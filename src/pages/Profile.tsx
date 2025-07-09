@@ -1,4 +1,3 @@
-
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import SidebarNav from '@/components/SidebarNav';
@@ -6,6 +5,7 @@ import RightSidebar from '@/components/RightSidebar';
 import { useProfile } from '@/hooks/useProfile';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MapPin, Calendar, Link as LinkIcon, Crown } from 'lucide-react';
 import PostsList from '@/components/PostsList';
