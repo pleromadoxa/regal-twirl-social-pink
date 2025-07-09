@@ -21,7 +21,7 @@ interface BusinessPage {
   website?: string;
   address?: string;
   is_verified?: boolean;
-  business_type?: string;
+  business_type?: 'e-commerce' | 'it-services' | 'import-export' | 'p2p-trading' | 'consulting' | 'manufacturing' | 'retail' | 'restaurant' | 'real-estate' | 'healthcare' | 'education' | 'finance' | 'other';
   followers_count?: number;
   default_currency?: string;
   shop_settings?: any;
@@ -106,7 +106,7 @@ export const useBusinessPages = () => {
     try {
       console.log('Creating business page:', pageData);
       
-      // Prepare the insert data
+      // Prepare the insert data with proper typing
       const insertData: any = {
         page_name: pageData.page_name,
         description: pageData.description,
@@ -120,8 +120,19 @@ export const useBusinessPages = () => {
       };
 
       // Only add business_type if it's provided and valid
-      if (pageData.business_type) {
-        insertData.business_type = pageData.business_type;
+      if (pageData.business_type && typeof pageData.business_type === 'string') {
+        // Validate business_type against allowed values
+        const validBusinessTypes = [
+          'e-commerce', 'it-services', 'import-export', 'p2p-trading', 
+          'consulting', 'manufacturing', 'retail', 'restaurant', 
+          'real-estate', 'healthcare', 'education', 'finance', 'other'
+        ];
+        
+        if (validBusinessTypes.includes(pageData.business_type)) {
+          insertData.business_type = pageData.business_type;
+        } else {
+          insertData.business_type = 'other';
+        }
       }
 
       const { data, error } = await supabase
@@ -201,12 +212,30 @@ export const useBusinessPages = () => {
     try {
       console.log('Updating business page:', pageId, updateData);
       
+      // Prepare update data with proper typing
+      const cleanUpdateData: any = {
+        ...updateData,
+        updated_at: new Date().toISOString()
+      };
+
+      // Validate business_type if provided
+      if (updateData.business_type) {
+        const validBusinessTypes = [
+          'e-commerce', 'it-services', 'import-export', 'p2p-trading', 
+          'consulting', 'manufacturing', 'retail', 'restaurant', 
+          'real-estate', 'healthcare', 'education', 'finance', 'other'
+        ];
+        
+        if (validBusinessTypes.includes(updateData.business_type)) {
+          cleanUpdateData.business_type = updateData.business_type;
+        } else {
+          cleanUpdateData.business_type = 'other';
+        }
+      }
+
       const { error } = await supabase
         .from('business_pages')
-        .update({
-          ...updateData,
-          updated_at: new Date().toISOString()
-        })
+        .update(cleanUpdateData)
         .eq('id', pageId)
         .eq('owner_id', user.id);
 

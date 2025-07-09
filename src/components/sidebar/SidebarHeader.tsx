@@ -7,16 +7,8 @@ const SidebarHeader = () => {
         <img 
           src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png" 
           alt="Regal Network Logo" 
-          className="h-16 w-auto mb-3 relative z-10" 
+          className="h-24 w-auto mb-3 relative z-10" 
         />
-      </div>
-      <div>
-        <h1 className="font-bold text-xl bg-gradient-to-r from-purple-600 via-purple-700 to-pink-600 bg-clip-text text-transparent dark:from-purple-400 dark:via-purple-300 dark:to-pink-400 mb-1">
-          Regal Network
-        </h1>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          A Global Christian Social Network
-        </p>
       </div>
     </div>
   );

@@ -24,13 +24,13 @@ const Landing = () => {
         pointerColor="139, 92, 246"
       >
         <div className="absolute z-50 inset-0 flex flex-col items-center justify-center text-white font-bold px-4 pointer-events-none">
-          {/* Logo - Very Big */}
+          {/* Logo - Reduced Size */}
           <div className="mb-8 pointer-events-auto">
             <div className="relative group">
               <img 
                 src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
                 alt="Regal Network Logo" 
-                className="h-60 w-auto mx-auto mb-6 transition-transform group-hover:scale-110 filter drop-shadow-2xl"
+                className="h-48 w-auto mx-auto mb-6 transition-transform group-hover:scale-110 filter drop-shadow-2xl"
               />
               <div className="absolute -inset-8 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </div>
