@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { BackgroundGradientAnimation } from '@/components/ui/background-gradient-animation';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { Sparkles, Heart, Users, BookOpen, Star, Zap } from 'lucide-react';
-import RegalLogo from '@/components/ui/regal-logo';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -28,10 +27,10 @@ const Landing = () => {
           {/* Logo */}
           <div className="mb-8 pointer-events-auto">
             <div className="relative group">
-              <RegalLogo 
-                size="xl" 
-                showText={true}
-                className="transform scale-150 filter drop-shadow-2xl hover:scale-[1.6] transition-transform duration-500" 
+              <img 
+                src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
+                alt="Regal Network Logo" 
+                className="h-40 w-auto mx-auto mb-6 transition-transform group-hover:scale-110 filter drop-shadow-2xl"
               />
               <div className="absolute -inset-6 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </div>
