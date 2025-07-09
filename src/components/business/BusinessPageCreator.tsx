@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
@@ -11,8 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, Building2, Store, Users, Briefcase } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-type BusinessType = 'e-commerce' | 'it-services' | 'import-export' | 'p2p-trading' | 'consulting' | 'manufacturing' | 'retail' | 'restaurant' | 'real-estate' | 'healthcare' | 'education' | 'finance' | 'other';
+import type { BusinessType } from '@/integrations/supabase/types';
 
 interface BusinessPageData {
   page_name: string;
@@ -77,7 +75,7 @@ const BusinessPageCreator = ({ onComplete, onCancel }: BusinessPageCreatorProps)
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        return formData.page_name.trim() !== '' && formData.business_type !== '';
+        return formData.page_name.trim() !== '' && formData.business_type !== 'other' || formData.business_type === 'other';
       case 2:
         return formData.description.trim() !== '';
       case 3:

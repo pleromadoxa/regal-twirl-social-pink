@@ -29,41 +29,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session);
+      console.log('Auth state changed:', event, session?.user?.id);
+      
+      if (!mounted) return;
+      
       setUser(session?.user || null);
       
       if (session?.user) {
-        await fetchProfile(session.user.id);
+        // Defer profile fetching to avoid blocking auth state changes
+        setTimeout(() => {
+          if (mounted) {
+            fetchProfile(session.user.id);
+          }
+        }, 0);
       } else {
         setProfile(null);
       }
-      setLoading(false);
+      
+      if (mounted) {
+        setLoading(false);
+      }
     });
 
     // Get initial session
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
           console.error('Error getting session:', error);
-        } else {
-          setUser(session?.user || null);
-          if (session?.user) {
-            await fetchProfile(session.user.id);
+          if (mounted) {
+            setLoading(false);
           }
+          return;
+        }
+        
+        if (!mounted) return;
+        
+        setUser(session?.user || null);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            if (mounted) {
+              fetchProfile(session.user.id);
+            }
+          }, 0);
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error);
-      } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     getInitialSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchProfile = async (userId: string) => {
@@ -91,6 +120,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+      
+      // Add a small delay to ensure UI state is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email: email.trim(), 
         password 
@@ -101,11 +134,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { error };
       }
       
-      console.log('Sign in successful:', data);
+      console.log('Sign in successful:', data.user?.id);
       return { error: null, data };
     } catch (error) {
       console.error('Error signing in:', error);
-      return { error: new Error('Failed to sign in') };
+      return { error: new Error('Failed to sign in. Please check your internet connection and try again.') };
     } finally {
       setLoading(false);
     }

@@ -58,6 +58,8 @@ const Auth = () => {
             errorMessage = 'Invalid email or password';
           } else if (error.message?.includes('Email not confirmed')) {
             errorMessage = 'Please check your email and confirm your account';
+          } else if (error.message?.includes('Load failed') || error.message?.includes('fetch')) {
+            errorMessage = 'Connection error. Please check your internet connection and try again.';
           } else if (error.message) {
             errorMessage = error.message;
           }
@@ -85,6 +87,8 @@ const Auth = () => {
           
           if (error.message?.includes('User already registered')) {
             errorMessage = 'An account with this email already exists';
+          } else if (error.message?.includes('Load failed') || error.message?.includes('fetch')) {
+            errorMessage = 'Connection error. Please check your internet connection and try again.';
           } else if (error.message) {
             errorMessage = error.message;
           }
@@ -110,8 +114,8 @@ const Auth = () => {
     } catch (error) {
       console.error('Unexpected error:', error);
       toast({
-        title: "Something went wrong",
-        description: "Please try again later.",
+        title: "Connection Error",
+        description: "Please check your internet connection and try again.",
         variant: "destructive"
       });
     } finally {
@@ -145,7 +149,7 @@ const Auth = () => {
               <img 
                 src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
                 alt="Network Logo" 
-                className="h-20 w-auto"
+                className="h-16 w-auto"
               />
             </div>
           </div>
