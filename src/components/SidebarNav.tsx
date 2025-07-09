@@ -14,7 +14,6 @@ import {
   Settings, 
   Briefcase,
   Music,
-  Camera,
   Gamepad2,
   Crown,
   Sparkles,
@@ -34,8 +33,6 @@ const SidebarNav = () => {
     { icon: MessageSquare, label: 'Messages', path: '/messages' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: User, label: 'Profile', path: '/profile' },
-    { icon: Camera, label: 'Gallery', path: '/gallery' },
-    { icon: Camera, label: 'Reels', path: '/reels' },
     { icon: Music, label: 'Music', path: '/music' },
     { icon: Gamepad2, label: 'Games', path: '/games' },
     { icon: Briefcase, label: 'Professional', path: '/professional' },
@@ -73,15 +70,17 @@ const SidebarNav = () => {
           {/* Logo */}
           <div className="p-6 border-b border-purple-200 dark:border-purple-800">
             <Link to="/home" className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">R</span>
-              </div>
+              <img 
+                src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
+                alt="Regal Network Logo" 
+                className="w-10 h-10 rounded-xl"
+              />
               {!isCollapsed && (
                 <div>
                   <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                     Regal Network
                   </h1>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Connect & Create</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Faith • Community • Connection</p>
                 </div>
               )}
             </Link>

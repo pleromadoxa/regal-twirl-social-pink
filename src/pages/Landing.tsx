@@ -29,10 +29,10 @@ const Landing = () => {
             <div className="relative group">
               <img 
                 src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
-                alt="Network Logo" 
-                className="h-32 w-auto mx-auto mb-4 transition-transform group-hover:scale-110 filter drop-shadow-2xl"
+                alt="Regal Network Logo" 
+                className="h-40 w-auto mx-auto mb-6 transition-transform group-hover:scale-110 filter drop-shadow-2xl"
               />
-              <div className="absolute -inset-4 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute -inset-6 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </div>
           </div>
 
@@ -54,7 +54,7 @@ const Landing = () => {
             <div className="flex items-center justify-center gap-2 mb-4">
               <Heart className="w-6 h-6 text-red-400" />
               <p className="text-xl md:text-2xl text-white/80 font-normal max-w-2xl mx-auto leading-relaxed">
-                A Global Christian Social Network
+                Faith • Community • Connection
               </p>
               <Heart className="w-6 h-6 text-red-400" />
             </div>
