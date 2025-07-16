@@ -23,6 +23,7 @@ import ProfessionalAccountProfile from '@/pages/ProfessionalAccountProfile';
 import EditProfessionalAccount from '@/pages/EditProfessionalAccount';
 import BusinessDashboard from '@/pages/BusinessDashboard';
 import RegalAIEngine from '@/pages/RegalAIEngine';
+import Hashtag from '@/pages/Hashtag';
 import AuthWrapper from '@/components/AuthWrapper';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
 
@@ -40,7 +41,8 @@ function App() {
                   <Route path="/" element={<Landing />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/home" element={<AuthWrapper><Home /></AuthWrapper>} />
-                  <Route path="/profile" element={<AuthWrapper><Profile /></AuthWrapper>} />
+                  <Route path="/profile/:userId" element={<AuthWrapper><Profile /></AuthWrapper>} />
+                  <Route path="/hashtag/:hashtag" element={<AuthWrapper><Hashtag /></AuthWrapper>} />
                   <Route path="/messages" element={<AuthWrapper><Messages /></AuthWrapper>} />
                   <Route path="/notifications" element={<AuthWrapper><Notifications /></AuthWrapper>} />
                   <Route path="/gallery" element={<AuthWrapper><Gallery /></AuthWrapper>} />

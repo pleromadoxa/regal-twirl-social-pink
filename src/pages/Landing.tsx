@@ -24,9 +24,9 @@ const Landing = () => {
         fifthColor="219, 39, 119"
         pointerColor="139, 92, 246"
       >
-        <div className="absolute z-50 inset-0 flex flex-col items-center justify-start text-white font-bold px-4 py-8 pointer-events-none min-h-screen overflow-y-auto">
+        <div className="absolute z-50 inset-0 flex flex-col items-center justify-start text-white font-bold px-4 pt-24 sm:pt-28 md:pt-32 lg:pt-36 pb-8 pointer-events-none min-h-screen overflow-y-auto">
           {/* Logo - Responsive Size */}
-          <div className="mb-4 sm:mb-6 md:mb-8 pointer-events-auto flex-shrink-0 mt-4 sm:mt-8">
+          <div className="mb-4 sm:mb-6 md:mb-8 pointer-events-auto flex-shrink-0">
             <div className="relative group">
               <img 
                 src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"

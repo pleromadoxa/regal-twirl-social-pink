@@ -114,7 +114,7 @@ const UserSearch = ({ searchQuery, showMessageButton = false }: UserSearchProps)
               </div>
               
               <div className="flex space-x-2">
-                <Link to={`/profile/${profile.username}`}>
+                <Link to={`/profile/${profile.id}`}>
                   <Button variant="outline" size="sm">
                     <User className="w-4 h-4 mr-1" />
                     View

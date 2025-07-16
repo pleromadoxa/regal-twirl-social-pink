@@ -60,8 +60,9 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
     if (onHashtagClick) {
       onHashtagClick(trend);
     } else {
-      // Navigate to hashtag search
-      navigate(`/explore?search=${encodeURIComponent(trend)}`);
+      // Navigate to hashtag page - remove # symbol for URL
+      const hashtagName = trend.replace('#', '');
+      navigate(`/hashtag/${hashtagName}`);
     }
   };
 

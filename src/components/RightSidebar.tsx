@@ -45,8 +45,9 @@ const RightSidebar = () => {
   };
 
   const handleHashtagClick = (hashtag: string) => {
-    // Navigate to explore page with hashtag search
-    navigate(`/explore?search=${encodeURIComponent(hashtag)}`);
+    // Navigate to hashtag page - remove # symbol for URL
+    const hashtagName = hashtag.replace('#', '');
+    navigate(`/hashtag/${hashtagName}`);
   };
 
   const handleLogout = async () => {
