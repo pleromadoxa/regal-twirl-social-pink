@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Plus, Building, User, Briefcase, Users, Store, Code, Globe, TrendingUp, Stethoscope, GraduationCap, DollarSign, MoreHorizontal, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ import {
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { supabase } from '@/integrations/supabase/client';
 import ImageUpload from '@/components/ImageUpload';
+import type { BusinessType } from '@/types/business';
 
 interface BusinessPageDialogProps {
   trigger?: React.ReactNode;
@@ -33,8 +33,6 @@ interface Currency {
   name: string;
   symbol: string;
 }
-
-type BusinessType = 'e-commerce' | 'it-services' | 'import-export' | 'p2p-trading' | 'consulting' | 'manufacturing' | 'retail' | 'restaurant' | 'real-estate' | 'healthcare' | 'education' | 'finance' | 'other';
 
 const businessTypes = [
   { value: 'e-commerce' as BusinessType, label: 'E-Commerce', icon: Store },

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, Building2, Store, Users, Briefcase } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { BusinessType } from '@/integrations/supabase/types';
+import type { BusinessType, BusinessPageData } from '@/types/business';
 
 interface BusinessPageData {
   page_name: string;
