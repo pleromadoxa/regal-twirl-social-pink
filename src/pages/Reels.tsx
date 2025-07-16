@@ -6,7 +6,7 @@ import ReelsSection from "@/components/ReelsSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Video, TrendingUp, Fire, Music, Heart, Eye } from "lucide-react";
+import { Video, TrendingUp, DollarSign, Music, Heart, Eye, Flame } from "lucide-react";
 
 const Reels = () => {
   const { user } = useAuth();
@@ -41,7 +41,7 @@ const Reels = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="bg-gradient-to-br from-pink-500 to-red-500 text-white">
                 <CardContent className="p-3 text-center">
-                  <Fire className="w-6 h-6 mx-auto mb-1" />
+                  <Flame className="w-6 h-6 mx-auto mb-1" />
                   <p className="text-lg font-bold">1.2M</p>
                   <p className="text-xs opacity-90">Trending</p>
                 </CardContent>
@@ -75,7 +75,7 @@ const Reels = () => {
             <Tabs defaultValue="for-you" className="space-y-6">
               <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
                 <TabsTrigger value="for-you" className="flex items-center gap-2">
-                  <Fire className="w-4 h-4" />
+                  <Flame className="w-4 h-4" />
                   For You
                 </TabsTrigger>
                 <TabsTrigger value="trending" className="flex items-center gap-2">

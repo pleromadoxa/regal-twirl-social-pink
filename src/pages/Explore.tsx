@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, TrendingUp, Users, Hash, Image, Video, Music, Fire, Star, Crown } from 'lucide-react';
+import { Search, TrendingUp, Users, Hash, Image, Video, Music, Flame, Star, Crown } from 'lucide-react';
 import UserSearch from '@/components/UserSearch';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
@@ -112,7 +112,7 @@ const Explore = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
               <CardContent className="p-4 text-center">
-                <Fire className="w-8 h-8 mx-auto mb-2" />
+                <Flame className="w-8 h-8 mx-auto mb-2" />
                 <p className="text-2xl font-bold">2.4k</p>
                 <p className="text-sm opacity-90">Trending Posts</p>
               </CardContent>
