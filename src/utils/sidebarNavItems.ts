@@ -10,7 +10,9 @@ import {
   Sparkles,
   Pin,
   BarChart3,
-  Megaphone
+  Megaphone,
+  Video,
+  PlayCircle
 } from 'lucide-react';
 
 interface NavItemsConfig {
@@ -33,6 +35,7 @@ export const getSidebarNavItems = ({
   const baseItems = [
     { name: 'Home', icon: Home, path: '/home', accent: 'from-purple-500 to-purple-600' },
     { name: 'Explore', icon: Search, path: '/explore', accent: 'from-blue-500 to-cyan-500' },
+    { name: 'Reels', icon: Video, path: '/reels', accent: 'from-pink-500 to-red-500' },
     { name: 'Notifications', icon: Bell, path: '/notifications', accent: 'from-orange-500 to-red-500' },
     { name: 'Games', icon: Gamepad2, path: '/games', accent: 'from-green-500 to-emerald-500' },
     { name: 'Messages', icon: MessageCircle, path: '/messages', accent: 'from-pink-500 to-rose-500' },

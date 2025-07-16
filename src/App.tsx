@@ -22,8 +22,12 @@ import CreateProfessionalAccount from '@/pages/CreateProfessionalAccount';
 import ProfessionalAccountProfile from '@/pages/ProfessionalAccountProfile';
 import EditProfessionalAccount from '@/pages/EditProfessionalAccount';
 import BusinessDashboard from '@/pages/BusinessDashboard';
-import RegalAIEngine from '@/pages/RegalAIEngine';
+import BusinessAnalytics from '@/pages/BusinessAnalytics';
+import AdsManager from '@/pages/AdsManager';
+import AIStudio from '@/pages/AIStudio';
+import Explore from '@/pages/Explore';
 import Hashtag from '@/pages/Hashtag';
+import Pinned from '@/pages/Pinned';
 import AuthWrapper from '@/components/AuthWrapper';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
 
@@ -41,22 +45,26 @@ function App() {
                   <Route path="/" element={<Landing />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/home" element={<AuthWrapper><Home /></AuthWrapper>} />
+                  <Route path="/explore" element={<AuthWrapper><Explore /></AuthWrapper>} />
+                  <Route path="/reels" element={<AuthWrapper><Reels /></AuthWrapper>} />
                   <Route path="/profile/:userId" element={<AuthWrapper><Profile /></AuthWrapper>} />
                   <Route path="/hashtag/:hashtag" element={<AuthWrapper><Hashtag /></AuthWrapper>} />
                   <Route path="/messages" element={<AuthWrapper><Messages /></AuthWrapper>} />
                   <Route path="/notifications" element={<AuthWrapper><Notifications /></AuthWrapper>} />
                   <Route path="/gallery" element={<AuthWrapper><Gallery /></AuthWrapper>} />
                   <Route path="/settings" element={<AuthWrapper><Settings /></AuthWrapper>} />
-                  <Route path="/reels" element={<AuthWrapper><Reels /></AuthWrapper>} />
                   <Route path="/music" element={<AuthWrapper><Music /></AuthWrapper>} />
                   <Route path="/games" element={<AuthWrapper><Games /></AuthWrapper>} />
                   <Route path="/search" element={<AuthWrapper><Search /></AuthWrapper>} />
+                  <Route path="/pinned" element={<AuthWrapper><Pinned /></AuthWrapper>} />
                   <Route path="/professional" element={<AuthWrapper><Professional /></AuthWrapper>} />
                   <Route path="/create-professional" element={<AuthWrapper><CreateProfessionalAccount /></AuthWrapper>} />
                   <Route path="/professional/:pageId" element={<AuthWrapper><ProfessionalAccountProfile /></AuthWrapper>} />
                   <Route path="/edit-professional/:pageId" element={<AuthWrapper><EditProfessionalAccount /></AuthWrapper>} />
                   <Route path="/business-dashboard/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
-                  <Route path="/ai-engine" element={<AuthWrapper><RegalAIEngine /></AuthWrapper>} />
+                  <Route path="/business-analytics" element={<AuthWrapper><BusinessAnalytics /></AuthWrapper>} />
+                  <Route path="/ads-manager" element={<AuthWrapper><AdsManager /></AuthWrapper>} />
+                  <Route path="/ai-studio" element={<AuthWrapper><AIStudio /></AuthWrapper>} />
                 </Routes>
                 <Toaster />
                 <WebRTCCallManager />
