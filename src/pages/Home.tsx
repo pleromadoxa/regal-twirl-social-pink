@@ -1,16 +1,23 @@
 
 import { useAuth } from "@/contexts/AuthContext";
+import { testSupabaseConnection } from "@/integrations/supabase/client";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
 import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import { StoriesBar } from "@/components/StoriesBar";
 import HomeFeedNav from "@/components/HomeFeedNav";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Home = () => {
   const { user } = useAuth();
   const [feedFilter, setFeedFilter] = useState<'all' | 'professional' | 'trending'>('all');
+
+  
+  // Test Supabase connection on mount
+  useEffect(() => {
+    testSupabaseConnection();
+  }, []);
 
   if (!user) {
     return null;
