@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, Building2, Store, Users, Briefcase } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { BusinessType, BusinessPageData } from '@/types/business';
+import type { BusinessTypeOption, BusinessPageData } from '@/types/business';
 
 interface BusinessPageCreatorProps {
   onBusinessPageDataChange: (data: BusinessPageData) => void;
@@ -31,11 +32,11 @@ const BusinessPageCreator: React.FC<BusinessPageCreatorProps> = ({ onBusinessPag
     onBusinessPageDataChange({ ...businessPageData, [name]: value });
   };
 
-  const businessTypes: BusinessType[] = [
+  const businessTypes: BusinessTypeOption[] = [
     { value: 'restaurant', label: 'Restaurant', icon: <Store className="mr-2 h-4 w-4" /> },
-    { value: 'company', label: 'Company', icon: <Building2 className="mr-2 h-4 w-4" /> },
-    { value: 'community', label: 'Community', icon: <Users className="mr-2 h-4 w-4" /> },
-    { value: 'organization', label: 'Organization', icon: <Briefcase className="mr-2 h-4 w-4" /> },
+    { value: 'e-commerce', label: 'Company', icon: <Building2 className="mr-2 h-4 w-4" /> },
+    { value: 'other', label: 'Community', icon: <Users className="mr-2 h-4 w-4" /> },
+    { value: 'consulting', label: 'Organization', icon: <Briefcase className="mr-2 h-4 w-4" /> },
   ];
 
   return (
@@ -60,7 +61,7 @@ const BusinessPageCreator: React.FC<BusinessPageCreatorProps> = ({ onBusinessPag
         </div>
         <div className="grid gap-2">
           <Label htmlFor="businessType">Business Type</Label>
-          <Select onValueChange={(value) => handleSelectChange(value, "businessType")}>
+          <Select onValueChange={(value) => handleSelectChange(value, "business_type")}>
             <SelectTrigger id="businessType">
               <SelectValue placeholder="Select a business type" />
             </SelectTrigger>

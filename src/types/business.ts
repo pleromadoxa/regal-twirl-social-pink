@@ -15,7 +15,14 @@ export type BusinessType =
   | 'finance'
   | 'other';
 
+export interface BusinessTypeOption {
+  value: BusinessType;
+  label: string;
+  icon: React.ReactNode;
+}
+
 export interface BusinessPageData {
+  businessName: string;
   page_name: string;
   description: string;
   business_type: BusinessType;
@@ -23,4 +30,5 @@ export interface BusinessPageData {
   phone: string;
   website: string;
   address: string;
+  location: string;
 }
