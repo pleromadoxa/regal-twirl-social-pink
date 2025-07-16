@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, TrendingUp, Users, Hash, Image, Video, Music } from 'lucide-react';
+import { Search, TrendingUp, Users, Hash, Image, Video, Music, Fire, Star, Crown } from 'lucide-react';
 import UserSearch from '@/components/UserSearch';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
@@ -20,12 +20,14 @@ const Explore = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [trendingPosts, setTrendingPosts] = useState<any[]>([]);
+  const [featuredCreators, setFeaturedCreators] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const isMobile = useIsMobile();
   const { posts } = usePosts();
 
   useEffect(() => {
     fetchTrendingContent();
+    fetchFeaturedCreators();
   }, [activeTab]);
 
   const fetchTrendingContent = async () => {
@@ -62,6 +64,22 @@ const Explore = () => {
     }
   };
 
+  const fetchFeaturedCreators = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_verified', true)
+        .order('followers_count', { ascending: false })
+        .limit(6);
+
+      if (error) throw error;
+      setFeaturedCreators(data || []);
+    } catch (error) {
+      console.error('Error fetching featured creators:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex">
       <SidebarNav />
@@ -88,6 +106,38 @@ const Explore = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-12 h-12 text-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-purple-200 dark:border-purple-800 focus:border-purple-400 dark:focus:border-purple-600"
             />
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+              <CardContent className="p-4 text-center">
+                <Fire className="w-8 h-8 mx-auto mb-2" />
+                <p className="text-2xl font-bold">2.4k</p>
+                <p className="text-sm opacity-90">Trending Posts</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+              <CardContent className="p-4 text-center">
+                <Users className="w-8 h-8 mx-auto mb-2" />
+                <p className="text-2xl font-bold">125k</p>
+                <p className="text-sm opacity-90">Active Users</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+              <CardContent className="p-4 text-center">
+                <Hash className="w-8 h-8 mx-auto mb-2" />
+                <p className="text-2xl font-bold">850</p>
+                <p className="text-sm opacity-90">Trending Tags</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-pink-500 to-pink-600 text-white">
+              <CardContent className="p-4 text-center">
+                <Star className="w-8 h-8 mx-auto mb-2" />
+                <p className="text-2xl font-bold">45</p>
+                <p className="text-sm opacity-90">Featured Creators</p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Content Tabs */}
@@ -117,6 +167,40 @@ const Explore = () => {
 
             <TabsContent value="all" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Featured Creators */}
+                <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-purple-200/50 dark:border-purple-800/50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Crown className="w-5 h-5 text-yellow-500" />
+                      Featured Creators
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {featuredCreators.slice(0, 4).map((creator) => (
+                        <div key={creator.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                          <img 
+                            src={creator.avatar_url || '/placeholder.svg'}
+                            alt={creator.display_name}
+                            className="w-10 h-10 rounded-full"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-sm">{creator.display_name}</span>
+                              {creator.is_verified && <Crown className="w-3 h-3 text-blue-500" />}
+                            </div>
+                            <p className="text-xs text-gray-500">@{creator.username}</p>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {creator.followers_count} followers
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Trending Posts */}
                 <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-purple-200/50 dark:border-purple-800/50">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -154,9 +238,10 @@ const Explore = () => {
                     )}
                   </CardContent>
                 </Card>
-
-                <SponsoredPostsWidget />
               </div>
+
+              {/* Sponsored Posts Widget */}
+              <SponsoredPostsWidget />
             </TabsContent>
 
             <TabsContent value="users" className="space-y-6">
