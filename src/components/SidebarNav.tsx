@@ -47,8 +47,8 @@ const SidebarNav = () => {
   ];
 
   // Handle mobile responsive behavior
-  const sidebarWidth = isMobile ? (isCollapsed ? 'w-0' : 'w-full') : (isCollapsed ? 'w-16' : 'w-80');
-  const sidebarClass = `fixed left-0 top-0 h-full ${sidebarWidth} bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-r border-purple-200 dark:border-purple-800 z-40 transition-all duration-300 ${isMobile && isCollapsed ? '-translate-x-full' : 'translate-x-0'}`;
+  const sidebarWidth = isMobile ? (isCollapsed ? 'w-0' : 'w-80') : (isCollapsed ? 'w-16' : 'w-80');
+  const sidebarClass = `fixed left-0 top-0 h-full ${sidebarWidth} bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-r border-purple-200 dark:border-purple-800 z-40 transition-all duration-300 ${isMobile && isCollapsed ? '-translate-x-full' : 'translate-x-0'} max-w-[80vw]`;
 
   return (
     <>
