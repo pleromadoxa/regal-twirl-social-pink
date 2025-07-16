@@ -59,7 +59,14 @@ const BoostPostWidget = ({ postId, businessPageId }: BoostPostWidgetProps) => {
           post_id: postId,
           business_page_id: businessPageId,
           budget_amount: parseFloat(boostData.budget),
-          target_audience: boostData.audience,
+          budget_currency: 'USD',
+          sponsor_type: 'business',
+          target_audience: JSON.stringify({
+            audience: boostData.audience,
+            countries: boostData.countries,
+            ageRange: boostData.ageRange,
+            interests: boostData.interests
+          }),
           duration_days: parseInt(boostData.duration),
           status: 'pending',
           starts_at: new Date().toISOString(),
@@ -104,6 +111,7 @@ const BoostPostWidget = ({ postId, businessPageId }: BoostPostWidgetProps) => {
           title: adData.title,
           description: adData.description,
           budget_amount: parseFloat(adData.budget),
+          budget_currency: 'USD',
           duration_days: parseInt(adData.duration),
           ad_type: adData.adType,
           target_regions: adData.targetRegions,
