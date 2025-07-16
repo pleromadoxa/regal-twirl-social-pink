@@ -9,17 +9,17 @@ const TopNavigation = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Slogan */}
-          <Link to="/" className="flex items-center space-x-4">
+          <Link to="/" className="flex items-center space-x-5">
             <img 
               src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
               alt="Regal Network Logo" 
-              className="w-16 h-16 rounded-xl"
+              className="w-20 h-20 rounded-xl"
             />
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 text-lg text-gray-600 dark:text-gray-300">
-                <Heart className="w-4 h-4 text-red-400" />
+              <div className="flex items-center gap-1 text-xl font-medium text-gray-600 dark:text-gray-300">
+                <Heart className="w-5 h-5 text-red-400" />
                 <span>A Christian Social Network</span>
-                <Heart className="w-4 h-4 text-red-400" />
+                <Heart className="w-5 h-5 text-red-400" />
               </div>
             </div>
           </Link>
