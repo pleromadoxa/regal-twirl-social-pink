@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,6 @@ interface ThreadMessage {
 }
 
 interface ThreadUIProps {
-  messages?: ThreadMessage[];
   onReply?: (messageId: string) => void;
   onLike?: (messageId: string) => void;
   onShare?: (messageId: string) => void;
@@ -31,9 +30,8 @@ interface ThreadUIProps {
 
 const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
-  const [displayMessages, setDisplayMessages] = useState<ThreadMessage[]>([]);
 
-  // Static thread data that will always be displayed consistently
+  // Static thread data - never changes
   const staticThreadMessages: ThreadMessage[] = [
     {
       id: "1",
@@ -82,11 +80,6 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
     }
   ];
 
-  // Set static messages on component mount and never change them
-  useEffect(() => {
-    setDisplayMessages(staticThreadMessages);
-  }, []); // Empty dependency array ensures this only runs once
-
   const toggleThread = (messageId: string) => {
     const newExpanded = new Set(expandedThreads);
     if (newExpanded.has(messageId)) {
@@ -111,13 +104,7 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
   };
 
   const handleLike = (messageId: string) => {
-    setDisplayMessages(prev => 
-      prev.map(msg => 
-        msg.id === messageId 
-          ? { ...msg, isLiked: !msg.isLiked, likes: msg.isLiked ? msg.likes - 1 : msg.likes + 1 }
-          : msg
-      )
-    );
+    // Only handle the visual feedback, don't actually update the data
     onLike?.(messageId);
   };
 
@@ -251,14 +238,14 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
       {/* Content */}
       <div className="p-6">
         <div className="space-y-2">
-          {displayMessages.map((message) => (
+          {staticThreadMessages.map((message) => (
             <div key={message.id}>
               {renderMessage(message)}
               
               {/* Show replies if thread is expanded */}
               {expandedThreads.has(message.id) && (
                 <div className="ml-8 space-y-2 mt-2 border-l-2 border-slate-200 dark:border-slate-700 pl-4">
-                  {displayMessages
+                  {staticThreadMessages
                     .filter(m => m.level > message.level)
                     .slice(0, 3)
                     .map(reply => renderMessage(reply, true))}
