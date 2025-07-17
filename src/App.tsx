@@ -67,6 +67,7 @@ function App() {
                   <Route path="/business-dashboard/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
                   <Route path="/business-analytics" element={<AuthWrapper><BusinessAnalytics /></AuthWrapper>} />
                   <Route path="/business-management" element={<AuthWrapper><BusinessManagement /></AuthWrapper>} />
+                  <Route path="/business" element={<AuthWrapper><BusinessManagement /></AuthWrapper>} />
                   <Route path="/business/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
                   <Route path="/admin" element={<AuthWrapper><AdminDashboard /></AuthWrapper>} />
                   <Route path="/support" element={<AuthWrapper><Support /></AuthWrapper>} />
