@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Calendar, Link as LinkIcon, Crown } from 'lucide-react';
+import { MapPin, Calendar, Link as LinkIcon, Crown, Plus } from 'lucide-react';
 import PostsList from '@/components/PostsList';
 import ProfileActions from '@/components/ProfileActions';
 import VerificationBadge from '@/components/VerificationBadge';
@@ -25,6 +25,7 @@ import { useState } from 'react';
 const Profile = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { profile, loading, isFollowing, toggleFollow } = useProfile(userId);
   const { verificationLevel } = useVerifiedStatus(profile);
   const { galleryItems, loading: galleryLoading } = useGallery(userId);
@@ -133,16 +134,25 @@ const Profile = () => {
 
                 <div className="mt-16 flex gap-2">
                   {isOwnProfile && (
-                    <ProfileEditDialog
-                      trigger={
-                        <Button
-                          variant="outline"
-                          className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                        >
-                          Edit Profile
-                        </Button>
-                      }
-                    />
+                    <>
+                      <Button
+                        onClick={() => navigate('/')}
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Post
+                      </Button>
+                      <ProfileEditDialog
+                        trigger={
+                          <Button
+                            variant="outline"
+                            className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                          >
+                            Edit Profile
+                          </Button>
+                        }
+                      />
+                    </>
                   )}
                   {!isOwnProfile && (
                     <ProfileActions 
