@@ -64,14 +64,14 @@ const SidebarNav = () => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-purple-200 dark:border-purple-800">
-            <Link to="/home" className="flex items-center space-x-3">
+            <Link to="/home" className="flex flex-col items-center space-y-2">
               <img 
                 src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
                 alt="Regal Network Logo" 
-                className="w-10 h-10 rounded-xl"
+                className="w-16 h-16 rounded-xl"
               />
               {!isCollapsed && (
-                <div>
+                <div className="text-center">
                   <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                     Regal Network
                   </h1>
