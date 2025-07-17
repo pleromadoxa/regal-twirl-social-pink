@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,7 @@ export const useProfilePosts = (userId?: string) => {
     if (!userId) {
       console.log('useProfilePosts: No userId provided');
       setLoading(false);
+      setPosts([]);
       return;
     }
     
@@ -22,7 +24,7 @@ export const useProfilePosts = (userId?: string) => {
         .from('posts')
         .select(`
           *,
-          profiles (
+          profiles!posts_user_id_fkey (
             username,
             display_name,
             avatar_url,
@@ -34,7 +36,9 @@ export const useProfilePosts = (userId?: string) => {
 
       if (error) {
         console.error('useProfilePosts: Query error:', error);
-        throw error;
+        // Don't throw error, just log it and show empty state
+        setPosts([]);
+        return;
       }
 
       console.log('useProfilePosts: Raw data received:', postsData);
@@ -53,11 +57,7 @@ export const useProfilePosts = (userId?: string) => {
       setPosts(processedPosts);
     } catch (error) {
       console.error('Error fetching user posts:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load posts",
-        variant: "destructive",
-      });
+      setPosts([]);
     } finally {
       setLoading(false);
     }

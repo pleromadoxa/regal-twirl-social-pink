@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,7 @@ export const useProfileReels = (userId?: string) => {
     if (!userId) {
       console.log('useProfileReels: No userId provided');
       setLoading(false);
+      setReels([]);
       return;
     }
     
@@ -22,7 +24,7 @@ export const useProfileReels = (userId?: string) => {
         .from('reels')
         .select(`
           *,
-          profiles (
+          profiles!reels_user_id_fkey (
             username,
             display_name,
             avatar_url,
@@ -34,18 +36,16 @@ export const useProfileReels = (userId?: string) => {
 
       if (error) {
         console.error('useProfileReels: Query error:', error);
-        throw error;
+        // Don't throw error, just log it and show empty state
+        setReels([]);
+        return;
       }
 
       console.log('useProfileReels: Raw data received:', reelsData);
       setReels(reelsData || []);
     } catch (error) {
       console.error('Error fetching user reels:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load reels",
-        variant: "destructive",
-      });
+      setReels([]);
     } finally {
       setLoading(false);
     }
