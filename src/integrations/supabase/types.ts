@@ -433,6 +433,14 @@ export type Database = {
           customer_email: string
           customer_id: string | null
           customer_name: string
+          delivery_address: string | null
+          delivery_city: string | null
+          delivery_country: string | null
+          delivery_instructions: string | null
+          delivery_name: string | null
+          delivery_phone: string | null
+          delivery_postal_code: string | null
+          delivery_state: string | null
           id: string
           items: Json
           notes: string | null
@@ -453,6 +461,14 @@ export type Database = {
           customer_email: string
           customer_id?: string | null
           customer_name: string
+          delivery_address?: string | null
+          delivery_city?: string | null
+          delivery_country?: string | null
+          delivery_instructions?: string | null
+          delivery_name?: string | null
+          delivery_phone?: string | null
+          delivery_postal_code?: string | null
+          delivery_state?: string | null
           id?: string
           items?: Json
           notes?: string | null
@@ -473,6 +489,14 @@ export type Database = {
           customer_email?: string
           customer_id?: string | null
           customer_name?: string
+          delivery_address?: string | null
+          delivery_city?: string | null
+          delivery_country?: string | null
+          delivery_instructions?: string | null
+          delivery_name?: string | null
+          delivery_phone?: string | null
+          delivery_postal_code?: string | null
+          delivery_state?: string | null
           id?: string
           items?: Json
           notes?: string | null
@@ -760,6 +784,41 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cart_items: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string | null
+          quantity: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "business_products"
             referencedColumns: ["id"]
           },
         ]

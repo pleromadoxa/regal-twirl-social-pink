@@ -62,6 +62,7 @@ function App() {
                   <Route path="/pinned" element={<AuthWrapper><Pinned /></AuthWrapper>} />
                   <Route path="/professional" element={<AuthWrapper><Professional /></AuthWrapper>} />
                   <Route path="/create-professional" element={<AuthWrapper><CreateProfessionalAccount /></AuthWrapper>} />
+                  <Route path="/create-professional-account" element={<AuthWrapper><CreateProfessionalAccount /></AuthWrapper>} />
                   <Route path="/professional/:pageId" element={<AuthWrapper><ProfessionalAccountProfile /></AuthWrapper>} />
                   <Route path="/edit-professional/:pageId" element={<AuthWrapper><EditProfessionalAccount /></AuthWrapper>} />
                   <Route path="/business-dashboard/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />

@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import TrendingWidget from "./TrendingWidget";
 import NotificationDropdown from "./NotificationDropdown";
+import ShoppingCart from "./ShoppingCart";
 import UserSearch from "./UserSearch";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -70,6 +71,7 @@ const RightSidebar = () => {
           {/* Top actions */}
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
+              <ShoppingCart />
               <NotificationDropdown />
               {isAdmin && (
                 <Button

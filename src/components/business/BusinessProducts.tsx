@@ -9,7 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Package, Edit2, Trash2, Image, Percent } from 'lucide-react';
+import { useCart } from '@/hooks/useCart';
+import { Plus, Package, Edit2, Trash2, Image, Percent, ShoppingCart } from 'lucide-react';
 
 interface BusinessProductsProps {
   businessPage: any;
@@ -38,6 +39,7 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const { toast } = useToast();
+  const { addToCart } = useCart();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -51,6 +53,8 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
     discount_start_date: '',
     discount_end_date: ''
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
 
   useEffect(() => {
     fetchProducts();
@@ -70,6 +74,8 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
         discount_start_date: editingProduct.discount_start_date || '',
         discount_end_date: editingProduct.discount_end_date || ''
       });
+      setImagePreview(editingProduct.images?.[0] || '');
+      setImageFile(null);
     } else {
       setFormData({
         name: '',
@@ -83,6 +89,8 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
         discount_start_date: '',
         discount_end_date: ''
       });
+      setImagePreview('');
+      setImageFile(null);
     }
   }, [editingProduct]);
 
@@ -117,11 +125,49 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file);
+
+    if (error) throw error;
+
+    const { data: publicURL } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath);
+
+    return publicURL.publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.price) return;
 
     try {
+      let imageUrls: string[] = editingProduct?.images || [];
+      
+      // Upload new image if provided
+      if (imageFile) {
+        const imageUrl = await uploadImage(imageFile);
+        imageUrls = [imageUrl];
+      }
+
       const productData = {
         business_page_id: businessPage.id,
         name: formData.name,
@@ -132,6 +178,7 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
         stock_quantity: parseInt(formData.stock_quantity) || 0,
         category: formData.category,
         is_active: formData.is_active,
+        images: imageUrls,
         discount_percentage: parseFloat(formData.discount_percentage) || 0,
         discount_start_date: formData.discount_start_date || null,
         discount_end_date: formData.discount_end_date || null
@@ -304,6 +351,26 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
                 />
               </div>
 
+              <div>
+                <Label htmlFor="image">Product Image</Label>
+                <Input
+                  id="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="mb-2"
+                />
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img 
+                      src={imagePreview} 
+                      alt="Product preview" 
+                      className="w-32 h-32 object-cover rounded border"
+                    />
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="sku">SKU</Label>
@@ -436,8 +503,16 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-                      <Image className="w-12 h-12 text-gray-400" />
+                    <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden">
+                      {product.images && product.images.length > 0 ? (
+                        <img 
+                          src={product.images[0]} 
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Image className="w-12 h-12 text-gray-400" />
+                      )}
                     </div>
                     
                     <div className="space-y-2">
@@ -485,6 +560,15 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
                           {product.category}
                         </div>
                       )}
+                      
+                      <Button 
+                        onClick={() => addToCart(product.id)}
+                        className="w-full mt-2"
+                        disabled={!product.is_active || product.stock_quantity === 0}
+                      >
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Add to Cart
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

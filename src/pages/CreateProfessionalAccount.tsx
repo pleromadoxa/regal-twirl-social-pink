@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const CreateProfessionalAccount = () => {
   const { user } = useAuth();
@@ -34,13 +35,40 @@ const CreateProfessionalAccount = () => {
     setLoading(true);
     
     try {
-      // Here you would normally create the business page
+      if (!formData.pageName.trim()) {
+        toast({
+          title: "Page name required",
+          description: "Please provide a name for your business page.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('business_pages')
+        .insert({
+          owner_id: user.id,
+          page_name: formData.pageName,
+          description: formData.description,
+          email: formData.email,
+          phone: formData.phone,
+          website: formData.website,
+          address: formData.address,
+          page_type: 'business',
+          default_currency: 'USD'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
       toast({
         title: "Professional account created!",
         description: "Your business page has been set up successfully."
       });
-      navigate('/professional');
+      navigate(`/business-dashboard/${data.id}`);
     } catch (error) {
+      console.error('Error creating business page:', error);
       toast({
         title: "Error creating account",
         description: "Please try again later.",
