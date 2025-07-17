@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -127,6 +128,8 @@ export const useProfile = (userId?: string) => {
         }
 
         setIsFollowing(false);
+        
+        // Update local follower count immediately
         if (profile) {
           setProfile({
             ...profile,
@@ -166,6 +169,8 @@ export const useProfile = (userId?: string) => {
         }
 
         setIsFollowing(true);
+        
+        // Update local follower count immediately
         if (profile) {
           setProfile({
             ...profile,
@@ -178,6 +183,11 @@ export const useProfile = (userId?: string) => {
           description: "You are now following this user"
         });
       }
+
+      // Refetch profile to ensure accurate counts
+      setTimeout(() => {
+        fetchProfile();
+      }, 1000);
     } catch (error) {
       console.error('Error toggling follow:', error);
       toast({

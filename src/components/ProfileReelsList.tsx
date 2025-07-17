@@ -1,3 +1,4 @@
+
 import { useProfileReels } from '@/hooks/useProfileReels';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Play } from 'lucide-react';
@@ -9,9 +10,11 @@ interface ProfileReelsListProps {
 const ProfileReelsList = ({ userId }: ProfileReelsListProps) => {
   const { reels, loading } = useProfileReels(userId);
 
+  console.log('ProfileReelsList: userId =', userId, 'reels =', reels, 'loading =', loading);
+
   if (loading) {
     return (
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 p-4">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="aspect-[9/16] rounded-lg overflow-hidden">
             <Skeleton className="w-full h-full" />
@@ -30,11 +33,11 @@ const ProfileReelsList = ({ userId }: ProfileReelsListProps) => {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 gap-2 p-4">
       {reels.map((reel) => (
         <div
           key={reel.id}
-          className="aspect-[9/16] rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 relative group cursor-pointer"
+          className="aspect-[9/16] rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 relative group cursor-pointer hover:scale-105 transition-transform"
         >
           {reel.thumbnail_url && (
             <img
@@ -52,6 +55,13 @@ const ProfileReelsList = ({ userId }: ProfileReelsListProps) => {
               {reel.views_count || 0}
             </div>
           </div>
+          {reel.title && (
+            <div className="absolute top-2 left-2 right-2">
+              <div className="bg-black/50 text-white text-xs px-2 py-1 rounded truncate">
+                {reel.title}
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>

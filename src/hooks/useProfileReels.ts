@@ -20,53 +20,43 @@ export const useProfileReels = (userId?: string) => {
       setLoading(true);
       console.log('useProfileReels: Fetching reels for userId:', userId);
       
-      // First get reels
+      // Query reels directly with profile data
       const { data: reelsData, error: reelsError } = await supabase
         .from('reels')
-        .select('*')
+        .select(`
+          *,
+          profiles!user_id (
+            id,
+            username,
+            display_name,
+            avatar_url,
+            is_verified
+          )
+        `)
         .eq('user_id', userId)
+        .eq('is_public', true)
         .order('created_at', { ascending: false });
 
       if (reelsError) {
         console.error('useProfileReels: Reels query error:', reelsError);
+        toast({
+          title: "Error",
+          description: "Failed to load reels",
+          variant: "destructive"
+        });
         setReels([]);
         return;
       }
 
       console.log('useProfileReels: Reels data received:', reelsData);
-
-      if (!reelsData || reelsData.length === 0) {
-        setReels([]);
-        return;
-      }
-
-      // Then get the profile data for the user
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (profileError) {
-        console.error('useProfileReels: Profile query error:', profileError);
-        // Still show reels even if profile fails
-      }
-
-      const processedReels = reelsData.map(reel => ({
-        ...reel,
-        profiles: profileData || {
-          id: userId,
-          username: 'Unknown',
-          display_name: 'Unknown User',
-          avatar_url: null,
-          is_verified: false
-        }
-      }));
-
-      console.log('useProfileReels: Processed reels:', processedReels);
-      setReels(processedReels);
+      setReels(reelsData || []);
     } catch (error) {
       console.error('Error fetching user reels:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load reels",
+        variant: "destructive"
+      });
       setReels([]);
     } finally {
       setLoading(false);
