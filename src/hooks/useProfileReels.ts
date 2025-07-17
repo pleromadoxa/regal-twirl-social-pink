@@ -8,15 +8,21 @@ export const useProfileReels = (userId?: string) => {
   const { toast } = useToast();
 
   const fetchUserReels = async () => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('useProfileReels: No userId provided');
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);
+      console.log('useProfileReels: Fetching reels for userId:', userId);
+      
       const { data: reelsData, error } = await supabase
         .from('reels')
         .select(`
           *,
-          profiles:user_id (
+          profiles!reels_user_id_fkey (
             username,
             display_name,
             avatar_url,
@@ -26,8 +32,12 @@ export const useProfileReels = (userId?: string) => {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('useProfileReels: Query error:', error);
+        throw error;
+      }
 
+      console.log('useProfileReels: Raw data received:', reelsData);
       setReels(reelsData || []);
     } catch (error) {
       console.error('Error fetching user reels:', error);

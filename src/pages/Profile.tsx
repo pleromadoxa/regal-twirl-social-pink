@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MapPin, Calendar, Link as LinkIcon, Crown, Plus } from 'lucide-react';
 import ProfilePostsList from '@/components/ProfilePostsList';
 import ProfileReelsList from '@/components/ProfileReelsList';
+import ProfileRepliesList from '@/components/ProfileRepliesList';
 import ProfileActions from '@/components/ProfileActions';
 import VerificationBadge from '@/components/VerificationBadge';
 import ProfileEditDialog from '@/components/ProfileEditDialog';
@@ -277,19 +278,7 @@ const Profile = () => {
               </TabsContent>
 
             <TabsContent value="replies" className="mt-0">
-              <div className="space-y-4">
-                {userPosts && userPosts.length > 0 ? (
-                  userPosts.map((post) => (
-                    <div key={post.id} className="border-b border-slate-200 dark:border-slate-700 pb-4">
-                      <RepliesSection postId={post.id} />
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-                    {postsLoading ? 'Loading replies...' : 'No posts to show replies for'}
-                  </div>
-                )}
-              </div>
+              <ProfileRepliesList userId={userId} />
             </TabsContent>
 
             <TabsContent value="media" className="mt-0">

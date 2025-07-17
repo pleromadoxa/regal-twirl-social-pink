@@ -8,40 +8,48 @@ export const useProfilePosts = (userId?: string) => {
   const { toast } = useToast();
 
   const fetchUserPosts = async () => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('useProfilePosts: No userId provided');
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);
+      console.log('useProfilePosts: Fetching posts for userId:', userId);
+      
       const { data: postsData, error } = await supabase
         .from('posts')
         .select(`
           *,
-          profiles:user_id (
+          profiles!posts_user_id_fkey (
             username,
             display_name,
             avatar_url,
             is_verified
-          ),
-          likes:likes!post_id (count),
-          retweets:retweets!post_id (count),
-          replies:replies!post_id (count),
-          post_views:post_views!post_id (count)
+          )
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('useProfilePosts: Query error:', error);
+        throw error;
+      }
+
+      console.log('useProfilePosts: Raw data received:', postsData);
 
       const processedPosts = postsData?.map(post => ({
         ...post,
-        likes_count: post.likes?.[0]?.count || 0,
-        retweets_count: post.retweets?.[0]?.count || 0,
-        replies_count: post.replies?.[0]?.count || 0,
-        views_count: post.post_views?.[0]?.count || 0,
-        user_liked: false, // Would need to check if current user liked
-        user_retweeted: false, // Would need to check if current user retweeted
+        likes_count: post.likes_count || 0,
+        retweets_count: post.retweets_count || 0,
+        replies_count: post.replies_count || 0,
+        views_count: post.views_count || 0,
+        user_liked: false,
+        user_retweeted: false,
       })) || [];
 
+      console.log('useProfilePosts: Processed posts:', processedPosts);
       setPosts(processedPosts);
     } catch (error) {
       console.error('Error fetching user posts:', error);
