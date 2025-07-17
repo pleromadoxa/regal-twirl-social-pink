@@ -22,7 +22,7 @@ export const useProfileReels = (userId?: string) => {
         .from('reels')
         .select(`
           *,
-          profiles!reels_user_id_fkey (
+          profiles (
             username,
             display_name,
             avatar_url,
