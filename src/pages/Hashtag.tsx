@@ -1,77 +1,234 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Hash, 
-  TrendingUp, 
-  Users, 
-  Calendar,
-  Heart,
-  MessageCircle,
-  Repeat2,
-  Share
-} from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import SidebarNav from '@/components/SidebarNav';
-import RightSidebar from '@/components/RightSidebar';
-import UserLink from '@/components/UserLink';
-import { usePosts } from '@/hooks/usePosts';
-import PostCard from '@/components/PostCard';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import PostCard from '@/components/PostCard';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Hash, TrendingUp } from 'lucide-react';
+
+interface Post {
+  id: string;
+  content: string;
+  created_at: string;
+  image_urls: string[] | null;
+  audio_url: string | null;
+  user_id: string;
+  likes_count: number | null;
+  retweets_count: number | null;
+  replies_count: number | null;
+  views_count: number | null;
+  profiles: {
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
+  likes: { user_id: string }[];
+  retweets: { user_id: string }[];
+  pinned_posts: { user_id: string }[];
+}
 
 const Hashtag = () => {
-  const { hashtag } = useParams();
-  const { posts, loading, toggleLike, toggleRetweet, togglePin, deletePost, trackPostView } = usePosts();
+  const { hashtag } = useParams<{ hashtag: string }>();
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
-  const [popularPosts, setPopularPosts] = useState<any[]>([]);
-  const [stats, setStats] = useState({
-    totalPosts: 0,
-    recentGrowth: '+15%',
-    topContributors: 0,
-    trending: true
-  });
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ totalPosts: 0, todayPosts: 0 });
 
-  // Filter posts by hashtag with exact matching
   useEffect(() => {
-    if (!hashtag || !posts.length) {
-      setFilteredPosts([]);
-      setPopularPosts([]);
-      return;
+    if (hashtag) {
+      fetchHashtagPosts();
+      fetchHashtagStats();
     }
+  }, [hashtag]);
 
-    // Create more precise hashtag pattern that matches word boundaries
-    const hashtagPattern = new RegExp(`#${hashtag}(?=\\s|$|[^a-zA-Z0-9_])`, 'i');
-    const filtered = posts.filter(post => 
-      hashtagPattern.test(post.content)
-    );
+  const fetchHashtagPosts = async () => {
+    if (!hashtag) return;
 
-    // Sort by creation date for recent tab
-    const recent = [...filtered].sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          profiles (username, display_name, avatar_url),
+          likes (user_id),
+          retweets (user_id),
+          pinned_posts (user_id)
+        `)
+        .ilike('content', `%#${hashtag}%`)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-    // Sort by engagement (likes + retweets + replies) for popular tab
-    const popular = [...filtered].sort((a, b) => {
-      const engagementA = (a.likes_count || 0) + (a.retweets_count || 0) + (a.replies_count || 0);
-      const engagementB = (b.likes_count || 0) + (b.retweets_count || 0) + (b.replies_count || 0);
-      return engagementB - engagementA;
-    });
+      if (error) throw error;
+      setPosts(data || []);
+    } catch (error) {
+      console.error('Error fetching hashtag posts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load hashtag posts",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    setFilteredPosts(recent);
-    setPopularPosts(popular);
+  const fetchHashtagStats = async () => {
+    if (!hashtag) return;
 
-    // Update stats
-    const uniqueContributors = new Set(filtered.map(post => post.user_id)).size;
-    setStats(prev => ({
-      ...prev,
-      totalPosts: filtered.length,
-      topContributors: uniqueContributors
-    }));
-  }, [hashtag, posts]);
+    try {
+      // Total posts with this hashtag
+      const { count: totalCount } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .ilike('content', `%#${hashtag}%`);
+
+      // Posts from today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { count: todayCount } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .ilike('content', `%#${hashtag}%`)
+        .gte('created_at', today.toISOString());
+
+      setStats({
+        totalPosts: totalCount || 0,
+        todayPosts: todayCount || 0
+      });
+    } catch (error) {
+      console.error('Error fetching hashtag stats:', error);
+    }
+  };
+
+  const handleLike = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      const post = posts.find(p => p.id === postId);
+      const isLiked = post?.likes.some(like => like.user_id === user.id);
+
+      if (isLiked) {
+        await supabase
+          .from('likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+      } else {
+        await supabase
+          .from('likes')
+          .insert({ post_id: postId, user_id: user.id });
+      }
+
+      // Update local state
+      setPosts(prev => prev.map(p => {
+        if (p.id === postId) {
+          const newLikes = isLiked 
+            ? p.likes.filter(l => l.user_id !== user.id)
+            : [...p.likes, { user_id: user.id }];
+          return {
+            ...p,
+            likes: newLikes,
+            likes_count: newLikes.length
+          };
+        }
+        return p;
+      }));
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
+
+  const handleRetweet = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      const post = posts.find(p => p.id === postId);
+      const isRetweeted = post?.retweets.some(rt => rt.user_id === user.id);
+
+      if (isRetweeted) {
+        await supabase
+          .from('retweets')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+      } else {
+        await supabase
+          .from('retweets')
+          .insert({ post_id: postId, user_id: user.id });
+      }
+
+      // Update local state
+      setPosts(prev => prev.map(p => {
+        if (p.id === postId) {
+          const newRetweets = isRetweeted 
+            ? p.retweets.filter(rt => rt.user_id !== user.id)
+            : [...p.retweets, { user_id: user.id }];
+          return {
+            ...p,
+            retweets: newRetweets,
+            retweets_count: newRetweets.length
+          };
+        }
+        return p;
+      }));
+    } catch (error) {
+      console.error('Error toggling retweet:', error);
+    }
+  };
+
+  const handlePin = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      const post = posts.find(p => p.id === postId);
+      const isPinned = post?.pinned_posts?.some(pin => pin.user_id === user.id);
+
+      if (isPinned) {
+        await supabase
+          .from('pinned_posts')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+      } else {
+        await supabase
+          .from('pinned_posts')
+          .insert({ post_id: postId, user_id: user.id });
+      }
+
+      fetchHashtagPosts();
+    } catch (error) {
+      console.error('Error toggling pin:', error);
+    }
+  };
+
+  const handleDelete = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', user.id);
+
+      setPosts(prev => prev.filter(p => p.id !== postId));
+      toast({
+        title: "Success",
+        description: "Post deleted successfully"
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete post",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleShare = async (postId: string) => {
     const post = posts.find(p => p.id === postId);
@@ -90,7 +247,6 @@ const Hashtag = () => {
         // User cancelled sharing or error occurred
       }
     } else {
-      // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(shareUrl);
         toast({
@@ -107,135 +263,97 @@ const Hashtag = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-      <SidebarNav />
-      
-      <div className="flex-1 flex gap-6 pl-80">
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
-          <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
-                <Hash className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  #{hashtag}
-                </h1>
-                <p className="text-slate-600 dark:text-slate-400">
-                  {stats.totalPosts.toLocaleString()} posts
-                </p>
-              </div>
-              {stats.trending && (
-                <Badge className="bg-green-100 text-green-700 ml-auto">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  Trending
-                </Badge>
-              )}
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold text-purple-600">{stats.totalPosts.toLocaleString()}</p>
-                <p className="text-sm text-slate-500">Total Posts</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-green-600">{stats.recentGrowth}</p>
-                <p className="text-sm text-slate-500">Recent Growth</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-blue-600">{stats.topContributors}</p>
-                <p className="text-sm text-slate-500">Contributors</p>
-              </div>
-            </div>
-          </div>
+  const handleTrackView = async (postId: string) => {
+    try {
+      await supabase
+        .from('post_views')
+        .insert({
+          post_id: postId,
+          viewer_id: user?.id || null
+        });
+    } catch (error) {
+      // Silently handle view tracking errors
+    }
+  };
 
-          <div className="p-6">
-            <Tabs defaultValue="recent" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="recent">Recent</TabsTrigger>
-                <TabsTrigger value="popular">Popular</TabsTrigger>
-                <TabsTrigger value="people">People</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="recent" className="space-y-4">
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                  </div>
-                ) : filteredPosts.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Hash className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-600 dark:text-slate-400">
-                      No posts found
-                    </h3>
-                    <p className="text-slate-500 dark:text-slate-500">
-                      Be the first to post about #{hashtag}!
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {filteredPosts.map((post) => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        onLike={toggleLike}
-                        onRetweet={toggleRetweet}
-                        onPin={togglePin}
-                        onDelete={deletePost}
-                        onShare={handleShare}
-                        onTrackView={trackPostView}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="popular">
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                  </div>
-                ) : popularPosts.length === 0 ? (
-                  <div className="text-center py-12">
-                    <TrendingUp className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-600 dark:text-slate-400">
-                      No popular posts yet
-                    </h3>
-                    <p className="text-slate-500 dark:text-slate-500">
-                      Posts with #{hashtag} will appear here when they gain popularity!
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {popularPosts.map((post) => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        onLike={toggleLike}
-                        onRetweet={toggleRetweet}
-                        onPin={togglePin}
-                        onDelete={deletePost}
-                        onShare={handleShare}
-                        onTrackView={trackPostView}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="people">
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                  <p className="text-slate-500">People who post about #{hashtag} coming soon!</p>
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <div className="mb-6">
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+              <div className="flex space-x-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-1/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
                 </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </main>
-        
-        <RightSidebar />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto p-4">
+      {/* Hashtag Header */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+        <div className="flex items-center space-x-3 mb-3">
+          <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+            <Hash className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            #{hashtag}
+          </h1>
+        </div>
+        
+        <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center space-x-1">
+            <TrendingUp className="w-4 h-4" />
+            <span>{stats.totalPosts} posts</span>
+          </div>
+          <div>
+            <span>{stats.todayPosts} today</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Posts */}
+      {posts.length > 0 ? (
+        <div className="space-y-4">
+          {posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              onLike={() => handleLike(post.id)}
+              onRetweet={() => handleRetweet(post.id)}
+              onPin={() => handlePin(post.id)}
+              onDelete={() => handleDelete(post.id)}
+              onShare={handleShare}
+              onTrackView={() => handleTrackView(post.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Hash className="w-8 h-8 text-purple-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            No posts found
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400">
+            Be the first to post with #{hashtag}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

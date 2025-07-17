@@ -75,12 +75,12 @@ const PostsList = () => {
         <PostCard
           key={post.id}
           post={post}
-          onLike={toggleLike}
-          onRetweet={toggleRetweet}
-          onPin={togglePin}
-          onDelete={deletePost}
+          onLike={() => toggleLike(post.id)}
+          onRetweet={() => toggleRetweet(post.id)}
+          onPin={() => togglePin(post.id)}
+          onDelete={() => deletePost(post.id)}
           onShare={handleShare}
-          onTrackView={trackPostView}
+          onTrackView={() => trackPostView(post.id)}
         />
       ))}
     </div>

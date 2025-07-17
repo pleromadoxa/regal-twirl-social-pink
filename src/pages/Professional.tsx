@@ -1,374 +1,407 @@
+
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
-import SidebarNav from '@/components/SidebarNav';
-import RightSidebar from '@/components/RightSidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Building2, Users, TrendingUp, DollarSign, BarChart3, Megaphone, Settings } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import BoostPostWidget from '@/components/BoostPostWidget';
-import { supabase } from '@/integrations/supabase/client';
+import { 
+  Building, 
+  Plus, 
+  Search, 
+  Users, 
+  Star, 
+  TrendingUp, 
+  Crown,
+  BarChart3,
+  Target,
+  DollarSign
+} from 'lucide-react';
 
 const Professional = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { myPages, pages, loading } = useBusinessPages();
-  const [recentPosts, setRecentPosts] = useState<any[]>([]);
-  const [adsStats, setAdsStats] = useState({ active: 0, total_spend: 0, impressions: 0 });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredPages, setFilteredPages] = useState(pages);
+  const [activeTab, setActiveTab] = useState('discover');
 
   useEffect(() => {
-    if (myPages && myPages.length > 0) {
-      fetchRecentPosts();
-      fetchAdsStats();
+    if (searchQuery.trim()) {
+      const filtered = pages.filter(page => 
+        page.page_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        page.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        page.page_type.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredPages(filtered);
+    } else {
+      setFilteredPages(pages);
     }
-  }, [myPages]);
+  }, [searchQuery, pages]);
 
-  const fetchRecentPosts = async () => {
-    if (!user || !myPages?.length) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      
-      if (error) throw error;
-      setRecentPosts(data || []);
-    } catch (error) {
-      console.error('Error fetching recent posts:', error);
+  const handleCreateAccount = () => {
+    navigate('/create-professional-account');
+  };
+
+  const handleViewAccount = (pageId: string) => {
+    navigate(`/professional/${pageId}`);
+  };
+
+  const handleManageAccount = (pageId: string) => {
+    navigate(`/business/${pageId}`);
+  };
+
+  const getAccountIcon = (type: string) => {
+    switch (type) {
+      case 'business':
+        return <Building className="w-4 h-4 text-purple-600" />;
+      case 'organization':
+        return <Users className="w-4 h-4 text-blue-600" />;
+      case 'professional':
+        return <Star className="w-4 h-4 text-green-600" />;
+      default:
+        return <Building className="w-4 h-4 text-gray-600" />;
     }
   };
 
-  const fetchAdsStats = async () => {
-    if (!myPages?.length) return;
+  const getBusinessTypeBadge = (businessType: string | null) => {
+    if (!businessType) return null;
     
-    try {
-      const pageIds = myPages.map(page => page.id);
-      const { data, error } = await supabase
-        .from('business_ads')
-        .select(`
-          *,
-          ad_analytics(impressions, spent_amount)
-        `)
-        .in('business_page_id', pageIds);
-      
-      if (error) throw error;
-      
-      const stats = data?.reduce((acc, ad) => {
-        acc.active += ad.status === 'active' ? 1 : 0;
-        acc.total_spend += ad.spent_amount || 0;
-        acc.impressions += ad.impressions || 0;
-        return acc;
-      }, { active: 0, total_spend: 0, impressions: 0 }) || { active: 0, total_spend: 0, impressions: 0 };
-      
-      setAdsStats(stats);
-    } catch (error) {
-      console.error('Error fetching ads stats:', error);
-    }
+    const colors = {
+      'retail': 'bg-blue-100 text-blue-700',
+      'service': 'bg-green-100 text-green-700',
+      'tech': 'bg-purple-100 text-purple-700',
+      'healthcare': 'bg-red-100 text-red-700',
+      'education': 'bg-yellow-100 text-yellow-700',
+      'finance': 'bg-indigo-100 text-indigo-700'
+    };
+    
+    return (
+      <Badge variant="outline" className={colors[businessType as keyof typeof colors] || 'bg-gray-100 text-gray-700'}>
+        {businessType}
+      </Badge>
+    );
   };
-
-  if (!user) {
-    return null;
-  }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-        <SidebarNav />
-        <div className="flex-1 flex items-center justify-center pl-80 pr-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading professional dashboard...</p>
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-48 bg-gray-200 rounded-lg"></div>
+            ))}
           </div>
         </div>
-        <RightSidebar />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-      <SidebarNav />
-      
-      <div className="flex-1 flex gap-8 pl-80 pr-[400px] max-w-full overflow-hidden">
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-4xl mx-auto min-w-0">
-          {/* Header */}
-          <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
-                  <Building2 className="w-6 h-6 text-purple-600" />
-                  Professional Dashboard
-                </h1>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">
-                  Manage your business presence and grow your audience
-                </p>
-              </div>
-              <Link to="/create-professional">
-                <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Page
-                </Button>
-              </Link>
-            </div>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
+            <Building className="w-8 h-8 text-purple-600" />
+            Professional Accounts
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Discover and connect with professional accounts on Regal Network
+          </p>
+        </div>
+        <Button 
+          onClick={handleCreateAccount}
+          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Create Account
+        </Button>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="discover">Discover</TabsTrigger>
+          <TabsTrigger value="my-accounts">My Accounts</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="discover" className="space-y-6">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search professional accounts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
 
-          {/* Quick Stats */}
-          <div className="p-6 border-b border-purple-200 dark:border-purple-800">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
-                <CardContent className="p-4 text-center">
-                  <Building2 className="w-8 h-8 mx-auto mb-2" />
-                  <p className="text-2xl font-bold">{myPages?.length || 0}</p>
-                  <p className="text-sm opacity-90">Business Pages</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gradient-to-br from-green-500 to-emerald-500 text-white">
-                <CardContent className="p-4 text-center">
-                  <Users className="w-8 h-8 mx-auto mb-2" />
-                  <p className="text-2xl font-bold">
-                    {myPages?.reduce((sum, page) => sum + (page.followers_count || 0), 0) || 0}
-                  </p>
-                  <p className="text-sm opacity-90">Total Followers</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gradient-to-br from-purple-500 to-violet-500 text-white">
-                <CardContent className="p-4 text-center">
-                  <Megaphone className="w-8 h-8 mx-auto mb-2" />
-                  <p className="text-2xl font-bold">{adsStats.active}</p>
-                  <p className="text-sm opacity-90">Active Ads</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gradient-to-br from-orange-500 to-red-500 text-white">
-                <CardContent className="p-4 text-center">
-                  <DollarSign className="w-8 h-8 mx-auto mb-2" />
-                  <p className="text-2xl font-bold">${adsStats.total_spend.toFixed(2)}</p>
-                  <p className="text-sm opacity-90">Ad Spend</p>
-                </CardContent>
-              </Card>
-            </div>
+          {/* Featured Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Accounts</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pages.length}</p>
+                  </div>
+                  <Building className="w-8 h-8 text-purple-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Verified</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      {pages.filter(p => p.is_verified).length}
+                    </p>
+                  </div>
+                  <Crown className="w-8 h-8 text-yellow-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Active Today</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      {Math.floor(pages.length * 0.3)}
+                    </p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Main Content */}
-          <div className="p-6">
-            <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="pages">Business Pages</TabsTrigger>
-                <TabsTrigger value="ads">Advertising</TabsTrigger>
-                <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview" className="space-y-6">
-                {/* Business Pages Overview */}
-                <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="w-5 h-5" />
-                      Your Business Pages
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {myPages && myPages.length > 0 ? (
-                      <div className="space-y-4">
-                        {myPages.map((page) => (
-                          <div key={page.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold">
-                                {page.page_name[0]}
-                              </div>
-                              <div>
-                                <h3 className="font-semibold">{page.page_name}</h3>
-                                <p className="text-sm text-gray-500">{page.followers_count} followers</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {page.is_verified && (
-                                <Badge variant="secondary">Verified</Badge>
-                              )}
-                              <Link to={`/professional/${page.id}`}>
-                                <Button variant="outline" size="sm">View</Button>
-                              </Link>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Building2 className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">No business pages yet</h3>
-                        <p className="text-gray-500 mb-4">Create your first business page to get started</p>
-                        <Link to="/create-professional">
-                          <Button>Create Business Page</Button>
-                        </Link>
-                      </div>
+          {/* Professional Accounts Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredPages.map((account) => (
+              <Card key={account.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <Avatar className="w-12 h-12 border-2 border-purple-200 group-hover:border-purple-400 transition-colors">
+                      <AvatarImage src={account.page_avatar_url || account.avatar_url || undefined} />
+                      <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white font-semibold">
+                        {account.page_name[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    {account.is_verified && (
+                      <Crown className="w-5 h-5 text-yellow-500" />
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
 
-                {/* Recent Posts with Boost Options */}
-                {recentPosts.length > 0 && (
-                  <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5" />
-                        Recent Posts - Boost Performance
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {recentPosts.slice(0, 3).map((post) => (
-                          <div key={post.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <div className="flex-1">
-                              <p className="text-sm line-clamp-2">{post.content}</p>
-                              <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                                <span>{post.likes_count} likes</span>
-                                <span>{post.retweets_count} shares</span>
-                                <span>{post.views_count} views</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {myPages && myPages.length > 0 && (
-                                <BoostPostWidget 
-                                  postId={post.id} 
-                                  businessPageId={myPages[0].id} 
-                                />
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="pages">
-                <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-                  <CardHeader>
-                    <CardTitle>Manage Business Pages</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {myPages && myPages.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {myPages.map((page) => (
-                          <div key={page.id} className="border rounded-lg p-4">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-xl">
-                                {page.page_name[0]}
-                              </div>
-                              <div>
-                                <h3 className="text-lg font-semibold">{page.page_name}</h3>
-                                <p className="text-sm text-gray-500">{page.category}</p>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                              <div className="text-center">
-                                <p className="text-2xl font-bold text-purple-600">{page.followers_count}</p>
-                                <p className="text-xs text-gray-500">Followers</p>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-2xl font-bold text-green-600">{page.posts_count || 0}</p>
-                                <p className="text-xs text-gray-500">Posts</p>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Link to={`/professional/${page.id}`} className="flex-1">
-                                <Button variant="outline" className="w-full">View Page</Button>
-                              </Link>
-                              <Link to={`/edit-professional/${page.id}`}>
-                                <Button variant="ghost" size="sm">
-                                  <Settings className="w-4 h-4" />
-                                </Button>
-                              </Link>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <Building2 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                        <h3 className="text-xl font-semibold mb-2">Create Your Business Presence</h3>
-                        <p className="text-gray-500 mb-6">Build your professional brand and reach more customers</p>
-                        <Link to="/create-professional">
-                          <Button size="lg">Get Started</Button>
-                        </Link>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="ads">
-                <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Megaphone className="w-5 h-5" />
-                      Advertising & Promotion
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                      <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <Megaphone className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-                        <p className="text-2xl font-bold">{adsStats.active}</p>
-                        <p className="text-sm text-gray-600">Active Campaigns</p>
-                      </div>
-                      <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                        <TrendingUp className="w-8 h-8 mx-auto mb-2 text-green-600" />
-                        <p className="text-2xl font-bold">{adsStats.impressions.toLocaleString()}</p>
-                        <p className="text-sm text-gray-600">Total Impressions</p>
-                      </div>
-                      <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                        <DollarSign className="w-8 h-8 mx-auto mb-2 text-orange-600" />
-                        <p className="text-2xl font-bold">${adsStats.total_spend.toFixed(2)}</p>
-                        <p className="text-sm text-gray-600">Total Spend</p>
-                      </div>
+                  <div className="space-y-2 mb-4">
+                    <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 group-hover:text-purple-600 transition-colors">
+                      {account.page_name}
+                    </h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {getAccountIcon(account.page_type)}
+                      <Badge variant="outline" className="text-xs">
+                        {account.page_type.charAt(0).toUpperCase() + account.page_type.slice(1)}
+                      </Badge>
+                      {account.business_type && getBusinessTypeBadge(account.business_type)}
                     </div>
-                    
-                    <div className="text-center">
-                      <h3 className="text-lg font-semibold mb-2">Boost Your Content</h3>
-                      <p className="text-gray-600 mb-4">Reach more people and grow your audience with targeted advertising</p>
-                      {myPages && myPages.length > 0 ? (
-                        <BoostPostWidget businessPageId={myPages[0].id} />
-                      ) : (
-                        <p className="text-sm text-gray-500">Create a business page first to start advertising</p>
+                  </div>
+
+                  {account.description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                      {account.description}
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-500 mb-4">
+                    <span>{account.followers_count || 0} followers</span>
+                    <span>0 posts</span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleViewAccount(account.id)}
+                      className="flex-1"
+                    >
+                      View
+                    </Button>
+                    {account.owner_id === user?.id && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleManageAccount(account.id)}
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      >
+                        Manage
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {filteredPages.length === 0 && (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Building className="w-8 h-8 text-purple-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                No accounts found
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
+                {searchQuery ? 'Try adjusting your search terms' : 'Be the first to create a professional account'}
+              </p>
+              <Button onClick={handleCreateAccount} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Account
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="my-accounts" className="space-y-6">
+          {myPages.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {myPages.map((account) => (
+                <Card key={account.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <Avatar className="w-12 h-12 border-2 border-green-200">
+                        <AvatarImage src={account.page_avatar_url || account.avatar_url || undefined} />
+                        <AvatarFallback className="bg-gradient-to-r from-green-400 to-blue-400 text-white font-semibold">
+                          {account.page_name[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      {account.is_verified && (
+                        <Crown className="w-5 h-5 text-yellow-500" />
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
 
-              <TabsContent value="analytics">
-                <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5" />
-                      Performance Analytics
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-12">
-                      <BarChart3 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-xl font-semibold mb-2">Analytics Coming Soon</h3>
-                      <p className="text-gray-500">Detailed performance metrics and insights will be available here</p>
+                    <div className="space-y-2 mb-4">
+                      <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                        {account.page_name}
+                      </h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {getAccountIcon(account.page_type)}
+                        <Badge variant="outline" className="text-xs">
+                          {account.page_type.charAt(0).toUpperCase() + account.page_type.slice(1)}
+                        </Badge>
+                        {account.business_type && getBusinessTypeBadge(account.business_type)}
+                      </div>
                     </div>
+
+                    {account.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                        {account.description}
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-500 mb-4">
+                      <span>{account.followers_count || 0} followers</span>
+                      <span>0 posts</span>
+                    </div>
+
+                    <Button
+                      onClick={() => handleManageAccount(account.id)}
+                      className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
+                    >
+                      Manage Account
+                    </Button>
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Building className="w-8 h-8 text-purple-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                You haven't created any professional accounts yet
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
+                Create your first professional account to start building your business presence
+              </p>
+              <Button onClick={handleCreateAccount} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Account
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">$0</p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Ad Impressions</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">0</p>
+                  </div>
+                  <Target className="w-8 h-8 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">0%</p>
+                  </div>
+                  <BarChart3 className="w-8 h-8 text-purple-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Active Campaigns</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">0</p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-orange-600" />
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </main>
-      </div>
-      
-      <RightSidebar />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Professional Account Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">
+                  Analytics data will appear here once you start creating ads and promoting your professional accounts
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
