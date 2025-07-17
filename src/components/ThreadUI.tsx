@@ -29,12 +29,12 @@ interface ThreadUIProps {
   onShare?: (messageId: string) => void;
 }
 
-const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) => {
+const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   const [displayMessages, setDisplayMessages] = useState<ThreadMessage[]>([]);
 
-  // Sample thread data that will always be available
-  const sampleThreadMessages: ThreadMessage[] = [
+  // Static thread data that will always be displayed consistently
+  const staticThreadMessages: ThreadMessage[] = [
     {
       id: "1",
       author: {
@@ -43,8 +43,8 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
         avatar: "/placeholder.svg",
         verified: true
       },
-      content: "📸 **Frame it right! 🖼️**\n\nEvery great photo tells a story. What's the story behind your latest snap? Drop your favorite photo moment below and let's inspire each other! ✨\n\n#Photography #PhotoOfTheDay #CaptureTheMoment #InstaGood #ShootLocal #PhotoLove",
-      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+      content: "🙏 **Daily Reflection** 📖\n\nEven in our darkest moments, God's light shines through. Remember that every challenge is an opportunity for growth and every setback is a setup for a comeback! ✨\n\nWhat's one thing you're grateful for today? Share your blessings below! 💕\n\n#Faith #Gratitude #BlessedLife #DailyReflection",
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
       likes: 24,
       replies: 5,
       isLiked: false,
@@ -58,8 +58,8 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
         avatar: "/placeholder.svg",
         verified: false
       },
-      content: "Love this! Photography has been such a blessing in my life. It helps me see God's beauty in everything around us. 📷✨",
-      timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+      content: "Thank you for this beautiful reminder! I'm grateful for my family's health and the opportunity to serve others in my community. God is good! 🙏✨",
+      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
       likes: 12,
       replies: 2,
       isLiked: true,
@@ -73,8 +73,8 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
         avatar: "/placeholder.svg",
         verified: false
       },
-      content: "This is so inspiring! I just started my photography journey and this community is amazing! 🙏",
-      timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
+      content: "Amen! I'm grateful for second chances and the grace that covers us daily. His mercies are new every morning! 🌅",
+      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
       likes: 8,
       replies: 1,
       isLiked: false,
@@ -82,11 +82,10 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
     }
   ];
 
-  // Always use sample data to ensure stability
+  // Set static messages on component mount and never change them
   useEffect(() => {
-    const messagesToUse = messages && messages.length > 0 ? messages : sampleThreadMessages;
-    setDisplayMessages(messagesToUse);
-  }, [messages]);
+    setDisplayMessages(staticThreadMessages);
+  }, []); // Empty dependency array ensures this only runs once
 
   const toggleThread = (messageId: string) => {
     const newExpanded = new Set(expandedThreads);
@@ -251,40 +250,23 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
       
       {/* Content */}
       <div className="p-6">
-        {displayMessages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 space-y-6">
-            <div className="relative">
-              <div className="w-24 h-24 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center">
-                <Users className="w-12 h-12 text-purple-500/60" />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full animate-pulse" />
+        <div className="space-y-2">
+          {displayMessages.map((message) => (
+            <div key={message.id}>
+              {renderMessage(message)}
+              
+              {/* Show replies if thread is expanded */}
+              {expandedThreads.has(message.id) && (
+                <div className="ml-8 space-y-2 mt-2 border-l-2 border-slate-200 dark:border-slate-700 pl-4">
+                  {displayMessages
+                    .filter(m => m.level > message.level)
+                    .slice(0, 3)
+                    .map(reply => renderMessage(reply, true))}
+                </div>
+              )}
             </div>
-            <div className="text-center space-y-2">
-              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Join the Conversation</h3>
-              <p className="text-slate-600 dark:text-slate-400 max-w-md">
-                Share your thoughts, connect with others, and be part of meaningful discussions in our community!
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {displayMessages.map((message) => (
-              <div key={message.id}>
-                {renderMessage(message)}
-                
-                {/* Show replies if thread is expanded */}
-                {expandedThreads.has(message.id) && (
-                  <div className="ml-8 space-y-2 mt-2 border-l-2 border-slate-200 dark:border-slate-700 pl-4">
-                    {displayMessages
-                      .filter(m => m.level > message.level)
-                      .slice(0, 3)
-                      .map(reply => renderMessage(reply, true))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );
