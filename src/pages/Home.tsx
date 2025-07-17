@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 const Home = () => {
   const { user } = useAuth();
   const [feedFilter, setFeedFilter] = useState<'all' | 'professional' | 'trending'>('all');
+  const [threadMessages, setThreadMessages] = useState([]);
 
   // Sample thread data that will always be available
   const sampleThreadMessages = [
@@ -24,34 +25,74 @@ const Home = () => {
         avatar: "/placeholder.svg",
         verified: true
       },
-      content: "📸 **Frame it right! 🖼️** \n\nEvery great photo tells a story. What's the story behind your latest snap? Drop your favorite photo moment below and let's inspire each other! ✨\n\n#Photography #PhotoOfTheDay #CaptureTheMoment #InstaGood #ShootLocal #PhotoLove",
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-      likes: 15,
-      replies: 3,
+      content: "🙏 **Daily Reflection** 📖\n\nEven in our darkest moments, God's light shines through. Remember that every challenge is an opportunity for growth and every setback is a setup for a comeback! ✨\n\nWhat's one thing you're grateful for today? Share your blessings below! 💕\n\n#Faith #Gratitude #BlessedLife #DailyReflection",
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      likes: 24,
+      replies: 5,
       isLiked: false,
       level: 0
     },
     {
       id: "2",
       author: {
-        name: "Jane Smith",
-        username: "janesmith",
+        name: "Sarah Grace",
+        username: "sarahgrace",
         avatar: "/placeholder.svg",
         verified: false
       },
-      content: "Love this! Here's my latest sunset shot from the beach 🌅",
-      timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
+      content: "Thank you for this beautiful reminder! I'm grateful for my family's health and the opportunity to serve others in my community. God is good! 🙏✨",
+      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
+      likes: 12,
+      replies: 2,
+      isLiked: true,
+      level: 1
+    },
+    {
+      id: "3",
+      author: {
+        name: "David Faithful",
+        username: "davidfaithful",
+        avatar: "/placeholder.svg",
+        verified: false
+      },
+      content: "Amen! I'm grateful for second chances and the grace that covers us daily. His mercies are new every morning! 🌅",
+      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
       likes: 8,
       replies: 1,
-      isLiked: true,
+      isLiked: false,
       level: 1
     }
   ];
+
+  // Set thread messages on component mount
+  useEffect(() => {
+    setThreadMessages(sampleThreadMessages);
+  }, []);
   
   // Test Supabase connection on mount
   useEffect(() => {
     testSupabaseConnection();
   }, []);
+
+  const handleReply = (messageId: string) => {
+    console.log("Reply to message:", messageId);
+  };
+
+  const handleLike = (messageId: string) => {
+    console.log("Like message:", messageId);
+    // Update the message like status
+    setThreadMessages(prev => 
+      prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, isLiked: !msg.isLiked, likes: msg.isLiked ? msg.likes - 1 : msg.likes + 1 }
+          : msg
+      )
+    );
+  };
+
+  const handleShare = (messageId: string) => {
+    console.log("Share message:", messageId);
+  };
 
   if (!user) {
     return null;
@@ -80,13 +121,13 @@ const Home = () => {
           {/* Posts Feed */}
           <PostsList />
           
-          {/* Thread UI - Always render with sample data */}
+          {/* Thread UI - Always render with stable data */}
           <div className="border-t border-purple-200 dark:border-purple-800">
             <ThreadUI 
-              messages={sampleThreadMessages}
-              onReply={(id) => console.log("Reply to:", id)}
-              onLike={(id) => console.log("Like:", id)}
-              onShare={(id) => console.log("Share:", id)}
+              messages={threadMessages}
+              onReply={handleReply}
+              onLike={handleLike}
+              onShare={handleShare}
             />
           </div>
         </main>

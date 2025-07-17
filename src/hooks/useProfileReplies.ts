@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,14 +27,14 @@ export const useProfileReplies = (userId?: string) => {
             id,
             content,
             user_id,
-            profiles!posts_user_id_fkey (
+            profiles (
               username,
               display_name,
               avatar_url,
               is_verified
             )
           ),
-          profiles!replies_user_id_fkey (
+          profiles (
             username,
             display_name,
             avatar_url,
@@ -45,18 +46,15 @@ export const useProfileReplies = (userId?: string) => {
 
       if (error) {
         console.error('useProfileReplies: Query error:', error);
-        throw error;
+        setReplies([]);
+        return;
       }
 
       console.log('useProfileReplies: Raw data received:', repliesData);
       setReplies(repliesData || []);
     } catch (error) {
       console.error('Error fetching user replies:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load replies",
-        variant: "destructive",
-      });
+      setReplies([]);
     } finally {
       setLoading(false);
     }

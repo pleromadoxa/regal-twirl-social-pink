@@ -24,7 +24,7 @@ export const useProfileReels = (userId?: string) => {
         .from('reels')
         .select(`
           *,
-          profiles!reels_user_id_fkey (
+          profiles (
             username,
             display_name,
             avatar_url,
@@ -36,7 +36,6 @@ export const useProfileReels = (userId?: string) => {
 
       if (error) {
         console.error('useProfileReels: Query error:', error);
-        // Don't throw error, just log it and show empty state
         setReels([]);
         return;
       }

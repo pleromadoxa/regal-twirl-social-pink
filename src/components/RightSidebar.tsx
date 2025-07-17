@@ -2,7 +2,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { LogOut, Shield } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { LogOut, Shield, Search as SearchIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import TrendingWidget from "./TrendingWidget";
@@ -98,13 +99,31 @@ const RightSidebar = () => {
             </Button>
           </div>
 
-          {/* Search */}
-          <Card className="p-4">
-            <CardHeader className="p-0 pb-3">
-              <CardTitle className="text-lg">Search</CardTitle>
+          {/* Search Section */}
+          <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <SearchIcon className="w-5 h-5 text-purple-600" />
+                Search
+              </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-              <UserSearch searchQuery={searchQuery} showMessageButton />
+            <CardContent className="space-y-4">
+              <div className="relative">
+                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder="Search users, posts, and more..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-white/80 dark:bg-slate-800/80 border-purple-200 dark:border-purple-700"
+                />
+              </div>
+              
+              {searchQuery && (
+                <div className="max-h-60 overflow-y-auto">
+                  <UserSearch searchQuery={searchQuery} showMessageButton />
+                </div>
+              )}
             </CardContent>
           </Card>
 

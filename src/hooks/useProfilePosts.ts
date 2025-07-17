@@ -24,7 +24,7 @@ export const useProfilePosts = (userId?: string) => {
         .from('posts')
         .select(`
           *,
-          profiles!posts_user_id_fkey (
+          profiles (
             username,
             display_name,
             avatar_url,
@@ -36,7 +36,6 @@ export const useProfilePosts = (userId?: string) => {
 
       if (error) {
         console.error('useProfilePosts: Query error:', error);
-        // Don't throw error, just log it and show empty state
         setPosts([]);
         return;
       }

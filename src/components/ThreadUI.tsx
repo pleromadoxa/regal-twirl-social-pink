@@ -1,10 +1,10 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageCircle, Heart, Share2, MoreHorizontal, Reply, Sparkles, Users } from 'lucide-react';
+import { MessageCircle, Heart, Share2, MoreHorizontal, Reply, Sparkles, Users, TrendingUp } from 'lucide-react';
 
 interface ThreadMessage {
   id: string;
@@ -23,15 +23,22 @@ interface ThreadMessage {
 }
 
 interface ThreadUIProps {
-  messages: ThreadMessage[];
+  messages?: ThreadMessage[];
   onReply?: (messageId: string) => void;
   onLike?: (messageId: string) => void;
   onShare?: (messageId: string) => void;
 }
 
-const ThreadUI = ({ messages, onReply, onLike, onShare }: ThreadUIProps) => {
-  console.log('ThreadUI rendered with messages:', messages);
+const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) => {
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
+  const [isVisible, setIsVisible] = useState(true);
+
+  // Ensure the component stays visible
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
+  console.log('ThreadUI rendered with messages:', messages);
 
   const toggleThread = (messageId: string) => {
     const newExpanded = new Set(expandedThreads);
@@ -59,7 +66,7 @@ const ThreadUI = ({ messages, onReply, onLike, onShare }: ThreadUIProps) => {
   const renderMessage = (message: ThreadMessage, isReply = false) => (
     <div 
       key={message.id} 
-      className={`relative group transition-all duration-300 hover:transform hover:scale-[1.02] ${isReply ? 'ml-8 mt-4' : 'mb-6'}`}
+      className={`relative group transition-all duration-300 hover:transform hover:scale-[1.01] ${isReply ? 'ml-8 mt-4' : 'mb-6'}`}
     >
       {/* Connection line for replies */}
       {isReply && (
@@ -183,15 +190,16 @@ const ThreadUI = ({ messages, onReply, onLike, onShare }: ThreadUIProps) => {
     </div>
   );
 
-  // Always render the component, even with empty messages
+  if (!isVisible) return null;
+
   return (
     <div className="min-h-[400px] p-6 bg-gradient-to-br from-purple-50/30 via-white to-pink-50/20 dark:from-slate-900/50 dark:via-slate-800/30 dark:to-purple-900/20">
       {/* Enhanced Header */}
       <div className="mb-8 text-center">
         <div className="inline-flex items-center space-x-3 p-4 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 rounded-2xl border border-purple-200/50 dark:border-purple-700/30 backdrop-blur-sm">
-          <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse" />
+          <TrendingUp className="w-6 h-6 text-purple-600" />
           <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-            Thread Discussion
+            Community Discussions
           </h2>
           <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse" />
         </div>
@@ -207,9 +215,9 @@ const ThreadUI = ({ messages, onReply, onLike, onShare }: ThreadUIProps) => {
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full animate-pulse" />
           </div>
           <div className="text-center space-y-2">
-            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Start the Conversation</h3>
+            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Join the Conversation</h3>
             <p className="text-slate-600 dark:text-slate-400 max-w-md">
-              No messages in this thread yet. Be the first to share your thoughts and spark an engaging discussion!
+              Share your thoughts, connect with others, and be part of meaningful discussions in our community!
             </p>
           </div>
         </div>
