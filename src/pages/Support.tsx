@@ -86,8 +86,10 @@ const Support = () => {
       <RightSidebar />
       
       <SupportTicketDialog 
-        open={showTicketDialog}
-        onOpenChange={setShowTicketDialog}
+        ticket={null}
+        isOpen={showTicketDialog}
+        onClose={() => setShowTicketDialog(false)}
+        onUpdate={() => {}}
       />
     </div>
   );

@@ -234,7 +234,15 @@ const AdsManager = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+              <Button 
+                onClick={() => {
+                  toast({
+                    title: "Coming Soon",
+                    description: "Ad creation functionality is being developed.",
+                  });
+                }}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Create Ad
               </Button>

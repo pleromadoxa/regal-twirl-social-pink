@@ -28,6 +28,9 @@ import AIStudio from '@/pages/AIStudio';
 import Explore from '@/pages/Explore';
 import Hashtag from '@/pages/Hashtag';
 import Pinned from '@/pages/Pinned';
+import AdminDashboard from '@/pages/AdminDashboard';
+import BusinessManagement from '@/pages/BusinessManagement';
+import Support from '@/pages/Support';
 import AuthWrapper from '@/components/AuthWrapper';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
 
@@ -63,6 +66,10 @@ function App() {
                   <Route path="/edit-professional/:pageId" element={<AuthWrapper><EditProfessionalAccount /></AuthWrapper>} />
                   <Route path="/business-dashboard/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
                   <Route path="/business-analytics" element={<AuthWrapper><BusinessAnalytics /></AuthWrapper>} />
+                  <Route path="/business-management" element={<AuthWrapper><BusinessManagement /></AuthWrapper>} />
+                  <Route path="/business/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
+                  <Route path="/admin" element={<AuthWrapper><AdminDashboard /></AuthWrapper>} />
+                  <Route path="/support" element={<AuthWrapper><Support /></AuthWrapper>} />
                   <Route path="/ads-manager" element={<AuthWrapper><AdsManager /></AuthWrapper>} />
                   <Route path="/ai-studio" element={<AuthWrapper><AIStudio /></AuthWrapper>} />
                 </Routes>

@@ -3,8 +3,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
 import UserSearch from "@/components/UserSearch";
+import TrendingWidget from "@/components/TrendingWidget";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { TrendingUp } from "lucide-react";
 import { Search as SearchIcon } from "lucide-react";
 
 const Search = () => {
@@ -35,7 +39,55 @@ const Search = () => {
               </div>
             </div>
             
-            <UserSearch searchQuery={searchQuery} />
+            {searchQuery ? (
+              <UserSearch searchQuery={searchQuery} />
+            ) : (
+              <div className="space-y-6">
+                {/* Trending Topics */}
+                <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <TrendingUp className="w-5 h-5 text-purple-600" />
+                      Trending in Faith
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge className="bg-orange-500 text-white">Testimony</Badge>
+                        <span className="text-green-600 text-sm font-medium">+32%</span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg">#PraiseReport</h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">15.2K Posts</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/30 dark:to-blue-900/30 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge className="bg-green-600 text-white">Prayer</Badge>
+                        <span className="text-green-600 text-sm font-medium">+18%</span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg text-purple-600">#PrayerRequest</h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">28.5K Posts</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge className="bg-blue-600 text-white">Devotion</Badge>
+                        <span className="text-green-600 text-sm font-medium">+25%</span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg">#DailyBread</h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">12.8K Posts</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         </main>
       </div>

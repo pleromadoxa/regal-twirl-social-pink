@@ -159,7 +159,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       onCallStart={() => {}}
     >
       {(initiateCall) => (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-l border-r border-purple-200 dark:border-purple-800">
           {/* Header */}
           <MessageThreadHeader
             otherParticipant={otherParticipant}
