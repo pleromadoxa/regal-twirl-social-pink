@@ -54,17 +54,32 @@ const Home = () => {
                 {
                   id: "1",
                   author: {
-                    name: "John Doe",
-                    username: "johndoe",
+                    name: "Pastor Pleroma Emmanuel",
+                    username: "pleromadoxa",
                     avatar: "/placeholder.svg",
                     verified: true
                   },
-                  content: "This is an example thread message to show the UI design.",
-                  timestamp: new Date(),
-                  likes: 5,
-                  replies: 2,
+                  content: "📸 **Frame it right! 🖼️** \n\nEvery great photo tells a story. What's the story behind your latest snap? Drop your favorite photo moment below and let's inspire each other! ✨\n\n#Photography #PhotoOfTheDay #CaptureTheMoment #InstaGood #ShootLocal #PhotoLove",
+                  timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+                  likes: 15,
+                  replies: 3,
                   isLiked: false,
                   level: 0
+                },
+                {
+                  id: "2",
+                  author: {
+                    name: "Jane Smith",
+                    username: "janesmith",
+                    avatar: "/placeholder.svg",
+                    verified: false
+                  },
+                  content: "Love this! Here's my latest sunset shot from the beach 🌅",
+                  timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
+                  likes: 8,
+                  replies: 1,
+                  isLiked: true,
+                  level: 1
                 }
               ]}
               onReply={(id) => console.log("Reply to:", id)}
