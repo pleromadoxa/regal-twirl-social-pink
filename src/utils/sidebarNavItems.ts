@@ -4,15 +4,12 @@ import {
   Search,
   MessageCircle,
   Bell,
-  User,
   Settings,
   Crown,
   Shield,
   BarChart3,
   Briefcase,
   Music,
-  Hash,
-  Image,
   Play,
   Gamepad2,
   Headphones,
@@ -50,14 +47,11 @@ export const getSidebarNavItems = ({
   const baseItems: NavItem[] = [
     { name: 'Home', path: '/home', icon: Home },
     { name: 'Explore', path: '/explore', icon: Search },
-    { name: 'Hashtags', path: '/hashtags', icon: Hash },
     { name: 'Messages', path: '/messages', icon: MessageCircle },
     { name: 'Notifications', path: '/notifications', icon: Bell },
-    { name: 'Gallery', path: '/gallery', icon: Image },
     { name: 'Reels', path: '/reels', icon: Play },
     { name: 'Music', path: '/music', icon: Headphones },
     { name: 'Games', path: '/games', icon: Gamepad2 },
-    { name: 'Profile', path: '/profile', icon: User },
   ];
 
   const premiumItems: NavItem[] = [];
@@ -84,8 +78,7 @@ export const getSidebarNavItems = ({
   }
 
   const settingsItems: NavItem[] = [
-    { name: 'Settings', path: '/settings', icon: Settings },
-    { name: 'Support', path: '/support', icon: HelpCircle }
+    { name: 'Settings', path: '/settings', icon: Settings }
   ];
 
   return [...baseItems, ...premiumItems, ...settingsItems];

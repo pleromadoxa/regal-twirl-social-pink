@@ -1,136 +1,140 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { Conversation } from '@/types/messages';
+
+export interface Conversation {
+  id: string;
+  participant_1: string;
+  participant_2: string;
+  last_message_at: string | null;
+  created_at: string;
+  streak_count: number;
+  participant_1_profile?: {
+    id: string;
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  };
+  participant_2_profile?: {
+    id: string;
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  };
+  last_message?: string;
+}
 
 export const fetchConversations = async (userId: string): Promise<Conversation[]> => {
-  console.log('Fetching conversations for user:', userId);
-  
-  const { data: conversationsData, error: conversationsError } = await supabase
-    .from('conversations')
-    .select(`
-      *,
-      participant_1_profile:profiles!conversations_participant_1_fkey(
-        id, username, display_name, avatar_url
-      ),
-      participant_2_profile:profiles!conversations_participant_2_fkey(
-        id, username, display_name, avatar_url
-      )
-    `)
-    .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
-    .order('last_message_at', { ascending: false });
+  try {
+    console.log('Fetching conversations for user:', userId);
+    
+    // First get conversations
+    const { data: conversationsData, error: conversationsError } = await supabase
+      .from('conversations')
+      .select('*')
+      .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
+      .order('last_message_at', { ascending: false, nullsFirst: false });
 
-  if (conversationsError) {
-    console.error("Error fetching conversations:", conversationsError);
-    throw conversationsError;
+    if (conversationsError) {
+      console.error('Error fetching conversations:', conversationsError);
+      throw conversationsError;
+    }
+
+    if (!conversationsData || conversationsData.length === 0) {
+      console.log('No conversations found');
+      return [];
+    }
+
+    // Get all unique user IDs from conversations
+    const userIds = new Set<string>();
+    conversationsData.forEach(conv => {
+      userIds.add(conv.participant_1);
+      userIds.add(conv.participant_2);
+    });
+
+    // Fetch profiles for all users
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url')
+      .in('id', Array.from(userIds));
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      // Continue without profiles rather than failing completely
+    }
+
+    // Get last messages for each conversation
+    const conversationIds = conversationsData.map(conv => conv.id);
+    const { data: messagesData } = await supabase
+      .from('messages')
+      .select('id, content, created_at, sender_id, recipient_id')
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+      .order('created_at', { ascending: false });
+
+    // Map profiles to conversations and add last messages
+    const enrichedConversations: Conversation[] = conversationsData.map(conv => {
+      const participant1Profile = profilesData?.find(p => p.id === conv.participant_1);
+      const participant2Profile = profilesData?.find(p => p.id === conv.participant_2);
+      
+      // Find the last message for this conversation
+      const conversationMessages = messagesData?.filter(msg => 
+        (msg.sender_id === conv.participant_1 && msg.recipient_id === conv.participant_2) ||
+        (msg.sender_id === conv.participant_2 && msg.recipient_id === conv.participant_1)
+      ) || [];
+      
+      const lastMessage = conversationMessages[0]?.content || '';
+
+      return {
+        ...conv,
+        participant_1_profile: participant1Profile || null,
+        participant_2_profile: participant2Profile || null,
+        last_message: lastMessage
+      };
+    });
+
+    console.log('Successfully fetched conversations:', enrichedConversations.length);
+    return enrichedConversations;
+  } catch (error) {
+    console.error('Error in fetchConversations:', error);
+    return [];
   }
-
-  console.log('Raw conversations data:', conversationsData);
-
-  return (conversationsData || []).map(conv => ({
-    ...conv,
-    participant_1_profile: Array.isArray(conv.participant_1_profile) 
-      ? conv.participant_1_profile[0] 
-      : conv.participant_1_profile,
-    participant_2_profile: Array.isArray(conv.participant_2_profile) 
-      ? conv.participant_2_profile[0] 
-      : conv.participant_2_profile
-  }));
 };
 
-export const createConversation = async (participant1: string, participant2: string): Promise<Conversation> => {
-  console.log('Creating conversation between:', participant1, 'and', participant2);
-  
-  // First check if conversation already exists
-  const existing = await findExistingConversation(participant1, participant2);
-  if (existing) {
-    console.log('Found existing conversation:', existing.id);
-    return existing;
-  }
+export const createConversation = async (participant1: string, participant2: string) => {
+  try {
+    console.log('Creating conversation between:', participant1, 'and', participant2);
+    
+    // Check if conversation already exists
+    const { data: existingConv } = await supabase
+      .from('conversations')
+      .select('id')
+      .or(`and(participant_1.eq.${participant1},participant_2.eq.${participant2}),and(participant_1.eq.${participant2},participant_2.eq.${participant1})`)
+      .maybeSingle();
 
-  const { data: newConversation, error } = await supabase
-    .from('conversations')
-    .insert({
-      participant_1: participant1,
-      participant_2: participant2,
-      last_message_at: new Date().toISOString()
-    })
-    .select(`
-      *,
-      participant_1_profile:profiles!conversations_participant_1_fkey(
-        id, username, display_name, avatar_url
-      ),
-      participant_2_profile:profiles!conversations_participant_2_fkey(
-        id, username, display_name, avatar_url
-      )
-    `)
-    .single();
+    if (existingConv) {
+      console.log('Conversation already exists:', existingConv.id);
+      return existingConv;
+    }
 
-  if (error) {
-    console.error("Error creating conversation:", error);
-    throw error;
-  }
+    // Create new conversation
+    const { data: newConv, error } = await supabase
+      .from('conversations')
+      .insert({
+        participant_1: participant1,
+        participant_2: participant2,
+        last_message_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
-  console.log('Created new conversation:', newConversation);
+    if (error) {
+      console.error('Error creating conversation:', error);
+      throw error;
+    }
 
-  return {
-    ...newConversation,
-    participant_1_profile: Array.isArray(newConversation.participant_1_profile) 
-      ? newConversation.participant_1_profile[0] 
-      : newConversation.participant_1_profile,
-    participant_2_profile: Array.isArray(newConversation.participant_2_profile) 
-      ? newConversation.participant_2_profile[0] 
-      : newConversation.participant_2_profile
-  };
-};
-
-export const findExistingConversation = async (user1: string, user2: string): Promise<Conversation | null> => {
-  console.log('Looking for existing conversation between:', user1, 'and', user2);
-  
-  const { data, error } = await supabase
-    .from('conversations')
-    .select(`
-      *,
-      participant_1_profile:profiles!conversations_participant_1_fkey(
-        id, username, display_name, avatar_url
-      ),
-      participant_2_profile:profiles!conversations_participant_2_fkey(
-        id, username, display_name, avatar_url
-      )
-    `)
-    .or(`and(participant_1.eq.${user1},participant_2.eq.${user2}),and(participant_1.eq.${user2},participant_2.eq.${user1})`)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Error finding existing conversation:", error);
-    return null;
-  }
-
-  if (!data) {
-    console.log('No existing conversation found');
-    return null;
-  }
-
-  console.log('Found existing conversation:', data.id);
-
-  return {
-    ...data,
-    participant_1_profile: Array.isArray(data.participant_1_profile) 
-      ? data.participant_1_profile[0] 
-      : data.participant_1_profile,
-    participant_2_profile: Array.isArray(data.participant_2_profile) 
-      ? data.participant_2_profile[0] 
-      : data.participant_2_profile
-  };
-};
-
-export const updateConversationLastMessage = async (conversationId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('conversations')
-    .update({ last_message_at: new Date().toISOString() })
-    .eq('id', conversationId);
-
-  if (error) {
-    console.error("Error updating conversation last message time:", error);
+    console.log('Successfully created conversation:', newConv.id);
+    return newConv;
+  } catch (error) {
+    console.error('Error in createConversation:', error);
     throw error;
   }
 };
