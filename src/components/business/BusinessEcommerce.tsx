@@ -230,12 +230,25 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
   };
 
   const createInvoice = async () => {
-    if (!selectedOrder) return;
-
     try {
       const invoiceNumber = `INV-${Date.now()}`;
       const taxRate = parseFloat(invoiceForm.tax_rate) || 0;
-      const subtotal = selectedOrder.total_amount;
+      
+      // If creating from an order, use order data, otherwise create manual invoice
+      let subtotal, items;
+      if (selectedOrder) {
+        subtotal = selectedOrder.total_amount;
+        items = selectedOrder.items;
+      } else {
+        // Manual invoice - create a basic item
+        items = [{
+          name: 'Service/Product',
+          quantity: 1,
+          price: 100 // Default amount, user can modify
+        }];
+        subtotal = 100;
+      }
+      
       const taxAmount = subtotal * (taxRate / 100);
       const totalAmount = subtotal + taxAmount;
 
@@ -245,12 +258,12 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
         client_name: invoiceForm.client_name,
         client_email: invoiceForm.client_email,
         client_address: invoiceForm.client_address,
-        items: selectedOrder.items,
+        items,
         subtotal,
         tax_rate: taxRate,
         tax_amount: taxAmount,
         total_amount: totalAmount,
-        currency: selectedOrder.currency,
+        currency: businessPage.default_currency || 'USD',
         due_date: invoiceForm.due_date || null,
         issued_date: new Date().toISOString().split('T')[0],
         status: 'sent',
@@ -276,7 +289,7 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
         client_name: invoiceForm.client_name,
         client_email: invoiceForm.client_email,
         client_address: invoiceForm.client_address,
-        items: selectedOrder.items.map((item: any) => ({
+        items: items.map((item: any) => ({
           description: item.name,
           quantity: item.quantity,
           rate: item.price
@@ -285,7 +298,7 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
         tax_rate: taxRate,
         tax_amount: taxAmount,
         total_amount: totalAmount,
-        currency: selectedOrder.currency,
+        currency: businessPage.default_currency || 'USD',
         due_date: invoiceForm.due_date,
         issued_date: new Date().toISOString().split('T')[0],
         notes: invoiceForm.notes
@@ -480,8 +493,26 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
 
         <TabsContent value="invoices" className="space-y-4">
           <div className="rounded-md border">
-            <div className="p-4">
+            <div className="p-4 flex justify-between items-center">
               <h3 className="text-lg font-semibold">Invoices</h3>
+              <Button
+                onClick={() => {
+                  setSelectedOrder(null);
+                  setInvoiceForm({
+                    client_name: '',
+                    client_email: '',
+                    client_address: '',
+                    due_date: '',
+                    tax_rate: '0',
+                    notes: ''
+                  });
+                  setInvoiceDialogOpen(true);
+                }}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Create Invoice
+              </Button>
             </div>
             <div className="border-t">
               {invoices.map((invoice) => (
@@ -527,7 +558,7 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
               ))}
               {invoices.length === 0 && (
                 <div className="p-8 text-center text-muted-foreground">
-                  No invoices yet
+                  No invoices yet. Create your first invoice above.
                 </div>
               )}
             </div>
