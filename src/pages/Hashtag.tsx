@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,7 +63,8 @@ const Hashtag = () => {
         user_liked: false, // Will be updated below if user is logged in
         user_retweeted: false,
         user_pinned: false,
-        profiles: post.profiles || null,
+        // Fix: profiles should be a single object, not an array
+        profiles: Array.isArray(post.profiles) ? post.profiles[0] : post.profiles,
         business_pages: post.business_pages || null
       }));
 

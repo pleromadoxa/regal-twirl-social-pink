@@ -75,7 +75,7 @@ const SidebarNav = () => {
                   <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                     Regal Network
                   </h1>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Faith • Community • Connection</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">A Global Christian Social Network</p>
                 </div>
               )}
             </Link>
