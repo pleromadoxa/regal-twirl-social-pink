@@ -20,10 +20,19 @@ export const useProfileReels = (userId?: string) => {
       setLoading(true);
       console.log('useProfileReels: Fetching reels for userId:', userId);
       
-      // First get reels
+      // Query reels table directly with user_id filter
       const { data: reelsData, error: reelsError } = await supabase
         .from('reels')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            username,
+            display_name,
+            avatar_url,
+            is_verified
+          )
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -40,27 +49,12 @@ export const useProfileReels = (userId?: string) => {
         return;
       }
 
-      // Then get the profile data for the user
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (profileError) {
-        console.error('useProfileReels: Profile query error:', profileError);
-        // Still show reels even if profile fails
-      }
-
+      // Process reels data
       const processedReels = reelsData.map(reel => ({
         ...reel,
-        profiles: profileData || {
-          id: userId,
-          username: 'Unknown',
-          display_name: 'Unknown User',
-          avatar_url: null,
-          is_verified: false
-        }
+        views_count: reel.views_count || 0,
+        likes_count: reel.likes_count || 0,
+        comments_count: reel.comments_count || 0,
       }));
 
       console.log('useProfileReels: Processed reels:', processedReels);
