@@ -7,6 +7,7 @@ export interface InvoiceData {
     email?: string;
     phone?: string;
     address?: string;
+    avatar_url?: string;
   };
   client_name: string;
   client_email?: string;
@@ -24,10 +25,11 @@ export interface InvoiceData {
   due_date?: string;
   issued_date: string;
   notes?: string;
+  type?: 'invoice' | 'receipt';
 }
 
 export const generateInvoicePDF = (invoiceData: InvoiceData): void => {
-  const { invoice_number, business_page, client_name, client_address, items, subtotal, tax_amount, total_amount, currency, due_date, issued_date, notes } = invoiceData;
+  const { invoice_number, business_page, client_name, client_address, items, subtotal, tax_amount, total_amount, currency, due_date, issued_date, notes, type = 'invoice' } = invoiceData;
   
   const getCurrencySymbol = (curr: string) => {
     const symbols: { [key: string]: string } = {
@@ -41,48 +43,66 @@ export const generateInvoicePDF = (invoiceData: InvoiceData): void => {
     return `${getCurrencySymbol(currency)}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  // Create HTML content for the invoice
+  const documentTitle = type === 'receipt' ? 'RECEIPT' : 'INVOICE';
+  const headerColor = type === 'receipt' ? '#16A34A' : '#6B46C1';
+
+  // Create HTML content for the invoice/receipt
   const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Invoice ${invoice_number}</title>
+      <title>${documentTitle} ${invoice_number}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
-        .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
-        .company-info { text-align: left; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 3px solid ${headerColor}; padding-bottom: 20px; }
+        .company-info { display: flex; align-items: center; gap: 20px; }
+        .logos { display: flex; align-items: center; gap: 15px; }
+        .logo { width: 60px; height: 60px; object-fit: contain; }
+        .company-details { }
+        .company-name { font-size: 24px; font-weight: bold; color: ${headerColor}; margin: 0; }
         .invoice-info { text-align: right; }
-        .invoice-title { font-size: 28px; font-weight: bold; color: #6B46C1; margin-bottom: 20px; }
-        .client-info { margin-bottom: 30px; }
+        .invoice-title { font-size: 28px; font-weight: bold; color: ${headerColor}; margin-bottom: 20px; }
+        .client-info { margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px; }
         .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
         .items-table th, .items-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        .items-table th { background-color: #f8f9fa; font-weight: bold; }
-        .totals { margin-left: auto; width: 300px; }
+        .items-table th { background-color: ${headerColor}; color: white; font-weight: bold; }
+        .items-table tr:nth-child(even) { background-color: #f8f9fa; }
+        .totals { margin-left: auto; width: 300px; border: 2px solid ${headerColor}; border-radius: 8px; padding: 20px; }
         .totals-row { display: flex; justify-content: space-between; padding: 8px 0; }
-        .total-final { font-weight: bold; font-size: 18px; border-top: 2px solid #333; padding-top: 10px; }
-        .notes { margin-top: 30px; }
-        .footer { margin-top: 50px; text-align: center; color: #666; }
+        .total-final { font-weight: bold; font-size: 18px; border-top: 2px solid ${headerColor}; padding-top: 10px; color: ${headerColor}; }
+        .notes { margin-top: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px; }
+        .footer { margin-top: 50px; text-align: center; color: #666; border-top: 1px solid #ddd; padding-top: 20px; }
+        .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 120px; color: rgba(107, 70, 193, 0.1); z-index: -1; font-weight: bold; }
       </style>
     </head>
     <body>
+      <div class="watermark">${type.toUpperCase()}</div>
+      
       <div class="header">
         <div class="company-info">
-          <h2>${business_page.page_name}</h2>
-          ${business_page.email ? `<p>Email: ${business_page.email}</p>` : ''}
-          ${business_page.phone ? `<p>Phone: ${business_page.phone}</p>` : ''}
-          ${business_page.address ? `<p>Address: ${business_page.address}</p>` : ''}
+          <div class="logos">
+            ${business_page.avatar_url ? `<img src="${business_page.avatar_url}" alt="Business Logo" class="logo" />` : ''}
+            <img src="https://via.placeholder.com/60x60/6B46C1/FFFFFF?text=R" alt="Regal Logo" class="logo" />
+          </div>
+          <div class="company-details">
+            <h1 class="company-name">${business_page.page_name}</h1>
+            ${business_page.email ? `<p>Email: ${business_page.email}</p>` : ''}
+            ${business_page.phone ? `<p>Phone: ${business_page.phone}</p>` : ''}
+            ${business_page.address ? `<p>Address: ${business_page.address}</p>` : ''}
+          </div>
         </div>
         <div class="invoice-info">
-          <div class="invoice-title">INVOICE</div>
-          <p><strong>Invoice #:</strong> ${invoice_number}</p>
+          <div class="invoice-title">${documentTitle}</div>
+          <p><strong>${documentTitle} #:</strong> ${invoice_number}</p>
           <p><strong>Date:</strong> ${new Date(issued_date).toLocaleDateString()}</p>
-          ${due_date ? `<p><strong>Due Date:</strong> ${new Date(due_date).toLocaleDateString()}</p>` : ''}
+          ${due_date && type === 'invoice' ? `<p><strong>Due Date:</strong> ${new Date(due_date).toLocaleDateString()}</p>` : ''}
+          ${type === 'receipt' ? `<p><strong>Status:</strong> <span style="color: #16A34A; font-weight: bold;">PAID</span></p>` : ''}
         </div>
       </div>
 
       <div class="client-info">
-        <h3>Bill To:</h3>
+        <h3>${type === 'receipt' ? 'Customer Information:' : 'Bill To:'}</h3>
         <p><strong>${client_name}</strong></p>
         ${client_address ? `<p>${client_address.replace(/\n/g, '<br>')}</p>` : ''}
       </div>
@@ -131,8 +151,9 @@ export const generateInvoicePDF = (invoiceData: InvoiceData): void => {
       ` : ''}
 
       <div class="footer">
-        <p>Thank you for your business!</p>
-        <p>Generated on ${new Date().toLocaleDateString()}</p>
+        <p><strong>Thank you for your business!</strong></p>
+        <p>Generated on ${new Date().toLocaleDateString()} | Powered by Regal Platform</p>
+        ${type === 'receipt' ? '<p style="color: #16A34A; font-weight: bold;">✓ Payment Received</p>' : ''}
       </div>
     </body>
     </html>
@@ -149,21 +170,38 @@ export const generateInvoicePDF = (invoiceData: InvoiceData): void => {
   }
 };
 
+// Note: JPEG and PNG export requires html2canvas library
+// For now, we support PDF and HTML export
+export const downloadInvoiceAsJPEG = (invoiceData: InvoiceData): void => {
+  console.log('JPEG export requires html2canvas library to be installed');
+  // Implementation would require: npm install html2canvas
+};
+
+export const downloadInvoiceAsPNG = (invoiceData: InvoiceData): void => {
+  console.log('PNG export requires html2canvas library to be installed');
+  // Implementation would require: npm install html2canvas
+};
+
 export const downloadInvoiceHTML = (invoiceData: InvoiceData): void => {
   const htmlContent = generateInvoiceHTML(invoiceData);
   const blob = new Blob([htmlContent], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `invoice-${invoiceData.invoice_number}.html`;
+  link.download = `${invoiceData.type || 'invoice'}-${invoiceData.invoice_number}.html`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 };
 
+// Receipt generator function
+export const generateReceiptPDF = (receiptData: InvoiceData): void => {
+  generateInvoicePDF({ ...receiptData, type: 'receipt' });
+};
+
 const generateInvoiceHTML = (invoiceData: InvoiceData): string => {
-  const { invoice_number, business_page, client_name, client_address, items, subtotal, tax_amount, total_amount, currency, due_date, issued_date, notes } = invoiceData;
+  const { invoice_number, business_page, client_name, client_address, items, subtotal, tax_amount, total_amount, currency, due_date, issued_date, notes, type = 'invoice' } = invoiceData;
   
   const getCurrencySymbol = (curr: string) => {
     const symbols: { [key: string]: string } = {
@@ -177,47 +215,65 @@ const generateInvoiceHTML = (invoiceData: InvoiceData): string => {
     return `${getCurrencySymbol(currency)}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const documentTitle = type === 'receipt' ? 'RECEIPT' : 'INVOICE';
+  const headerColor = type === 'receipt' ? '#16A34A' : '#6B46C1';
+
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Invoice ${invoice_number}</title>
+      <title>${documentTitle} ${invoice_number}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
-        .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
-        .company-info { text-align: left; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 3px solid ${headerColor}; padding-bottom: 20px; }
+        .company-info { display: flex; align-items: center; gap: 20px; }
+        .logos { display: flex; align-items: center; gap: 15px; }
+        .logo { width: 60px; height: 60px; object-fit: contain; }
+        .company-details { }
+        .company-name { font-size: 24px; font-weight: bold; color: ${headerColor}; margin: 0; }
         .invoice-info { text-align: right; }
-        .invoice-title { font-size: 28px; font-weight: bold; color: #6B46C1; margin-bottom: 20px; }
-        .client-info { margin-bottom: 30px; }
+        .invoice-title { font-size: 28px; font-weight: bold; color: ${headerColor}; margin-bottom: 20px; }
+        .client-info { margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px; }
         .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
         .items-table th, .items-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        .items-table th { background-color: #f8f9fa; font-weight: bold; }
-        .totals { margin-left: auto; width: 300px; }
+        .items-table th { background-color: ${headerColor}; color: white; font-weight: bold; }
+        .items-table tr:nth-child(even) { background-color: #f8f9fa; }
+        .totals { margin-left: auto; width: 300px; border: 2px solid ${headerColor}; border-radius: 8px; padding: 20px; }
         .totals-row { display: flex; justify-content: space-between; padding: 8px 0; }
-        .total-final { font-weight: bold; font-size: 18px; border-top: 2px solid #333; padding-top: 10px; }
-        .notes { margin-top: 30px; }
-        .footer { margin-top: 50px; text-align: center; color: #666; }
+        .total-final { font-weight: bold; font-size: 18px; border-top: 2px solid ${headerColor}; padding-top: 10px; color: ${headerColor}; }
+        .notes { margin-top: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px; }
+        .footer { margin-top: 50px; text-align: center; color: #666; border-top: 1px solid #ddd; padding-top: 20px; }
+        .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 120px; color: rgba(107, 70, 193, 0.1); z-index: -1; font-weight: bold; }
       </style>
     </head>
     <body>
+      <div class="watermark">${type.toUpperCase()}</div>
+      
       <div class="header">
         <div class="company-info">
-          <h2>${business_page.page_name}</h2>
-          ${business_page.email ? `<p>Email: ${business_page.email}</p>` : ''}
-          ${business_page.phone ? `<p>Phone: ${business_page.phone}</p>` : ''}
-          ${business_page.address ? `<p>Address: ${business_page.address}</p>` : ''}
+          <div class="logos">
+            ${business_page.avatar_url ? `<img src="${business_page.avatar_url}" alt="Business Logo" class="logo" />` : ''}
+            <img src="https://via.placeholder.com/60x60/6B46C1/FFFFFF?text=R" alt="Regal Logo" class="logo" />
+          </div>
+          <div class="company-details">
+            <h1 class="company-name">${business_page.page_name}</h1>
+            ${business_page.email ? `<p>Email: ${business_page.email}</p>` : ''}
+            ${business_page.phone ? `<p>Phone: ${business_page.phone}</p>` : ''}
+            ${business_page.address ? `<p>Address: ${business_page.address}</p>` : ''}
+          </div>
         </div>
         <div class="invoice-info">
-          <div class="invoice-title">INVOICE</div>
-          <p><strong>Invoice #:</strong> ${invoice_number}</p>
+          <div class="invoice-title">${documentTitle}</div>
+          <p><strong>${documentTitle} #:</strong> ${invoice_number}</p>
           <p><strong>Date:</strong> ${new Date(issued_date).toLocaleDateString()}</p>
-          ${due_date ? `<p><strong>Due Date:</strong> ${new Date(due_date).toLocaleDateString()}</p>` : ''}
+          ${due_date && type === 'invoice' ? `<p><strong>Due Date:</strong> ${new Date(due_date).toLocaleDateString()}</p>` : ''}
+          ${type === 'receipt' ? `<p><strong>Status:</strong> <span style="color: #16A34A; font-weight: bold;">PAID</span></p>` : ''}
         </div>
       </div>
 
       <div class="client-info">
-        <h3>Bill To:</h3>
+        <h3>${type === 'receipt' ? 'Customer Information:' : 'Bill To:'}</h3>
         <p><strong>${client_name}</strong></p>
         ${client_address ? `<p>${client_address.replace(/\n/g, '<br>')}</p>` : ''}
       </div>
@@ -266,8 +322,9 @@ const generateInvoiceHTML = (invoiceData: InvoiceData): string => {
       ` : ''}
 
       <div class="footer">
-        <p>Thank you for your business!</p>
-        <p>Generated on ${new Date().toLocaleDateString()}</p>
+        <p><strong>Thank you for your business!</strong></p>
+        <p>Generated on ${new Date().toLocaleDateString()} | Powered by Regal Platform</p>
+        ${type === 'receipt' ? '<p style="color: #16A34A; font-weight: bold;">✓ Payment Received</p>' : ''}
       </div>
     </body>
     </html>

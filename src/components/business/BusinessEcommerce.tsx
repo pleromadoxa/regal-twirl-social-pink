@@ -280,11 +280,13 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
       const pdfData: InvoiceData = {
         id: '',
         invoice_number: invoiceNumber,
+        type: 'invoice',
         business_page: {
           page_name: businessPage.page_name,
           email: businessPage.email,
           phone: businessPage.phone,
-          address: businessPage.address
+          address: businessPage.address,
+          avatar_url: businessPage.page_avatar_url
         },
         client_name: invoiceForm.client_name,
         client_email: invoiceForm.client_email,
@@ -328,11 +330,13 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
     const receiptData: InvoiceData = {
       id: order.id,
       invoice_number: `RECEIPT-${order.id.slice(0, 8)}`,
+      type: 'receipt',
       business_page: {
         page_name: businessPage.page_name,
         email: businessPage.email,
         phone: businessPage.phone,
-        address: businessPage.address
+        address: businessPage.address,
+        avatar_url: businessPage.page_avatar_url
       },
       client_name: order.customer_name,
       client_email: order.customer_email,
@@ -349,7 +353,7 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
       total_amount: order.total_amount,
       currency: order.currency,
       issued_date: new Date(order.created_at).toISOString().split('T')[0],
-      notes: 'Thank you for your purchase!'
+      notes: 'Thank you for your purchase! Payment received successfully.'
     };
 
     generateInvoicePDF(receiptData);

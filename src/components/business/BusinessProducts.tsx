@@ -96,6 +96,7 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
 
   const fetchProducts = async () => {
     setLoading(true);
+    console.log('Fetching products for business page:', businessPage.id);
     try {
       const { data, error } = await supabase
         .from('business_products')
@@ -103,7 +104,12 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
         .eq('business_page_id', businessPage.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      
+      console.log('Products fetched:', data);
       
       // Map data to include default values for discount fields
       const mappedData = (data || []).map((product: any) => ({
@@ -112,6 +118,8 @@ const BusinessProducts = ({ businessPage }: BusinessProductsProps) => {
         discount_start_date: product.discount_start_date ?? '',
         discount_end_date: product.discount_end_date ?? ''
       }));
+      
+      console.log('Mapped products:', mappedData);
       setProducts(mappedData);
     } catch (error) {
       console.error('Error fetching products:', error);
