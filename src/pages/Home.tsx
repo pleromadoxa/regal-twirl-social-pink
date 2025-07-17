@@ -7,6 +7,7 @@ import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import { StoriesBar } from "@/components/StoriesBar";
 import HomeFeedNav from "@/components/HomeFeedNav";
+import ThreadUI from "@/components/ThreadUI";
 import { useState, useEffect } from "react";
 
 const Home = () => {
@@ -45,6 +46,32 @@ const Home = () => {
 
           {/* Posts Feed */}
           <PostsList />
+          
+          {/* Thread UI */}
+          <div className="border-t border-purple-200 dark:border-purple-800 p-4">
+            <ThreadUI 
+              messages={[
+                {
+                  id: "1",
+                  author: {
+                    name: "John Doe",
+                    username: "johndoe",
+                    avatar: "/placeholder.svg",
+                    verified: true
+                  },
+                  content: "This is an example thread message to show the UI design.",
+                  timestamp: new Date(),
+                  likes: 5,
+                  replies: 2,
+                  isLiked: false,
+                  level: 0
+                }
+              ]}
+              onReply={(id) => console.log("Reply to:", id)}
+              onLike={(id) => console.log("Like:", id)}
+              onShare={(id) => console.log("Share:", id)}
+            />
+          </div>
         </main>
       </div>
       
