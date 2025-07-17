@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { generateInvoicePDF, InvoiceData } from '@/utils/invoiceGenerator';
 import { Package, DollarSign, FileText, Receipt, Download, Mail, Bell } from 'lucide-react';
+import BusinessProducts from './BusinessProducts';
 
 interface BusinessEcommerceProps {
   businessPage: any;
@@ -402,11 +403,16 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
         </Card>
       </div>
 
-      <Tabs defaultValue="orders" className="space-y-4">
+      <Tabs defaultValue="products" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="products" className="space-y-4">
+          <BusinessProducts businessPage={businessPage} />
+        </TabsContent>
 
         <TabsContent value="orders" className="space-y-4">
           <div className="rounded-md border">
