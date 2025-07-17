@@ -81,47 +81,49 @@ const UserSearch = ({ searchQuery, showMessageButton = false }: UserSearchProps)
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {users.map((profile) => (
-        <Card key={profile.id} className="bg-white/80 dark:bg-slate-800/80">
+        <Card key={profile.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border border-slate-200 dark:border-slate-700">
           <CardContent className="p-4">
-            <div className="flex items-center space-x-4">
-              <Avatar className="w-12 h-12">
-                <AvatarImage src={profile.avatar_url} />
-                <AvatarFallback>
-                  {profile.display_name?.[0] || profile.username?.[0] || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                    {profile.display_name || profile.username}
-                  </h3>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  @{profile.username}
-                </p>
-                {profile.bio && (
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 line-clamp-2">
-                    {profile.bio}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <Avatar className="w-12 h-12 border-2 border-white dark:border-slate-700 shadow-sm">
+                  <AvatarImage src={profile.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white font-semibold">
+                    {profile.display_name?.[0] || profile.username?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-base">
+                      {profile.display_name || profile.username}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    @{profile.username}
                   </p>
-                )}
-                <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  <span>{profile.followers_count} followers</span>
-                  <span>{profile.following_count} following</span>
+                  {profile.bio && (
+                    <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 mb-2">
+                      {profile.bio}
+                    </p>
+                  )}
+                  <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="font-medium">{profile.followers_count} followers</span>
+                    <span className="font-medium">{profile.following_count} following</span>
+                  </div>
                 </div>
               </div>
               
-              <div className="flex space-x-2">
+              <div className="flex flex-col gap-2 ml-4">
                 <Link to={`/profile/${profile.id}`}>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="w-full">
                     <User className="w-4 h-4 mr-1" />
                     View
                   </Button>
                 </Link>
                 {user?.id !== profile.id && showMessageButton && (
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="w-full">
                     <MessageCircle className="w-4 h-4 mr-1" />
                     Message
                   </Button>

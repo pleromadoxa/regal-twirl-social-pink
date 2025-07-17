@@ -20,37 +20,54 @@ export const useProfilePosts = (userId?: string) => {
       setLoading(true);
       console.log('useProfilePosts: Fetching posts for userId:', userId);
       
-      const { data: postsData, error } = await supabase
+      // First get posts
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles (
-            username,
-            display_name,
-            avatar_url,
-            is_verified
-          )
-        `)
+        .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('useProfilePosts: Query error:', error);
+      if (postsError) {
+        console.error('useProfilePosts: Posts query error:', postsError);
         setPosts([]);
         return;
       }
 
-      console.log('useProfilePosts: Raw data received:', postsData);
+      console.log('useProfilePosts: Posts data received:', postsData);
 
-      const processedPosts = postsData?.map(post => ({
+      if (!postsData || postsData.length === 0) {
+        setPosts([]);
+        return;
+      }
+
+      // Then get the profile data for the user
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('useProfilePosts: Profile query error:', profileError);
+        // Still show posts even if profile fails
+      }
+
+      const processedPosts = postsData.map(post => ({
         ...post,
+        profiles: profileData || {
+          id: userId,
+          username: 'Unknown',
+          display_name: 'Unknown User',
+          avatar_url: null,
+          is_verified: false
+        },
         likes_count: post.likes_count || 0,
         retweets_count: post.retweets_count || 0,
         replies_count: post.replies_count || 0,
         views_count: post.views_count || 0,
         user_liked: false,
         user_retweeted: false,
-      })) || [];
+      }));
 
       console.log('useProfilePosts: Processed posts:', processedPosts);
       setPosts(processedPosts);

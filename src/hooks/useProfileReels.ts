@@ -20,28 +20,51 @@ export const useProfileReels = (userId?: string) => {
       setLoading(true);
       console.log('useProfileReels: Fetching reels for userId:', userId);
       
-      const { data: reelsData, error } = await supabase
+      // First get reels
+      const { data: reelsData, error: reelsError } = await supabase
         .from('reels')
-        .select(`
-          *,
-          profiles (
-            username,
-            display_name,
-            avatar_url,
-            is_verified
-          )
-        `)
+        .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('useProfileReels: Query error:', error);
+      if (reelsError) {
+        console.error('useProfileReels: Reels query error:', reelsError);
         setReels([]);
         return;
       }
 
-      console.log('useProfileReels: Raw data received:', reelsData);
-      setReels(reelsData || []);
+      console.log('useProfileReels: Reels data received:', reelsData);
+
+      if (!reelsData || reelsData.length === 0) {
+        setReels([]);
+        return;
+      }
+
+      // Then get the profile data for the user
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('useProfileReels: Profile query error:', profileError);
+        // Still show reels even if profile fails
+      }
+
+      const processedReels = reelsData.map(reel => ({
+        ...reel,
+        profiles: profileData || {
+          id: userId,
+          username: 'Unknown',
+          display_name: 'Unknown User',
+          avatar_url: null,
+          is_verified: false
+        }
+      }));
+
+      console.log('useProfileReels: Processed reels:', processedReels);
+      setReels(processedReels);
     } catch (error) {
       console.error('Error fetching user reels:', error);
       setReels([]);
