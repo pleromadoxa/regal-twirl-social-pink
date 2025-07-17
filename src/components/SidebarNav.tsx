@@ -68,7 +68,7 @@ const SidebarNav = () => {
               <img 
                 src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
                 alt="Regal Network Logo" 
-                className="w-36 h-36 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
+                className="h-20 sm:h-28 md:h-36 w-auto mx-auto transition-transform hover:scale-110 filter drop-shadow-2xl"
               />
               {!isCollapsed && (
                 <div className="text-center">
