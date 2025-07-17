@@ -1,22 +1,36 @@
 
 import { 
-  Home, 
-  Search, 
-  Bell, 
-  MessageCircle, 
-  Briefcase, 
-  Gamepad2,
-  Music,
-  Sparkles,
-  Pin,
+  Home,
+  Search,
+  MessageCircle,
+  Bell,
+  User,
+  Settings,
+  Crown,
+  Shield,
   BarChart3,
-  Megaphone,
-  Video,
-  PlayCircle,
-  Compass
+  Briefcase,
+  Music,
+  Hash,
+  Image,
+  Play,
+  Gamepad2,
+  Headphones,
+  Building2,
+  TrendingUp,
+  Calendar,
+  Users,
+  HelpCircle
 } from 'lucide-react';
 
-interface NavItemsConfig {
+interface NavItem {
+  name: string;
+  path: string;
+  icon: any;
+  accent?: string;
+}
+
+interface GetSidebarNavItemsProps {
   hasValidSubscription: boolean;
   isPremiumUser: boolean;
   isBusinessUser: boolean;
@@ -32,51 +46,47 @@ export const getSidebarNavItems = ({
   hasBusinessPages,
   subscriptionData,
   isAdmin
-}: NavItemsConfig) => {
-  const baseItems = [
-    { name: 'Home', icon: Home, path: '/home', accent: 'from-purple-500 to-purple-600' },
-    { name: 'Explore', icon: Compass, path: '/explore', accent: 'from-blue-500 to-cyan-500' },
-    { name: 'Reels', icon: Video, path: '/reels', accent: 'from-pink-500 to-red-500' },
-    { name: 'Notifications', icon: Bell, path: '/notifications', accent: 'from-orange-500 to-red-500' },
-    { name: 'Games', icon: Gamepad2, path: '/games', accent: 'from-green-500 to-emerald-500' },
-    { name: 'Messages', icon: MessageCircle, path: '/messages', accent: 'from-pink-500 to-rose-500' },
-    { name: 'Music', icon: Music, path: '/music', accent: 'from-violet-500 to-purple-600' },
-    { name: 'Pinned', icon: Pin, path: '/pinned', accent: 'from-teal-500 to-cyan-600' },
+}: GetSidebarNavItemsProps): NavItem[] => {
+  const baseItems: NavItem[] = [
+    { name: 'Home', path: '/home', icon: Home },
+    { name: 'Explore', path: '/explore', icon: Search },
+    { name: 'Hashtags', path: '/hashtags', icon: Hash },
+    { name: 'Messages', path: '/messages', icon: MessageCircle },
+    { name: 'Notifications', path: '/notifications', icon: Bell },
+    { name: 'Gallery', path: '/gallery', icon: Image },
+    { name: 'Reels', path: '/reels', icon: Play },
+    { name: 'Music', path: '/music', icon: Headphones },
+    { name: 'Games', path: '/games', icon: Gamepad2 },
+    { name: 'Profile', path: '/profile', icon: User },
   ];
 
-  // Professional - only for premium users (paid subscription or admin)
-  if (hasValidSubscription && isPremiumUser) {
-    baseItems.push({
-      name: 'Professional', 
-      icon: Briefcase, 
-      path: '/professional', 
-      accent: 'from-indigo-500 to-blue-600'
-    });
-  }
-
-  // Business Analytics - only for business tier users with valid subscription or admins
-  if (hasBusinessPages && ((hasValidSubscription && subscriptionData?.subscription_tier === 'Business') || isAdmin)) {
-    baseItems.push(
-      { name: 'Business Analytics', icon: BarChart3, path: '/business-analytics', accent: 'from-teal-500 to-cyan-600' }
+  const premiumItems: NavItem[] = [];
+  
+  if (hasValidSubscription) {
+    premiumItems.push(
+      { name: 'AI Studio', path: '/ai-studio', icon: Crown, accent: 'from-yellow-400 to-orange-500' }
     );
   }
 
-  // Ads Manager - only for business tier users with valid subscription or admins
-  if (hasBusinessPages && ((hasValidSubscription && subscriptionData?.subscription_tier === 'Business') || isAdmin)) {
-    baseItems.push(
-      { name: 'Ads Manager', icon: Megaphone, path: '/ads-manager', accent: 'from-red-500 to-pink-600' }
+  if (isBusinessUser || hasBusinessPages) {
+    premiumItems.push(
+      { name: 'Professional', path: '/business', icon: Building2, accent: 'from-blue-500 to-indigo-600' },
+      { name: 'Business Analytics', path: '/business-analytics', icon: BarChart3 },
+      { name: 'Business Management', path: '/business-management', icon: Briefcase },
+      { name: 'Ads Manager', path: '/ads-manager', icon: TrendingUp }
     );
   }
 
-  // AI Studio - only for business tier users with valid subscription or admins
-  if ((hasValidSubscription && isBusinessUser && subscriptionData?.subscription_tier === 'Business') || isAdmin) {
-    baseItems.push({
-      name: 'AI Studio', 
-      icon: Sparkles, 
-      path: '/ai-studio', 
-      accent: 'from-yellow-500 to-orange-500'
-    });
+  if (isAdmin) {
+    premiumItems.push(
+      { name: 'Admin Dashboard', path: '/admin', icon: Shield, accent: 'from-red-500 to-pink-600' }
+    );
   }
 
-  return baseItems;
+  const settingsItems: NavItem[] = [
+    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: 'Support', path: '/support', icon: HelpCircle }
+  ];
+
+  return [...baseItems, ...premiumItems, ...settingsItems];
 };

@@ -5,13 +5,19 @@ import { Repeat } from 'lucide-react';
 interface RetweetIndicatorProps {
   users: any[];
   currentUserId?: string;
+  postAuthorId?: string;
 }
 
-const RetweetIndicator = ({ users, currentUserId }: RetweetIndicatorProps) => {
+const RetweetIndicator = ({ users, currentUserId, postAuthorId }: RetweetIndicatorProps) => {
   if (!users || users.length === 0) return null;
 
-  const currentUserRetweeted = users.some(u => u.user_id === currentUserId);
-  const otherUsers = users.filter(u => u.user_id !== currentUserId);
+  // Filter out the original post author from reshares (they can't reshare their own post)
+  const validRetweetUsers = users.filter(u => u.user_id !== postAuthorId);
+  
+  if (validRetweetUsers.length === 0) return null;
+
+  const currentUserRetweeted = validRetweetUsers.some(u => u.user_id === currentUserId);
+  const otherUsers = validRetweetUsers.filter(u => u.user_id !== currentUserId);
 
   if (currentUserRetweeted && otherUsers.length === 0) {
     return (

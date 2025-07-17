@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import BoostPostWidget from './BoostPostWidget';
+import RetweetIndicator from './RetweetIndicator';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 
 interface PostCardProps {
@@ -36,6 +37,7 @@ interface PostCardProps {
   };
   isLiked?: boolean;
   isRetweeted?: boolean;
+  retweetedBy?: any[];
   onLike?: () => void;
   onRetweet?: () => void;
   onReply?: () => void;
@@ -45,7 +47,19 @@ interface PostCardProps {
   onTrackView?: (postId: string) => void;
 }
 
-const PostCard = ({ post, isLiked, isRetweeted, onLike, onRetweet, onReply, onPin, onDelete, onShare, onTrackView }: PostCardProps) => {
+const PostCard = ({ 
+  post, 
+  isLiked, 
+  isRetweeted, 
+  retweetedBy = [],
+  onLike, 
+  onRetweet, 
+  onReply, 
+  onPin, 
+  onDelete, 
+  onShare, 
+  onTrackView 
+}: PostCardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { myPages } = useBusinessPages();
@@ -113,9 +127,29 @@ const PostCard = ({ post, isLiked, isRetweeted, onLike, onRetweet, onReply, onPi
     if (onDelete) onDelete(post.id);
   };
 
+  const handleRetweet = () => {
+    // Prevent users from retweeting their own posts
+    if (isOwnPost) {
+      toast({ 
+        title: "Cannot re-share", 
+        description: "You cannot re-share your own post",
+        variant: "destructive" 
+      });
+      return;
+    }
+    if (onRetweet) onRetweet();
+  };
+
   return (
     <Card className="mb-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-purple-200/50 dark:border-purple-800/50 hover:shadow-lg transition-all duration-300">
       <CardContent className="p-4">
+        {/* Re-share indicator */}
+        <RetweetIndicator 
+          users={retweetedBy} 
+          currentUserId={user?.id}
+          postAuthorId={post.user_id}
+        />
+        
         <div className="flex items-start space-x-3">
           <Link to={`/profile/${post.profiles?.id}`}>
             <Avatar className="w-12 h-12">
@@ -212,9 +246,14 @@ const PostCard = ({ post, isLiked, isRetweeted, onLike, onRetweet, onReply, onPi
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onRetweet}
+                onClick={handleRetweet}
+                disabled={isOwnPost}
                 className={`flex items-center space-x-2 ${
-                  isRetweeted ? 'text-green-500' : 'text-gray-500 hover:text-green-500'
+                  isOwnPost 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : isRetweeted 
+                    ? 'text-green-500' 
+                    : 'text-gray-500 hover:text-green-500'
                 }`}
               >
                 <Repeat2 className="w-4 h-4" />

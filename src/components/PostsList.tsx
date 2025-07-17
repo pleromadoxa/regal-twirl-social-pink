@@ -3,10 +3,14 @@ import { usePosts } from '@/hooks/usePosts';
 import { useToast } from '@/hooks/use-toast';
 import PostCard from './PostCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePostsData } from '@/hooks/usePostsData';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PostsList = () => {
-  const { posts, loading, toggleLike, toggleRetweet, togglePin, deletePost, trackPostView } = usePosts();
+  const { user } = useAuth();
+  const { posts, loading, toggleLike, toggleRetweet, togglePin, deletePost, trackPostView, refetch } = usePosts();
   const { toast } = useToast();
+  const { retweetUsers } = usePostsData(posts, user, refetch);
 
   const handleShare = async (postId: string) => {
     const post = posts.find(p => p.id === postId);
@@ -75,6 +79,9 @@ const PostsList = () => {
         <PostCard
           key={post.id}
           post={post}
+          isLiked={post.user_liked}
+          isRetweeted={post.user_retweeted}
+          retweetedBy={retweetUsers[post.id] || []}
           onLike={() => toggleLike(post.id)}
           onRetweet={() => toggleRetweet(post.id)}
           onPin={() => togglePin(post.id)}
