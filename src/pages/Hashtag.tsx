@@ -7,27 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import PostCard from '@/components/PostCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Hash, TrendingUp } from 'lucide-react';
-
-interface Post {
-  id: string;
-  content: string;
-  created_at: string;
-  image_urls: string[] | null;
-  audio_url: string | null;
-  user_id: string;
-  likes_count: number | null;
-  retweets_count: number | null;
-  replies_count: number | null;
-  views_count: number | null;
-  profiles: {
-    username: string | null;
-    display_name: string | null;
-    avatar_url: string | null;
-  } | null;
-  likes: { user_id: string }[];
-  retweets: { user_id: string }[];
-  pinned_posts: { user_id: string }[];
-}
+import { Post } from '@/hooks/usePosts';
 
 const Hashtag = () => {
   const { hashtag } = useParams<{ hashtag: string }>();
@@ -53,17 +33,79 @@ const Hashtag = () => {
         .from('posts')
         .select(`
           *,
-          profiles (username, display_name, avatar_url),
-          likes (user_id),
-          retweets (user_id),
-          pinned_posts (user_id)
+          profiles!posts_user_id_fkey (
+            id,
+            username, 
+            display_name, 
+            avatar_url,
+            is_verified,
+            verification_level,
+            premium_tier
+          ),
+          business_pages (
+            id,
+            page_name,
+            page_avatar_url,
+            page_type,
+            is_verified
+          )
         `)
         .ilike('content', `%#${hashtag}%`)
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setPosts(data || []);
+
+      // Transform the data to match the Post interface
+      const transformedPosts: Post[] = (data || []).map(post => ({
+        ...post,
+        views_count: post.views_count || 0,
+        trending_score: post.trending_score || 0,
+        user_liked: false, // Will be updated below if user is logged in
+        user_retweeted: false,
+        user_pinned: false,
+        profiles: post.profiles || null,
+        business_pages: post.business_pages || null
+      }));
+
+      // If user is logged in, check their interactions with these posts
+      if (user && transformedPosts.length > 0) {
+        const postIds = transformedPosts.map(p => p.id);
+
+        // Check likes
+        const { data: likesData } = await supabase
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', user.id)
+          .in('post_id', postIds);
+
+        // Check retweets
+        const { data: retweetsData } = await supabase
+          .from('retweets')
+          .select('post_id')
+          .eq('user_id', user.id)
+          .in('post_id', postIds);
+
+        // Check pinned posts
+        const { data: pinnedData } = await supabase
+          .from('pinned_posts')
+          .select('post_id')
+          .eq('user_id', user.id)
+          .in('post_id', postIds);
+
+        const likedPostIds = new Set(likesData?.map(l => l.post_id) || []);
+        const retweetedPostIds = new Set(retweetsData?.map(r => r.post_id) || []);
+        const pinnedPostIds = new Set(pinnedData?.map(p => p.post_id) || []);
+
+        // Update user interaction flags
+        transformedPosts.forEach(post => {
+          post.user_liked = likedPostIds.has(post.id);
+          post.user_retweeted = retweetedPostIds.has(post.id);
+          post.user_pinned = pinnedPostIds.has(post.id);
+        });
+      }
+
+      setPosts(transformedPosts);
     } catch (error) {
       console.error('Error fetching hashtag posts:', error);
       toast({
@@ -109,9 +151,9 @@ const Hashtag = () => {
 
     try {
       const post = posts.find(p => p.id === postId);
-      const isLiked = post?.likes.some(like => like.user_id === user.id);
+      if (!post) return;
 
-      if (isLiked) {
+      if (post.user_liked) {
         await supabase
           .from('likes')
           .delete()
@@ -126,13 +168,10 @@ const Hashtag = () => {
       // Update local state
       setPosts(prev => prev.map(p => {
         if (p.id === postId) {
-          const newLikes = isLiked 
-            ? p.likes.filter(l => l.user_id !== user.id)
-            : [...p.likes, { user_id: user.id }];
           return {
             ...p,
-            likes: newLikes,
-            likes_count: newLikes.length
+            user_liked: !p.user_liked,
+            likes_count: p.user_liked ? p.likes_count - 1 : p.likes_count + 1
           };
         }
         return p;
@@ -147,9 +186,9 @@ const Hashtag = () => {
 
     try {
       const post = posts.find(p => p.id === postId);
-      const isRetweeted = post?.retweets.some(rt => rt.user_id === user.id);
+      if (!post) return;
 
-      if (isRetweeted) {
+      if (post.user_retweeted) {
         await supabase
           .from('retweets')
           .delete()
@@ -164,13 +203,10 @@ const Hashtag = () => {
       // Update local state
       setPosts(prev => prev.map(p => {
         if (p.id === postId) {
-          const newRetweets = isRetweeted 
-            ? p.retweets.filter(rt => rt.user_id !== user.id)
-            : [...p.retweets, { user_id: user.id }];
           return {
             ...p,
-            retweets: newRetweets,
-            retweets_count: newRetweets.length
+            user_retweeted: !p.user_retweeted,
+            retweets_count: p.user_retweeted ? p.retweets_count - 1 : p.retweets_count + 1
           };
         }
         return p;
@@ -185,9 +221,9 @@ const Hashtag = () => {
 
     try {
       const post = posts.find(p => p.id === postId);
-      const isPinned = post?.pinned_posts?.some(pin => pin.user_id === user.id);
+      if (!post) return;
 
-      if (isPinned) {
+      if (post.user_pinned) {
         await supabase
           .from('pinned_posts')
           .delete()
@@ -199,7 +235,16 @@ const Hashtag = () => {
           .insert({ post_id: postId, user_id: user.id });
       }
 
-      fetchHashtagPosts();
+      // Update local state
+      setPosts(prev => prev.map(p => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            user_pinned: !p.user_pinned
+          };
+        }
+        return p;
+      }));
     } catch (error) {
       console.error('Error toggling pin:', error);
     }
@@ -331,12 +376,31 @@ const Hashtag = () => {
           {posts.map((post) => (
             <PostCard
               key={post.id}
-              post={post}
+              post={{
+                id: post.id,
+                content: post.content,
+                image_urls: post.image_urls,
+                created_at: post.created_at,
+                likes_count: post.likes_count,
+                retweets_count: post.retweets_count,
+                replies_count: post.replies_count,
+                views_count: post.views_count,
+                user_id: post.user_id,
+                profiles: post.profiles ? {
+                  id: post.profiles.id,
+                  username: post.profiles.username,
+                  display_name: post.profiles.display_name,
+                  avatar_url: post.profiles.avatar_url,
+                  is_verified: post.profiles.is_verified
+                } : undefined
+              }}
+              isLiked={post.user_liked}
+              isRetweeted={post.user_retweeted}
               onLike={() => handleLike(post.id)}
               onRetweet={() => handleRetweet(post.id)}
               onPin={() => handlePin(post.id)}
               onDelete={() => handleDelete(post.id)}
-              onShare={handleShare}
+              onShare={() => handleShare(post.id)}
               onTrackView={() => handleTrackView(post.id)}
             />
           ))}
