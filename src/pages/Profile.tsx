@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MapPin, Calendar, Link as LinkIcon, Crown, Plus } from 'lucide-react';
-import PostsList from '@/components/PostsList';
+import ProfilePostsList from '@/components/ProfilePostsList';
+import ProfileReelsList from '@/components/ProfileReelsList';
 import ProfileActions from '@/components/ProfileActions';
 import VerificationBadge from '@/components/VerificationBadge';
 import ProfileEditDialog from '@/components/ProfileEditDialog';
@@ -136,7 +137,7 @@ const Profile = () => {
                   {isOwnProfile && (
                     <>
                       <Button
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/?compose=true')}
                         className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -245,28 +246,35 @@ const Profile = () => {
           </div>
 
           {/* Profile Content Tabs */}
-          <Tabs defaultValue="posts" className="w-full">
-            <TabsList className="w-full justify-start border-b border-purple-200 dark:border-purple-800 bg-transparent rounded-none p-0">
-              <TabsTrigger value="posts" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
-                Posts
-              </TabsTrigger>
-              <TabsTrigger value="replies" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
-                Replies
-              </TabsTrigger>
-              <TabsTrigger value="media" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
-                Media
-              </TabsTrigger>
-              <TabsTrigger value="gallery" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
-                Gallery
-              </TabsTrigger>
-              <TabsTrigger value="likes" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
-                Likes
-              </TabsTrigger>
-            </TabsList>
+            <Tabs defaultValue="posts" className="w-full">
+              <TabsList className="w-full justify-start border-b border-purple-200 dark:border-purple-800 bg-transparent rounded-none p-0">
+                <TabsTrigger value="posts" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
+                  Posts
+                </TabsTrigger>
+                <TabsTrigger value="reels" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
+                  Reels
+                </TabsTrigger>
+                <TabsTrigger value="replies" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
+                  Replies
+                </TabsTrigger>
+                <TabsTrigger value="media" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
+                  Media
+                </TabsTrigger>
+                <TabsTrigger value="gallery" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
+                  Gallery
+                </TabsTrigger>
+                <TabsTrigger value="likes" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
+                  Likes
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="posts" className="mt-0">
-              <PostsList />
-            </TabsContent>
+              <TabsContent value="posts" className="mt-0">
+                <ProfilePostsList userId={userId} />
+              </TabsContent>
+
+              <TabsContent value="reels" className="mt-0">
+                <ProfileReelsList userId={userId} />
+              </TabsContent>
 
             <TabsContent value="replies" className="mt-0">
               <div className="space-y-4">
