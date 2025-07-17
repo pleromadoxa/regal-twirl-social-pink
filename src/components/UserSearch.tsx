@@ -81,53 +81,53 @@ const UserSearch = ({ searchQuery, showMessageButton = false }: UserSearchProps)
   }
 
   return (
-    <div className="space-y-3 max-h-96 overflow-y-auto">
+    <div className="space-y-3">
       {users.map((profile) => (
-        <Card key={profile.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-          <CardContent className="p-3">
-            <div className="flex items-start gap-3">
-              <Avatar className="w-10 h-10 flex-shrink-0">
-                <AvatarImage src={profile.avatar_url} />
-                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-sm font-semibold">
-                  {profile.display_name?.[0] || profile.username?.[0] || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm leading-tight">
+        <Card key={profile.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border border-slate-200 dark:border-slate-700">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <Avatar className="w-12 h-12 border-2 border-white dark:border-slate-700 shadow-sm">
+                  <AvatarImage src={profile.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white font-semibold">
+                    {profile.display_name?.[0] || profile.username?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-base">
                       {profile.display_name || profile.username}
                     </h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                      @{profile.username}
-                    </p>
-                    {profile.bio && (
-                      <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-1 mt-1">
-                        {profile.bio}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      <span>{profile.followers_count || 0} followers</span>
-                      <span>{profile.following_count || 0} following</span>
-                    </div>
                   </div>
-                  
-                  <div className="flex flex-col gap-1 ml-2 flex-shrink-0">
-                    <Link to={`/profile/${profile.id}`}>
-                      <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
-                        <User className="w-3 h-3 mr-1" />
-                        View
-                      </Button>
-                    </Link>
-                    {user?.id !== profile.id && showMessageButton && (
-                      <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
-                        <MessageCircle className="w-3 h-3 mr-1" />
-                        Message
-                      </Button>
-                    )}
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    @{profile.username}
+                  </p>
+                  {profile.bio && (
+                    <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 mb-2">
+                      {profile.bio}
+                    </p>
+                  )}
+                  <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="font-medium">{profile.followers_count} followers</span>
+                    <span className="font-medium">{profile.following_count} following</span>
                   </div>
                 </div>
+              </div>
+              
+              <div className="flex flex-col gap-2 ml-4">
+                <Link to={`/profile/${profile.id}`}>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <User className="w-4 h-4 mr-1" />
+                    View
+                  </Button>
+                </Link>
+                {user?.id !== profile.id && showMessageButton && (
+                  <Button variant="outline" size="sm" className="w-full">
+                    <MessageCircle className="w-4 h-4 mr-1" />
+                    Message
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>

@@ -33,48 +33,48 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   const [displayMessages, setDisplayMessages] = useState<ThreadMessage[]>([]);
 
-  // Stable sample thread data - always available
-  const stableThreadMessages: ThreadMessage[] = [
+  // Sample thread data that will always be available
+  const sampleThreadMessages: ThreadMessage[] = [
     {
-      id: "stable-1",
+      id: "1",
       author: {
         name: "Pastor Pleroma Emmanuel",
         username: "pleromadoxa",
         avatar: "/placeholder.svg",
         verified: true
       },
-      content: "🙏 **Daily Reflection** 📖\n\nEven in our darkest moments, God's light shines through. Remember that every challenge is an opportunity for growth and every setback is a setup for a comeback! ✨\n\nWhat's one thing you're grateful for today? Share your blessings below! 💕\n\n#Faith #Gratitude #BlessedLife #DailyReflection",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      content: "📸 **Frame it right! 🖼️**\n\nEvery great photo tells a story. What's the story behind your latest snap? Drop your favorite photo moment below and let's inspire each other! ✨\n\n#Photography #PhotoOfTheDay #CaptureTheMoment #InstaGood #ShootLocal #PhotoLove",
+      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
       likes: 24,
       replies: 5,
       isLiked: false,
       level: 0
     },
     {
-      id: "stable-2",
+      id: "2",
       author: {
         name: "Sarah Grace",
         username: "sarahgrace",
         avatar: "/placeholder.svg",
         verified: false
       },
-      content: "Thank you for this beautiful reminder! I'm grateful for my family's health and the opportunity to serve others in my community. God is good! 🙏✨",
-      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000),
+      content: "Love this! Photography has been such a blessing in my life. It helps me see God's beauty in everything around us. 📷✨",
+      timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
       likes: 12,
       replies: 2,
       isLiked: true,
       level: 1
     },
     {
-      id: "stable-3",
+      id: "3",
       author: {
         name: "David Faithful",
         username: "davidfaithful",
         avatar: "/placeholder.svg",
         verified: false
       },
-      content: "Amen! I'm grateful for second chances and the grace that covers us daily. His mercies are new every morning! 🌅",
-      timestamp: new Date(Date.now() - 30 * 60 * 1000),
+      content: "This is so inspiring! I just started my photography journey and this community is amazing! 🙏",
+      timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
       likes: 8,
       replies: 1,
       isLiked: false,
@@ -82,9 +82,9 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
     }
   ];
 
-  // Always use stable data to ensure the component doesn't disappear
+  // Always use sample data to ensure stability
   useEffect(() => {
-    const messagesToUse = messages && messages.length > 0 ? messages : stableThreadMessages;
+    const messagesToUse = messages && messages.length > 0 ? messages : sampleThreadMessages;
     setDisplayMessages(messagesToUse);
   }, [messages]);
 
@@ -127,11 +127,13 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
       key={message.id} 
       className={`relative group transition-all duration-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-lg ${isReply ? 'ml-8 mt-3' : 'mb-4'} p-4`}
     >
+      {/* Connection line for replies */}
       {isReply && (
         <div className="absolute -left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-400/60 via-pink-400/40 to-transparent" />
       )}
       
       <div className="flex items-start space-x-3">
+        {/* Avatar with glow */}
         <div className="relative flex-shrink-0">
           <Avatar className="w-12 h-12 border-2 border-white dark:border-slate-700 shadow-md">
             <AvatarImage src={message.author.avatar} alt={message.author.name} />
@@ -147,6 +149,7 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
         </div>
         
         <div className="flex-1 min-w-0">
+          {/* Author info */}
           <div className="flex items-center space-x-2 mb-2">
             <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
               {message.author.name}
@@ -164,12 +167,14 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
             </span>
           </div>
           
+          {/* Message content */}
           <div className="mb-3">
             <p className="text-slate-800 dark:text-slate-200 leading-relaxed text-sm whitespace-pre-wrap">
               {message.content}
             </p>
           </div>
           
+          {/* Action buttons */}
           <div className="flex items-center space-x-1">
             <Button
               variant="ghost"
@@ -231,9 +236,9 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
     </div>
   );
 
-  // Always render the component - never return null or conditionally hide
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-purple-200 dark:border-purple-800">
+      {/* Header */}
       <div className="p-6 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-center space-x-3">
           <TrendingUp className="w-6 h-6 text-purple-600" />
@@ -244,23 +249,42 @@ const ThreadUI = ({ messages = [], onReply, onLike, onShare }: ThreadUIProps) =>
         </div>
       </div>
       
+      {/* Content */}
       <div className="p-6">
-        <div className="space-y-2">
-          {displayMessages.map((message) => (
-            <div key={message.id}>
-              {renderMessage(message)}
-              
-              {expandedThreads.has(message.id) && (
-                <div className="ml-8 space-y-2 mt-2 border-l-2 border-slate-200 dark:border-slate-700 pl-4">
-                  {displayMessages
-                    .filter(m => m.level > message.level)
-                    .slice(0, 3)
-                    .map(reply => renderMessage(reply, true))}
-                </div>
-              )}
+        {displayMessages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 space-y-6">
+            <div className="relative">
+              <div className="w-24 h-24 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center">
+                <Users className="w-12 h-12 text-purple-500/60" />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full animate-pulse" />
             </div>
-          ))}
-        </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Join the Conversation</h3>
+              <p className="text-slate-600 dark:text-slate-400 max-w-md">
+                Share your thoughts, connect with others, and be part of meaningful discussions in our community!
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {displayMessages.map((message) => (
+              <div key={message.id}>
+                {renderMessage(message)}
+                
+                {/* Show replies if thread is expanded */}
+                {expandedThreads.has(message.id) && (
+                  <div className="ml-8 space-y-2 mt-2 border-l-2 border-slate-200 dark:border-slate-700 pl-4">
+                    {displayMessages
+                      .filter(m => m.level > message.level)
+                      .slice(0, 3)
+                      .map(reply => renderMessage(reply, true))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

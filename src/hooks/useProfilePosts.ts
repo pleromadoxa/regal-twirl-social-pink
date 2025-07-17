@@ -20,19 +20,10 @@ export const useProfilePosts = (userId?: string) => {
       setLoading(true);
       console.log('useProfilePosts: Fetching posts for userId:', userId);
       
-      // Query posts table directly with user_id filter
+      // First get posts
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles:user_id (
-            id,
-            username,
-            display_name,
-            avatar_url,
-            is_verified
-          )
-        `)
+        .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -49,9 +40,27 @@ export const useProfilePosts = (userId?: string) => {
         return;
       }
 
-      // Process posts with engagement data
+      // Then get the profile data for the user
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('useProfilePosts: Profile query error:', profileError);
+        // Still show posts even if profile fails
+      }
+
       const processedPosts = postsData.map(post => ({
         ...post,
+        profiles: profileData || {
+          id: userId,
+          username: 'Unknown',
+          display_name: 'Unknown User',
+          avatar_url: null,
+          is_verified: false
+        },
         likes_count: post.likes_count || 0,
         retweets_count: post.retweets_count || 0,
         replies_count: post.replies_count || 0,

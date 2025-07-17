@@ -37,6 +37,7 @@ const RightSidebar = () => {
         .eq('id', user.id)
         .single();
 
+      // Check if user is admin (pleromadoxa@gmail.com)
       const isUserAdmin = user.email === 'pleromadoxa@gmail.com' || profile?.username === 'pleromadoxa';
       setIsAdmin(isUserAdmin);
     } catch (error) {
@@ -46,6 +47,7 @@ const RightSidebar = () => {
   };
 
   const handleHashtagClick = (hashtag: string) => {
+    // Navigate to hashtag page - remove # symbol for URL
     const hashtagName = hashtag.replace('#', '');
     navigate(`/hashtag/${hashtagName}`);
   };
@@ -98,11 +100,11 @@ const RightSidebar = () => {
           </div>
 
           {/* Search Section */}
-          <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-purple-200 dark:border-purple-700">
+          <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <SearchIcon className="w-5 h-5 text-purple-600" />
-                Search People
+                Search
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -110,15 +112,15 @@ const RightSidebar = () => {
                 <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   type="text"
-                  placeholder="Search users..."
+                  placeholder="Search users, posts, and more..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-white/80 dark:bg-slate-700/80 border-purple-200 dark:border-purple-700 focus:border-purple-400 focus:ring-purple-400"
+                  className="pl-10 bg-white/80 dark:bg-slate-800/80 border-purple-200 dark:border-purple-700"
                 />
               </div>
               
               {searchQuery && (
-                <div className="mt-4">
+                <div className="max-h-60 overflow-y-auto">
                   <UserSearch searchQuery={searchQuery} showMessageButton />
                 </div>
               )}
