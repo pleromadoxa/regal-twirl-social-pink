@@ -82,7 +82,7 @@ const MessageThread = ({ conversationId }: MessageThreadProps) => {
       // Send the message first
       const message = await sendMessage(messageContent);
       
-      if (!message || !message.id) {
+      if (!message) {
         throw new Error('Failed to send message');
       }
       

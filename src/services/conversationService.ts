@@ -99,16 +99,32 @@ export const fetchConversations = async (userId: string): Promise<Conversation[]
   }
 };
 
+export const findExistingConversation = async (user1Id: string, user2Id: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .or(`and(participant_1.eq.${user1Id},participant_2.eq.${user2Id}),and(participant_1.eq.${user2Id},participant_2.eq.${user1Id})`)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+      console.error('Error finding conversation:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in findExistingConversation:', error);
+    return null;
+  }
+};
+
 export const createConversation = async (participant1: string, participant2: string) => {
   try {
     console.log('Creating conversation between:', participant1, 'and', participant2);
     
     // Check if conversation already exists
-    const { data: existingConv } = await supabase
-      .from('conversations')
-      .select('id')
-      .or(`and(participant_1.eq.${participant1},participant_2.eq.${participant2}),and(participant_1.eq.${participant2},participant_2.eq.${participant1})`)
-      .maybeSingle();
+    const existingConv = await findExistingConversation(participant1, participant2);
 
     if (existingConv) {
       console.log('Conversation already exists:', existingConv.id);

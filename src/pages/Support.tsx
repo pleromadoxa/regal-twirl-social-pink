@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { HelpCircle, MessageSquare, Mail, Phone, Clock } from 'lucide-react';
-import { SupportTicketDialog } from '@/components/SupportTicketDialog';
+import SupportTicketDialog from '@/components/SupportTicketDialog';
 
 const Support = () => {
   const [showTicketDialog, setShowTicketDialog] = useState(false);

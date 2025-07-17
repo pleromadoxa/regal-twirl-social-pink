@@ -10,7 +10,7 @@ interface Message {
   sender_id: string;
   recipient_id: string;
   content: string;
-  message_type: 'text' | 'image' | 'file';
+  message_type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location';
   created_at: string;
   read_at?: string;
   edited_at?: string;
@@ -67,7 +67,13 @@ export const useEnhancedMessages = () => {
         return;
       }
 
-      setMessages(messagesData || []);
+      // Transform the data to match the Message interface
+      const transformedMessages: Message[] = (messagesData || []).map(msg => ({
+        ...msg,
+        message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location') || 'text'
+      }));
+
+      setMessages(transformedMessages);
     } catch (error) {
       console.error('Error in fetchMessages:', error);
     }
@@ -86,14 +92,16 @@ export const useEnhancedMessages = () => {
         ? conversation.participant_2 
         : conversation.participant_1;
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .insert({
           sender_id: user.id,
           recipient_id: recipientId,
           content: content.trim(),
           message_type: 'text'
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Error sending message:', error);
@@ -119,6 +127,8 @@ export const useEnhancedMessages = () => {
         title: "Message sent",
         description: "Your message has been sent successfully."
       });
+
+      return data;
     } catch (error) {
       console.error('Error in sendMessage:', error);
       toast({
@@ -126,6 +136,20 @@ export const useEnhancedMessages = () => {
         description: "Please try again later.",
         variant: "destructive"
       });
+    }
+  };
+
+  const markAsRead = async (messageId: string) => {
+    if (!user) return;
+
+    try {
+      await supabase
+        .from('messages')
+        .update({ read_at: new Date().toISOString() })
+        .eq('id', messageId)
+        .eq('recipient_id', user.id);
+    } catch (error) {
+      console.error('Error marking message as read:', error);
     }
   };
 
@@ -168,6 +192,7 @@ export const useEnhancedMessages = () => {
     selectedConversation,
     setSelectedConversation,
     sendMessage,
+    markAsRead,
     refetch: fetchConversationsData,
     startDirectConversation,
     createGroupConversation
