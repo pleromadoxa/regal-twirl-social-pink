@@ -5,18 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getSidebarNavItems } from '@/utils/sidebarNavItems';
+import { useBusinessPages } from '@/hooks/useBusinessPages';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { 
-  Home, 
-  User, 
-  MessageSquare, 
-  Bell, 
-  Search, 
-  Settings, 
-  Briefcase,
-  Music,
-  Gamepad2,
-  Crown,
-  Sparkles,
   Menu,
   X
 } from 'lucide-react';
@@ -26,25 +18,25 @@ const SidebarNav = () => {
   const { user, profile } = useAuth();
   const isMobile = useIsMobile();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { allPages } = useBusinessPages();
+  const { hasValidSubscription, subscriptionData } = useSubscriptionStatus();
+
+  // Check if user is admin
+  const isAdmin = user?.email === 'pleromadoxa@gmail.com' || profile?.username === 'pleromadoxa';
   
-  const navItems = [
-    { icon: Home, label: 'Home', path: '/home' },
-    { icon: Search, label: 'Search', path: '/search' },
-    { icon: MessageSquare, label: 'Messages', path: '/messages' },
-    { icon: Bell, label: 'Notifications', path: '/notifications' },
-    { icon: User, label: 'Profile', path: '/profile' },
-    { icon: Music, label: 'Music', path: '/music' },
-    { icon: Gamepad2, label: 'Games', path: '/games' },
-    { icon: Briefcase, label: 'Professional', path: '/professional' },
-    { 
-      icon: Crown, 
-      label: 'Regal AI Engine', 
-      path: '/ai-engine',
-      premium: true,
-      gradient: true
-    },
-    { icon: Settings, label: 'Settings', path: '/settings' },
-  ];
+  // Check subscription tiers
+  const isPremiumUser = hasValidSubscription && subscriptionData?.subscription_tier === 'Premium';
+  const isBusinessUser = hasValidSubscription && subscriptionData?.subscription_tier === 'Business';
+  const hasBusinessPages = allPages && allPages.length > 0;
+
+  const navItems = getSidebarNavItems({
+    hasValidSubscription,
+    isPremiumUser,
+    isBusinessUser,
+    hasBusinessPages,
+    subscriptionData,
+    isAdmin
+  });
 
   // Handle mobile responsive behavior
   const sidebarWidth = isMobile ? (isCollapsed ? 'w-0' : 'w-80') : (isCollapsed ? 'w-16' : 'w-80');
@@ -99,22 +91,22 @@ const SidebarNav = () => {
                       to={item.path}
                       className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
                         isActive
-                          ? item.gradient
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                          ? item.accent
+                            ? `bg-gradient-to-r ${item.accent} text-white shadow-lg`
                             : 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30'
                       }`}
                       onClick={() => isMobile && setIsCollapsed(true)}
                     >
                       <div className={`p-2 rounded-lg ${
-                        isActive && item.gradient
+                        isActive && item.accent
                           ? 'bg-white/20'
                           : isActive
                           ? 'bg-purple-200 dark:bg-purple-800'
                           : 'bg-gray-100 dark:bg-gray-800 group-hover:bg-purple-100 dark:group-hover:bg-purple-800'
                       }`}>
                         <IconComponent className={`w-5 h-5 ${
-                          isActive && item.gradient
+                          isActive && item.accent
                             ? 'text-white'
                             : isActive
                             ? 'text-purple-700 dark:text-purple-300'
@@ -122,21 +114,7 @@ const SidebarNav = () => {
                         }`} />
                       </div>
                       {!isCollapsed && (
-                        <>
-                          <span className="font-medium">{item.label}</span>
-                          {item.premium && (
-                            <div className="flex items-center gap-1">
-                              <Sparkles className={`w-4 h-4 ${
-                                isActive && item.gradient ? 'text-yellow-300' : 'text-amber-500'
-                              }`} />
-                              {!isActive && (
-                                <span className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-2 py-1 rounded-full">
-                                  Premium
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </>
+                        <span className="font-medium">{item.name}</span>
                       )}
                     </Link>
                   </li>
@@ -149,7 +127,7 @@ const SidebarNav = () => {
           {user && !isCollapsed && (
             <div className="p-4 border-t border-purple-200 dark:border-purple-800">
               <Link
-                to="/profile"
+                to={`/profile/${user.id}`}
                 className="flex items-center space-x-3 p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
                 onClick={() => isMobile && setIsCollapsed(true)}
               >

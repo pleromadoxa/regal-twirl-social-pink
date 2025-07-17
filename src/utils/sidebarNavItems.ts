@@ -12,7 +12,8 @@ import {
   BarChart3,
   Megaphone,
   Video,
-  PlayCircle
+  PlayCircle,
+  Compass
 } from 'lucide-react';
 
 interface NavItemsConfig {
@@ -34,7 +35,7 @@ export const getSidebarNavItems = ({
 }: NavItemsConfig) => {
   const baseItems = [
     { name: 'Home', icon: Home, path: '/home', accent: 'from-purple-500 to-purple-600' },
-    { name: 'Explore', icon: Search, path: '/explore', accent: 'from-blue-500 to-cyan-500' },
+    { name: 'Explore', icon: Compass, path: '/explore', accent: 'from-blue-500 to-cyan-500' },
     { name: 'Reels', icon: Video, path: '/reels', accent: 'from-pink-500 to-red-500' },
     { name: 'Notifications', icon: Bell, path: '/notifications', accent: 'from-orange-500 to-red-500' },
     { name: 'Games', icon: Gamepad2, path: '/games', accent: 'from-green-500 to-emerald-500' },
