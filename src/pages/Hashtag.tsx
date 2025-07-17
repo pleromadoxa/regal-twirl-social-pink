@@ -7,6 +7,8 @@ import PostCard from '@/components/PostCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Hash, TrendingUp } from 'lucide-react';
 import { Post } from '@/hooks/usePosts';
+import SidebarNav from '@/components/SidebarNav';
+import RightSidebar from '@/components/RightSidebar';
 
 const Hashtag = () => {
   const { hashtag } = useParams<{ hashtag: string }>();
@@ -323,101 +325,121 @@ const Hashtag = () => {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto p-4">
-        <div className="mb-6">
-          <Skeleton className="h-8 w-64 mb-2" />
-          <Skeleton className="h-4 w-48" />
-        </div>
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
-              <div className="flex space-x-3">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-1/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                </div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-blue-900">
+        <div className="flex">
+          <SidebarNav />
+          <main className="flex-1 lg:mr-96">
+            <div className="max-w-2xl mx-auto p-4">
+              <div className="mb-6">
+                <Skeleton className="h-8 w-64 mb-2" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <div className="flex space-x-3">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-1/4" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          </main>
+          <div className="hidden lg:block">
+            <RightSidebar />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      {/* Hashtag Header */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-        <div className="flex items-center space-x-3 mb-3">
-          <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
-            <Hash className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-blue-900">
+      <div className="flex">
+        <SidebarNav />
+        <main className="flex-1 lg:mr-96">
+          <div className="max-w-2xl mx-auto p-4">
+            {/* Hashtag Header */}
+            <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                  <Hash className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  #{hashtag}
+                </h1>
+              </div>
+              
+              <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-center space-x-1">
+                  <TrendingUp className="w-4 h-4" />
+                  <span>{stats.totalPosts} posts</span>
+                </div>
+                <div>
+                  <span>{stats.todayPosts} today</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Posts */}
+            {posts.length > 0 ? (
+              <div className="space-y-4">
+                {posts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={{
+                      id: post.id,
+                      content: post.content,
+                      image_urls: post.image_urls,
+                      created_at: post.created_at,
+                      likes_count: post.likes_count,
+                      retweets_count: post.retweets_count,
+                      replies_count: post.replies_count,
+                      views_count: post.views_count,
+                      user_id: post.user_id,
+                      profiles: post.profiles ? {
+                        id: post.profiles.id,
+                        username: post.profiles.username,
+                        display_name: post.profiles.display_name,
+                        avatar_url: post.profiles.avatar_url,
+                        is_verified: post.profiles.is_verified
+                      } : undefined
+                    }}
+                    isLiked={post.user_liked}
+                    isRetweeted={post.user_retweeted}
+                    onLike={() => handleLike(post.id)}
+                    onRetweet={() => handleRetweet(post.id)}
+                    onPin={() => handlePin(post.id)}
+                    onDelete={() => handleDelete(post.id)}
+                    onShare={() => handleShare(post.id)}
+                    onTrackView={() => handleTrackView(post.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Hash className="w-8 h-8 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  No posts found
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Be the first to post with #{hashtag}
+                </p>
+              </div>
+            )}
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            #{hashtag}
-          </h1>
-        </div>
-        
-        <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-          <div className="flex items-center space-x-1">
-            <TrendingUp className="w-4 h-4" />
-            <span>{stats.totalPosts} posts</span>
-          </div>
-          <div>
-            <span>{stats.todayPosts} today</span>
-          </div>
+        </main>
+        <div className="hidden lg:block">
+          <RightSidebar />
         </div>
       </div>
-
-      {/* Posts */}
-      {posts.length > 0 ? (
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={{
-                id: post.id,
-                content: post.content,
-                image_urls: post.image_urls,
-                created_at: post.created_at,
-                likes_count: post.likes_count,
-                retweets_count: post.retweets_count,
-                replies_count: post.replies_count,
-                views_count: post.views_count,
-                user_id: post.user_id,
-                profiles: post.profiles ? {
-                  id: post.profiles.id,
-                  username: post.profiles.username,
-                  display_name: post.profiles.display_name,
-                  avatar_url: post.profiles.avatar_url,
-                  is_verified: post.profiles.is_verified
-                } : undefined
-              }}
-              isLiked={post.user_liked}
-              isRetweeted={post.user_retweeted}
-              onLike={() => handleLike(post.id)}
-              onRetweet={() => handleRetweet(post.id)}
-              onPin={() => handlePin(post.id)}
-              onDelete={() => handleDelete(post.id)}
-              onShare={() => handleShare(post.id)}
-              onTrackView={() => handleTrackView(post.id)}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Hash className="w-8 h-8 text-purple-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            No posts found
-          </h3>
-          <p className="text-gray-500 dark:text-gray-400">
-            Be the first to post with #{hashtag}
-          </p>
-        </div>
-      )}
     </div>
   );
 };

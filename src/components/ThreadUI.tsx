@@ -148,6 +148,18 @@ const ThreadUI = ({ messages, onReply, onLike, onShare }: ThreadUIProps) => {
     </div>
   );
 
+  if (!messages || messages.length === 0) {
+    return (
+      <Card className="p-8 text-center">
+        <div className="text-muted-foreground">
+          <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <p>No messages in this thread yet.</p>
+          <p className="text-sm mt-2">Be the first to start the conversation!</p>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-1 bg-background p-4 rounded-lg border">
       <div className="mb-4">
@@ -170,16 +182,6 @@ const ThreadUI = ({ messages, onReply, onLike, onShare }: ThreadUIProps) => {
           )}
         </div>
       ))}
-      
-      {messages.length === 0 && (
-        <Card className="p-8 text-center">
-          <div className="text-muted-foreground">
-            <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No messages in this thread yet.</p>
-            <p className="text-sm mt-2">Be the first to start the conversation!</p>
-          </div>
-        </Card>
-      )}
     </div>
   );
 };

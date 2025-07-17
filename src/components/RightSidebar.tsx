@@ -99,7 +99,14 @@ const RightSidebar = () => {
           </div>
 
           {/* Search */}
-          <UserSearch searchQuery={searchQuery} showMessageButton />
+          <Card className="p-4">
+            <CardHeader className="p-0 pb-3">
+              <CardTitle className="text-lg">Search</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <UserSearch searchQuery={searchQuery} showMessageButton />
+            </CardContent>
+          </Card>
 
           {/* Trending */}
           <TrendingWidget onHashtagClick={handleHashtagClick} />

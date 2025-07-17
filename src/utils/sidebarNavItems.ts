@@ -58,7 +58,7 @@ export const getSidebarNavItems = ({
   
   if (hasValidSubscription) {
     premiumItems.push(
-      { name: 'AI Studio', path: '/ai-studio', icon: Crown, accent: 'from-yellow-400 to-orange-500' }
+      { name: 'Regal AI Studio', path: '/ai-studio', icon: Crown, accent: 'from-yellow-400 to-orange-500' }
     );
   }
 
