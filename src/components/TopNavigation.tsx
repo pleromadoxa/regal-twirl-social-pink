@@ -10,18 +10,14 @@ const TopNavigation = () => {
         <div className="flex justify-between items-center h-20 sm:h-24 md:h-28 lg:h-32">
           {/* Logo Section */}
           <Link to="/" className="flex flex-col items-center justify-center min-w-0 flex-1">
-            <div className="flex items-center gap-3 mb-1">
-              <img 
-                src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
-                alt="Regal Network Logo" 
-                className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-xl flex-shrink-0"
-              />
-              <div className="text-left">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Regal Network
-                </h1>
-              </div>
-            </div>
+            <img 
+              src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
+              alt="Regal Network Logo" 
+              className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-xl flex-shrink-0 mb-1"
+            />
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-1">
+              Regal Network
+            </h1>
             <div className="flex items-center gap-1">
               <Heart className="w-3 h-3 sm:w-4 sm:h-4 text-red-400 flex-shrink-0" />
               <span className="text-xs sm:text-sm md:text-base font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
