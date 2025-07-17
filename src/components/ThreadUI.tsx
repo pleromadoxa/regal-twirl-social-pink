@@ -29,6 +29,7 @@ interface ThreadUIProps {
 }
 
 const ThreadUI = ({ messages, onReply, onLike, onShare }: ThreadUIProps) => {
+  console.log('ThreadUI rendered with messages:', messages);
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
 
   const toggleThread = (messageId: string) => {
@@ -148,9 +149,9 @@ const ThreadUI = ({ messages, onReply, onLike, onShare }: ThreadUIProps) => {
   );
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 bg-background p-4 rounded-lg border">
       <div className="mb-4">
-        <h2 className="text-xl font-bold mb-2">Thread</h2>
+        <h2 className="text-xl font-bold mb-2 text-foreground">Thread Discussion</h2>
         <div className="w-full h-px bg-gradient-to-r from-primary/50 to-transparent"></div>
       </div>
       
