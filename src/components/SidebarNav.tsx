@@ -18,8 +18,11 @@ const SidebarNav = () => {
   const { user, profile } = useAuth();
   const isMobile = useIsMobile();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { allPages } = useBusinessPages();
-  const { hasValidSubscription, subscriptionData } = useSubscriptionStatus();
+  const { pages } = useBusinessPages();
+  const { hasValidSubscription, subscriptionData } = useSubscriptionStatus(
+    user?.email === 'pleromadoxa@gmail.com' || profile?.username === 'pleromadoxa',
+    () => {}
+  );
 
   // Check if user is admin
   const isAdmin = user?.email === 'pleromadoxa@gmail.com' || profile?.username === 'pleromadoxa';
@@ -27,7 +30,7 @@ const SidebarNav = () => {
   // Check subscription tiers
   const isPremiumUser = hasValidSubscription && subscriptionData?.subscription_tier === 'Premium';
   const isBusinessUser = hasValidSubscription && subscriptionData?.subscription_tier === 'Business';
-  const hasBusinessPages = allPages && allPages.length > 0;
+  const hasBusinessPages = pages && pages.length > 0;
 
   const navItems = getSidebarNavItems({
     hasValidSubscription,

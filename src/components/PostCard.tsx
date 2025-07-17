@@ -39,16 +39,20 @@ interface PostCardProps {
   onLike?: () => void;
   onRetweet?: () => void;
   onReply?: () => void;
+  onPin?: (postId: string) => void;
+  onDelete?: (postId: string) => void;
+  onShare?: (postId: string) => void;
+  onTrackView?: (postId: string) => void;
 }
 
-const PostCard = ({ post, isLiked, isRetweeted, onLike, onRetweet, onReply }: PostCardProps) => {
+const PostCard = ({ post, isLiked, isRetweeted, onLike, onRetweet, onReply, onPin, onDelete, onShare, onTrackView }: PostCardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { userPages } = useBusinessPages();
+  const { myPages } = useBusinessPages();
   const [isPinned, setIsPinned] = useState(false);
   
   const isOwnPost = user?.id === post.user_id;
-  const hasBusinessPages = userPages && userPages.length > 0;
+  const hasBusinessPages = myPages && myPages.length > 0;
 
   const handlePin = async () => {
     if (!user) return;
@@ -73,6 +77,8 @@ const PostCard = ({ post, isLiked, isRetweeted, onLike, onRetweet, onReply }: Po
         setIsPinned(true);
         toast({ title: "Post pinned" });
       }
+      
+      if (onPin) onPin(post.id);
     } catch (error) {
       console.error('Error pinning post:', error);
       toast({ title: "Error", description: "Failed to pin post", variant: "destructive" });
@@ -97,6 +103,14 @@ const PostCard = ({ post, isLiked, isRetweeted, onLike, onRetweet, onReply }: Po
       console.error('Error reporting post:', error);
       toast({ title: "Error", description: "Failed to report post", variant: "destructive" });
     }
+  };
+
+  const handleShare = () => {
+    if (onShare) onShare(post.id);
+  };
+
+  const handleDelete = () => {
+    if (onDelete) onDelete(post.id);
   };
 
   return (
@@ -222,6 +236,7 @@ const PostCard = ({ post, isLiked, isRetweeted, onLike, onRetweet, onReply }: Po
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={handleShare}
                 className="flex items-center space-x-2 text-gray-500 hover:text-blue-500"
               >
                 <Share className="w-4 h-4" />
@@ -231,7 +246,7 @@ const PostCard = ({ post, isLiked, isRetweeted, onLike, onRetweet, onReply }: Po
               {isOwnPost && hasBusinessPages && (
                 <BoostPostWidget 
                   postId={post.id} 
-                  businessPageId={userPages?.[0]?.id} 
+                  businessPageId={myPages?.[0]?.id} 
                 />
               )}
             </div>

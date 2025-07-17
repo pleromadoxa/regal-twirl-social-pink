@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 export const useSubscriptionStatus = (isAdmin: boolean, setProfile: (profile: any) => void) => {
   const { user } = useAuth();
   const [subscriptionData, setSubscriptionData] = useState<any>(null);
+  const [hasValidSubscription, setHasValidSubscription] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -18,6 +19,7 @@ export const useSubscriptionStatus = (isAdmin: boolean, setProfile: (profile: an
     
     // Skip subscription checks for admin users - they stay on business plan
     if (isAdmin) {
+      setHasValidSubscription(true);
       return;
     }
     
@@ -35,6 +37,7 @@ export const useSubscriptionStatus = (isAdmin: boolean, setProfile: (profile: an
         
         if (subscriptionEnd > now) {
           setSubscriptionData(subscription);
+          setHasValidSubscription(true);
           
           // Update profile premium tier based on active subscription
           const tierMapping = {
@@ -54,6 +57,7 @@ export const useSubscriptionStatus = (isAdmin: boolean, setProfile: (profile: an
           } : null);
         } else {
           // Subscription expired, reset to free
+          setHasValidSubscription(false);
           await supabase
             .from('profiles')
             .update({ premium_tier: 'free' })
@@ -63,6 +67,7 @@ export const useSubscriptionStatus = (isAdmin: boolean, setProfile: (profile: an
         }
       } else {
         // No subscription, ensure they're on free tier
+        setHasValidSubscription(false);
         await supabase
           .from('profiles')
           .update({ premium_tier: 'free' })
@@ -72,8 +77,9 @@ export const useSubscriptionStatus = (isAdmin: boolean, setProfile: (profile: an
       }
     } catch (error) {
       console.error('Error checking subscription status:', error);
+      setHasValidSubscription(false);
     }
   };
 
-  return { subscriptionData };
+  return { subscriptionData, hasValidSubscription };
 };

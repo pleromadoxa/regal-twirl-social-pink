@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
@@ -15,19 +14,19 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Professional = () => {
   const { user } = useAuth();
-  const { userPages, allPages, loading } = useBusinessPages();
+  const { myPages, pages, loading } = useBusinessPages();
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
   const [adsStats, setAdsStats] = useState({ active: 0, total_spend: 0, impressions: 0 });
 
   useEffect(() => {
-    if (userPages && userPages.length > 0) {
+    if (myPages && myPages.length > 0) {
       fetchRecentPosts();
       fetchAdsStats();
     }
-  }, [userPages]);
+  }, [myPages]);
 
   const fetchRecentPosts = async () => {
-    if (!user || !userPages?.length) return;
+    if (!user || !myPages?.length) return;
     
     try {
       const { data, error } = await supabase
@@ -45,10 +44,10 @@ const Professional = () => {
   };
 
   const fetchAdsStats = async () => {
-    if (!userPages?.length) return;
+    if (!myPages?.length) return;
     
     try {
-      const pageIds = userPages.map(page => page.id);
+      const pageIds = myPages.map(page => page.id);
       const { data, error } = await supabase
         .from('business_ads')
         .select(`
@@ -124,7 +123,7 @@ const Professional = () => {
               <Card className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
                 <CardContent className="p-4 text-center">
                   <Building2 className="w-8 h-8 mx-auto mb-2" />
-                  <p className="text-2xl font-bold">{userPages?.length || 0}</p>
+                  <p className="text-2xl font-bold">{myPages?.length || 0}</p>
                   <p className="text-sm opacity-90">Business Pages</p>
                 </CardContent>
               </Card>
@@ -133,7 +132,7 @@ const Professional = () => {
                 <CardContent className="p-4 text-center">
                   <Users className="w-8 h-8 mx-auto mb-2" />
                   <p className="text-2xl font-bold">
-                    {userPages?.reduce((sum, page) => sum + (page.followers_count || 0), 0) || 0}
+                    {myPages?.reduce((sum, page) => sum + (page.followers_count || 0), 0) || 0}
                   </p>
                   <p className="text-sm opacity-90">Total Followers</p>
                 </CardContent>
@@ -177,9 +176,9 @@ const Professional = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {userPages && userPages.length > 0 ? (
+                    {myPages && myPages.length > 0 ? (
                       <div className="space-y-4">
-                        {userPages.map((page) => (
+                        {myPages.map((page) => (
                           <div key={page.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                             <div className="flex items-center gap-3">
                               <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold">
@@ -236,10 +235,10 @@ const Professional = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              {userPages && userPages.length > 0 && (
+                              {myPages && myPages.length > 0 && (
                                 <BoostPostWidget 
                                   postId={post.id} 
-                                  businessPageId={userPages[0].id} 
+                                  businessPageId={myPages[0].id} 
                                 />
                               )}
                             </div>
@@ -257,9 +256,9 @@ const Professional = () => {
                     <CardTitle>Manage Business Pages</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {userPages && userPages.length > 0 ? (
+                    {myPages && myPages.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {userPages.map((page) => (
+                        {myPages.map((page) => (
                           <div key={page.id} className="border rounded-lg p-4">
                             <div className="flex items-center gap-3 mb-4">
                               <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-xl">
@@ -337,8 +336,8 @@ const Professional = () => {
                     <div className="text-center">
                       <h3 className="text-lg font-semibold mb-2">Boost Your Content</h3>
                       <p className="text-gray-600 mb-4">Reach more people and grow your audience with targeted advertising</p>
-                      {userPages && userPages.length > 0 ? (
-                        <BoostPostWidget businessPageId={userPages[0].id} />
+                      {myPages && myPages.length > 0 ? (
+                        <BoostPostWidget businessPageId={myPages[0].id} />
                       ) : (
                         <p className="text-sm text-gray-500">Create a business page first to start advertising</p>
                       )}
