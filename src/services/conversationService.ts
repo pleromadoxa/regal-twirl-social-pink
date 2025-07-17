@@ -1,27 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-
-export interface Conversation {
-  id: string;
-  participant_1: string;
-  participant_2: string;
-  last_message_at: string | null;
-  created_at: string;
-  streak_count: number;
-  participant_1_profile?: {
-    id: string;
-    username: string | null;
-    display_name: string | null;
-    avatar_url: string | null;
-  };
-  participant_2_profile?: {
-    id: string;
-    username: string | null;
-    display_name: string | null;
-    avatar_url: string | null;
-  };
-  last_message?: string;
-}
+import { Conversation } from '@/types/messages';
 
 export const fetchConversations = async (userId: string): Promise<Conversation[]> => {
   try {
@@ -63,7 +42,6 @@ export const fetchConversations = async (userId: string): Promise<Conversation[]
     }
 
     // Get last messages for each conversation
-    const conversationIds = conversationsData.map(conv => conv.id);
     const { data: messagesData } = await supabase
       .from('messages')
       .select('id, content, created_at, sender_id, recipient_id')
@@ -85,8 +63,8 @@ export const fetchConversations = async (userId: string): Promise<Conversation[]
 
       return {
         ...conv,
-        participant_1_profile: participant1Profile || null,
-        participant_2_profile: participant2Profile || null,
+        participant_1_profile: participant1Profile || undefined,
+        participant_2_profile: participant2Profile || undefined,
         last_message: lastMessage
       };
     });

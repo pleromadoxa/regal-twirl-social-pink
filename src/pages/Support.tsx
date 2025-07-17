@@ -85,12 +85,10 @@ const Support = () => {
       
       <RightSidebar />
       
-      {showTicketDialog && (
-        <SupportTicketDialog 
-          open={showTicketDialog}
-          onOpenChange={setShowTicketDialog}
-        />
-      )}
+      <SupportTicketDialog 
+        open={showTicketDialog}
+        onOpenChange={setShowTicketDialog}
+      />
     </div>
   );
 };

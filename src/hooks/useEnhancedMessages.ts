@@ -1,21 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { fetchConversations, createConversation, type Conversation } from '@/services/conversationService';
-
-interface Message {
-  id: string;
-  sender_id: string;
-  recipient_id: string;
-  content: string;
-  message_type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location';
-  created_at: string;
-  read_at?: string;
-  edited_at?: string;
-  metadata?: any;
-}
+import { fetchConversations, createConversation } from '@/services/conversationService';
+import type { Conversation, Message } from '@/types/messages';
 
 export const useEnhancedMessages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
