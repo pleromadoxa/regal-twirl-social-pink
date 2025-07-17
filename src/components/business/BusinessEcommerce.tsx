@@ -1,26 +1,16 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  ShoppingCart, 
-  Package, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Eye,
-  DollarSign,
-  TrendingUp,
-  Users
-} from 'lucide-react';
+import { generateInvoicePDF, InvoiceData } from '@/utils/invoiceGenerator';
+import { Package, DollarSign, FileText, Receipt, Download, Mail, Bell } from 'lucide-react';
 
 interface BusinessEcommerceProps {
   businessPage: any;
@@ -44,443 +34,568 @@ interface Order {
   id: string;
   customer_name: string;
   customer_email: string;
+  customer_phone?: string;
   total_amount: number;
   status: string;
   payment_status: string;
   items: any[];
   created_at: string;
+  currency: string;
+  delivery_name?: string;
+  delivery_phone?: string;
+  delivery_address?: string;
+  delivery_city?: string;
+  delivery_state?: string;
+  delivery_postal_code?: string;
+  delivery_country?: string;
+  delivery_instructions?: string;
+}
+
+interface Invoice {
+  id: string;
+  invoice_number: string;
+  client_name: string;
+  client_email?: string;
+  client_address?: string;
+  total_amount: number;
+  status: string;
+  items: any[];
+  created_at: string;
+  due_date?: string;
+  issued_date: string;
+  currency: string;
+  tax_rate?: number;
+  tax_amount?: number;
+  subtotal: number;
+  notes?: string;
 }
 
 const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
-  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [productDialogOpen, setProductDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const { toast } = useToast();
 
-  const [productForm, setProductForm] = useState({
-    name: '',
-    description: '',
-    price: 0,
-    currency: 'USD',
-    stock_quantity: 0,
-    category: '',
-    sku: ''
+  const [invoiceForm, setInvoiceForm] = useState({
+    client_name: '',
+    client_email: '',
+    client_address: '',
+    due_date: '',
+    tax_rate: '0',
+    notes: ''
   });
 
   useEffect(() => {
-    fetchProducts();
-    fetchOrders();
+    fetchData();
   }, [businessPage.id]);
 
-  const fetchProducts = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('business_products')
-        .select('*')
-        .eq('business_page_id', businessPage.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setProducts(data || []);
+      await Promise.all([
+        fetchProducts(),
+        fetchOrders(),
+        fetchInvoices()
+      ]);
     } catch (error) {
-      console.error('Error fetching products:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch products",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const fetchOrders = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('business_orders')
-        .select('*')
-        .eq('business_page_id', businessPage.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      // Transform the data to match our Order interface
-      const transformedOrders = (data || []).map(order => ({
-        ...order,
-        items: Array.isArray(order.items) ? order.items : []
-      }));
-      
-      setOrders(transformedOrders);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleProductSubmit = async () => {
-    try {
-      const productData = {
-        ...productForm,
-        business_page_id: businessPage.id,
-        is_active: true,
-        images: []
-      };
+  const fetchProducts = async () => {
+    const { data, error } = await supabase
+      .from('business_products')
+      .select('*')
+      .eq('business_page_id', businessPage.id)
+      .order('created_at', { ascending: false });
 
-      if (editingProduct) {
-        const { error } = await supabase
-          .from('business_products')
-          .update(productData)
-          .eq('id', editingProduct.id);
-
-        if (error) throw error;
-        toast({ title: "Success", description: "Product updated successfully" });
-      } else {
-        const { error } = await supabase
-          .from('business_products')
-          .insert([productData]);
-
-        if (error) throw error;
-        toast({ title: "Success", description: "Product created successfully" });
-      }
-
-      setProductDialogOpen(false);
-      setEditingProduct(null);
-      setProductForm({
-        name: '',
-        description: '',
-        price: 0,
-        currency: 'USD',
-        stock_quantity: 0,
-        category: '',
-        sku: ''
-      });
-      fetchProducts();
-    } catch (error) {
-      console.error('Error saving product:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save product",
-        variant: "destructive"
-      });
-    }
+    if (error) throw error;
+    setProducts(data || []);
   };
 
-  const handleDeleteProduct = async (productId: string) => {
+  const fetchOrders = async () => {
+    const { data, error } = await supabase
+      .from('business_orders')
+      .select('*')
+      .eq('business_page_id', businessPage.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    const mappedOrders = (data || []).map(order => ({
+      ...order,
+      items: Array.isArray(order.items) ? order.items : []
+    }));
+    setOrders(mappedOrders);
+  };
+
+  const fetchInvoices = async () => {
+    const { data, error } = await supabase
+      .from('business_invoices')
+      .select('*')
+      .eq('business_page_id', businessPage.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    const mappedInvoices = (data || []).map(invoice => ({
+      ...invoice,
+      items: Array.isArray(invoice.items) ? invoice.items : []
+    }));
+    setInvoices(mappedInvoices);
+  };
+
+  const updateOrderStatus = async (orderId: string, status: string) => {
     try {
       const { error } = await supabase
-        .from('business_products')
-        .delete()
-        .eq('id', productId);
+        .from('business_orders')
+        .update({ status })
+        .eq('id', orderId);
 
       if (error) throw error;
-      
-      toast({ title: "Success", description: "Product deleted successfully" });
-      fetchProducts();
+
+      // Send notification to customer
+      const order = orders.find(o => o.id === orderId);
+      if (order && status === 'completed') {
+        await createOrderNotification(order);
+        await sendOrderEmail(order);
+      }
+
+      await fetchOrders();
+      toast({
+        title: "Success",
+        description: "Order status updated"
+      });
     } catch (error) {
-      console.error('Error deleting product:', error);
+      console.error('Error updating order:', error);
       toast({
         title: "Error",
-        description: "Failed to delete product",
+        description: "Failed to update order status",
         variant: "destructive"
       });
     }
   };
 
-  const openProductDialog = (product?: Product) => {
-    if (product) {
-      setEditingProduct(product);
-      setProductForm({
-        name: product.name,
-        description: product.description || '',
-        price: product.price,
-        currency: product.currency,
-        stock_quantity: product.stock_quantity || 0,
-        category: product.category || '',
-        sku: product.sku || ''
-      });
-    } else {
-      setEditingProduct(null);
-      setProductForm({
-        name: '',
-        description: '',
-        price: 0,
-        currency: 'USD',
-        stock_quantity: 0,
-        category: '',
-        sku: ''
-      });
+  const createOrderNotification = async (order: Order) => {
+    try {
+      // Get customer's user ID from the order
+      const { data: customerData } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', order.customer_email)
+        .single();
+
+      if (customerData) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: customerData.id,
+            type: 'order_completed',
+            title: 'Order Completed',
+            message: `Your order #${order.id.slice(0, 8)} has been completed and is ready for delivery!`,
+            data: { order_id: order.id, business_page: businessPage.page_name }
+          });
+      }
+    } catch (error) {
+      console.error('Error creating notification:', error);
     }
-    setProductDialogOpen(true);
   };
 
-  const totalRevenue = orders
-    .filter(order => order.payment_status === 'paid')
-    .reduce((sum, order) => sum + order.total_amount, 0);
+  const sendOrderEmail = async (order: Order) => {
+    try {
+      // This would integrate with an email service
+      // For now, we'll just show a success message
+      console.log('Email would be sent to:', order.customer_email);
+    } catch (error) {
+      console.error('Error sending email:', error);
+    }
+  };
 
+  const generateInvoiceFromOrder = (order: Order) => {
+    setSelectedOrder(order);
+    setInvoiceForm({
+      client_name: order.customer_name,
+      client_email: order.customer_email,
+      client_address: order.delivery_address ? 
+        `${order.delivery_address}\n${order.delivery_city}, ${order.delivery_state} ${order.delivery_postal_code}\n${order.delivery_country}` : '',
+      due_date: '',
+      tax_rate: '0',
+      notes: ''
+    });
+    setInvoiceDialogOpen(true);
+  };
+
+  const createInvoice = async () => {
+    if (!selectedOrder) return;
+
+    try {
+      const invoiceNumber = `INV-${Date.now()}`;
+      const taxRate = parseFloat(invoiceForm.tax_rate) || 0;
+      const subtotal = selectedOrder.total_amount;
+      const taxAmount = subtotal * (taxRate / 100);
+      const totalAmount = subtotal + taxAmount;
+
+      const invoiceData = {
+        business_page_id: businessPage.id,
+        invoice_number: invoiceNumber,
+        client_name: invoiceForm.client_name,
+        client_email: invoiceForm.client_email,
+        client_address: invoiceForm.client_address,
+        items: selectedOrder.items,
+        subtotal,
+        tax_rate: taxRate,
+        tax_amount: taxAmount,
+        total_amount: totalAmount,
+        currency: selectedOrder.currency,
+        due_date: invoiceForm.due_date || null,
+        issued_date: new Date().toISOString().split('T')[0],
+        status: 'sent',
+        notes: invoiceForm.notes
+      };
+
+      const { error } = await supabase
+        .from('business_invoices')
+        .insert([invoiceData]);
+
+      if (error) throw error;
+
+      // Generate PDF
+      const pdfData: InvoiceData = {
+        id: '',
+        invoice_number: invoiceNumber,
+        business_page: {
+          page_name: businessPage.page_name,
+          email: businessPage.email,
+          phone: businessPage.phone,
+          address: businessPage.address
+        },
+        client_name: invoiceForm.client_name,
+        client_email: invoiceForm.client_email,
+        client_address: invoiceForm.client_address,
+        items: selectedOrder.items.map((item: any) => ({
+          description: item.name,
+          quantity: item.quantity,
+          rate: item.price
+        })),
+        subtotal,
+        tax_rate: taxRate,
+        tax_amount: taxAmount,
+        total_amount: totalAmount,
+        currency: selectedOrder.currency,
+        due_date: invoiceForm.due_date,
+        issued_date: new Date().toISOString().split('T')[0],
+        notes: invoiceForm.notes
+      };
+
+      generateInvoicePDF(pdfData);
+
+      setInvoiceDialogOpen(false);
+      setSelectedOrder(null);
+      await fetchInvoices();
+      
+      toast({
+        title: "Success",
+        description: "Invoice created and downloaded"
+      });
+    } catch (error) {
+      console.error('Error creating invoice:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create invoice",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const generateReceipt = (order: Order) => {
+    const receiptData: InvoiceData = {
+      id: order.id,
+      invoice_number: `RECEIPT-${order.id.slice(0, 8)}`,
+      business_page: {
+        page_name: businessPage.page_name,
+        email: businessPage.email,
+        phone: businessPage.phone,
+        address: businessPage.address
+      },
+      client_name: order.customer_name,
+      client_email: order.customer_email,
+      client_address: order.delivery_address ? 
+        `${order.delivery_address}\n${order.delivery_city}, ${order.delivery_state} ${order.delivery_postal_code}` : '',
+      items: order.items.map((item: any) => ({
+        description: item.name,
+        quantity: item.quantity,
+        rate: item.price
+      })),
+      subtotal: order.total_amount,
+      tax_rate: 0,
+      tax_amount: 0,
+      total_amount: order.total_amount,
+      currency: order.currency,
+      issued_date: new Date(order.created_at).toISOString().split('T')[0],
+      notes: 'Thank you for your purchase!'
+    };
+
+    generateInvoicePDF(receiptData);
+  };
+
+  // Calculate stats
+  const totalRevenue = orders.reduce((sum, order) => 
+    order.payment_status === 'paid' ? sum + order.total_amount : sum, 0
+  );
   const pendingOrders = orders.filter(order => order.status === 'pending').length;
   const totalProducts = products.length;
-  const activeProducts = products.filter(p => p.is_active).length;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-      </div>
-    );
-  }
+  const activeProducts = products.filter(product => product.is_active).length;
 
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">${totalRevenue.toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground">Total Revenue</p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <DollarSign className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
+                <p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                <ShoppingCart className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Package className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">Pending Orders</p>
                 <p className="text-2xl font-bold">{pendingOrders}</p>
-                <p className="text-sm text-muted-foreground">Pending Orders</p>
               </div>
             </div>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                <Package className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{activeProducts}/{totalProducts}</p>
-                <p className="text-sm text-muted-foreground">Active Products</p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Package className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">Total Products</p>
+                <p className="text-2xl font-bold">{totalProducts}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{orders.length}</p>
-                <p className="text-sm text-muted-foreground">Total Orders</p>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Package className="h-8 w-8 text-orange-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">Active Products</p>
+                <p className="text-2xl font-bold">{activeProducts}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="products" className="space-y-4">
+      <Tabs defaultValue="orders" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="orders">Orders</TabsTrigger>
+          <TabsTrigger value="invoices">Invoices</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="products">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Products</CardTitle>
-                <Button onClick={() => openProductDialog()}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Product
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {products.length === 0 ? (
-                <div className="text-center py-12">
-                  <Package className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">No products yet. Add your first product to get started.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {products.map((product) => (
-                    <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold">{product.name}</h4>
-                          <Badge variant={product.is_active ? "default" : "secondary"}>
-                            {product.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                          {product.category && (
-                            <Badge variant="outline">{product.category}</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">{product.description}</p>
-                        <div className="flex items-center gap-4 text-sm">
-                          <span className="font-medium">${product.price} {product.currency}</span>
-                          <span>Stock: {product.stock_quantity}</span>
-                          {product.sku && <span>SKU: {product.sku}</span>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline" onClick={() => openProductDialog(product)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleDeleteProduct(product.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+        <TabsContent value="orders" className="space-y-4">
+          <div className="rounded-md border">
+            <div className="p-4">
+              <h3 className="text-lg font-semibold">Recent Orders</h3>
+            </div>
+            <div className="border-t">
+              {orders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-4 border-b last:border-b-0">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">{order.customer_name}</p>
+                    <p className="text-sm text-muted-foreground">{order.customer_email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(order.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right space-y-1">
+                    <p className="text-sm font-medium">${order.total_amount.toFixed(2)}</p>
+                    <div className="flex gap-2">
+                      <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
+                        {order.status}
+                      </Badge>
+                      <Badge variant={order.payment_status === 'paid' ? 'default' : 'destructive'}>
+                        {order.payment_status}
+                      </Badge>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex gap-2">
+                    {order.status !== 'completed' && (
+                      <Button
+                        size="sm"
+                        onClick={() => updateOrderStatus(order.id, 'completed')}
+                      >
+                        <Bell className="h-4 w-4 mr-1" />
+                        Complete
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => generateReceipt(order)}
+                    >
+                      <Receipt className="h-4 w-4 mr-1" />
+                      Receipt
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => generateInvoiceFromOrder(order)}
+                    >
+                      <FileText className="h-4 w-4 mr-1" />
+                      Invoice
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {orders.length === 0 && (
+                <div className="p-8 text-center text-muted-foreground">
+                  No orders yet
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
-        <TabsContent value="orders">
-          <Card>
-            <CardHeader>
-              <CardTitle>Orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {orders.length === 0 ? (
-                <div className="text-center py-12">
-                  <ShoppingCart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">No orders yet.</p>
+        <TabsContent value="invoices" className="space-y-4">
+          <div className="rounded-md border">
+            <div className="p-4">
+              <h3 className="text-lg font-semibold">Invoices</h3>
+            </div>
+            <div className="border-t">
+              {invoices.map((invoice) => (
+                <div key={invoice.id} className="flex items-center justify-between p-4 border-b last:border-b-0">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">{invoice.invoice_number}</p>
+                    <p className="text-sm text-muted-foreground">{invoice.client_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Issued: {new Date(invoice.issued_date).toLocaleDateString()}
+                      {invoice.due_date && ` • Due: ${new Date(invoice.due_date).toLocaleDateString()}`}
+                    </p>
+                  </div>
+                  <div className="text-right space-y-1">
+                    <p className="text-sm font-medium">${invoice.total_amount.toFixed(2)}</p>
+                    <Badge variant={invoice.status === 'paid' ? 'default' : 'secondary'}>
+                      {invoice.status}
+                    </Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => generateInvoicePDF({
+                      ...invoice,
+                      tax_rate: invoice.tax_rate || 0,
+                      tax_amount: invoice.tax_amount || 0,
+                      business_page: {
+                        page_name: businessPage.page_name,
+                        email: businessPage.email,
+                        phone: businessPage.phone,
+                        address: businessPage.address
+                      },
+                      items: invoice.items.map((item: any) => ({
+                        description: item.name || item.description,
+                        quantity: item.quantity,
+                        rate: item.price || item.rate
+                      }))
+                    })}
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Download
+                  </Button>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <div key={order.id} className="p-4 border rounded-lg">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="font-semibold">{order.customer_name}</h4>
-                          <p className="text-sm text-muted-foreground">{order.customer_email}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">${order.total_amount}</p>
-                          <div className="flex gap-2 mt-1">
-                            <Badge variant={order.status === 'pending' ? 'secondary' : 'default'}>
-                              {order.status}
-                            </Badge>
-                            <Badge variant={order.payment_status === 'paid' ? 'default' : 'secondary'}>
-                              {order.payment_status}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
+              ))}
+              {invoices.length === 0 && (
+                <div className="p-8 text-center text-muted-foreground">
+                  No invoices yet
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
-      {/* Product Dialog */}
-      <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
+      {/* Invoice Creation Dialog */}
+      <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {editingProduct ? 'Edit Product' : 'Add New Product'}
-            </DialogTitle>
+            <DialogTitle>Create Invoice</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Product Name</label>
+              <Label htmlFor="client_name">Client Name</Label>
               <Input
-                value={productForm.name}
-                onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                placeholder="Enter product name"
+                id="client_name"
+                value={invoiceForm.client_name}
+                onChange={(e) => setInvoiceForm({...invoiceForm, client_name: e.target.value})}
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Description</label>
+              <Label htmlFor="client_email">Client Email</Label>
+              <Input
+                id="client_email"
+                type="email"
+                value={invoiceForm.client_email}
+                onChange={(e) => setInvoiceForm({...invoiceForm, client_email: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label htmlFor="client_address">Client Address</Label>
               <Textarea
-                value={productForm.description}
-                onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                placeholder="Enter product description"
+                id="client_address"
+                value={invoiceForm.client_address}
+                onChange={(e) => setInvoiceForm({...invoiceForm, client_address: e.target.value})}
+                rows={3}
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Price</label>
-                <Input
-                  type="number"
-                  value={productForm.price}
-                  onChange={(e) => setProductForm({ ...productForm, price: parseFloat(e.target.value) || 0 })}
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Currency</label>
-                <Select value={productForm.currency} onValueChange={(value) => setProductForm({ ...productForm, currency: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Stock Quantity</label>
-                <Input
-                  type="number"
-                  value={productForm.stock_quantity}
-                  onChange={(e) => setProductForm({ ...productForm, stock_quantity: parseInt(e.target.value) || 0 })}
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Category</label>
-                <Input
-                  value={productForm.category}
-                  onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                  placeholder="Category"
-                />
-              </div>
             </div>
             <div>
-              <label className="text-sm font-medium">SKU</label>
+              <Label htmlFor="due_date">Due Date</Label>
               <Input
-                value={productForm.sku}
-                onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })}
-                placeholder="Product SKU"
+                id="due_date"
+                type="date"
+                value={invoiceForm.due_date}
+                onChange={(e) => setInvoiceForm({...invoiceForm, due_date: e.target.value})}
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setProductDialogOpen(false)}>
+            <div>
+              <Label htmlFor="tax_rate">Tax Rate (%)</Label>
+              <Input
+                id="tax_rate"
+                type="number"
+                step="0.01"
+                value={invoiceForm.tax_rate}
+                onChange={(e) => setInvoiceForm({...invoiceForm, tax_rate: e.target.value})}
+              />
+            </div>
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={invoiceForm.notes}
+                onChange={(e) => setInvoiceForm({...invoiceForm, notes: e.target.value})}
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setInvoiceDialogOpen(false)} className="flex-1">
                 Cancel
               </Button>
-              <Button onClick={handleProductSubmit}>
-                {editingProduct ? 'Update' : 'Create'} Product
+              <Button onClick={createInvoice} className="flex-1">
+                Create Invoice
               </Button>
             </div>
           </div>

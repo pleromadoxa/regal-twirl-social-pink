@@ -172,7 +172,7 @@ const ShoppingCart = () => {
           sum + (item.business_products.price * item.quantity), 0
         );
 
-        const { error } = await supabase
+        const { data: orderData, error } = await supabase
           .from('business_orders')
           .insert({
             business_page_id: businessId,
@@ -193,10 +193,50 @@ const ShoppingCart = () => {
             total_amount: subtotal,
             currency: items[0].business_products.currency,
             status: 'pending',
-            payment_status: 'pending'
-          });
+            payment_status: 'paid'
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Get business page name for notification
+        const { data: businessData } = await supabase
+          .from('business_pages')
+          .select('page_name')
+          .eq('id', businessId)
+          .single();
+
+        // Send purchase confirmation email and notification
+        if (orderData && businessData) {
+          await supabase.functions.invoke('send-purchase-email', {
+            body: {
+              orderId: orderData.id,
+              customerEmail: user.email,
+              customerName: deliveryInfo.name,
+              businessName: businessData.page_name,
+              orderItems,
+              totalAmount: subtotal,
+              currency: items[0].business_products.currency
+            }
+          });
+
+          // Create notification for the customer
+          await supabase
+            .from('notifications')
+            .insert({
+              user_id: user.id,
+              type: 'order_confirmation',
+              title: 'Order Confirmed',
+              message: `Your order from ${businessData.page_name} has been confirmed! Order #${orderData.id.slice(0, 8)}`,
+              data: {
+                order_id: orderData.id,
+                business_name: businessData.page_name,
+                total_amount: subtotal,
+                currency: items[0].business_products.currency
+              }
+            });
+        }
       }
 
       // Clear cart
