@@ -271,7 +271,7 @@ export const useBusinessPages = () => {
 
   useEffect(() => {
     fetchPages();
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id, not the entire user object
 
   const refetch = () => {
     setLoading(true);
