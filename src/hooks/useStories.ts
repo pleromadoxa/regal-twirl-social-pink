@@ -111,11 +111,14 @@ export const useStories = () => {
       setStories(storiesWithViews);
     } catch (error) {
       console.error('Error fetching stories:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load stories",
-        variant: "destructive",
-      });
+      // Only show error toast for actual errors, not empty results
+      if (error && typeof error === 'object' && 'message' in error) {
+        toast({
+          title: "Error",
+          description: "Failed to load stories",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
