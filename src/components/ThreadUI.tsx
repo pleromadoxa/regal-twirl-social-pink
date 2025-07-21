@@ -26,7 +26,7 @@ interface ThreadUIProps {
 }
 
 const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
-  console.log('ThreadUI: Component rendering');
+  console.log('ThreadUI: Component rendering - START');
   
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
 
@@ -181,7 +181,8 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
     </div>
   );
 
-  console.log('ThreadUI: About to render component');
+  console.log('ThreadUI: About to render component - END');
+  console.log('ThreadUI: Current expandedThreads:', expandedThreads);
   
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-purple-200 dark:border-purple-800"

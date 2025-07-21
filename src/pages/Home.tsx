@@ -11,7 +11,9 @@ import ThreadUI from "@/components/ThreadUI";
 import { useState, useEffect } from "react";
 
 const Home = () => {
+  console.log('Home: Component rendering - START');
   const { user, loading } = useAuth();
+  console.log('Home: Auth state - user:', !!user, 'loading:', loading);
   const [feedFilter, setFeedFilter] = useState<'all' | 'professional' | 'trending'>('all');
 
   // Test Supabase connection on mount
