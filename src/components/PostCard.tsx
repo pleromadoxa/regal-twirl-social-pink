@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import BoostPostWidget from './BoostPostWidget';
 import RetweetIndicator from './RetweetIndicator';
+import SponsoredIndicator from './SponsoredIndicator';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 
@@ -39,6 +40,8 @@ interface PostCardProps {
   isLiked?: boolean;
   isRetweeted?: boolean;
   isBookmarked?: boolean;
+  isSponsored?: boolean;
+  sponsoredBy?: string;
   retweetedBy?: any[];
   onLike?: () => void;
   onRetweet?: () => void;
@@ -55,6 +58,8 @@ const PostCard = ({
   isLiked, 
   isRetweeted, 
   isBookmarked,
+  isSponsored,
+  sponsoredBy,
   retweetedBy = [],
   onLike, 
   onRetweet, 
@@ -162,6 +167,13 @@ const PostCard = ({
                 <span className="text-sm text-gray-500">
                   {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                 </span>
+                {/* Sponsored Indicator */}
+                {isSponsored && (
+                  <>
+                    <span className="text-sm text-gray-500">·</span>
+                    <SponsoredIndicator sponsoredBy={sponsoredBy} />
+                  </>
+                )}
               </div>
               
               <DropdownMenu>

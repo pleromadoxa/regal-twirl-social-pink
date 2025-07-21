@@ -11,6 +11,7 @@ import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import TrendingHashtags from '@/components/TrendingHashtags';
 import SponsoredPostsWidget from '@/components/SponsoredPostsWidget';
+import BoostedPostsSection from '@/components/BoostedPostsSection';
 import PostsList from '@/components/PostsList';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePosts } from '@/hooks/usePosts';
@@ -239,6 +240,9 @@ const Explore = () => {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Boosted Posts from Professional/Business Pages */}
+              <BoostedPostsSection />
 
               {/* Sponsored Posts Widget */}
               <SponsoredPostsWidget />

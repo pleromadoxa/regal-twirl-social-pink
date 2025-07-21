@@ -160,26 +160,26 @@ const BusinessAnalytics = () => {
             {myPages.length > 0 && (
               <div className="w-80">
                 <Select value={selectedPageId} onValueChange={setSelectedPageId}>
-                  <SelectTrigger className="border-purple-200 focus:border-purple-500">
+                  <SelectTrigger className="bg-white dark:bg-slate-800 border-purple-200 focus:border-purple-500 shadow-lg z-50">
                     <SelectValue placeholder="Select a business page" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-700 shadow-lg z-[60]">
                     {myPages.map((page) => (
-                      <SelectItem key={page.id} value={page.id}>
-                        <div className="flex items-center gap-3">
+                      <SelectItem key={page.id} value={page.id} className="focus:bg-purple-50 dark:focus:bg-purple-900/20">
+                        <div className="flex items-center gap-3 w-full">
                           <Avatar className="w-6 h-6">
                             <AvatarImage src={page.avatar_url || undefined} />
                             <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs">
                               {page.page_name[0]?.toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex items-center gap-2">
-                            <span>{page.page_name}</span>
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="truncate">{page.page_name}</span>
                             {page.is_verified && (
-                              <Crown className="w-3 h-3 text-blue-500" />
+                              <Crown className="w-3 h-3 text-blue-500 flex-shrink-0" />
                             )}
                           </div>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs flex-shrink-0">
                             {page.page_type}
                           </Badge>
                         </div>
