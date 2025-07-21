@@ -16,7 +16,7 @@ const SubscriptionBadge = ({ tier, showIcon = true, country }: SubscriptionBadge
       case 'business':
         return 'Business Plan';
       default:
-        return country || 'Free Plan';
+        return country || 'Set Location';
     }
   };
 
