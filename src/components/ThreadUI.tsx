@@ -1,10 +1,7 @@
-
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Heart, MessageCircle, Share, TrendingUp } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageCircle, Heart, Share2, MoreHorizontal, Reply, Sparkles, Users, TrendingUp } from 'lucide-react';
 
 interface ThreadMessage {
   id: string;
@@ -29,16 +26,9 @@ interface ThreadUIProps {
 }
 
 const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
-  console.log('ThreadUI: Component rendering/re-rendering');
+  console.log('ThreadUI: Component rendering');
+  
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
-
-  // Debug: Track when component mounts/unmounts
-  useEffect(() => {
-    console.log('ThreadUI: Component mounted');
-    return () => {
-      console.log('ThreadUI: Component unmounting');
-    };
-  }, []);
 
   // Static thread data - never changes
   const staticThreadMessages: ThreadMessage[] = [
@@ -80,7 +70,7 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
         avatar: "/placeholder.svg",
         verified: false
       },
-      content: "Amen! I'm grateful for second chances and the grace that covers us daily. His mercies are new every morning! 🌅",
+      content: "Amen! 🙌 I'm grateful for His endless mercy and the beautiful sunrise this morning that reminded me of His faithfulness. Every day is a gift! #Blessed",
       timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
       likes: 8,
       replies: 1,
@@ -89,142 +79,100 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
     }
   ];
 
-  const toggleThread = useCallback((messageId: string) => {
-    setExpandedThreads(prev => {
-      const newExpanded = new Set(prev);
-      if (newExpanded.has(messageId)) {
-        newExpanded.delete(messageId);
-      } else {
-        newExpanded.add(messageId);
-      }
-      return newExpanded;
-    });
-  }, []);
-
-  const formatTimeAgo = (timestamp: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - timestamp.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return 'now';
-    if (minutes < 60) return `${minutes}m`;
-    if (hours < 24) return `${hours}h`;
-    return `${days}d`;
+  const toggleThreadExpansion = (messageId: string) => {
+    const newExpanded = new Set(expandedThreads);
+    if (newExpanded.has(messageId)) {
+      newExpanded.delete(messageId);
+    } else {
+      newExpanded.add(messageId);
+    }
+    setExpandedThreads(newExpanded);
   };
 
-  const handleLike = useCallback((messageId: string) => {
-    // Only handle the visual feedback, don't actually update the data
-    onLike?.(messageId);
-  }, [onLike]);
+  const formatTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m`;
+    } else {
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      return `${diffInHours}h`;
+    }
+  };
 
   const renderMessage = (message: ThreadMessage, isReply = false) => (
-    <div 
-      key={message.id} 
-      className={`relative group transition-all duration-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-lg ${isReply ? 'ml-8 mt-3' : 'mb-4'} p-4`}
-    >
-      {/* Connection line for replies */}
-      {isReply && (
-        <div className="absolute -left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-400/60 via-pink-400/40 to-transparent" />
-      )}
-      
-      <div className="flex items-start space-x-3">
-        {/* Avatar with glow */}
-        <div className="relative flex-shrink-0">
-          <Avatar className="w-12 h-12 border-2 border-white dark:border-slate-700 shadow-md">
-            <AvatarImage src={message.author.avatar} alt={message.author.name} />
-            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white font-bold">
-              {message.author.name.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
-          {message.author.verified && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-md">
-              <Sparkles className="w-3 h-3 text-white" />
-            </div>
-          )}
-        </div>
+    <div className={`p-4 ${isReply ? 'bg-slate-50 dark:bg-slate-800/50' : 'bg-white dark:bg-slate-800'} rounded-lg border border-slate-200 dark:border-slate-700 ${isReply ? 'ml-4' : ''}`}>
+      <div className="flex space-x-3">
+        <Avatar className="w-10 h-10">
+          <AvatarImage src={message.author.avatar} />
+          <AvatarFallback>{message.author.name[0]}</AvatarFallback>
+        </Avatar>
         
         <div className="flex-1 min-w-0">
-          {/* Author info */}
-          <div className="flex items-center space-x-2 mb-2">
-            <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+          <div className="flex items-center space-x-2 mb-1">
+            <span className="font-semibold text-slate-900 dark:text-slate-100 truncate">
               {message.author.name}
             </span>
             {message.author.verified && (
-              <Badge className="h-4 px-2 text-xs bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0">
-                ✓
-              </Badge>
+              <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs">✓</span>
+              </div>
             )}
-            <span className="text-sm text-slate-600 dark:text-slate-400">
+            <span className="text-slate-500 dark:text-slate-400 text-sm">
               @{message.author.username}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-500">
+            <span className="text-slate-500 dark:text-slate-400 text-sm">·</span>
+            <span className="text-slate-500 dark:text-slate-400 text-sm">
               {formatTimeAgo(message.timestamp)}
             </span>
           </div>
           
-          {/* Message content */}
-          <div className="mb-3">
-            <p className="text-slate-800 dark:text-slate-200 leading-relaxed text-sm whitespace-pre-wrap">
-              {message.content}
-            </p>
+          <div className="text-slate-900 dark:text-slate-100 whitespace-pre-wrap break-words">
+            {message.content}
           </div>
           
-          {/* Action buttons */}
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-6 mt-3">
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 rounded-full hover:bg-blue-500/10 hover:text-blue-600 transition-all duration-200"
+              className="text-slate-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 p-1"
               onClick={() => onReply?.(message.id)}
             >
               <MessageCircle className="w-4 h-4 mr-1" />
-              <span className="text-xs">{message.replies || 0}</span>
+              <span className="text-sm">{message.replies}</span>
             </Button>
             
             <Button
               variant="ghost"
               size="sm"
-              className={`h-8 px-3 rounded-full transition-all duration-200 ${
-                message.isLiked 
-                  ? 'text-red-500 bg-red-500/10' 
-                  : 'hover:bg-red-500/10 hover:text-red-500'
-              }`}
-              onClick={() => handleLike(message.id)}
+              className={`p-1 ${message.isLiked 
+                ? 'text-red-500 hover:text-red-600' 
+                : 'text-slate-500 hover:text-red-500'
+              } hover:bg-red-50 dark:hover:bg-red-900/20`}
+              onClick={() => onLike?.(message.id)}
             >
               <Heart className={`w-4 h-4 mr-1 ${message.isLiked ? 'fill-current' : ''}`} />
-              <span className="text-xs">{message.likes || 0}</span>
+              <span className="text-sm">{message.likes}</span>
             </Button>
             
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 rounded-full hover:bg-green-500/10 hover:text-green-600 transition-all duration-200"
+              className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-1"
               onClick={() => onShare?.(message.id)}
             >
-              <Share2 className="w-4 h-4" />
+              <Share className="w-4 h-4" />
             </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-3 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-200"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-            
-            {message.replies > 0 && (
+
+            {message.replies > 0 && !isReply && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-3 rounded-full bg-purple-500/5 text-purple-600 hover:bg-purple-500/10 transition-all duration-200 ml-2"
-                onClick={() => toggleThread(message.id)}
+                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-sm p-1"
+                onClick={() => toggleThreadExpansion(message.id)}
               >
-                <Reply className="w-4 h-4 mr-1" />
-                <span className="text-xs">
-                  {expandedThreads.has(message.id) ? 'Hide' : 'Show'} replies
-                </span>
+                {expandedThreads.has(message.id) ? 'Hide replies' : 'Show replies'}
               </Button>
             )}
           </div>
@@ -237,7 +185,7 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
   
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-purple-200 dark:border-purple-800"
-         style={{ minHeight: '400px' }}> {/* Fixed minimum height to prevent layout shifts */}
+         style={{ minHeight: '400px' }}>
       {/* Header */}
       <div className="p-6 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-center space-x-3">

@@ -73,8 +73,8 @@ const Home = () => {
             <PostsList />
           </div>
           
-          {/* Thread UI - Community Discussions with stable positioning */}
-          <div className="border-t border-purple-200 dark:border-purple-800 mt-4" key="community-discussions">
+          {/* Community Discussions - Always visible and stable */}
+          <div className="border-t border-purple-200 dark:border-purple-800 mt-4">
             <ThreadUI 
               onReply={handleReply}
               onLike={handleLike}
