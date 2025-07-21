@@ -32,14 +32,32 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
       console.log('Initializing notifications for user:', userId);
       setInitialized(true);
       loadNotifications();
-      setupRealtimeSubscription();
-    }
+      
+      // Setup realtime subscription
+      console.log('Setting up realtime subscription for notifications');
+      
+      const channel = supabase
+        .channel(`notifications-${userId}`) // Use unique channel name per user
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`
+          },
+          (payload) => {
+            console.log('Notification realtime update:', payload);
+            loadNotifications();
+          }
+        )
+        .subscribe();
 
-    return () => {
-      if (!userId) {
-        setInitialized(false);
-      }
-    };
+      return () => {
+        console.log('Cleaning up notifications subscription');
+        supabase.removeChannel(channel);
+      };
+    }
   }, [userId, authLoading, initialized]);
 
   const loadNotifications = async () => {
@@ -59,33 +77,6 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
     }
   };
 
-  const setupRealtimeSubscription = () => {
-    if (!userId) return;
-
-    console.log('Setting up realtime subscription for notifications');
-    
-    const channel = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`
-        },
-        (payload) => {
-          console.log('Notification realtime update:', payload);
-          loadNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('Cleaning up notifications subscription');
-      supabase.removeChannel(channel);
-    };
-  };
 
   const markAsRead = async (notificationId: string) => {
     if (!userId) return;

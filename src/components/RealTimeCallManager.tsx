@@ -59,7 +59,7 @@ const RealTimeCallManager = ({
     if (!user) return;
 
     const channel = supabase
-      .channel('incoming-calls')
+      .channel(`incoming-calls-${user.id}`) // Use unique channel name per user
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
