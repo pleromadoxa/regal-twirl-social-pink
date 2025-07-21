@@ -30,14 +30,6 @@ interface ThreadUIProps {
 
 const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Initialize component only once to prevent re-renders
-  useEffect(() => {
-    if (!isInitialized) {
-      setIsInitialized(true);
-    }
-  }, [isInitialized]);
 
   // Static thread data - never changes
   const staticThreadMessages: ThreadMessage[] = [
@@ -232,10 +224,6 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
     </div>
   );
 
-  // Don't render until initialized to prevent layout shifts
-  if (!isInitialized) {
-    return null;
-  }
 
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-purple-200 dark:border-purple-800">
