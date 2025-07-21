@@ -43,9 +43,9 @@ interface User {
   premium_tier: string;
   created_at: string;
   updated_at: string;
-  account_status?: 'active' | 'blocked' | 'suspended' | 'limited';
-  status_reason?: string;
-  status_until?: string;
+  account_status: string | null;
+  status_reason: string | null;
+  status_until: string | null;
 }
 
 interface ActivityLog {

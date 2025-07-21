@@ -10,16 +10,26 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('OpenRouter AI function called:', req.method);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     if (!openRouterApiKey) {
-      throw new Error('OPENROUTER_API_KEY is not configured');
+      console.error('OPENROUTER_API_KEY is not configured');
+      return new Response(JSON.stringify({ error: 'OPENROUTER_API_KEY is not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const { prompt, type, model } = await req.json();
+    console.log('Parsing request body...');
+    const body = await req.json();
+    console.log('Request body parsed:', { type: body.type, hasPrompt: !!body.prompt });
+    
+    const { prompt, type, model } = body;
 
     let systemMessage = '';
     let selectedModel = model || 'deepseek/deepseek-r1-0528-qwen3-8b:free';
@@ -43,6 +53,8 @@ serve(async (req) => {
         systemMessage = 'You are a helpful AI assistant.';
     }
 
+    console.log('Making request to OpenRouter with model:', selectedModel);
+    
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -62,13 +74,29 @@ serve(async (req) => {
       }),
     });
 
+    console.log('OpenRouter response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenRouter API error response:', errorText);
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+    }
+
     const data = await response.json();
+    console.log('OpenRouter response data structure:', Object.keys(data));
     
     if (data.error) {
+      console.error('OpenRouter API returned error:', data.error);
       throw new Error(data.error.message || 'OpenRouter API error');
     }
 
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Unexpected response structure:', data);
+      throw new Error('Invalid response structure from OpenRouter API');
+    }
+
     const generatedText = data.choices[0].message.content;
+    console.log('Generated text length:', generatedText?.length || 0);
 
     return new Response(JSON.stringify({ generatedText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
