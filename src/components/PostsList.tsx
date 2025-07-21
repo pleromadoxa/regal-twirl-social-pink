@@ -5,6 +5,7 @@ import PostCard from './PostCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePostsData } from '@/hooks/usePostsData';
 import { useBookmarks } from '@/hooks/useBookmarks';
+import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 import { useAuth } from '@/contexts/AuthContext';
 
 const PostsList = () => {

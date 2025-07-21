@@ -12,6 +12,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useMusicLikes } from '@/hooks/useMusicLikes';
 
 interface MusicTrack {
   id: string;
@@ -44,6 +45,7 @@ const Music = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isTrackLiked, toggleLike } = useMusicLikes();
 
   useEffect(() => {
     fetchTracks();
@@ -153,103 +155,148 @@ const Music = () => {
     }
 
     return tracksList.map((track) => (
-      <Card key={track.id} className="group hover:shadow-lg transition-all duration-200">
-        <CardContent className="p-4">
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 rounded-lg flex items-center justify-center">
-                <MusicIcon className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+      <Card key={track.id} className="group hover:shadow-xl transition-all duration-300 overflow-hidden bg-gradient-to-r from-white to-purple-50/30 dark:from-slate-800 dark:to-purple-900/20 border-purple-200/50 dark:border-purple-800/50">
+        <CardContent className="p-0">
+          <div className="flex items-center">
+            {/* Album Art & Play Button */}
+            <div className="relative w-20 h-20 flex-shrink-0">
+              <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-400 to-purple-600 dark:from-purple-600 dark:via-pink-600 dark:to-purple-800 flex items-center justify-center rounded-l-lg">
+                <MusicIcon className="w-10 h-10 text-white/90" />
               </div>
-              <Button
-                size="sm"
-                className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full p-0 bg-white dark:bg-slate-800 border-2 border-purple-200 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900"
-                onClick={() => handlePlayPause(track)}
-              >
-                {currentTrack?.id === track.id && isPlaying ? (
-                  <Pause className="w-4 h-4 text-purple-600" />
-                ) : (
-                  <Play className="w-4 h-4 text-purple-600" />
-                )}
-              </Button>
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center rounded-l-lg">
+                <Button
+                  size="sm"
+                  className="w-12 h-12 rounded-full p-0 bg-white/90 hover:bg-white border-0 shadow-lg"
+                  onClick={() => handlePlayPause(track)}
+                >
+                  {currentTrack?.id === track.id && isPlaying ? (
+                    <Pause className="w-6 h-6 text-purple-600" />
+                  ) : (
+                    <Play className="w-6 h-6 text-purple-600 ml-1" />
+                  )}
+                </Button>
+              </div>
             </div>
             
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                {track.title}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                {track.artist}
-              </p>
-              {track.album && (
-                <p className="text-xs text-gray-500 dark:text-gray-500 truncate">
-                  {track.album}
-                </p>
-              )}
-              <div className="flex items-center gap-2 mt-1">
-                <Avatar className="w-5 h-5">
-                  <AvatarImage src={track.profiles?.avatar_url} />
-                  <AvatarFallback className="text-xs">
-                    {track.profiles?.display_name?.[0] || track.profiles?.username?.[0] || '?'}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs text-gray-500">
-                  {track.profiles?.display_name || track.profiles?.username}
-                </span>
+            {/* Track Info */}
+            <div className="flex-1 p-4 min-w-0">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 truncate mb-1">
+                    {track.title}
+                  </h3>
+                  <p className="text-purple-600 dark:text-purple-400 font-medium truncate mb-2">
+                    {track.artist}
+                  </p>
+                  {track.album && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
+                      Album: {track.album}
+                    </p>
+                  )}
+                  
+                  {/* User Info */}
+                  <div className="flex items-center gap-2">
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={track.profiles?.avatar_url} />
+                      <AvatarFallback className="text-xs bg-purple-100 dark:bg-purple-800">
+                        {track.profiles?.display_name?.[0] || track.profiles?.username?.[0] || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      {track.profiles?.display_name || track.profiles?.username}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Stats & Controls */}
+                <div className="flex flex-col items-end space-y-2 ml-4">
+                  <div className="flex items-center space-x-3">
+                    {track.genre && (
+                      <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                        {track.genre}
+                      </Badge>
+                    )}
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      {formatDuration(track.duration)}
+                    </span>
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex items-center space-x-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className={`w-9 h-9 p-0 rounded-full transition-all ${
+                        isTrackLiked(track.id) 
+                          ? 'text-red-500 bg-red-50 dark:bg-red-900/20' 
+                          : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                      }`}
+                      title="Like"
+                      onClick={() => toggleLike(track.id)}
+                    >
+                      <Heart className={`w-4 h-4 ${isTrackLiked(track.id) ? 'fill-current' : ''}`} />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-9 h-9 p-0 rounded-full text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all" 
+                      title="Share"
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: track.title,
+                            text: `Listen to "${track.title}" by ${track.artist}`,
+                            url: window.location.href
+                          });
+                        } else {
+                          navigator.clipboard.writeText(`${window.location.href}?track=${track.id}`);
+                          toast({
+                            title: "Link copied",
+                            description: "Track link copied to clipboard"
+                          });
+                        }
+                      }}
+                    >
+                      <Share className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-9 h-9 p-0 rounded-full text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all" 
+                      title="Download"
+                      onClick={() => {
+                        const a = document.createElement('a');
+                        a.href = track.file_url;
+                        a.download = `${track.title} - ${track.artist}.mp3`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        toast({
+                          title: "Download started",
+                          description: `"${track.title}" is downloading`
+                        });
+                      }}
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Play Stats */}
+                  <div className="flex items-center space-x-3 text-xs text-gray-500">
+                    <span>♥ {track.likes_count}</span>
+                    <span>▶ {track.plays_count}</span>
+                  </div>
+                </div>
               </div>
             </div>
-
-            <div className="flex items-center space-x-2">
-              {track.genre && (
-                <Badge variant="secondary" className="text-xs">
-                  {track.genre}
-                </Badge>
-              )}
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {formatDuration(track.duration)}
-              </span>
-            </div>
-
-            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0" title="Like">
-                <Heart className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="w-8 h-8 p-0" 
-                title="Share"
-                onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({
-                      title: track.title,
-                      text: `Listen to "${track.title}" by ${track.artist}`,
-                      url: window.location.href
-                    });
-                  } else {
-                    navigator.clipboard.writeText(window.location.href);
-                  }
-                }}
-              >
-                <Share className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="w-8 h-8 p-0" 
-                title="Download"
-                onClick={() => {
-                  const a = document.createElement('a');
-                  a.href = track.file_url;
-                  a.download = `${track.title} - ${track.artist}.mp3`;
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                }}
-              >
-                <Download className="w-4 h-4" />
-              </Button>
-            </div>
           </div>
+          
+          {/* Now Playing Indicator */}
+          {currentTrack?.id === track.id && isPlaying && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500">
+              <div className="h-full bg-white/30 animate-pulse"></div>
+            </div>
+          )}
         </CardContent>
       </Card>
     ));

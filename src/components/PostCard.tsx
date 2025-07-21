@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import BoostPostWidget from './BoostPostWidget';
 import RetweetIndicator from './RetweetIndicator';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
+import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 
 interface PostCardProps {
   post: {
@@ -67,40 +68,14 @@ const PostCard = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const { myPages } = useBusinessPages();
-  const [isPinned, setIsPinned] = useState(false);
+  const { isPostPinned, togglePin } = usePinnedPosts();
   
   const isOwnPost = user?.id === post.user_id;
   const hasBusinessPages = myPages && myPages.length > 0;
 
   const handlePin = async () => {
-    if (!user) return;
-    
-    try {
-      if (isPinned) {
-        const { error } = await supabase
-          .from('pinned_posts')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('post_id', post.id);
-        
-        if (error) throw error;
-        setIsPinned(false);
-        toast({ title: "Post unpinned" });
-      } else {
-        const { error } = await supabase
-          .from('pinned_posts')
-          .insert({ user_id: user.id, post_id: post.id });
-        
-        if (error) throw error;
-        setIsPinned(true);
-        toast({ title: "Post pinned" });
-      }
-      
-      if (onPin) onPin(post.id);
-    } catch (error) {
-      console.error('Error pinning post:', error);
-      toast({ title: "Error", description: "Failed to pin post", variant: "destructive" });
-    }
+    await togglePin(post.id);
+    if (onPin) onPin(post.id);
   };
 
   const handleReport = async () => {
@@ -175,6 +150,11 @@ const PostCard = ({
                 {post.profiles?.is_verified && (
                   <Badge variant="secondary" className="text-xs">✓</Badge>
                 )}
+                {isPostPinned(post.id) && (
+                  <div title="Pinned Post">
+                    <Pin className="w-4 h-4 text-blue-600" />
+                  </div>
+                )}
                 <span className="text-sm text-gray-500">
                   @{post.profiles?.username}
                 </span>
@@ -194,8 +174,8 @@ const PostCard = ({
                   {user && (
                     <>
                       <DropdownMenuItem onClick={handlePin}>
-                        <Pin className="w-4 h-4 mr-2" />
-                        {isPinned ? 'Unpin' : 'Pin'} Post
+                        <Pin className={`w-4 h-4 mr-2 ${isPostPinned(post.id) ? 'text-blue-600' : ''}`} />
+                        {isPostPinned(post.id) ? 'Unpin' : 'Pin'} Post
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={onBookmark}>
                         <Bookmark className={`w-4 h-4 mr-2 ${isBookmarked ? 'fill-current text-blue-600' : ''}`} />
