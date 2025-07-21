@@ -11,7 +11,7 @@ import ThreadUI from "@/components/ThreadUI";
 import { useState, useEffect } from "react";
 
 const Home = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [feedFilter, setFeedFilter] = useState<'all' | 'professional' | 'trending'>('all');
 
   // Test Supabase connection on mount
@@ -31,8 +31,21 @@ const Home = () => {
     console.log("Share message:", messageId);
   };
 
+  // Show loading state during authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to auth if no user after loading
   if (!user) {
-    return null;
+    return null; // This should redirect to auth page
   }
 
   return (
@@ -61,7 +74,7 @@ const Home = () => {
           </div>
           
           {/* Thread UI - Community Discussions with stable positioning */}
-          <div className="border-t border-purple-200 dark:border-purple-800 mt-4">
+          <div className="border-t border-purple-200 dark:border-purple-800 mt-4" key="community-discussions">
             <ThreadUI 
               onReply={handleReply}
               onLike={handleLike}

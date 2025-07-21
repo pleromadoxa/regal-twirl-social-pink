@@ -29,7 +29,16 @@ interface ThreadUIProps {
 }
 
 const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
+  console.log('ThreadUI: Component rendering/re-rendering');
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
+
+  // Debug: Track when component mounts/unmounts
+  useEffect(() => {
+    console.log('ThreadUI: Component mounted');
+    return () => {
+      console.log('ThreadUI: Component unmounting');
+    };
+  }, []);
 
   // Static thread data - never changes
   const staticThreadMessages: ThreadMessage[] = [
@@ -224,9 +233,11 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
     </div>
   );
 
-
+  console.log('ThreadUI: About to render component');
+  
   return (
-    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-purple-200 dark:border-purple-800">
+    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-purple-200 dark:border-purple-800"
+         style={{ minHeight: '400px' }}> {/* Fixed minimum height to prevent layout shifts */}
       {/* Header */}
       <div className="p-6 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-center space-x-3">
