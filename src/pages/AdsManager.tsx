@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import SidebarNav from '@/components/SidebarNav';
@@ -30,6 +31,7 @@ import { formatDistanceToNow } from 'date-fns';
 const AdsManager = () => {
   const { user } = useAuth();
   const { myPages } = useBusinessPages();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [ads, setAds] = useState<any[]>([]);
   const [sponsoredPosts, setSponsoredPosts] = useState<any[]>([]);
@@ -235,12 +237,7 @@ const AdsManager = () => {
                 </Select>
               </div>
               <Button 
-                onClick={() => {
-                  toast({
-                    title: "Coming Soon",
-                    description: "Ad creation functionality is being developed.",
-                  });
-                }}
+                onClick={() => navigate('/create-ad')}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
               >
                 <Plus className="w-4 h-4 mr-2" />

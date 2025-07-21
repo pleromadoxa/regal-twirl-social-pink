@@ -24,6 +24,7 @@ import EditProfessionalAccount from '@/pages/EditProfessionalAccount';
 import BusinessDashboard from '@/pages/BusinessDashboard';
 import BusinessAnalytics from '@/pages/BusinessAnalytics';
 import AdsManager from '@/pages/AdsManager';
+import CreateAd from '@/pages/CreateAd';
 import AIStudio from '@/pages/AIStudio';
 import Explore from '@/pages/Explore';
 import Hashtag from '@/pages/Hashtag';
@@ -73,6 +74,7 @@ function App() {
                   <Route path="/admin" element={<AuthWrapper><AdminDashboard /></AuthWrapper>} />
                   <Route path="/support" element={<AuthWrapper><Support /></AuthWrapper>} />
                   <Route path="/ads-manager" element={<AuthWrapper><AdsManager /></AuthWrapper>} />
+                  <Route path="/create-ad" element={<AuthWrapper><CreateAd /></AuthWrapper>} />
                   <Route path="/ai-studio" element={<AuthWrapper><AIStudio /></AuthWrapper>} />
                 </Routes>
                 <Toaster />
