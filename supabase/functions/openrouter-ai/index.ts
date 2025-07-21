@@ -2,7 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openRouterApiKey = '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';
+const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +15,10 @@ serve(async (req) => {
   }
 
   try {
+    if (!openRouterApiKey) {
+      throw new Error('OPENROUTER_API_KEY is not configured');
+    }
+
     const { prompt, type, model } = await req.json();
 
     let systemMessage = '';
