@@ -56,10 +56,12 @@ const Home = () => {
           </div>
 
           {/* Posts Feed */}
-          <PostsList />
+          <div className="min-h-[200px]"> {/* Minimum height to prevent layout shift */}
+            <PostsList />
+          </div>
           
-          {/* Thread UI - Always render with no props to ensure stability */}
-          <div className="border-t border-purple-200 dark:border-purple-800">
+          {/* Thread UI - Community Discussions with stable positioning */}
+          <div className="border-t border-purple-200 dark:border-purple-800 mt-4">
             <ThreadUI 
               onReply={handleReply}
               onLike={handleLike}
