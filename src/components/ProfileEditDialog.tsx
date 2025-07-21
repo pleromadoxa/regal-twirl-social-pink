@@ -34,7 +34,8 @@ const ProfileEditDialog = ({ trigger }: ProfileEditDialogProps) => {
     location: '',
     website: '',
     avatar_url: '',
-    banner_url: ''
+    banner_url: '',
+    country: ''
   });
 
   useEffect(() => {
@@ -46,7 +47,8 @@ const ProfileEditDialog = ({ trigger }: ProfileEditDialogProps) => {
         location: profile.location || '',
         website: profile.website || '',
         avatar_url: profile.avatar_url || '',
-        banner_url: profile.banner_url || ''
+        banner_url: profile.banner_url || '',
+        country: profile.country || ''
       });
     }
   }, [profile]);
@@ -158,15 +160,25 @@ const ProfileEditDialog = ({ trigger }: ProfileEditDialogProps) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
+              <Label htmlFor="country">Country</Label>
               <Input 
-                id="website" 
-                type="url"
-                value={profileData.website}
-                onChange={(e) => setProfileData(prev => ({ ...prev, website: e.target.value }))}
-                placeholder="https://yourwebsite.com" 
+                id="country" 
+                value={profileData.country}
+                onChange={(e) => setProfileData(prev => ({ ...prev, country: e.target.value }))}
+                placeholder="Your country" 
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="website">Website</Label>
+            <Input 
+              id="website" 
+              type="url"
+              value={profileData.website}
+              onChange={(e) => setProfileData(prev => ({ ...prev, website: e.target.value }))}
+              placeholder="https://yourwebsite.com" 
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

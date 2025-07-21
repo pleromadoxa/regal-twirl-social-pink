@@ -187,7 +187,11 @@ const Profile = () => {
                 
                 <div className="flex items-center gap-2 mb-3">
                   <p className="text-gray-600 dark:text-gray-400">@{profile.username}</p>
-                  <SubscriptionBadge tier={profile.premium_tier || 'free'} showIcon={false} />
+                  <SubscriptionBadge 
+                    tier={profile.premium_tier || 'free'} 
+                    showIcon={false} 
+                    country={profile.country}
+                  />
                   {canUpgrade && (
                     <UpgradeSubscriptionDialog 
                       currentTier={profile.premium_tier || 'free'}

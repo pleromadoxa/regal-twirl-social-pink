@@ -20,6 +20,7 @@ export interface Profile {
   premium_tier: string | null;
   verification_level: string | null;
   created_at: string;
+  country: string | null;
 }
 
 export const useProfile = (userId?: string) => {

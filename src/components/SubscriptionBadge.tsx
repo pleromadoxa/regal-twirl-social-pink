@@ -5,9 +5,10 @@ import { Crown } from 'lucide-react';
 interface SubscriptionBadgeProps {
   tier: string;
   showIcon?: boolean;
+  country?: string;
 }
 
-const SubscriptionBadge = ({ tier, showIcon = true }: SubscriptionBadgeProps) => {
+const SubscriptionBadge = ({ tier, showIcon = true, country }: SubscriptionBadgeProps) => {
   const getSubscriptionName = (tier: string) => {
     switch (tier?.toLowerCase()) {
       case 'pro':
@@ -15,7 +16,7 @@ const SubscriptionBadge = ({ tier, showIcon = true }: SubscriptionBadgeProps) =>
       case 'business':
         return 'Business Plan';
       default:
-        return 'Free Plan';
+        return country || 'Free Plan';
     }
   };
 
