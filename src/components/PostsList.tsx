@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import PostCard from './PostCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePostsData } from '@/hooks/usePostsData';
+import { useBookmarks } from '@/hooks/useBookmarks';
 import { useAuth } from '@/contexts/AuthContext';
 
 const PostsList = () => {
@@ -11,6 +12,7 @@ const PostsList = () => {
   const { posts, loading, toggleLike, toggleRetweet, togglePin, deletePost, trackPostView, refetch } = usePosts();
   const { toast } = useToast();
   const { retweetUsers } = usePostsData(posts, user, refetch);
+  const { toggleBookmark, isPostBookmarked } = useBookmarks();
 
   const handleShare = async (postId: string) => {
     const post = posts.find(p => p.id === postId);
@@ -81,10 +83,12 @@ const PostsList = () => {
           post={post}
           isLiked={post.user_liked}
           isRetweeted={post.user_retweeted}
+          isBookmarked={isPostBookmarked(post.id)}
           retweetedBy={retweetUsers[post.id] || []}
           onLike={() => toggleLike(post.id)}
           onRetweet={() => toggleRetweet(post.id)}
           onPin={() => togglePin(post.id)}
+          onBookmark={() => toggleBookmark(post.id)}
           onDelete={() => deletePost(post.id)}
           onShare={handleShare}
           onTrackView={() => trackPostView(post.id)}

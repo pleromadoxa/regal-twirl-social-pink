@@ -7,6 +7,7 @@ import {
   Repeat2, 
   Share, 
   Pin, 
+  Bookmark,
   Trash2, 
   MoreHorizontal,
   TrendingUp,
@@ -31,9 +32,11 @@ interface PostActionsProps {
   userLiked: boolean;
   userRetweeted: boolean;
   userPinned: boolean;
+  userBookmarked: boolean;
   onLike: () => void;
   onRetweet: () => void;
   onPin: () => void;
+  onBookmark: () => void;
   onDelete: () => void;
   onComment: () => void;
   onShare: () => void;
@@ -51,9 +54,11 @@ const PostActions = ({
   userLiked,
   userRetweeted,
   userPinned,
+  userBookmarked,
   onLike,
   onRetweet,
   onPin,
+  onBookmark,
   onDelete,
   onComment,
   onShare,
@@ -145,10 +150,16 @@ const PostActions = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             {user && (
-              <DropdownMenuItem onClick={onPin}>
-                <Pin className="w-4 h-4 mr-2" />
-                {userPinned ? 'Unpin' : 'Pin'}
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem onClick={onPin}>
+                  <Pin className="w-4 h-4 mr-2" />
+                  {userPinned ? 'Unpin' : 'Pin'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onBookmark}>
+                  <Bookmark className={`w-4 h-4 mr-2 ${userBookmarked ? 'fill-current text-blue-600' : ''}`} />
+                  {userBookmarked ? 'Remove Bookmark' : 'Bookmark'}
+                </DropdownMenuItem>
+              </>
             )}
             
             {canShowBoostOrAds && (

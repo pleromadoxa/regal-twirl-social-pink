@@ -210,13 +210,42 @@ const Music = () => {
             </div>
 
             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+              <Button variant="ghost" size="sm" className="w-8 h-8 p-0" title="Like">
                 <Heart className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-8 h-8 p-0" 
+                title="Share"
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: track.title,
+                      text: `Listen to "${track.title}" by ${track.artist}`,
+                      url: window.location.href
+                    });
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                  }
+                }}
+              >
                 <Share className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-8 h-8 p-0" 
+                title="Download"
+                onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = track.file_url;
+                  a.download = `${track.title} - ${track.artist}.mp3`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                }}
+              >
                 <Download className="w-4 h-4" />
               </Button>
             </div>

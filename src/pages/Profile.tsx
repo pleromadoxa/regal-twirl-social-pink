@@ -22,6 +22,8 @@ import MediaPreview from '@/components/MediaPreview';
 import GalleryUpload from '@/components/GalleryUpload';
 import { useGallery } from '@/hooks/useGallery';
 import { usePosts } from '@/hooks/usePosts';
+import { usePinnedPosts } from '@/hooks/usePinnedPosts';
+import { useBookmarks } from '@/hooks/useBookmarks';
 import { useState } from 'react';
 
 const Profile = () => {
@@ -32,6 +34,8 @@ const Profile = () => {
   const { verificationLevel } = useVerifiedStatus(profile);
   const { galleryItems, loading: galleryLoading } = useGallery(userId);
   const { posts: allPosts, loading: postsLoading } = usePosts();
+  const { pinnedPosts, loading: pinnedLoading } = usePinnedPosts();
+  const { bookmarkedPosts, loading: bookmarksLoading } = useBookmarks();
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -264,6 +268,12 @@ const Profile = () => {
                 <TabsTrigger value="gallery" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
                   Gallery
                 </TabsTrigger>
+                <TabsTrigger value="pinned" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
+                  Pinned
+                </TabsTrigger>
+                <TabsTrigger value="bookmarks" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
+                  Bookmarks
+                </TabsTrigger>
                 <TabsTrigger value="likes" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
                   Likes
                 </TabsTrigger>
@@ -363,6 +373,126 @@ const Profile = () => {
                 ) : (
                   <div className="p-6 text-center text-gray-500 dark:text-gray-400">
                     {isOwnProfile ? 'Upload your first gallery item!' : 'No gallery items yet'}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="pinned" className="mt-0">
+              <div className="space-y-4">
+                {isOwnProfile ? (
+                  pinnedLoading ? (
+                    <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                      Loading pinned posts...
+                    </div>
+                  ) : pinnedPosts.length > 0 ? (
+                    pinnedPosts.map((post) => (
+                      <div key={post.id} className="p-4 border-b border-slate-200 dark:border-slate-700">
+                        <div className="flex items-start space-x-3">
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src={post.profiles.avatar_url} />
+                            <AvatarFallback>
+                              {post.profiles.display_name?.[0] || post.profiles.username?.[0] || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-slate-900 dark:text-slate-100">
+                                {post.profiles.display_name || post.profiles.username}
+                              </span>
+                              <span className="text-slate-500 dark:text-slate-400 text-sm">
+                                @{post.profiles.username}
+                              </span>
+                              <span className="text-slate-400 dark:text-slate-500 text-sm">
+                                {new Date(post.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <p className="text-slate-700 dark:text-slate-300">{post.content}</p>
+                            {post.image_urls && post.image_urls.length > 0 && (
+                              <div className="mt-2 grid grid-cols-2 gap-2">
+                                {post.image_urls.slice(0, 2).map((imageUrl, index) => (
+                                  <img
+                                    key={index}
+                                    src={imageUrl}
+                                    alt={`Post image ${index + 1}`}
+                                    className="w-full h-32 object-cover rounded-lg cursor-pointer"
+                                    onClick={() => handleImageClick(post.image_urls!, index)}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                      No pinned posts yet
+                    </div>
+                  )
+                ) : (
+                  <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                    Pinned posts are private
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="bookmarks" className="mt-0">
+              <div className="space-y-4">
+                {isOwnProfile ? (
+                  bookmarksLoading ? (
+                    <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                      Loading bookmarked posts...
+                    </div>
+                  ) : bookmarkedPosts.length > 0 ? (
+                    bookmarkedPosts.map((post) => (
+                      <div key={post.id} className="p-4 border-b border-slate-200 dark:border-slate-700">
+                        <div className="flex items-start space-x-3">
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src={post.profiles.avatar_url} />
+                            <AvatarFallback>
+                              {post.profiles.display_name?.[0] || post.profiles.username?.[0] || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-slate-900 dark:text-slate-100">
+                                {post.profiles.display_name || post.profiles.username}
+                              </span>
+                              <span className="text-slate-500 dark:text-slate-400 text-sm">
+                                @{post.profiles.username}
+                              </span>
+                              <span className="text-slate-400 dark:text-slate-500 text-sm">
+                                {new Date(post.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <p className="text-slate-700 dark:text-slate-300">{post.content}</p>
+                            {post.image_urls && post.image_urls.length > 0 && (
+                              <div className="mt-2 grid grid-cols-2 gap-2">
+                                {post.image_urls.slice(0, 2).map((imageUrl, index) => (
+                                  <img
+                                    key={index}
+                                    src={imageUrl}
+                                    alt={`Post image ${index + 1}`}
+                                    className="w-full h-32 object-cover rounded-lg cursor-pointer"
+                                    onClick={() => handleImageClick(post.image_urls!, index)}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                      No bookmarked posts yet
+                    </div>
+                  )
+                ) : (
+                  <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                    Bookmarks are private
                   </div>
                 )}
               </div>

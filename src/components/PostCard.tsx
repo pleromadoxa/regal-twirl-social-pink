@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Flag, Pin, Megaphone } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Flag, Pin, Bookmark, Megaphone } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,11 +37,13 @@ interface PostCardProps {
   };
   isLiked?: boolean;
   isRetweeted?: boolean;
+  isBookmarked?: boolean;
   retweetedBy?: any[];
   onLike?: () => void;
   onRetweet?: () => void;
   onReply?: () => void;
   onPin?: (postId: string) => void;
+  onBookmark?: () => void;
   onDelete?: (postId: string) => void;
   onShare?: (postId: string) => void;
   onTrackView?: (postId: string) => void;
@@ -51,11 +53,13 @@ const PostCard = ({
   post, 
   isLiked, 
   isRetweeted, 
+  isBookmarked,
   retweetedBy = [],
   onLike, 
   onRetweet, 
   onReply, 
   onPin, 
+  onBookmark,
   onDelete, 
   onShare, 
   onTrackView 
@@ -187,11 +191,17 @@ const PostCard = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  {isOwnPost && (
-                    <DropdownMenuItem onClick={handlePin}>
-                      <Pin className="w-4 h-4 mr-2" />
-                      {isPinned ? 'Unpin' : 'Pin'} Post
-                    </DropdownMenuItem>
+                  {user && (
+                    <>
+                      <DropdownMenuItem onClick={handlePin}>
+                        <Pin className="w-4 h-4 mr-2" />
+                        {isPinned ? 'Unpin' : 'Pin'} Post
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={onBookmark}>
+                        <Bookmark className={`w-4 h-4 mr-2 ${isBookmarked ? 'fill-current text-blue-600' : ''}`} />
+                        {isBookmarked ? 'Remove Bookmark' : 'Bookmark'} Post
+                      </DropdownMenuItem>
+                    </>
                   )}
                   {!isOwnPost && (
                     <DropdownMenuItem onClick={handleReport}>

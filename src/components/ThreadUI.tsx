@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,14 @@ interface ThreadUIProps {
 
 const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize component only once to prevent re-renders
+  useEffect(() => {
+    if (!isInitialized) {
+      setIsInitialized(true);
+    }
+  }, [isInitialized]);
 
   // Static thread data - never changes
   const staticThreadMessages: ThreadMessage[] = [
@@ -80,15 +88,17 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
     }
   ];
 
-  const toggleThread = (messageId: string) => {
-    const newExpanded = new Set(expandedThreads);
-    if (newExpanded.has(messageId)) {
-      newExpanded.delete(messageId);
-    } else {
-      newExpanded.add(messageId);
-    }
-    setExpandedThreads(newExpanded);
-  };
+  const toggleThread = useCallback((messageId: string) => {
+    setExpandedThreads(prev => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(messageId)) {
+        newExpanded.delete(messageId);
+      } else {
+        newExpanded.add(messageId);
+      }
+      return newExpanded;
+    });
+  }, []);
 
   const formatTimeAgo = (timestamp: Date) => {
     const now = new Date();
@@ -103,10 +113,10 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
     return `${days}d`;
   };
 
-  const handleLike = (messageId: string) => {
+  const handleLike = useCallback((messageId: string) => {
     // Only handle the visual feedback, don't actually update the data
     onLike?.(messageId);
-  };
+  }, [onLike]);
 
   const renderMessage = (message: ThreadMessage, isReply = false) => (
     <div 
@@ -221,6 +231,11 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
       </div>
     </div>
   );
+
+  // Don't render until initialized to prevent layout shifts
+  if (!isInitialized) {
+    return null;
+  }
 
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-purple-200 dark:border-purple-800">
