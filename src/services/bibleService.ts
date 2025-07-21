@@ -112,9 +112,77 @@ export const fetchVerse = async (verseId: string): Promise<BibleVerse | null> =>
   }
 };
 
+// Enhanced function to handle both reference lookups (John 3:16) and keyword searches
+const parseVerseReference = (query: string): string | null => {
+  // Patterns for verse references: "John 3:16", "1 Corinthians 13:4-8", "Psalm 23", etc.
+  const patterns = [
+    /^(\d?\s*[A-Za-z]+)\s*(\d+):(\d+)(?:-(\d+))?$/i, // John 3:16 or John 3:16-17
+    /^(\d?\s*[A-Za-z]+)\s*(\d+)$/i, // Psalm 23 (whole chapter)
+  ];
+
+  // Book name mappings for common abbreviations
+  const bookMappings: { [key: string]: string } = {
+    'jn': 'JHN', 'john': 'JHN',
+    'ps': 'PSA', 'psalm': 'PSA', 'psalms': 'PSA',
+    'rom': 'ROM', 'romans': 'ROM',
+    'php': 'PHP', 'phil': 'PHP', 'philippians': 'PHP',
+    'jer': 'JER', 'jeremiah': 'JER',
+    'isa': 'ISA', 'isaiah': 'ISA',
+    'pro': 'PRO', 'prov': 'PRO', 'proverbs': 'PRO',
+    'mat': 'MAT', 'matt': 'MAT', 'matthew': 'MAT',
+    '1co': '1CO', '1 cor': '1CO', '1 corinthians': '1CO',
+    'jos': 'JOS', 'joshua': 'JOS',
+    'eph': 'EPH', 'ephesians': 'EPH',
+    'gal': 'GAL', 'galatians': 'GAL',
+    'heb': 'HEB', 'hebrews': 'HEB',
+    'jam': 'JAM', 'james': 'JAM',
+    'jhn': 'JHN', // alternate
+    '1jn': '1JN', '1 john': '1JN',
+    'act': 'ACT', 'acts': 'ACT',
+    'neh': 'NEH', 'nehemiah': 'NEH',
+    'ecl': 'ECL', 'ecc': 'ECL', 'ecclesiastes': 'ECL',
+    '2co': '2CO', '2 cor': '2CO', '2 corinthians': '2CO',
+    'col': 'COL', 'colossians': 'COL'
+  };
+
+  for (const pattern of patterns) {
+    const match = query.trim().match(pattern);
+    if (match) {
+      const bookName = match[1].toLowerCase().trim();
+      const chapter = match[2];
+      const verse = match[3];
+      const endVerse = match[4];
+
+      // Get the proper book abbreviation
+      const bookCode = bookMappings[bookName] || bookName.toUpperCase();
+
+      if (verse) {
+        // Specific verse(s)
+        if (endVerse) {
+          return `${bookCode}.${chapter}.${verse}-${bookCode}.${chapter}.${endVerse}`;
+        } else {
+          return `${bookCode}.${chapter}.${verse}`;
+        }
+      } else {
+        // Whole chapter
+        return `${bookCode}.${chapter}`;
+      }
+    }
+  }
+
+  return null;
+};
+
 export const searchVerses = async (query: string): Promise<BibleVerse[]> => {
   try {
-    // Use the search endpoint
+    // First, try to parse as a verse reference
+    const verseId = parseVerseReference(query);
+    if (verseId) {
+      const verse = await fetchVerse(verseId);
+      return verse ? [verse] : [];
+    }
+
+    // Fall back to keyword search
     const response = await fetch(
       `${BIBLE_API_BASE}/bibles/${DEFAULT_BIBLE_ID}/search?query=${encodeURIComponent(query)}&limit=5`,
       {
