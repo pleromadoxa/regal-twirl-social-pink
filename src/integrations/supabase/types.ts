@@ -1617,6 +1617,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string | null
           ai_generations_limit: number | null
           ai_generations_used: number | null
           avatar_url: string | null
@@ -1631,6 +1632,8 @@ export type Database = {
           location: string | null
           posts_count: number | null
           premium_tier: string | null
+          status_reason: string | null
+          status_until: string | null
           updated_at: string | null
           username: string | null
           verification_level: string | null
@@ -1640,6 +1643,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          account_status?: string | null
           ai_generations_limit?: number | null
           ai_generations_used?: number | null
           avatar_url?: string | null
@@ -1654,6 +1658,8 @@ export type Database = {
           location?: string | null
           posts_count?: number | null
           premium_tier?: string | null
+          status_reason?: string | null
+          status_until?: string | null
           updated_at?: string | null
           username?: string | null
           verification_level?: string | null
@@ -1663,6 +1669,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          account_status?: string | null
           ai_generations_limit?: number | null
           ai_generations_used?: number | null
           avatar_url?: string | null
@@ -1677,6 +1684,8 @@ export type Database = {
           location?: string | null
           posts_count?: number | null
           premium_tier?: string | null
+          status_reason?: string | null
+          status_until?: string | null
           updated_at?: string | null
           username?: string | null
           verification_level?: string | null
