@@ -52,7 +52,7 @@ export const useCommunityDiscussions = () => {
         .from('community_discussions')
         .select(`
           *,
-          profiles (
+          profiles!community_discussions_user_id_fkey (
             id,
             username, 
             display_name, 
@@ -117,7 +117,7 @@ export const useCommunityDiscussions = () => {
         ])
         .select(`
           *,
-          profiles (
+          profiles!community_discussions_user_id_fkey (
             id,
             username, 
             display_name, 
