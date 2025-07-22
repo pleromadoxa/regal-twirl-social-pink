@@ -30,54 +30,8 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
   
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
 
-  // Static thread data - never changes
-  const staticThreadMessages: ThreadMessage[] = [
-    {
-      id: "1",
-      author: {
-        name: "Pastor Pleroma Emmanuel",
-        username: "pleromadoxa",
-        avatar: "/placeholder.svg",
-        verified: true
-      },
-      content: "🙏 **Daily Reflection** 📖\n\nEven in our darkest moments, God's light shines through. Remember that every challenge is an opportunity for growth and every setback is a setup for a comeback! ✨\n\nWhat's one thing you're grateful for today? Share your blessings below! 💕\n\n#Faith #Gratitude #BlessedLife #DailyReflection",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      likes: 24,
-      replies: 5,
-      isLiked: false,
-      level: 0
-    },
-    {
-      id: "2",
-      author: {
-        name: "Sarah Grace",
-        username: "sarahgrace",
-        avatar: "/placeholder.svg",
-        verified: false
-      },
-      content: "Thank you for this beautiful reminder! I'm grateful for my family's health and the opportunity to serve others in my community. God is good! 🙏✨",
-      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
-      likes: 12,
-      replies: 2,
-      isLiked: true,
-      level: 1
-    },
-    {
-      id: "3",
-      author: {
-        name: "David Faithful",
-        username: "davidfaithful",
-        avatar: "/placeholder.svg",
-        verified: false
-      },
-      content: "Amen! 🙌 I'm grateful for His endless mercy and the beautiful sunrise this morning that reminded me of His faithfulness. Every day is a gift! #Blessed",
-      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-      likes: 8,
-      replies: 1,
-      isLiked: false,
-      level: 1
-    }
-  ];
+  // Empty thread data - no static content
+  const staticThreadMessages: ThreadMessage[] = [];
 
   const toggleThreadExpansion = (messageId: string) => {
     const newExpanded = new Set(expandedThreads);
@@ -200,23 +154,39 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
       
       {/* Content */}
       <div className="p-6">
-        <div className="space-y-2">
-          {staticThreadMessages.map((message) => (
-            <div key={message.id}>
-              {renderMessage(message)}
-              
-              {/* Show replies if thread is expanded */}
-              {expandedThreads.has(message.id) && (
-                <div className="ml-8 space-y-2 mt-2 border-l-2 border-slate-200 dark:border-slate-700 pl-4">
-                   {staticThreadMessages
-                     .filter(m => m.level > message.level)
-                     .slice(0, 3)
-                     .map(reply => <div key={reply.id}>{renderMessage(reply, true)}</div>)}
-                </div>
-              )}
+        {staticThreadMessages.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-slate-400 dark:text-slate-500 mb-4">
+              <svg className="mx-auto h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-2-2V6a2 2 0 012-2h2m2 4h.01" />
+              </svg>
             </div>
-          ))}
-        </div>
+            <h3 className="text-lg font-medium text-slate-600 dark:text-slate-400 mb-2">
+              No discussions yet
+            </h3>
+            <p className="text-slate-500 dark:text-slate-500">
+              Be the first to start a community discussion!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {staticThreadMessages.map((message) => (
+              <div key={message.id}>
+                {renderMessage(message)}
+                
+                {/* Show replies if thread is expanded */}
+                {expandedThreads.has(message.id) && (
+                  <div className="ml-8 space-y-2 mt-2 border-l-2 border-slate-200 dark:border-slate-700 pl-4">
+                    {staticThreadMessages
+                      .filter(m => m.level > message.level)
+                      .slice(0, 3)
+                      .map(reply => <div key={reply.id}>{renderMessage(reply, true)}</div>)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
