@@ -34,7 +34,7 @@ const Hashtag = () => {
         .from('posts')
         .select(`
           *,
-          profiles!posts_user_id_fkey (
+          profiles!user_id (
             id,
             username, 
             display_name, 
