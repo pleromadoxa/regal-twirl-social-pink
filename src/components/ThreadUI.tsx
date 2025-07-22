@@ -208,10 +208,10 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
               {/* Show replies if thread is expanded */}
               {expandedThreads.has(message.id) && (
                 <div className="ml-8 space-y-2 mt-2 border-l-2 border-slate-200 dark:border-slate-700 pl-4">
-                  {staticThreadMessages
-                    .filter(m => m.level > message.level)
-                    .slice(0, 3)
-                    .map(reply => renderMessage(reply, true))}
+                   {staticThreadMessages
+                     .filter(m => m.level > message.level)
+                     .slice(0, 3)
+                     .map(reply => <div key={reply.id}>{renderMessage(reply, true)}</div>)}
                 </div>
               )}
             </div>

@@ -8,6 +8,7 @@ import PostsList from "@/components/PostsList";
 import { StoriesBar } from "@/components/StoriesBar";
 import HomeFeedNav from "@/components/HomeFeedNav";
 import ThreadUI from "@/components/ThreadUI";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 
 const Home = () => {
@@ -62,27 +63,36 @@ const Home = () => {
             <StoriesBar />
           </div>
 
-          {/* Home Feed Navigation */}
-          <HomeFeedNav onFilterChange={setFeedFilter} />
+          {/* Tabs Navigation */}
+          <Tabs defaultValue="feed" className="w-full">
+            <TabsList className="w-full rounded-none border-b border-purple-200 dark:border-purple-800">
+              <TabsTrigger value="feed" className="flex-1">Feed</TabsTrigger>
+              <TabsTrigger value="discussions" className="flex-1">Community Discussions</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="feed" className="mt-0">
+              {/* Home Feed Navigation */}
+              <HomeFeedNav onFilterChange={setFeedFilter} />
 
-          {/* Tweet Composer */}
-          <div className="border-b border-purple-200 dark:border-purple-800">
-            <TweetComposer />
-          </div>
+              {/* Tweet Composer */}
+              <div className="border-b border-purple-200 dark:border-purple-800">
+                <TweetComposer />
+              </div>
 
-          {/* Posts Feed */}
-          <div className="min-h-[200px]"> {/* Minimum height to prevent layout shift */}
-            <PostsList />
-          </div>
-          
-          {/* Community Discussions - Always visible and stable */}
-          <div className="border-t border-purple-200 dark:border-purple-800 mt-4">
-            <ThreadUI 
-              onReply={handleReply}
-              onLike={handleLike}
-              onShare={handleShare}
-            />
-          </div>
+              {/* Posts Feed */}
+              <div className="min-h-[200px]">
+                <PostsList />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="discussions" className="mt-0">
+              <ThreadUI 
+                onReply={handleReply}
+                onLike={handleLike}
+                onShare={handleShare}
+              />
+            </TabsContent>
+          </Tabs>
         </main>
       </div>
       
