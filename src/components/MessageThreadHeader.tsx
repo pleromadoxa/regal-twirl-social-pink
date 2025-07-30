@@ -67,13 +67,15 @@ const MessageThreadHeader = ({
         </div>
       </div>
 
-      {conversation.streak_count && conversation.streak_count > 0 && (
-        <div className="mt-2">
+      <div className="mt-2">
+        {conversation.streak_count && conversation.streak_count > 0 ? (
           <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
             🔥 {conversation.streak_count} day streak
           </Badge>
-        </div>
-      )}
+        ) : (
+          <span className="text-xs text-slate-500 dark:text-slate-400">no streak</span>
+        )}
+      </div>
     </div>
   );
 };

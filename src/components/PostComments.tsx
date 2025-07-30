@@ -51,34 +51,25 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
           id,
           content,
           created_at,
-          user_id
+          user_id,
+          profiles!replies_user_id_fkey (
+            username,
+            display_name, 
+            avatar_url
+          )
         `)
         .eq('post_id', postId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      // Fetch profiles separately to avoid the relationship error
-      if (data && data.length > 0) {
-        const userIds = [...new Set(data.map(comment => comment.user_id))];
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, username, display_name, avatar_url')
-          .in('id', userIds);
+      // Transform the data to match our interface
+      const transformedComments = (data || []).map(comment => ({
+        ...comment,
+        profiles: Array.isArray(comment.profiles) ? comment.profiles[0] : comment.profiles
+      }));
 
-        const profilesMap = new Map(
-          profilesData?.map(profile => [profile.id, profile]) || []
-        );
-
-        const enrichedComments = data.map(comment => ({
-          ...comment,
-          profiles: profilesMap.get(comment.user_id) || null
-        }));
-
-        setComments(enrichedComments);
-      } else {
-        setComments([]);
-      }
+      setComments(transformedComments);
     } catch (error) {
       console.error('Error fetching comments:', error);
       toast({

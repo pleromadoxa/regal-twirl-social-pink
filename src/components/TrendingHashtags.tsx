@@ -71,7 +71,8 @@ const TrendingHashtags = () => {
   };
 
   const handleHashtagClick = (hashtag: string) => {
-    navigate(`/hashtag/${hashtag.replace('#', '')}`);
+    console.log('Trending hashtag clicked:', hashtag);
+    navigate(`/search?hashtag=${hashtag.replace('#', '')}`);
   };
 
   if (loading) {
