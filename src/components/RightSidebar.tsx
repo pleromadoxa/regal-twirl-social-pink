@@ -10,6 +10,7 @@ import TrendingWidget from "./TrendingWidget";
 import NotificationDropdown from "./NotificationDropdown";
 import ShoppingCart from "./ShoppingCart";
 import UserSearch from "./UserSearch";
+import WhoToFollow from "./WhoToFollow";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,6 +127,9 @@ const RightSidebar = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Who to Follow */}
+          <WhoToFollow />
 
           {/* Trending */}
           <TrendingWidget onHashtagClick={handleHashtagClick} />

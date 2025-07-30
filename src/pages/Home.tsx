@@ -52,21 +52,21 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/80 via-pink-50/80 to-blue-50/80 dark:from-slate-900 dark:via-purple-900/80 dark:to-slate-900 flex">
       <SidebarNav />
       
       <main className="flex-1 lg:mr-96">
         <div className="max-w-2xl mx-auto">
           {/* Stories Bar */}
-          <div className="border-b border-purple-200 dark:border-purple-800 p-2 sm:p-4">
+          <div className="border-b border-purple-200/30 dark:border-purple-800/30 p-4 sm:p-6 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
             <StoriesBar />
           </div>
 
           {/* Tabs Navigation */}
           <Tabs defaultValue="feed" className="w-full">
-            <TabsList className="w-full rounded-none border-b border-purple-200 dark:border-purple-800">
-              <TabsTrigger value="feed" className="flex-1">Feed</TabsTrigger>
-              <TabsTrigger value="discussions" className="flex-1">Community Discussions</TabsTrigger>
+            <TabsList className="w-full rounded-none border-b border-purple-200/30 dark:border-purple-800/30 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+              <TabsTrigger value="feed" className="flex-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white">Feed</TabsTrigger>
+              <TabsTrigger value="discussions" className="flex-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white">Community Discussions</TabsTrigger>
             </TabsList>
             
             <TabsContent value="feed" className="mt-0">
@@ -74,22 +74,24 @@ const Home = () => {
               <HomeFeedNav onFilterChange={setFeedFilter} />
 
               {/* Tweet Composer */}
-              <div className="border-b border-purple-200 dark:border-purple-800">
+              <div className="border-b border-purple-200/30 dark:border-purple-800/30 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
                 <TweetComposer />
               </div>
 
               {/* Posts Feed */}
-              <div className="min-h-[200px]">
+              <div className="min-h-[200px] p-4 sm:p-6">
                 <PostsList />
               </div>
             </TabsContent>
             
             <TabsContent value="discussions" className="mt-0">
-              <ThreadUI 
-                onReply={handleReply}
-                onLike={handleLike}
-                onShare={handleShare}
-              />
+              <div className="p-4 sm:p-6">
+                <ThreadUI 
+                  onReply={handleReply}
+                  onLike={handleLike}
+                  onShare={handleShare}
+                />
+              </div>
             </TabsContent>
           </Tabs>
         </div>
