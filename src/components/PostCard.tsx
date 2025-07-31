@@ -11,9 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useVerifiedStatus } from '@/hooks/useVerifiedStatus';
 import BoostPostWidget from './BoostPostWidget';
 import RetweetIndicator from './RetweetIndicator';
 import SponsoredIndicator from './SponsoredIndicator';
+import VerificationBadge from './VerificationBadge';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 
@@ -35,6 +37,7 @@ interface PostCardProps {
       display_name: string;
       avatar_url?: string;
       is_verified?: boolean;
+      premium_tier?: string;
     };
   };
   isLiked?: boolean;
@@ -74,9 +77,13 @@ const PostCard = ({
   const { toast } = useToast();
   const { myPages } = useBusinessPages();
   const { isPostPinned, togglePin } = usePinnedPosts();
+  const { verificationLevel } = useVerifiedStatus(post.profiles);
   
   const isOwnPost = user?.id === post.user_id;
   const hasBusinessPages = myPages && myPages.length > 0;
+  
+  // Only show promote button for posts from professional pages
+  const isProfessionalPost = post.profiles?.premium_tier === 'professional';
 
   const handlePin = async () => {
     await togglePin(post.id);
@@ -149,12 +156,14 @@ const PostCard = ({
               <div className="flex items-center space-x-2">
                 <Link to={`/profile/${post.profiles?.id}`} className="hover:underline">
                   <span className="font-semibold text-gray-900 dark:text-gray-100">
-                    {post.profiles?.display_name || post.profiles?.username}
-                  </span>
-                </Link>
-                {post.profiles?.is_verified && (
-                  <Badge variant="secondary" className="text-xs">✓</Badge>
-                )}
+                 {post.profiles?.display_name || post.profiles?.username}
+                   </span>
+                 </Link>
+                 <VerificationBadge 
+                   level={verificationLevel} 
+                   showText={false}
+                   className="ml-1"
+                 />
                 {isPostPinned(post.id) && (
                   <div title="Pinned Post">
                     <Pin className="w-4 h-4 text-blue-600" />
@@ -283,13 +292,13 @@ const PostCard = ({
                 <Share className="w-4 h-4" />
               </Button>
               
-              {/* Show boost button for own posts with business pages */}
-              {isOwnPost && hasBusinessPages && (
-                <BoostPostWidget 
-                  postId={post.id} 
-                  businessPageId={myPages?.[0]?.id} 
-                />
-              )}
+               {/* Show boost button only for professional page posts */}
+               {isProfessionalPost && hasBusinessPages && (
+                 <BoostPostWidget 
+                   postId={post.id} 
+                   businessPageId={myPages?.[0]?.id} 
+                 />
+               )}
             </div>
           </div>
         </div>

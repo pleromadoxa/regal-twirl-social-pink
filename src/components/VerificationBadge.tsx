@@ -20,32 +20,32 @@ const VerificationBadge = ({ level, className = "", showText = true }: Verificat
         return {
           icon: Shield,
           text: 'Verified',
-          className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+          className: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:shadow-lg transition-all duration-200 border-0'
         };
       case 'vip':
         return {
           icon: Crown,
-          text: 'VIP Verified',
-          className: 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg'
+          text: 'VIP',
+          className: 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 animate-pulse'
         };
       case 'business':
         return {
           icon: Building,
-          text: 'Business Verified',
-          className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+          text: 'Business',
+          className: 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:shadow-lg transition-all duration-200 border-0'
         };
       case 'professional':
         return {
           icon: Briefcase,
-          text: 'Professional Verified',
-          className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+          text: 'Pro',
+          className: 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md hover:shadow-lg transition-all duration-200 border-0'
         };
       default:
         // Default case for any unexpected values
         return {
           icon: Shield,
           text: 'Verified',
-          className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+          className: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:shadow-lg transition-all duration-200 border-0'
         };
     }
   };
@@ -54,7 +54,7 @@ const VerificationBadge = ({ level, className = "", showText = true }: Verificat
   const Icon = config.icon;
 
   return (
-    <Badge className={`${config.className} ${className} font-medium`}>
+    <Badge className={`${config.className} ${className} font-medium text-xs px-2 py-1 rounded-full`}>
       <Icon className="w-3 h-3 mr-1" />
       {showText && config.text}
     </Badge>
