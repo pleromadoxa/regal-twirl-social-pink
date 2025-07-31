@@ -77,7 +77,6 @@ const PostCard = ({
   
   const isOwnPost = user?.id === post.user_id;
   const hasBusinessPages = myPages && myPages.length > 0;
-  const isProfessionalUser = user && myPages?.some(page => page.owner_id === user.id);
 
   const handlePin = async () => {
     await togglePin(post.id);
@@ -104,36 +103,8 @@ const PostCard = ({
     }
   };
 
-  const handleShare = async () => {
-    const postUrl = `${window.location.origin}/post/${post.id}`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Post by ${post.profiles?.display_name || post.profiles?.username}`,
-          text: post.content.slice(0, 100) + (post.content.length > 100 ? '...' : ''),
-          url: postUrl,
-        });
-      } catch (error) {
-        // User cancelled sharing or error occurred
-        console.log('Share cancelled or failed:', error);
-      }
-    } else {
-      // Fallback for browsers that don't support Web Share API
-      try {
-        await navigator.clipboard.writeText(postUrl);
-        toast({
-          title: "Link copied!",
-          description: "Post link has been copied to your clipboard",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to copy link",
-          variant: "destructive"
-        });
-      }
-    }
+  const handleShare = () => {
+    if (onShare) onShare(post.id);
   };
 
   const handleDelete = () => {
@@ -154,8 +125,8 @@ const PostCard = ({
   };
 
   return (
-    <Card className="mb-6 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-0 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden">
-      <CardContent className="p-6">
+    <Card className="mb-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-purple-200/50 dark:border-purple-800/50 hover:shadow-lg transition-all duration-300">
+      <CardContent className="p-4">
         {/* Re-share indicator */}
         <RetweetIndicator 
           users={retweetedBy} 
@@ -312,8 +283,8 @@ const PostCard = ({
                 <Share className="w-4 h-4" />
               </Button>
               
-              {/* Show boost button only for posts from professional/business accounts */}
-              {isOwnPost && isProfessionalUser && (
+              {/* Show boost button for own posts with business pages */}
+              {isOwnPost && hasBusinessPages && (
                 <BoostPostWidget 
                   postId={post.id} 
                   businessPageId={myPages?.[0]?.id} 
