@@ -24,8 +24,8 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
       <SidebarNav />
       
-      <div className="flex-1 flex justify-center">
-        <main className="w-full max-w-2xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+      <div className="flex-1 flex justify-center px-4">
+        <main className="w-full max-w-3xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
           {isReelsView ? (
             <div className="p-6">
               <ReelsSection />
