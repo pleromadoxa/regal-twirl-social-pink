@@ -16,6 +16,7 @@ import BoostPostWidget from './BoostPostWidget';
 import RetweetIndicator from './RetweetIndicator';
 import SponsoredIndicator from './SponsoredIndicator';
 import VerificationBadge from './VerificationBadge';
+import PostComments from './PostComments';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 
@@ -78,6 +79,7 @@ const PostCard = ({
   const { myPages } = useBusinessPages();
   const { isPostPinned, togglePin } = usePinnedPosts();
   const { verificationLevel } = useVerifiedStatus(post.profiles);
+  const [showComments, setShowComments] = useState(false);
   
   const isOwnPost = user?.id === post.user_id;
   const hasBusinessPages = myPages && myPages.length > 0;
@@ -247,7 +249,7 @@ const PostCard = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onReply}
+                onClick={() => setShowComments(!showComments)}
                 className="flex items-center space-x-2 text-gray-500 hover:text-blue-500"
               >
                 <MessageCircle className="w-4 h-4" />
@@ -299,10 +301,17 @@ const PostCard = ({
                    businessPageId={myPages?.[0]?.id} 
                  />
                )}
-            </div>
+             </div>
           </div>
         </div>
       </CardContent>
+      
+      {/* Comments Modal */}
+      <PostComments 
+        postId={post.id}
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
+      />
     </Card>
   );
 };

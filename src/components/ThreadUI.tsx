@@ -5,6 +5,7 @@ import { Heart, MessageCircle, Share2, MoreHorizontal, Verified, TrendingUp } fr
 import { formatDistanceToNow } from "date-fns";
 import { useCommunityDiscussions, CommunityDiscussion } from "@/hooks/useCommunityDiscussions";
 import CommunityDiscussionComposer from "@/components/CommunityDiscussionComposer";
+import CommunityDiscussionReplies from "@/components/CommunityDiscussionReplies";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ThreadUIProps {
@@ -17,6 +18,7 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
   console.log('ThreadUI: Component rendering - START');
   
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
+  const [showRepliesFor, setShowRepliesFor] = useState<string | null>(null);
   const { discussions, loading, toggleLike } = useCommunityDiscussions();
   const { user } = useAuth();
 
@@ -29,7 +31,7 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
   };
 
   const handleReply = (discussionId: string) => {
-    onReply?.(discussionId);
+    setShowRepliesFor(showRepliesFor === discussionId ? null : discussionId);
   };
 
   const handleShare = (discussionId: string) => {
@@ -114,6 +116,13 @@ const ThreadUI = ({ onReply, onLike, onShare }: ThreadUIProps) => {
             <Share2 className="w-4 h-4" />
           </Button>
         </div>
+        
+        {/* Show replies for this discussion */}
+        {showRepliesFor === discussion.id && (
+          <div className="mt-4 border-t border-purple-200 dark:border-purple-800 pt-4">
+            <CommunityDiscussionReplies discussionId={discussion.id} />
+          </div>
+        )}
       </div>
     );
   };
