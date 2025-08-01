@@ -7,6 +7,8 @@ import { usePostsData } from '@/hooks/usePostsData';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 import { useAuth } from '@/contexts/AuthContext';
+import RepliesSection from './RepliesSection';
+import { useState } from 'react';
 
 const PostsList = () => {
   const { user } = useAuth();
@@ -14,6 +16,7 @@ const PostsList = () => {
   const { toast } = useToast();
   const { retweetUsers } = usePostsData(posts, user, refetch);
   const { toggleBookmark, isPostBookmarked } = useBookmarks();
+  const [showRepliesFor, setShowRepliesFor] = useState<string | null>(null);
 
   const handleShare = async (postId: string) => {
     const post = posts.find(p => p.id === postId);
@@ -79,21 +82,28 @@ const PostsList = () => {
   return (
     <div className="space-y-4">
       {posts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          isLiked={post.user_liked}
-          isRetweeted={post.user_retweeted}
-          isBookmarked={isPostBookmarked(post.id)}
-          retweetedBy={retweetUsers[post.id] || []}
-          onLike={() => toggleLike(post.id)}
-          onRetweet={() => toggleRetweet(post.id)}
-          onPin={() => togglePin(post.id)}
-          onBookmark={() => toggleBookmark(post.id)}
-          onDelete={() => deletePost(post.id)}
-          onShare={handleShare}
-          onTrackView={() => trackPostView(post.id)}
-        />
+        <div key={post.id}>
+          <PostCard
+            post={post}
+            isLiked={post.user_liked}
+            isRetweeted={post.user_retweeted}
+            isBookmarked={isPostBookmarked(post.id)}
+            retweetedBy={retweetUsers[post.id] || []}
+            onLike={() => toggleLike(post.id)}
+            onRetweet={() => toggleRetweet(post.id)}
+            onReply={() => setShowRepliesFor(showRepliesFor === post.id ? null : post.id)}
+            onPin={() => togglePin(post.id)}
+            onBookmark={() => toggleBookmark(post.id)}
+            onDelete={() => deletePost(post.id)}
+            onShare={handleShare}
+            onTrackView={() => trackPostView(post.id)}
+          />
+          {showRepliesFor === post.id && (
+            <div className="mt-4 border-l-2 border-purple-200 dark:border-purple-800 pl-4">
+              <RepliesSection postId={post.id} />
+            </div>
+          )}
+        </div>
       ))}
     </div>
   );
