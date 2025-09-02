@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -36,14 +36,25 @@ export const useBusinessPages = () => {
   const [pages, setPages] = useState<BusinessPage[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const fetchingRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
 
-  const fetchPages = async () => {
+  const fetchPages = useCallback(async () => {
     if (!user) {
       setMyPages([]);
       setPages([]);
       setLoading(false);
       return;
     }
+
+    // Prevent multiple simultaneous fetches and limit frequency
+    const now = Date.now();
+    if (fetchingRef.current || (now - lastFetchTimeRef.current < 5000)) {
+      return;
+    }
+
+    fetchingRef.current = true;
+    lastFetchTimeRef.current = now;
 
     try {
       console.log('Fetching business pages for user:', user.id);
@@ -90,8 +101,9 @@ export const useBusinessPages = () => {
       setPages([]);
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
-  };
+  }, [user?.id]);
 
   const createPage = async (pageData: Partial<BusinessPage>) => {
     if (!user) {
@@ -271,12 +283,12 @@ export const useBusinessPages = () => {
 
   useEffect(() => {
     fetchPages();
-  }, [user?.id]); // Only depend on user.id, not the entire user object
+  }, [fetchPages]);
 
-  const refetch = () => {
+  const refetch = useCallback(() => {
     setLoading(true);
     fetchPages();
-  };
+  }, [fetchPages]);
 
   return {
     myPages,

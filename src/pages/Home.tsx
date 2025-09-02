@@ -55,8 +55,8 @@ const Home = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
       
-      <main className="flex-1 lg:mr-96">
-        <div className="max-w-2xl mx-auto">
+      <div className="flex-1 px-4" style={{ marginLeft: '320px', marginRight: '384px' }}>
+        <main className="w-full max-w-2xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto">
           {/* Stories Bar */}
           <div className="border-b border-purple-200 dark:border-purple-800 p-2 sm:p-4">
             <StoriesBar />
@@ -92,12 +92,10 @@ const Home = () => {
               />
             </TabsContent>
           </Tabs>
-        </div>
-      </main>
-      
-      <div className="hidden lg:block">
-        <RightSidebar />
+        </main>
       </div>
+      
+      <RightSidebar />
     </div>
   );
 };
