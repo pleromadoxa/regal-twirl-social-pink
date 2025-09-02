@@ -8,7 +8,10 @@ import AdminUsersSection from '@/components/AdminUsersSection';
 import AdminAnalytics from '@/components/AdminAnalytics';
 import AdminMusicUpload from '@/components/AdminMusicUpload';
 import AdminSupportTickets from '@/components/AdminSupportTickets';
-import AdminSubscriptionSection from '@/components/AdminSubscriptionSection';
+import AdminMessagesManagement from '@/components/AdminMessagesManagement';
+import AdminReportsManagement from '@/components/AdminReportsManagement';
+import AdminSystemHealth from '@/components/AdminSystemHealth';
+import AdminDataExport from '@/components/AdminDataExport';
 import { 
   Users, 
   MessageSquare, 
@@ -201,7 +204,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
       
-      <div className="flex-1 pl-80">
+      <div className="flex-1 px-4" style={{ marginLeft: '320px', marginRight: '384px' }}>
         <div className="p-6">
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-4">
@@ -220,7 +223,7 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-10">
+            <TabsList className="grid w-full grid-cols-11">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
                 Overview
@@ -257,9 +260,13 @@ const AdminDashboard = () => {
                 <Flag className="w-4 h-4" />
                 Reports
               </TabsTrigger>
+              <TabsTrigger value="export" className="flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Export
+              </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
-                Settings
+                Health
               </TabsTrigger>
             </TabsList>
 
@@ -409,61 +416,19 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="messages">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Message Management</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <MessageSquare className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-600 mb-2">Message Management</h3>
-                    <p className="text-gray-500">Monitor and manage platform messages and conversations.</p>
-                    <div className="mt-4 text-sm text-muted-foreground">
-                      <p>Total Messages: {stats.totalMessages}</p>
-                      <p>Active Conversations: {Math.floor(stats.totalMessages / 3)}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <AdminMessagesManagement />
             </TabsContent>
 
             <TabsContent value="reports">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Content Reports</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Flag className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-600 mb-2">Content Reports</h3>
-                    <p className="text-gray-500">Review and manage reported content and user violations.</p>
-                    <div className="mt-4 text-sm text-muted-foreground">
-                      <p>Pending Reports: {stats.totalReports}</p>
-                      <p>Resolved Today: {Math.floor(stats.totalReports * 0.3)}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <AdminReportsManagement />
+            </TabsContent>
+
+            <TabsContent value="export">
+              <AdminDataExport />
             </TabsContent>
 
             <TabsContent value="settings">
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Settings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Settings className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-600 mb-2">System Settings</h3>
-                    <p className="text-gray-500">Configure platform settings, security, and preferences.</p>
-                    <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                      <p>Platform Version: 2.1.0</p>
-                      <p>Last Update: {new Date().toLocaleDateString()}</p>
-                      <p>Security Level: High</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <AdminSystemHealth />
             </TabsContent>
           </Tabs>
         </div>
