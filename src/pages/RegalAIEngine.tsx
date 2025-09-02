@@ -9,7 +9,7 @@ const RegalAIEnginePage = () => {
       <SidebarNav />
       
       <div className="flex-1 flex justify-center pl-80 pr-96">
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-6xl mx-auto">
+        <main className="flex-1 max-w-2xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto">
           <div className="p-6">
             <RegalAIEngine />
           </div>
