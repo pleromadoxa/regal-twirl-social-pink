@@ -66,6 +66,15 @@ const Landing = () => {
             </div>
           </div>
 
+          {/* Enter button - Moved up for better visibility */}
+          <div className="pointer-events-auto mb-8 sm:mb-10 md:mb-12 flex-shrink-0">
+            <InteractiveHoverButton
+              text="Join the Network"
+              onClick={handleEnterClick}
+              className="w-40 sm:w-44 md:w-52 h-11 sm:h-12 md:h-14 text-sm sm:text-base font-bold bg-white/10 backdrop-blur-xl border-white/20 text-white hover:text-white shadow-2xl"
+            />
+          </div>
+
           {/* Features - Responsive Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 max-w-5xl mx-auto mb-6 sm:mb-8 md:mb-10 text-center w-full px-2 sm:px-4">
             <div className="bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/20 shadow-2xl group hover:bg-white/15 transition-all duration-300 hover:scale-105">
@@ -88,15 +97,6 @@ const Landing = () => {
               <h3 className="text-sm sm:text-base font-semibold mb-1 sm:mb-2">Biblical Resources</h3>
               <p className="text-white/70 text-xs sm:text-sm">Access devotions, prayers, and scripture</p>
             </div>
-          </div>
-
-          {/* Enter button - Fixed pointer events */}
-          <div className="pointer-events-auto mb-6 sm:mb-8 md:mb-10 flex-shrink-0">
-            <InteractiveHoverButton
-              text="Join the Network"
-              onClick={handleEnterClick}
-              className="w-40 sm:w-44 md:w-52 h-11 sm:h-12 md:h-14 text-sm sm:text-base font-bold bg-white/10 backdrop-blur-xl border-white/20 text-white hover:text-white shadow-2xl"
-            />
           </div>
 
           {/* Stats - Responsive */}
