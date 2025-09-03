@@ -24,6 +24,7 @@ import { useGallery } from '@/hooks/useGallery';
 import { usePosts } from '@/hooks/usePosts';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 import { useBookmarks } from '@/hooks/useBookmarks';
+import SimpleOrdersTab from '@/components/SimpleOrdersTab';
 import { useState } from 'react';
 
 const Profile = () => {
@@ -281,6 +282,11 @@ const Profile = () => {
                 <TabsTrigger value="likes" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
                   Likes
                 </TabsTrigger>
+                {isOwnProfile && (
+                  <TabsTrigger value="orders" className="data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none">
+                    Orders
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="posts" className="mt-0">
@@ -551,6 +557,12 @@ const Profile = () => {
                 )}
               </div>
             </TabsContent>
+
+            {isOwnProfile && (
+              <TabsContent value="orders" className="mt-0">
+                <SimpleOrdersTab />
+              </TabsContent>
+            )}
           </Tabs>
         </main>
       </div>
