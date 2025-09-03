@@ -400,7 +400,11 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="subscriptions">
-              <AdminSubscriptionSection />
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p>Subscription management coming soon</p>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="music">

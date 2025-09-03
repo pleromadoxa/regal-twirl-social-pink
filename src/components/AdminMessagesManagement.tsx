@@ -28,9 +28,9 @@ interface Message {
   sender_id: string;
   recipient_id: string;
   content: string;
-  message_type: 'text' | 'image' | 'video' | 'audio' | 'file';
+  message_type: string;
   created_at: string;
-  is_read: boolean;
+  is_read?: boolean;
   sender?: {
     username: string;
     display_name: string;
@@ -48,7 +48,7 @@ interface GroupMessage {
   group_id: string;
   sender_id: string;
   content: string;
-  message_type: 'text' | 'image' | 'video' | 'audio' | 'file';
+  message_type: string;
   created_at: string;
   sender?: {
     username: string;
@@ -137,8 +137,9 @@ const AdminMessagesManagement = () => {
           return {
             ...message,
             sender: senderProfile.data,
-            recipient: recipientProfile.data
-          };
+            recipient: recipientProfile.data,
+            is_read: message.read_at ? true : false
+          } as Message;
         })
       );
 
@@ -171,14 +172,14 @@ const AdminMessagesManagement = () => {
               name: groupInfo.data?.name || 'Unknown Group',
               members_count: membersCount || 0
             }
-          };
+          } as GroupMessage;
         })
       );
 
-      setMessages(messagesWithProfiles);
-      setGroupMessages(groupMessagesWithProfiles);
+      setMessages(messagesWithProfiles as Message[]);
+      setGroupMessages(groupMessagesWithProfiles as GroupMessage[]);
       
-      await calculateStats(messagesWithProfiles, groupMessagesWithProfiles);
+      await calculateStats(messagesWithProfiles as Message[], groupMessagesWithProfiles as GroupMessage[]);
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast({
@@ -414,7 +415,7 @@ const AdminMessagesManagement = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Average Response Time</span>
-                    <Badge variant="default">< 1s</Badge>
+                    <Badge variant="default">{"< 1s"}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Flagged Content</span>
@@ -514,8 +515,8 @@ const AdminMessagesManagement = () => {
                             
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
                               <span>{new Date(message.created_at).toLocaleString()}</span>
-                              {message.is_read !== undefined && (
-                                <span>{message.is_read ? 'Read' : 'Unread'}</span>
+                              {(message as Message).is_read !== undefined && (
+                                <span>{(message as Message).is_read ? 'Read' : 'Unread'}</span>
                               )}
                             </div>
                           </div>

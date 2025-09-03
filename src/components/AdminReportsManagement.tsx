@@ -125,8 +125,13 @@ const AdminReportsManagement = () => {
         })
       );
 
-      setReports(reportsWithProfiles);
-      calculateStats(reportsWithProfiles);
+      const typedReports = reportsWithProfiles.map(report => ({ 
+        ...report, 
+        status: (report.status || 'pending') as 'pending' | 'reviewed' | 'resolved' | 'dismissed'
+      }));
+      
+      setReports(typedReports);
+      calculateStats(typedReports);
     } catch (error) {
       console.error('Error fetching reports:', error);
       toast({
