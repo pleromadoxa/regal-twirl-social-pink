@@ -12,6 +12,7 @@ import AdminMessagesManagement from '@/components/AdminMessagesManagement';
 import AdminReportsManagement from '@/components/AdminReportsManagement';
 import AdminSystemHealth from '@/components/AdminSystemHealth';
 import AdminDataExport from '@/components/AdminDataExport';
+import AdminSubscriptionSection from '@/components/AdminSubscriptionSection';
 import { 
   Users, 
   MessageSquare, 
@@ -400,11 +401,7 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="subscriptions">
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <p>Subscription management coming soon</p>
-                </CardContent>
-              </Card>
+              <AdminSubscriptionSection />
             </TabsContent>
 
             <TabsContent value="music">
