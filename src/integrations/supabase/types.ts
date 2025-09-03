@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -2456,16 +2456,16 @@ export type Database = {
     }
     Functions: {
       add_group_members: {
-        Args: { group_id: string; member_ids: string[]; creator_id: string }
+        Args: { creator_id: string; group_id: string; member_ids: string[] }
         Returns: undefined
       }
       calculate_trending_score: {
         Args: {
-          views_count: number
-          likes_count: number
-          retweets_count: number
-          replies_count: number
           created_at: string
+          likes_count: number
+          replies_count: number
+          retweets_count: number
+          views_count: number
         }
         Returns: number
       }
@@ -2479,11 +2479,11 @@ export type Database = {
       }
       create_notification: {
         Args: {
-          user_id: string
-          type: string
           actor_id?: string
-          post_id?: string
           message?: string
+          post_id?: string
+          type: string
+          user_id: string
         }
         Returns: undefined
       }
@@ -2508,7 +2508,7 @@ export type Database = {
         Returns: undefined
       }
       update_user_presence: {
-        Args: { user_id: string; is_online: boolean }
+        Args: { is_online: boolean; user_id: string }
         Returns: undefined
       }
     }
