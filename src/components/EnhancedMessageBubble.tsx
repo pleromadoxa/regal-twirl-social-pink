@@ -1,9 +1,11 @@
 
 import { useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
+import { ChatBubble, ChatBubbleAvatar, ChatBubbleMessage, ChatBubbleActionWrapper, ChatBubbleAction } from '@/components/ui/chat-bubble';
+import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import MessageContextMenu from './MessageContextMenu';
 import MessageEditForm from './MessageEditForm';
 import MessageContent from './MessageContent';
-import MessageBubbleLayout from './MessageBubbleLayout';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -72,30 +74,55 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
   };
 
   return (
-    <MessageBubbleLayout message={message} isOwn={isOwn}>
-      {isEditing ? (
-        <MessageEditForm
-          messageId={message.id}
-          currentContent={message.content}
-          currentUserId={currentUserId}
-          onCancel={handleCancelEdit}
-          onSave={handleSaveEdit}
+    <ChatBubble variant={isOwn ? "sent" : "received"}>
+      {!isOwn && (
+        <ChatBubbleAvatar
+          src={message.sender_profile?.avatar_url}
+          fallback={message.sender_profile?.display_name?.[0] || message.sender_profile?.username?.[0] || '?'}
         />
-      ) : (
-        <>
-          <MessageContent message={message} />
-          <div className={`absolute top-1 ${isOwn ? 'left-1' : 'right-1'}`}>
-            <MessageContextMenu
-              messageId={message.id}
-              content={message.content}
-              isOwnMessage={isOwn}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          </div>
-        </>
       )}
-    </MessageBubbleLayout>
+      <div className="flex-1 space-y-1">
+        {isEditing ? (
+          <MessageEditForm
+            messageId={message.id}
+            currentContent={message.content}
+            currentUserId={currentUserId}
+            onCancel={handleCancelEdit}
+            onSave={handleSaveEdit}
+          />
+        ) : (
+          <>
+            <ChatBubbleMessage variant={isOwn ? "sent" : "received"}>
+              <MessageContent message={message} />
+            </ChatBubbleMessage>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                {message.edited_at && ' (edited)'}
+              </span>
+              {isOwn && (
+                <ChatBubbleActionWrapper>
+                  <ChatBubbleAction
+                    icon={<Edit className="h-3 w-3" />}
+                    onClick={handleEdit}
+                  />
+                  <ChatBubbleAction
+                    icon={<Trash2 className="h-3 w-3" />}
+                    onClick={handleDelete}
+                  />
+                </ChatBubbleActionWrapper>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+      {isOwn && (
+        <ChatBubbleAvatar
+          src={message.sender_profile?.avatar_url}
+          fallback={message.sender_profile?.display_name?.[0] || message.sender_profile?.username?.[0] || 'M'}
+        />
+      )}
+    </ChatBubble>
   );
 };
 
