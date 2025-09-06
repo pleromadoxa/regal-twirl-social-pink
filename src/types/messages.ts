@@ -10,9 +10,20 @@ export interface Message {
   edited_at?: string;
   metadata?: any;
   conversation_id?: string;
-  attachments?: any[];
+  attachments?: MessageAttachment[];
   profiles?: any;
   sender_profile?: any;
+}
+
+export interface MessageAttachment {
+  id: string;
+  message_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  file_url: string;
+  attachment_type: 'image' | 'video' | 'audio' | 'document';
+  created_at: string;
 }
 
 export interface Profile {

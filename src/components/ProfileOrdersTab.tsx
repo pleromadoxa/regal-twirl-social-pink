@@ -2,61 +2,44 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Package, 
-  Truck, 
-  CheckCircle, 
   Clock, 
+  CheckCircle, 
+  XCircle, 
+  Truck, 
   Star,
   MessageSquare,
-  ExternalLink,
-  Filter,
-  Search
+  MoreHorizontal
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Order {
   id: string;
-  order_number: string;
-  status: string;
-  payment_status: string;
-  items: any[];
-  subtotal: number;
+  customer_name: string;
+  customer_email: string;
   total_amount: number;
   currency: string;
-  customer_name: string;
-  delivery_address: any;
-  tracking_number?: string;
-  tracking_url?: string;
-  estimated_delivery?: string;
-  actual_delivery?: string;
+  status: string;
+  payment_status: string;
   created_at: string;
-  updated_at: string;
+  tracking_number?: string;
+  items: any;
   business_pages?: {
     page_name: string;
     avatar_url?: string;
   };
-  review_submitted: boolean;
-  review_rating?: number;
-  review_text?: string;
 }
 
 const ProfileOrdersTab = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewText, setReviewText] = useState('');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'cancelled'>('all');
+  
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -72,9 +55,9 @@ const ProfileOrdersTab = () => {
     try {
       setLoading(true);
       
-      // First try user_orders table, then fallback to business_orders
-      let { data: userOrders, error: userOrdersError } = await supabase
-        .from('user_orders')
+      // Use business_orders only - user_orders table not available yet
+      const { data: businessOrders, error: businessOrdersError } = await supabase
+        .from('business_orders')
         .select(`
           *,
           business_pages (
@@ -82,48 +65,16 @@ const ProfileOrdersTab = () => {
             avatar_url
           )
         `)
-        .eq('user_id', user.id)
+        .eq('customer_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (userOrdersError) {
-        console.log('No user_orders table, trying business_orders');
-        
-        // Fallback to business_orders table
-        const { data: businessOrders, error: businessOrdersError } = await supabase
-          .from('business_orders')
-          .select(`
-            *,
-            business_pages (
-              page_name,
-              avatar_url
-            )
-          `)
-          .eq('customer_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (businessOrdersError) throw businessOrdersError;
-        
-        // Transform business_orders to match user_orders format
-        userOrders = businessOrders?.map(order => ({
-          ...order,
-          order_number: `ORD-${order.id.slice(0, 8)}`,
-          review_submitted: false,
-          delivery_address: {
-            address: order.delivery_address,
-            city: order.delivery_city,
-            state: order.delivery_state,
-            postal_code: order.delivery_postal_code,
-            country: order.delivery_country
-          }
-        })) || [];
-      }
-
-      setOrders(userOrders || []);
+      if (businessOrdersError) throw businessOrdersError;
+      setOrders(businessOrders || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast({
         title: "Error",
-        description: "Failed to load your orders",
+        description: "Failed to fetch orders",
         variant: "destructive"
       });
     } finally {
@@ -134,324 +85,213 @@ const ProfileOrdersTab = () => {
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return <Clock className="w-4 h-4" />;
+        return <Clock className="w-4 h-4 text-yellow-500" />;
       case 'processing':
-        return <Package className="w-4 h-4" />;
+        return <Package className="w-4 h-4 text-blue-500" />;
       case 'shipped':
-        return <Truck className="w-4 h-4" />;
+        return <Truck className="w-4 h-4 text-purple-500" />;
       case 'delivered':
-        return <CheckCircle className="w-4 h-4" />;
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'cancelled':
+        return <XCircle className="w-4 h-4 text-red-500" />;
       default:
-        return <Clock className="w-4 h-4" />;
+        return <Package className="w-4 h-4 text-gray-500" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'bg-yellow-500';
+        return 'bg-yellow-100 text-yellow-800';
       case 'processing':
-        return 'bg-blue-500';
+        return 'bg-blue-100 text-blue-800';
       case 'shipped':
-        return 'bg-purple-500';
+        return 'bg-purple-100 text-purple-800';
       case 'delivered':
-        return 'bg-green-500';
+        return 'bg-green-100 text-green-800';
       case 'cancelled':
-        return 'bg-red-500';
+        return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-500';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const submitReview = async () => {
-    if (!selectedOrder) return;
-
-    try {
-      // Update the order with review info
-      const { error } = await supabase
-        .from('user_orders')
-        .update({
-          review_submitted: true,
-          review_rating: reviewRating,
-          review_text: reviewText,
-          review_date: new Date().toISOString()
-        })
-        .eq('id', selectedOrder.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Review Submitted",
-        description: "Thank you for your feedback!"
-      });
-
-      setReviewDialogOpen(false);
-      setSelectedOrder(null);
-      setReviewText('');
-      setReviewRating(5);
-      fetchOrders();
-    } catch (error) {
-      console.error('Error submitting review:', error);
-      toast({
-        title: "Error",
-        description: "Failed to submit review",
-        variant: "destructive"
-      });
-    }
+  const formatPrice = (price: number, currency: string = 'USD') => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency
+    }).format(price);
   };
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.business_pages?.page_name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    if (filter === 'all') return true;
+    return order.status.toLowerCase() === filter;
   });
-
-  const orderStats = {
-    total: orders.length,
-    pending: orders.filter(o => o.status === 'pending').length,
-    shipped: orders.filter(o => o.status === 'shipped').length,
-    delivered: orders.filter(o => o.status === 'delivered').length
-  };
 
   if (loading) {
     return (
-      <div className="p-6 text-center">
-        <div className="animate-pulse space-y-4">
-          <div className="h-20 bg-gray-200 rounded"></div>
-          <div className="h-32 bg-gray-200 rounded"></div>
-          <div className="h-32 bg-gray-200 rounded"></div>
-        </div>
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="animate-pulse">
+            <CardContent className="p-6">
+              <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/2 mb-4"></div>
+              <div className="h-16 bg-gray-200 rounded"></div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Order Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{orderStats.total}</div>
-            <div className="text-sm text-muted-foreground">Total Orders</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{orderStats.pending}</div>
-            <div className="text-sm text-muted-foreground">Pending</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-purple-600">{orderStats.shipped}</div>
-            <div className="text-sm text-muted-foreground">Shipped</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{orderStats.delivered}</div>
-            <div className="text-sm text-muted-foreground">Delivered</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search orders..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Orders</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="processing">Processing</SelectItem>
-            <SelectItem value="shipped">Shipped</SelectItem>
-            <SelectItem value="delivered">Delivered</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+    <div className="space-y-6">
+      {/* Filter Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {[
+          { key: 'all', label: 'All Orders', count: orders.length },
+          { key: 'pending', label: 'Pending', count: orders.filter(o => o.status.toLowerCase() === 'pending').length },
+          { key: 'completed', label: 'Completed', count: orders.filter(o => o.status.toLowerCase() === 'delivered').length },
+          { key: 'cancelled', label: 'Cancelled', count: orders.filter(o => o.status.toLowerCase() === 'cancelled').length }
+        ].map((tab) => (
+          <Button
+            key={tab.key}
+            variant={filter === tab.key ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFilter(tab.key as any)}
+            className={`flex-shrink-0 gap-2 ${
+              filter === tab.key 
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
+                : ''
+            }`}
+          >
+            {tab.label}
+            <Badge variant="secondary" className="bg-white/20 text-inherit">
+              {tab.count}
+            </Badge>
+          </Button>
+        ))}
       </div>
 
       {/* Orders List */}
       {filteredOrders.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center">
-            <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-2">No orders found</h3>
-            <p className="text-muted-foreground">
-              {searchQuery || statusFilter !== 'all' 
-                ? 'Try adjusting your filters' 
-                : 'Start shopping to see your orders here'}
+          <CardContent className="text-center py-12">
+            <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">
+              {filter === 'all' ? 'No orders found' : `No ${filter} orders`}
+            </h3>
+            <p className="text-gray-500">
+              {filter === 'all' 
+                ? 'Start shopping to see your orders here' 
+                : `You don't have any ${filter} orders`
+              }
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <Card key={order.id}>
-              <CardHeader>
+            <Card key={order.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {order.business_pages?.avatar_url && (
-                      <img 
-                        src={order.business_pages.avatar_url} 
-                        alt={order.business_pages.page_name}
-                        className="w-10 h-10 rounded-full"
-                      />
+                    {order.business_pages && (
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={order.business_pages.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm">
+                          {order.business_pages.page_name[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                     )}
                     <div>
-                      <CardTitle className="text-lg">{order.order_number}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        from {order.business_pages?.page_name}
+                      <CardTitle className="text-lg">
+                        Order #{order.id.slice(0, 8)}
+                      </CardTitle>
+                      <p className="text-sm text-gray-500">
+                        {order.business_pages?.page_name || 'Unknown Store'} • {formatDistanceToNow(new Date(order.created_at))} ago
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={`${getStatusColor(order.status)} text-white`}>
-                      {getStatusIcon(order.status)}
-                      <span className="ml-1 capitalize">{order.status}</span>
+                  
+                  <div className="flex items-center gap-3">
+                    <Badge className={getStatusColor(order.status)}>
+                      <div className="flex items-center gap-1">
+                        {getStatusIcon(order.status)}
+                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      </div>
                     </Badge>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Order Items */}
-                  <div className="space-y-2">
-                    {order.items.map((item: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                        <div className="flex-1">
-                          <p className="font-medium">{item.name}</p>
-                          <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
-                        </div>
-                        <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+              
+              <CardContent className="space-y-4">
+                {/* Order Items Preview */}
+                <div className="space-y-2">
+                  <h4 className="font-medium text-gray-900">Items</h4>
+                  <div className="space-y-1">
+                    {order.items.slice(0, 3).map((item: any, index: number) => (
+                      <div key={index} className="flex justify-between text-sm">
+                        <span className="text-gray-600">
+                          {item.name || item.product_name || `Item ${index + 1}`} x{item.quantity || 1}
+                        </span>
+                        <span className="font-medium">
+                          {formatPrice(item.price || 0, order.currency)}
+                        </span>
                       </div>
                     ))}
-                  </div>
-
-                  {/* Order Details */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-                    <div>
-                      <p className="text-sm font-medium mb-1">Order Date</p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(order.created_at).toLocaleDateString()}
+                    {order.items.length > 3 && (
+                      <p className="text-xs text-gray-500">
+                        +{order.items.length - 3} more items
                       </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium mb-1">Total Amount</p>
-                      <p className="text-sm font-semibold">${order.total_amount.toFixed(2)} {order.currency}</p>
-                    </div>
-                    {order.tracking_number && (
-                      <div>
-                        <p className="text-sm font-medium mb-1">Tracking Number</p>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm text-muted-foreground">{order.tracking_number}</p>
-                          {order.tracking_url && (
-                            <Button variant="ghost" size="sm" asChild>
-                              <a href={order.tracking_url} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    {order.estimated_delivery && (
-                      <div>
-                        <p className="text-sm font-medium mb-1">Estimated Delivery</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(order.estimated_delivery).toLocaleDateString()}
-                        </p>
-                      </div>
                     )}
                   </div>
+                </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 pt-4 border-t">
-                    {order.status === 'delivered' && !order.review_submitted && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedOrder(order);
-                          setReviewDialogOpen(true);
-                        }}
-                      >
-                        <Star className="w-4 h-4 mr-2" />
-                        Write Review
-                      </Button>
-                    )}
-                    {order.review_submitted && (
-                      <Badge variant="secondary">
-                        <MessageSquare className="w-3 h-3 mr-1" />
-                        Reviewed
-                      </Badge>
-                    )}
+                {/* Order Total */}
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="font-semibold text-gray-900">Total</span>
+                  <span className="text-lg font-bold text-gray-900">
+                    {formatPrice(order.total_amount, order.currency)}
+                  </span>
+                </div>
+
+                {/* Tracking Info */}
+                {order.tracking_number && (
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-blue-500" />
+                      <span className="text-sm font-medium text-blue-900">
+                        Tracking: {order.tracking_number}
+                      </span>
+                    </div>
                   </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1">
+                    View Details
+                  </Button>
+                  {order.status.toLowerCase() === 'delivered' && (
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Star className="w-4 h-4" />
+                      Review
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <MessageSquare className="w-4 h-4" />
+                    Support
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
-
-      {/* Review Dialog */}
-      <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Write a Review</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Rating</label>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Button
-                    key={star}
-                    variant="ghost"
-                    size="sm"
-                    className="p-1"
-                    onClick={() => setReviewRating(star)}
-                  >
-                    <Star 
-                      className={`w-6 h-6 ${star <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
-                    />
-                  </Button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Review</label>
-              <Textarea
-                placeholder="Share your experience with this order..."
-                value={reviewText}
-                onChange={(e) => setReviewText(e.target.value)}
-                rows={4}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={submitReview} className="flex-1">
-                Submit Review
-              </Button>
-              <Button variant="outline" onClick={() => setReviewDialogOpen(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

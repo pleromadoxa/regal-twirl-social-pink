@@ -48,8 +48,10 @@ export function ChatBubbleMessage({
   return (
     <div
       className={cn(
-        "rounded-lg p-3",
-        variant === "sent" ? "bg-primary text-primary-foreground" : "bg-muted",
+        "rounded-2xl p-3 max-w-sm break-words", // Added max-width and proper text wrapping
+        variant === "sent" 
+          ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white ml-auto" 
+          : "bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600",
         className
       )}
     >

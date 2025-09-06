@@ -13,6 +13,7 @@ import { MessageCircle, Bell, Archive, Search, User, Plus, Hash, Star } from 'lu
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
+import GroupCreationDialog from '@/components/GroupCreationDialog';
 
 const Messages = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -74,7 +75,10 @@ const Messages = () => {
               <p className="text-sm text-gray-500 dark:text-gray-400">Connect with your community</p>
             </div>
           </div>
-          <MessageSearch onStartConversation={handleStartConversation} />
+          <div className="flex gap-2">
+            <MessageSearch onStartConversation={handleStartConversation} />
+            <GroupCreationDialog onGroupCreated={(groupId) => console.log('Group created:', groupId)} />
+          </div>
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
