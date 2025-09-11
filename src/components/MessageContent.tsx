@@ -19,6 +19,11 @@ const MessageContent = ({ message }: MessageContentProps) => {
     return <LocationMessage location={message.metadata.location} />;
   }
 
+  // Handle voice messages - don't render content here, let EnhancedMessageBubble handle it
+  if (message.message_type === 'audio' && message.metadata?.isVoiceNote) {
+    return null; // VoiceBubble will be rendered in EnhancedMessageBubble
+  }
+
   // Handle regular text messages
   return (
     <p className="text-sm whitespace-pre-wrap break-words">

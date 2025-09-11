@@ -85,10 +85,16 @@ const GroupCreationDialog = ({ onGroupCreated }: GroupCreationDialogProps) => {
   };
 
   const createGroup = async () => {
-    if (!groupName.trim() || !user) return;
+    if (!groupName.trim() || !user) {
+      console.log('Missing group name or user:', { groupName: groupName.trim(), user });
+      return;
+    }
+
+    console.log('Starting group creation with:', { groupName: groupName.trim(), userId: user.id });
 
     setLoading(true);
     try {
+      console.log('Creating group conversation...');
       // Create group conversation
       const { data: group, error: groupError } = await supabase
         .from('group_conversations')
@@ -100,8 +106,13 @@ const GroupCreationDialog = ({ onGroupCreated }: GroupCreationDialogProps) => {
         .select()
         .single();
 
-      if (groupError) throw groupError;
+      console.log('Group creation result:', { group, groupError });
+      if (groupError) {
+        console.error('Group creation error:', groupError);
+        throw groupError;
+      }
 
+      console.log('Adding creator as admin...');
       // Add creator as admin
       const { error: memberError } = await supabase
         .from('group_conversation_members')
@@ -111,7 +122,11 @@ const GroupCreationDialog = ({ onGroupCreated }: GroupCreationDialogProps) => {
           role: 'admin'
         });
 
-      if (memberError) throw memberError;
+      console.log('Member insertion result:', { memberError });
+      if (memberError) {
+        console.error('Member insertion error:', memberError);
+        throw memberError;
+      }
 
       // Add selected users as members
       if (selectedUsers.length > 0) {
