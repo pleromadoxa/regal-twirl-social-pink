@@ -20,7 +20,7 @@ const MessageContent = ({ message }: MessageContentProps) => {
   }
 
   // Handle voice messages - don't render content here, let EnhancedMessageBubble handle it
-  if (message.message_type === 'audio' && message.metadata?.isVoiceNote) {
+  if (message.message_type === 'audio' && (message.metadata?.isVoiceNote || message.metadata?.duration)) {
     return null; // VoiceBubble will be rendered in EnhancedMessageBubble
   }
 

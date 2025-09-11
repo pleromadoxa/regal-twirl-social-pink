@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Play, Pause, Download } from "lucide-react"
 import { useState, useRef } from "react"
+import { useToast } from "@/hooks/use-toast"
 
 interface VoiceBubbleProps {
   variant?: "sent" | "received"
@@ -25,9 +26,17 @@ export function VoiceBubble({
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const { toast } = useToast()
 
   const togglePlayback = () => {
-    if (!audioRef.current) return
+    if (!audioRef.current || !audioUrl) {
+      toast({
+        title: "Audio not available",
+        description: "This voice note is not playable",
+        variant: "destructive"
+      });
+      return;
+    }
 
     if (isPlaying) {
       audioRef.current.pause()

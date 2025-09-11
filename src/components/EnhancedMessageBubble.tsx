@@ -97,7 +97,7 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
   };
 
   // Check if message is voice note
-  const isVoiceNote = message.message_type === 'audio' && message.metadata?.isVoiceNote;
+  const isVoiceNote = message.message_type === 'audio' && (message.metadata?.isVoiceNote || message.metadata?.duration);
   
   // Check for attachments
   const hasAttachments = (message as any).attachments && (message as any).attachments.length > 0;
@@ -126,9 +126,9 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
             {isVoiceNote ? (
               <VoiceBubble
                 variant={isOwn ? "sent" : "received"}
-                audioUrl={message.content}
+                audioUrl={message.content.startsWith('http') ? message.content : ''}
                 duration={message.metadata?.duration}
-                onDownload={() => handleDownload(message.content, `voice-note-${message.id}.webm`)}
+                onDownload={message.content.startsWith('http') ? () => handleDownload(message.content, `voice-note-${message.id}.webm`) : undefined}
               />
             ) : (
               /* Regular Text Message */
