@@ -252,7 +252,6 @@ const GroupCreationDialog = ({ onGroupCreated }: GroupCreationDialogProps) => {
                     >
                       <Checkbox
                         checked={selectedUsers.some(u => u.id === searchUser.id)}
-                        readOnly
                       />
                       <Avatar className="w-8 h-8">
                         <AvatarImage src={searchUser.avatar_url || undefined} />

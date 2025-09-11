@@ -131,13 +131,7 @@ const ConversationStarter = () => {
               <Users className="w-5 h-5 text-purple-600" />
               My Groups
             </CardTitle>
-            <GroupCreationDialog 
-              trigger={
-                <Button size="sm" variant="outline" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Create
-                </Button>
-              }
+            <GroupCreationDialog
               onGroupCreated={fetchGroups}
             />
           </div>
