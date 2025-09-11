@@ -56,13 +56,38 @@ export function VoiceBubble({
 
   const progressPercentage = duration ? (currentTime / duration) * 100 : 0
 
+  // Generate animated bars for visualizer effect
+  const generateBars = () => {
+    const bars = []
+    for (let i = 0; i < 20; i++) {
+      const baseHeight = isPlaying ? Math.random() * 12 + 4 : 4
+      
+      bars.push(
+        <div
+          key={i}
+          className={cn(
+            "w-0.5 rounded-full transition-all duration-300",
+            variant === "sent" ? "bg-white/70" : "bg-white/70",
+            isPlaying && "animate-pulse"
+          )}
+          style={{ 
+            height: `${baseHeight}px`,
+            animationDelay: `${i * 0.1}s`,
+            animationDuration: '1.5s'
+          }}
+        />
+      )
+    }
+    return bars
+  }
+
   return (
     <div
       className={cn(
         "rounded-2xl p-4 max-w-xs",
         variant === "sent" 
-          ? "bg-gradient-to-r from-pink-400 to-pink-500 text-white ml-auto" 
-          : "bg-gradient-to-r from-pink-100 to-pink-200 dark:from-pink-900/30 dark:to-pink-800/30 text-gray-800 dark:text-gray-200",
+          ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white ml-auto" 
+          : "bg-gradient-to-r from-pink-400 to-purple-400 text-white",
         className
       )}
     >
@@ -83,12 +108,7 @@ export function VoiceBubble({
           variant="ghost"
           size="sm"
           onClick={togglePlayback}
-          className={cn(
-            "w-10 h-10 rounded-full p-0 hover:scale-105 transition-transform",
-            variant === "sent" 
-              ? "bg-white/20 hover:bg-white/30 text-white" 
-              : "bg-pink-300/50 hover:bg-pink-300/70 text-pink-700 dark:text-pink-300"
-          )}
+          className="w-10 h-10 rounded-full p-0 hover:scale-105 transition-transform bg-white/20 hover:bg-white/30 text-white"
         >
           {isPlaying ? (
             <Pause className="w-5 h-5" />
@@ -98,18 +118,16 @@ export function VoiceBubble({
         </Button>
         
         <div className="flex-1">
+          {/* Audio Visualizer */}
+          <div className="flex items-end justify-center gap-0.5 h-4 mb-2">
+            {generateBars()}
+          </div>
+          
+          {/* Progress Bar */}
           <div className="flex items-center gap-2 mb-1">
-            <div 
-              className={cn(
-                "h-1 bg-black/10 dark:bg-white/10 rounded-full flex-1",
-                variant === "sent" ? "bg-white/20" : "bg-pink-300/30"
-              )}
-            >
+            <div className="h-1 bg-white/20 rounded-full flex-1">
               <div
-                className={cn(
-                  "h-full rounded-full transition-all duration-150",
-                  variant === "sent" ? "bg-white" : "bg-pink-500"
-                )}
+                className="h-full bg-white rounded-full transition-all duration-150"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
@@ -118,21 +136,14 @@ export function VoiceBubble({
                 variant="ghost"
                 size="sm"
                 onClick={onDownload}
-                className={cn(
-                  "w-6 h-6 p-0 hover:scale-105 transition-transform",
-                  variant === "sent" 
-                    ? "text-white/70 hover:text-white" 
-                    : "text-pink-600/70 hover:text-pink-600 dark:text-pink-400/70 dark:hover:text-pink-400"
-                )}
+                className="w-6 h-6 p-0 hover:scale-105 transition-transform text-white/70 hover:text-white"
               >
                 <Download className="w-3 h-3" />
               </Button>
             )}
           </div>
-          <div className={cn(
-            "text-xs",
-            variant === "sent" ? "text-white/70" : "text-pink-600/70 dark:text-pink-400/70"
-          )}>
+          
+          <div className="text-xs text-white/70">
             {formatTime(currentTime)} {duration && `/ ${formatTime(duration)}`}
           </div>
         </div>
