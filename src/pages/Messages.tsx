@@ -236,8 +236,33 @@ const Messages = () => {
         
         {/* Main Content Container */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Conversations Sidebar */}
-          <div className="w-80 lg:w-96 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-r border-purple-200/50 dark:border-purple-800/50 flex flex-col">
+          {/* Chat Thread Area */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {selectedConversation ? (
+              <MessageThread 
+                conversationId={selectedConversation}
+              />
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-white/60 dark:bg-gray-900/60 backdrop-blur">
+                <div className="w-20 h-20 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-full flex items-center justify-center mb-6">
+                  <MessageCircle className="w-10 h-10 text-purple-400" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Welcome to Messages
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md">
+                  Select a conversation to start chatting, or create a new one to connect with your friends.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <MessageSearch onStartConversation={startDirectConversation} />
+                  <GroupCreationDialog onGroupCreated={handleGroupCreated} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Conversations Sidebar - Right Side */}
+          <div className="w-80 lg:w-96 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-l border-purple-200/50 dark:border-purple-800/50 flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-purple-200/50 dark:border-purple-800/50">
               <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Messages</h1>
               <GroupCreationDialog onGroupCreated={handleGroupCreated} />
@@ -354,36 +379,6 @@ const Messages = () => {
               </div>
             </div>
           </div>
-          
-          {/* Chat Thread Area */}
-          <div className="flex-1 flex flex-col">
-            {selectedConversation ? (
-              <MessageThread 
-                conversationId={selectedConversation}
-              />
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-white/60 dark:bg-gray-900/60 backdrop-blur">
-                <div className="w-20 h-20 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-full flex items-center justify-center mb-6">
-                  <MessageCircle className="w-10 h-10 text-purple-400" />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Welcome to Messages
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md">
-                  Select a conversation to start chatting, or create a new one to connect with your friends.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <MessageSearch onStartConversation={startDirectConversation} />
-                  <GroupCreationDialog onGroupCreated={handleGroupCreated} />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Desktop Right Sidebar */}
-        <div className="hidden xl:block">
-          <RightSidebar />
         </div>
       </div>
 
