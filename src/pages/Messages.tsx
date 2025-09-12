@@ -499,7 +499,7 @@ const Messages = () => {
           </div>
         ) : (
           /* Mobile Chat Thread */
-          <div className="h-screen pt-16 flex flex-col">
+          <div className="fixed inset-0 pt-20 flex flex-col bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
             <MessageThread 
               conversationId={selectedConversation}
             />
