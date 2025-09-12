@@ -196,195 +196,167 @@ const Messages = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
       <WebRTCCallManager />
       
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
-        <SidebarNav />
+      {/* Mobile Header */}
+      <div className="sm:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b border-purple-200/50 dark:border-purple-800/50">
+        <div className="flex items-center justify-between p-4">
+          {selectedConversation ? (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToList}
+                className="p-2"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Messages</h1>
+              <div className="w-10" /> {/* Spacer for centering */}
+            </>
+          ) : (
+            <>
+              <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Messages</h1>
+              <div className="flex gap-2">
+                <MessageSearch onStartConversation={startDirectConversation} />
+                <GroupCreationDialog onGroupCreated={handleGroupCreated} />
+              </div>
+            </>
+          )}
+        </div>
       </div>
       
-      {/* Mobile Back Button */}
-      {selectedConversation && (
-        <div className="sm:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b">
-          <div className="flex items-center gap-3 p-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToList}
-              className="p-2"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Messages</h1>
-          </div>
+      {/* Desktop Layout */}
+      <div className="hidden sm:flex h-screen">
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block">
+          <SidebarNav />
         </div>
-      )}
-      
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Mobile: Show conversations list OR chat thread */}
-        {/* Desktop: Show both side by side */}
         
-        {/* Conversations Sidebar */}
-        <div className={cn(
-          "w-full sm:w-80 lg:w-96 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-r border-purple-200 dark:border-purple-800 flex flex-col",
-          selectedConversation && "hidden sm:flex"
-        )}>
-          <div className="hidden sm:flex items-center justify-between p-4 border-b border-purple-200 dark:border-purple-800">
-            <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Messages</h1>
-            <GroupCreationDialog onGroupCreated={handleGroupCreated} />
-          </div>
-          
-          <div className="flex-1 p-3 sm:p-4 pt-16 sm:pt-4">
-            {/* Mobile Tab Navigation */}
-            <div className="sm:hidden flex space-x-1 mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-              {[
-                { id: 'all', label: 'All', icon: MessageCircle },
-                { id: 'unread', label: 'Unread', icon: Bell },
-                { id: 'starred', label: 'Starred', icon: Star },
-              ].map((tab) => {
-                const IconComponent = tab.icon;
-                return (
-                  <Button
-                    key={tab.id}
-                    variant={activeTab === tab.id ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => handleTabChange(tab.id)}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs",
-                      activeTab === tab.id 
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
-                        : 'text-gray-600 dark:text-gray-300'
-                    )}
-                  >
-                    <IconComponent className="w-3 h-3" />
-                    {tab.label}
-                  </Button>
-                );
-              })}
-            </div>
-
-            {/* Desktop Tab Navigation */}
-            <div className="hidden sm:flex space-x-2 mb-4">
-              {[
-                { id: 'all', label: 'All Messages', icon: MessageCircle },
-                { id: 'unread', label: 'Unread', icon: Bell },
-                { id: 'starred', label: 'Starred', icon: Star },
-                { id: 'archived', label: 'Archived', icon: Archive }
-              ].map((tab) => {
-                const IconComponent = tab.icon;
-                return (
-                  <Button
-                    key={tab.id}
-                    variant={activeTab === tab.id ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => handleTabChange(tab.id)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200",
-                      activeTab === tab.id 
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-purple-100/50 dark:hover:bg-purple-900/20'
-                    )}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    <span className="hidden lg:inline">{tab.label}</span>
-                  </Button>
-                );
-              })}
+        {/* Main Content Container */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Conversations Sidebar */}
+          <div className="w-80 lg:w-96 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-r border-purple-200/50 dark:border-purple-800/50 flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-purple-200/50 dark:border-purple-800/50">
+              <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Messages</h1>
+              <GroupCreationDialog onGroupCreated={handleGroupCreated} />
             </div>
             
-            {/* Search */}
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Search conversations..."
-                className="pl-10 bg-white/60 dark:bg-slate-700/60 border-purple-200/50 dark:border-purple-700/50 rounded-xl text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            {/* Conversations List */}
-            <div className="overflow-y-auto flex-1">
-              {loading ? (
-                <div className="p-6 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
-                  <p className="text-gray-500 text-sm">Loading conversations...</p>
-                </div>
-              ) : filteredConversations.length === 0 ? (
-                <div className="p-8 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MessageCircle className="w-8 h-8 text-purple-400" />
+            <div className="flex-1 p-4 overflow-hidden flex flex-col">
+              {/* Desktop Tab Navigation */}
+              <div className="flex space-x-2 mb-4">
+                {[
+                  { id: 'all', label: 'All Messages', icon: MessageCircle },
+                  { id: 'unread', label: 'Unread', icon: Bell },
+                  { id: 'starred', label: 'Starred', icon: Star },
+                  { id: 'archived', label: 'Archived', icon: Archive }
+                ].map((tab) => {
+                  const IconComponent = tab.icon;
+                  return (
+                    <Button
+                      key={tab.id}
+                      variant={activeTab === tab.id ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => handleTabChange(tab.id)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200",
+                        activeTab === tab.id 
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-purple-100/50 dark:hover:bg-purple-900/20'
+                      )}
+                    >
+                      <IconComponent className="w-4 h-4" />
+                      <span className="hidden lg:inline">{tab.label}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+              
+              {/* Search */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search conversations..."
+                  className="pl-10 bg-white/60 dark:bg-slate-700/60 border-purple-200/50 dark:border-purple-700/50 rounded-xl text-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              {/* Conversations List */}
+              <div className="flex-1 overflow-y-auto">
+                {loading ? (
+                  <div className="p-6 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
+                    <p className="text-gray-500 text-sm">Loading conversations...</p>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No conversations yet</h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Start a conversation to connect with others</p>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {filteredConversations.map((conversation) => {
-                    const otherUser = conversation.participant_1 === user?.id 
-                      ? conversation.participant_2_profile 
-                      : conversation.participant_1_profile;
-                    
-                    return (
-                      <div
-                        key={conversation.id}
-                        className={cn(
-                          "p-3 sm:p-4 cursor-pointer rounded-xl transition-all duration-200 hover:bg-purple-50/80 dark:hover:bg-purple-900/20",
-                          selectedConversation === conversation.id && 'bg-gradient-to-r from-purple-100/80 to-pink-100/40 dark:from-purple-900/40 dark:to-pink-900/20 shadow-sm'
-                        )}
-                        onClick={() => handleConversationSelect(conversation.id)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
-                            <Avatar className="w-10 h-10 sm:w-12 sm:h-12 ring-2 ring-white/50 dark:ring-slate-700/50">
-                              <AvatarImage src={otherUser?.avatar_url} />
-                              <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold text-sm">
-                                {otherUser?.display_name?.[0] || otherUser?.username?.[0] || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full border-2 border-white dark:border-slate-800"></div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-start mb-1">
-                              <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm sm:text-base">
-                                {otherUser?.display_name || otherUser?.username || 'Unknown User'}
-                              </h3>
-                              <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
-                                {conversation.last_message_at && 
-                                  new Date(conversation.last_message_at).toLocaleDateString(undefined, { 
-                                    month: 'short', 
-                                    day: 'numeric' 
-                                  })
-                                }
-                              </span>
+                ) : filteredConversations.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageCircle className="w-8 h-8 text-purple-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No conversations yet</h3>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">Start a conversation to connect with others</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {filteredConversations.map((conversation) => {
+                      const otherUser = conversation.participant_1 === user?.id 
+                        ? conversation.participant_2_profile 
+                        : conversation.participant_1_profile;
+                      
+                      return (
+                        <div
+                          key={conversation.id}
+                          className={cn(
+                            "p-4 cursor-pointer rounded-xl transition-all duration-200 hover:bg-purple-50/80 dark:hover:bg-purple-900/20",
+                            selectedConversation === conversation.id && 'bg-gradient-to-r from-purple-100/80 to-pink-100/40 dark:from-purple-900/40 dark:to-pink-900/20 shadow-sm'
+                          )}
+                          onClick={() => handleConversationSelect(conversation.id)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <Avatar className="w-12 h-12 ring-2 ring-white/50 dark:ring-slate-700/50">
+                                <AvatarImage src={otherUser?.avatar_url} />
+                                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold text-sm">
+                                  {otherUser?.display_name?.[0] || otherUser?.username?.[0] || 'U'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-slate-800"></div>
                             </div>
-                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
-                              {typeof conversation.last_message === 'string' 
-                                ? conversation.last_message 
-                                : 'Start a conversation...'}
-                            </p>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-start mb-1">
+                                <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-base">
+                                  {otherUser?.display_name || otherUser?.username || 'Unknown User'}
+                                </h3>
+                                <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                                  {conversation.last_message_at && 
+                                    new Date(conversation.last_message_at).toLocaleDateString(undefined, { 
+                                      month: 'short', 
+                                      day: 'numeric' 
+                                    })
+                                  }
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                {typeof conversation.last_message === 'string' 
+                                  ? conversation.last_message 
+                                  : 'Start a conversation...'}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        
-        {/* Chat Thread Area */}
-        <div className={cn(
-          "flex-1 flex flex-col",
-          !selectedConversation && "hidden sm:flex"
-        )}>
-          <div className={cn(
-            "flex-1 p-0",
-            selectedConversation && "pt-16 sm:pt-0"
-          )}>
+          
+          {/* Chat Thread Area */}
+          <div className="flex-1 flex flex-col">
             {selectedConversation ? (
               <MessageThread 
                 conversationId={selectedConversation}
@@ -408,11 +380,131 @@ const Messages = () => {
             )}
           </div>
         </div>
+        
+        {/* Desktop Right Sidebar */}
+        <div className="hidden xl:block">
+          <RightSidebar />
+        </div>
       </div>
-      
-      {/* Desktop Right Sidebar */}
-      <div className="hidden xl:block">
-        <RightSidebar />
+
+      {/* Mobile Layout */}
+      <div className="sm:hidden">
+        {!selectedConversation ? (
+          /* Mobile Conversations List */
+          <div className="min-h-screen pt-20 pb-4">
+            <div className="p-4">
+              {/* Mobile Tab Navigation */}
+              <div className="flex space-x-1 mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                {[
+                  { id: 'all', label: 'All', icon: MessageCircle },
+                  { id: 'unread', label: 'Unread', icon: Bell },
+                  { id: 'starred', label: 'Starred', icon: Star },
+                ].map((tab) => {
+                  const IconComponent = tab.icon;
+                  return (
+                    <Button
+                      key={tab.id}
+                      variant={activeTab === tab.id ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => handleTabChange(tab.id)}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs",
+                        activeTab === tab.id 
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
+                          : 'text-gray-600 dark:text-gray-300'
+                      )}
+                    >
+                      <IconComponent className="w-3 h-3" />
+                      {tab.label}
+                    </Button>
+                  );
+                })}
+              </div>
+              
+              {/* Search */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search conversations..."
+                  className="pl-10 bg-white/60 dark:bg-slate-700/60 border-purple-200/50 dark:border-purple-700/50 rounded-xl text-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              {/* Conversations List */}
+              <div className="space-y-2">
+                {loading ? (
+                  <div className="p-6 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
+                    <p className="text-gray-500 text-sm">Loading conversations...</p>
+                  </div>
+                ) : filteredConversations.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageCircle className="w-8 h-8 text-purple-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No conversations yet</h3>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">Start a conversation to connect with others</p>
+                  </div>
+                ) : (
+                  filteredConversations.map((conversation) => {
+                    const otherUser = conversation.participant_1 === user?.id 
+                      ? conversation.participant_2_profile 
+                      : conversation.participant_1_profile;
+                    
+                    return (
+                      <div
+                        key={conversation.id}
+                        className="p-4 cursor-pointer rounded-xl transition-all duration-200 hover:bg-purple-50/80 dark:hover:bg-purple-900/20 bg-white/70 dark:bg-gray-800/70 backdrop-blur border border-purple-200/30 dark:border-purple-800/30"
+                        onClick={() => handleConversationSelect(conversation.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <Avatar className="w-12 h-12 ring-2 ring-white/50 dark:ring-slate-700/50">
+                              <AvatarImage src={otherUser?.avatar_url} />
+                              <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold text-sm">
+                                {otherUser?.display_name?.[0] || otherUser?.username?.[0] || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-slate-800"></div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start mb-1">
+                              <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-base">
+                                {otherUser?.display_name || otherUser?.username || 'Unknown User'}
+                              </h3>
+                              <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                                {conversation.last_message_at && 
+                                  new Date(conversation.last_message_at).toLocaleDateString(undefined, { 
+                                    month: 'short', 
+                                    day: 'numeric' 
+                                  })
+                                }
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                              {typeof conversation.last_message === 'string' 
+                                ? conversation.last_message 
+                                : 'Start a conversation...'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Mobile Chat Thread */
+          <div className="h-screen pt-16 flex flex-col">
+            <MessageThread 
+              conversationId={selectedConversation}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
