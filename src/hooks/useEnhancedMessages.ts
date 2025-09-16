@@ -3,10 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { fetchConversations, createConversation } from '@/services/conversationService';
+import { fetchUserGroupConversations, createGroupConversation, type GroupConversation } from '@/services/groupConversationService';
 import type { Conversation, Message } from '@/types/messages';
 
 export const useEnhancedMessages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [groupConversations, setGroupConversations] = useState<GroupConversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
@@ -22,9 +24,18 @@ export const useEnhancedMessages = () => {
     try {
       console.log('Fetching conversations for user:', user.id);
       setLoading(true);
-      const conversationsData = await fetchConversations(user.id);
+      
+      // Fetch both direct conversations and group conversations
+      const [conversationsData, groupConversationsData] = await Promise.all([
+        fetchConversations(user.id),
+        fetchUserGroupConversations(user.id)
+      ]);
+      
       console.log('Fetched conversations:', conversationsData);
+      console.log('Fetched group conversations:', groupConversationsData);
+      
       setConversations(conversationsData);
+      setGroupConversations(groupConversationsData);
     } catch (error) {
       console.error('Error fetching conversations:', error);
       toast({
@@ -158,9 +169,32 @@ export const useEnhancedMessages = () => {
     }
   };
 
-  const createGroupConversation = async (userIds: string[], groupName: string) => {
-    // Implementation for group conversations
-    console.log('Creating group conversation:', { userIds, groupName });
+  const createGroupConversationHandler = async (userIds: string[], groupName: string) => {
+    if (!user) return;
+    
+    try {
+      const newGroup = await createGroupConversation(
+        groupName,
+        `Group created by ${user.email}`,
+        user.id,
+        userIds
+      );
+      
+      await fetchConversationsData();
+      setSelectedConversation(newGroup.id);
+      
+      toast({
+        title: "Group created",
+        description: `${groupName} has been created successfully.`
+      });
+    } catch (error) {
+      console.error('Error creating group:', error);
+      toast({
+        title: "Error creating group",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    }
   };
 
   useEffect(() => {
@@ -175,6 +209,7 @@ export const useEnhancedMessages = () => {
 
   return {
     conversations,
+    groupConversations,
     messages,
     loading,
     selectedConversation,
@@ -183,6 +218,6 @@ export const useEnhancedMessages = () => {
     markAsRead,
     refetch: fetchConversationsData,
     startDirectConversation,
-    createGroupConversation
+    createGroupConversation: createGroupConversationHandler
   };
 };

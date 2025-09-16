@@ -21,6 +21,7 @@ const Messages = () => {
   const { user } = useAuth();
   const {
     conversations,
+    groupConversations,
     messages,
     loading,
     selectedConversation,
@@ -70,17 +71,13 @@ const Messages = () => {
       }
     }
 
-    // Then filter by active tab
+    // Then filter by active tab - exclude groups for non-group tabs
     switch (activeTab) {
       case 'all':
         return true;
       case 'groups':
-        // For now, return false since we don't have group conversations implemented
-        // TODO: Implement group conversations filtering
-        return false;
+        return false; // Direct messages don't belong in groups tab
       case 'unread':
-        // Filter for conversations with unread messages
-        // For now, we'll show conversations with recent activity (last 24 hours)
         if (conversation.last_message_at) {
           const lastMessageTime = new Date(conversation.last_message_at);
           const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -88,16 +85,53 @@ const Messages = () => {
         }
         return false;
       case 'starred':
-        // TODO: Implement starred conversations
-        // For now, return empty as we don't have starred feature implemented
         return false;
       case 'archived':
-        // TODO: Implement archived conversations
-        // For now, return empty as we don't have archived feature implemented
         return false;
       default:
         return true;
     }
+  });
+
+  const filteredGroupConversations = groupConversations.filter(group => {
+    // First filter by search term
+    if (searchTerm) {
+      const searchableText = `${group.name} ${group.description || ''} ${group.last_message?.content || ''}`.toLowerCase();
+      if (!searchableText.includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Then filter by active tab
+    switch (activeTab) {
+      case 'all':
+        return true;
+      case 'groups':
+        return true; // Groups belong in groups tab
+      case 'unread':
+        if (group.last_message_at) {
+          const lastMessageTime = new Date(group.last_message_at);
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          return lastMessageTime > oneDayAgo;
+        }
+        return false;
+      case 'starred':
+        return false;
+      case 'archived':
+        return false;
+      default:
+        return true;
+    }
+  });
+
+  // Combine and sort all conversations
+  const allFilteredConversations = [
+    ...filteredConversations.map(conv => ({ ...conv, isGroup: false })),
+    ...filteredGroupConversations.map(group => ({ ...group, isGroup: true }))
+  ].sort((a, b) => {
+    const aTime = new Date(a.last_message_at || a.created_at).getTime();
+    const bTime = new Date(b.last_message_at || b.created_at).getTime();
+    return bTime - aTime;
   });
 
   const renderConversationsList = () => (
@@ -128,7 +162,7 @@ const Messages = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
               <p className="text-gray-500 text-sm">Loading conversations...</p>
             </div>
-          ) : filteredConversations.length === 0 ? (
+          ) : allFilteredConversations.length === 0 ? (
             <div className="p-8 text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MessageCircle className="w-8 h-8 text-purple-400" />
@@ -138,53 +172,95 @@ const Messages = () => {
             </div>
           ) : (
             <div className="space-y-1 p-2">
-              {filteredConversations.map((conversation) => {
-                const otherUser = conversation.participant_1 === user?.id 
-                  ? conversation.participant_2_profile 
-                  : conversation.participant_1_profile;
-                
-                return (
-                  <div
-                    key={conversation.id}
-                    className={cn(
-                      "p-3 sm:p-4 cursor-pointer rounded-xl transition-all duration-200 hover:bg-purple-50/80 dark:hover:bg-purple-900/20",
-                      selectedConversation === conversation.id && 'bg-gradient-to-r from-purple-100/80 to-pink-100/40 dark:from-purple-900/40 dark:to-pink-900/20 shadow-sm'
-                    )}
-                    onClick={() => handleConversationSelect(conversation.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <Avatar className="w-10 h-10 sm:w-12 sm:h-12 ring-2 ring-white/50 dark:ring-slate-700/50">
-                          <AvatarImage src={otherUser?.avatar_url} />
-                          <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold text-sm">
-                            {otherUser?.display_name?.[0] || otherUser?.username?.[0] || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full border-2 border-white dark:border-slate-800"></div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm sm:text-base">
-                            {otherUser?.display_name || otherUser?.username || 'Unknown User'}
-                          </h3>
-                          <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
-                            {conversation.last_message_at && 
-                              new Date(conversation.last_message_at).toLocaleDateString(undefined, { 
-                                month: 'short', 
-                                day: 'numeric' 
-                              })
-                            }
-                          </span>
+              {allFilteredConversations.map((conversation) => {
+                if (conversation.isGroup) {
+                  return (
+                    <div
+                      key={conversation.id}
+                      className={cn(
+                        "p-3 sm:p-4 cursor-pointer rounded-xl transition-all duration-200 hover:bg-purple-50/80 dark:hover:bg-purple-900/20 border-l-4 border-blue-400",
+                        selectedConversation === conversation.id && 'bg-gradient-to-r from-purple-100/80 to-pink-100/40 dark:from-purple-900/40 dark:to-pink-900/20 shadow-sm'
+                      )}
+                      onClick={() => handleConversationSelect(conversation.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center ring-2 ring-white/50 dark:ring-slate-700/50">
+                            <Hash className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-blue-400 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center">
+                            <span className="text-xs text-white font-bold">{conversation.member_count}</span>
+                          </div>
                         </div>
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {typeof conversation.last_message === 'string' 
-                            ? conversation.last_message 
-                            : 'Start a conversation...'}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-1">
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm sm:text-base">
+                              {conversation.name}
+                            </h3>
+                            <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                              {conversation.last_message_at && 
+                                new Date(conversation.last_message_at).toLocaleDateString(undefined, { 
+                                  month: 'short', 
+                                  day: 'numeric' 
+                                })
+                              }
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {conversation.last_message?.content || 'No messages yet...'}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
+                  );
+                } else {
+                  const otherUser = conversation.participant_1 === user?.id 
+                    ? conversation.participant_2_profile 
+                    : conversation.participant_1_profile;
+                  
+                  return (
+                    <div
+                      key={conversation.id}
+                      className={cn(
+                        "p-3 sm:p-4 cursor-pointer rounded-xl transition-all duration-200 hover:bg-purple-50/80 dark:hover:bg-purple-900/20",
+                        selectedConversation === conversation.id && 'bg-gradient-to-r from-purple-100/80 to-pink-100/40 dark:from-purple-900/40 dark:to-pink-900/20 shadow-sm'
+                      )}
+                      onClick={() => handleConversationSelect(conversation.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <Avatar className="w-10 h-10 sm:w-12 sm:h-12 ring-2 ring-white/50 dark:ring-slate-700/50">
+                            <AvatarImage src={otherUser?.avatar_url} />
+                            <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold text-sm">
+                              {otherUser?.display_name?.[0] || otherUser?.username?.[0] || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full border-2 border-white dark:border-slate-800"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-1">
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm sm:text-base">
+                              {otherUser?.display_name || otherUser?.username || 'Unknown User'}
+                            </h3>
+                            <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                              {conversation.last_message_at && 
+                                new Date(conversation.last_message_at).toLocaleDateString(undefined, { 
+                                  month: 'short', 
+                                  day: 'numeric' 
+                                })
+                              }
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {typeof conversation.last_message === 'string' 
+                              ? conversation.last_message 
+                              : 'Start a conversation...'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
               })}
             </div>
           )}

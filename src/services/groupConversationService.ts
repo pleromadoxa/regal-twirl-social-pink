@@ -555,6 +555,61 @@ export const leaveGroup = async (groupId: string, userId: string): Promise<void>
   }
 };
 
+export const dissolveGroup = async (groupId: string, userId: string): Promise<void> => {
+  try {
+    // First, check if the user is the group admin/creator
+    const { data: groupData, error: groupError } = await supabase
+      .from('group_conversations')
+      .select('created_by')
+      .eq('id', groupId)
+      .single();
+
+    if (groupError) {
+      throw new Error('Group not found');
+    }
+
+    if (groupData.created_by !== userId) {
+      throw new Error('Only the group creator can dissolve the group');
+    }
+
+    // Delete all group messages first
+    const { error: messagesError } = await supabase
+      .from('group_messages')
+      .delete()
+      .eq('group_id', groupId);
+
+    if (messagesError) {
+      console.error('Error deleting group messages:', messagesError);
+      // Continue with dissolution even if message deletion fails
+    }
+
+    // Delete all group members
+    const { error: membersError } = await supabase
+      .from('group_conversation_members')
+      .delete()
+      .eq('group_id', groupId);
+
+    if (membersError) {
+      throw new Error('Failed to remove group members');
+    }
+
+    // Finally, delete the group conversation
+    const { error: groupDeleteError } = await supabase
+      .from('group_conversations')
+      .delete()
+      .eq('id', groupId);
+
+    if (groupDeleteError) {
+      throw new Error('Failed to delete group');
+    }
+
+    console.log('Successfully dissolved group:', groupId);
+  } catch (error) {
+    console.error('Error dissolving group:', error);
+    throw error;
+  }
+};
+
 export const updateGroupSettings = async (
   groupId: string,
   settings: any
