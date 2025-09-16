@@ -59,15 +59,45 @@ const Messages = () => {
   };
 
   const filteredConversations = conversations.filter(conversation => {
-    // For now, show all conversations - these properties may not exist yet
-    return true;
-  }).filter(conversation => {
-    if (!searchTerm) return true;
-    const otherUser = conversation.participant_1 === user?.id 
-      ? conversation.participant_2_profile 
-      : conversation.participant_1_profile;
-    const searchableText = `${otherUser?.display_name || ''} ${otherUser?.username || ''} ${conversation.last_message || ''}`.toLowerCase();
-    return searchableText.includes(searchTerm.toLowerCase());
+    // First filter by search term
+    if (searchTerm) {
+      const otherUser = conversation.participant_1 === user?.id 
+        ? conversation.participant_2_profile 
+        : conversation.participant_1_profile;
+      const searchableText = `${otherUser?.display_name || ''} ${otherUser?.username || ''} ${conversation.last_message || ''}`.toLowerCase();
+      if (!searchableText.includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Then filter by active tab
+    switch (activeTab) {
+      case 'all':
+        return true;
+      case 'groups':
+        // For now, return false since we don't have group conversations implemented
+        // TODO: Implement group conversations filtering
+        return false;
+      case 'unread':
+        // Filter for conversations with unread messages
+        // For now, we'll show conversations with recent activity (last 24 hours)
+        if (conversation.last_message_at) {
+          const lastMessageTime = new Date(conversation.last_message_at);
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          return lastMessageTime > oneDayAgo;
+        }
+        return false;
+      case 'starred':
+        // TODO: Implement starred conversations
+        // For now, return empty as we don't have starred feature implemented
+        return false;
+      case 'archived':
+        // TODO: Implement archived conversations
+        // For now, return empty as we don't have archived feature implemented
+        return false;
+      default:
+        return true;
+    }
   });
 
   const renderConversationsList = () => (
