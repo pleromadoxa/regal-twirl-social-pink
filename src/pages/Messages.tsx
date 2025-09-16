@@ -181,7 +181,7 @@ const Messages = () => {
             <MessageCircle className="w-10 h-10 text-purple-400" />
           </div>
           <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            Welcome to Messages
+            Welcome to Chat
           </h2>
           <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md">
             Select a conversation to start chatting, or create a new one to connect with your friends.
@@ -212,12 +212,12 @@ const Messages = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Messages</h1>
+              <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Chat</h1>
               <div className="w-10" /> {/* Spacer for centering */}
             </>
           ) : (
             <>
-              <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Messages</h1>
+              <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Chat</h1>
               <div className="flex gap-2">
                 <MessageSearch onStartConversation={startDirectConversation} />
                 <GroupCreationDialog onGroupCreated={handleGroupCreated} />
@@ -235,7 +235,7 @@ const Messages = () => {
         </div>
         
         {/* Main Content Container */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden lg:ml-64">
           {/* Chat Thread Area */}
           <div className="flex-1 flex flex-col min-w-0">
             {selectedConversation ? (
@@ -248,7 +248,7 @@ const Messages = () => {
                   <MessageCircle className="w-10 h-10 text-purple-400" />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Welcome to Messages
+                  Welcome to Chat
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md">
                   Select a conversation to start chatting, or create a new one to connect with your friends.
@@ -264,7 +264,7 @@ const Messages = () => {
           {/* Conversations Sidebar - Right Side */}
           <div className="w-80 lg:w-96 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-l border-purple-200/50 dark:border-purple-800/50 flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-purple-200/50 dark:border-purple-800/50">
-              <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Messages</h1>
+              <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Chat</h1>
               <GroupCreationDialog onGroupCreated={handleGroupCreated} />
             </div>
             
@@ -272,7 +272,7 @@ const Messages = () => {
               {/* Desktop Tab Navigation */}
               <div className="flex space-x-2 mb-4">
                 {[
-                  { id: 'all', label: 'All Messages', icon: MessageCircle },
+                  { id: 'all', label: 'All Chat', icon: MessageCircle },
                   { id: 'unread', label: 'Unread', icon: Bell },
                   { id: 'starred', label: 'Starred', icon: Star },
                   { id: 'archived', label: 'Archived', icon: Archive }
@@ -494,7 +494,7 @@ const Messages = () => {
           </div>
         ) : (
           /* Mobile Chat Thread */
-          <div className="fixed inset-0 pt-20 flex flex-col bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
+          <div className="fixed inset-0 pt-16 flex flex-col bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
             <MessageThread 
               conversationId={selectedConversation}
             />
