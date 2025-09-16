@@ -235,7 +235,7 @@ const Messages = () => {
         </div>
         
         {/* Main Content Container */}
-        <div className="flex-1 flex overflow-hidden lg:ml-64">
+        <div className="flex-1 flex overflow-hidden lg:ml-80">
           {/* Chat Thread Area */}
           <div className="flex-1 flex flex-col min-w-0">
             {selectedConversation ? (
@@ -273,6 +273,7 @@ const Messages = () => {
               <div className="flex space-x-2 mb-4">
                 {[
                   { id: 'all', label: 'All Chat', icon: MessageCircle },
+                  { id: 'groups', label: 'Groups', icon: Hash },
                   { id: 'unread', label: 'Unread', icon: Bell },
                   { id: 'starred', label: 'Starred', icon: Star },
                   { id: 'archived', label: 'Archived', icon: Archive }
@@ -392,6 +393,7 @@ const Messages = () => {
               <div className="flex space-x-1 mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                 {[
                   { id: 'all', label: 'All', icon: MessageCircle },
+                  { id: 'groups', label: 'Groups', icon: Hash },
                   { id: 'unread', label: 'Unread', icon: Bell },
                   { id: 'starred', label: 'Starred', icon: Star },
                 ].map((tab) => {
