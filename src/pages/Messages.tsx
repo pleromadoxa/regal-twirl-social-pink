@@ -300,7 +300,7 @@ const Messages = () => {
             
             <div className="flex-1 p-4 overflow-hidden flex flex-col">
               {/* Desktop Tab Navigation */}
-              <div className="flex space-x-2 mb-4">
+              <div className="flex space-x-2 mb-4 overflow-x-auto scrollbar-hide pb-2">
                 {[
                   { id: 'all', label: 'All Chat', icon: MessageCircle },
                   { id: 'groups', label: 'Groups', icon: Hash },
@@ -316,7 +316,7 @@ const Messages = () => {
                       size="sm"
                       onClick={() => handleTabChange(tab.id)}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200",
+                        "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 whitespace-nowrap flex-shrink-0",
                         activeTab === tab.id 
                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
                           : 'text-gray-600 dark:text-gray-300 hover:bg-purple-100/50 dark:hover:bg-purple-900/20'
@@ -420,7 +420,7 @@ const Messages = () => {
           <div className="min-h-screen pt-20 pb-4">
             <div className="p-4">
               {/* Mobile Tab Navigation */}
-              <div className="flex space-x-1 mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+              <div className="flex space-x-1 mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 overflow-x-auto scrollbar-hide">
                 {[
                   { id: 'all', label: 'All', icon: MessageCircle },
                   { id: 'groups', label: 'Groups', icon: Hash },
@@ -435,7 +435,7 @@ const Messages = () => {
                       size="sm"
                       onClick={() => handleTabChange(tab.id)}
                       className={cn(
-                        "flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs",
+                        "flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs whitespace-nowrap min-w-0",
                         activeTab === tab.id 
                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
                           : 'text-gray-600 dark:text-gray-300'
