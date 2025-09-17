@@ -17,12 +17,13 @@ export const useEnhancedMessages = () => {
 
   const fetchConversationsData = async () => {
     if (!user) {
+      console.log('No user found, skipping conversation fetch');
       setLoading(false);
       return;
     }
 
     try {
-      console.log('Fetching conversations for user:', user.id);
+      console.log('=== Starting conversation fetch for user:', user.id, '===');
       setLoading(true);
       
       // Fetch both direct conversations and group conversations
@@ -31,8 +32,9 @@ export const useEnhancedMessages = () => {
         fetchUserGroupConversations(user.id)
       ]);
       
-      console.log('Fetched conversations:', conversationsData);
-      console.log('Fetched group conversations:', groupConversationsData);
+      console.log('Fetched direct conversations:', conversationsData?.length || 0);
+      console.log('Fetched group conversations:', groupConversationsData?.length || 0);
+      console.log('Group conversations details:', groupConversationsData);
       
       setConversations(conversationsData);
       setGroupConversations(groupConversationsData);

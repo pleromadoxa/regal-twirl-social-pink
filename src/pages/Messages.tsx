@@ -317,11 +317,11 @@ const Messages = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 dark:from-violet-950 dark:via-purple-950 dark:to-pink-950">
       <WebRTCCallManager />
       
       {/* Mobile Header */}
-      <div className="sm:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b border-purple-200/50 dark:border-purple-800/50">
+      <div className="sm:hidden fixed top-0 left-0 right-0 z-50 glass backdrop-blur-md">
         <div className="flex items-center justify-between p-4">
           {selectedConversation ? (
             <>
@@ -329,16 +329,16 @@ const Messages = () => {
                 variant="ghost"
                 size="sm"
                 onClick={handleBackToList}
-                className="p-2"
+                className="p-2 hover:bg-white/20"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Chat</h1>
+              <h1 className="text-lg font-semibold bg-gradient-primary bg-clip-text text-transparent">Chat</h1>
               <div className="w-10" /> {/* Spacer for centering */}
             </>
           ) : (
             <>
-              <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Chat</h1>
+              <h1 className="text-lg font-semibold bg-gradient-primary bg-clip-text text-transparent">Chat</h1>
               <div className="flex gap-2">
                 <MessageSearch onStartConversation={startDirectConversation} />
                 <GroupCreationDialog onGroupCreated={handleGroupCreated} />
@@ -364,11 +364,11 @@ const Messages = () => {
                 conversationId={selectedConversation}
               />
             ) : (
-              <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-white/60 dark:bg-gray-900/60 backdrop-blur">
-                <div className="w-20 h-20 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-full flex items-center justify-center mb-6">
-                  <MessageCircle className="w-10 h-10 text-purple-400" />
+              <div className="h-full flex flex-col items-center justify-center p-8 text-center glass">
+                <div className="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center mb-6 shadow-glow animate-pulse">
+                  <MessageCircle className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                <h2 className="text-xl font-semibold bg-gradient-primary bg-clip-text text-transparent mb-3">
                   Welcome to Chat
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md">

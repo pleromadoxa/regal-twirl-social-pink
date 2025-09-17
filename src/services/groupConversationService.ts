@@ -68,8 +68,10 @@ export const fetchUserGroupConversations = async (userId: string): Promise<Group
       throw membershipError;
     }
 
+    console.log('User memberships found:', membershipData?.length || 0);
+
     if (!membershipData || membershipData.length === 0) {
-      console.log('No group memberships found');
+      console.log('No group memberships found for user:', userId);
       return [];
     }
 
