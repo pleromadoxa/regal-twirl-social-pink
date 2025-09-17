@@ -7,17 +7,19 @@ WORKDIR /app
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install project dependencies
-RUN npm install
+# Install project dependencies, and also install the `serve` package globally
+RUN npm install && npm install -g serve
 
 # Copy the rest of your application code
 COPY . .
 
 # Build the application
+# This is crucial! Make sure your build script actually creates the `dist` folder.
 RUN npm run build
 
-# Expose the port the app runs on
+# Expose the port the server will run on
 EXPOSE 8080
 
 # Define the command to run your app
-CMD ["node", "dist/index.html"]
+# This command tells `serve` to serve the files from the `dist` directory
+CMD ["serve", "-s", "dist"]
