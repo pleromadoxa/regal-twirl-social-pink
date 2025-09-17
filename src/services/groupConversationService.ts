@@ -158,7 +158,7 @@ export const fetchUserGroupConversations = async (userId: string): Promise<Group
             .eq('group_id', group.id)
             .order('created_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           let lastMessage = undefined;
           if (lastMessageData) {

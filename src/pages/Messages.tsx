@@ -13,6 +13,7 @@ import { MessageCircle, Bell, Archive, Search, User, Plus, Hash, Star, ArrowLeft
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
+import { GroupOptionsMenu } from '@/components/GroupOptionsMenu';
 import GroupCreationDialog from '@/components/GroupCreationDialog';
 
 const Messages = () => {
@@ -195,11 +196,12 @@ const Messages = () => {
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start mb-1">
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm sm:text-base">
-                              {(conversation as any).name || 'Group Chat'}
-                            </h3>
-                            <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm sm:text-base">
+                            {(conversation as any).name || 'Group Chat'}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400 flex-shrink-0">
                               {conversation.last_message_at && 
                                 new Date(conversation.last_message_at).toLocaleDateString(undefined, { 
                                   month: 'short', 
@@ -207,7 +209,17 @@ const Messages = () => {
                                 })
                               }
                             </span>
+                            <GroupOptionsMenu
+                              groupId={conversation.id}
+                              groupName={(conversation as any).name || 'Group Chat'}
+                              isAdmin={true} // TODO: Check actual admin status
+                              onGroupDissolved={() => {
+                                refetch();
+                                setSelectedConversation(null);
+                              }}
+                            />
                           </div>
+                        </div>
                           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
                             {(conversation as any).last_message?.content || 'No messages yet...'}
                           </p>
