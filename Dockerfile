@@ -17,9 +17,11 @@ COPY . .
 # This is crucial! Make sure your build script actually creates the `dist` folder.
 RUN npm run build
 
+# ... (rest of your Dockerfile)
+
 # Expose the port the server will run on
 EXPOSE 8080
 
 # Define the command to run your app
 # This command tells `serve` to serve the files from the `dist` directory
-CMD ["serve", "-s", "dist"]
+CMD ["serve", "-s", "dist", "-l", "8080"]
