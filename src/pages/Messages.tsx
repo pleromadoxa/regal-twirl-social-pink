@@ -189,13 +189,15 @@ const Messages = () => {
                             <Hash className="w-5 h-5 text-white" />
                           </div>
                           <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-blue-400 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center">
-                            <span className="text-xs text-white font-bold">{conversation.member_count}</span>
+                            <span className="text-xs text-white font-bold">
+                              {(conversation as any).member_count || 0}
+                            </span>
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start mb-1">
                             <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm sm:text-base">
-                              {conversation.name}
+                              {(conversation as any).name || 'Group Chat'}
                             </h3>
                             <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
                               {conversation.last_message_at && 
@@ -207,16 +209,17 @@ const Messages = () => {
                             </span>
                           </div>
                           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
-                            {conversation.last_message?.content || 'No messages yet...'}
+                            {(conversation as any).last_message?.content || 'No messages yet...'}
                           </p>
                         </div>
                       </div>
                     </div>
                   );
                 } else {
-                  const otherUser = conversation.participant_1 === user?.id 
-                    ? conversation.participant_2_profile 
-                    : conversation.participant_1_profile;
+                  const directConversation = conversation as any; // Direct conversation type
+                  const otherUser = directConversation.participant_1 === user?.id 
+                    ? directConversation.participant_2_profile 
+                    : directConversation.participant_1_profile;
                   
                   return (
                     <div
