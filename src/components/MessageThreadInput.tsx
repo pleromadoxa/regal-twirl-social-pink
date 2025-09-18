@@ -47,7 +47,7 @@ const MessageThreadInput = ({ onSendMessage, disabled = false }: MessageThreadIn
       }}
       className="border-t border-purple-200 dark:border-purple-800"
     >
-      <div className="p-3 sm:p-4 pb-20 sm:pb-4 space-y-3">
+      <div className="p-3 sm:p-4 pb-28 sm:pb-4 space-y-3">
         {/* Attachment Upload */}
         <AttachmentUpload
           attachments={attachments}

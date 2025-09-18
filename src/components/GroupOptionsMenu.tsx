@@ -23,12 +23,14 @@ import { dissolveGroup, leaveGroup } from '@/services/groupConversationService';
 import { GroupProfileDialog } from './GroupProfileDialog';
 import { GroupMembersDialog } from './GroupMembersDialog';
 import { AddGroupMembersDialog } from './AddGroupMembersDialog';
+import { GroupSettingsDialog } from './GroupSettingsDialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface GroupOptionsMenuProps {
   groupId: string;
   groupName: string;
   groupDescription?: string;
+  groupSettings?: any;
   isAdmin: boolean;
   members: Array<{ id: string; username: string; display_name: string; avatar_url: string; role: string; joined_at: string; }>;
   onGroupDissolved?: () => void;
@@ -39,6 +41,7 @@ export const GroupOptionsMenu = ({
   groupId, 
   groupName,
   groupDescription,
+  groupSettings,
   isAdmin,
   members,
   onGroupDissolved,
@@ -48,6 +51,7 @@ export const GroupOptionsMenu = ({
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [showAddMembersDialog, setShowAddMembersDialog] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [isDissolving, setIsDissolving] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const { toast } = useToast();
@@ -136,7 +140,7 @@ export const GroupOptionsMenu = ({
           )}
           {isAdmin && (
             <>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowSettingsDialog(true)}>
                 <Settings className="w-4 h-4 mr-2" />
                 Group Settings
               </DropdownMenuItem>
@@ -213,6 +217,23 @@ export const GroupOptionsMenu = ({
         onMembersAdded={() => {
           onGroupUpdated?.();
           setShowAddMembersDialog(false);
+        }}
+      />
+
+      <GroupSettingsDialog
+        isOpen={showSettingsDialog}
+        onClose={() => setShowSettingsDialog(false)}
+        groupId={groupId}
+        groupName={groupName}
+        currentSettings={groupSettings || {
+          allow_member_invite: true,
+          message_deletion: 'admin_only',
+          file_sharing: true,
+          max_members: 50
+        }}
+        onSettingsUpdated={() => {
+          onGroupUpdated?.();
+          setShowSettingsDialog(false);
         }}
       />
     </>
