@@ -133,7 +133,7 @@ export const usePostsData = (posts: any[], user: any, refetch?: () => void) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, posts, refetch]);
+  }, [user?.id, posts?.length]); // Only depend on user ID and posts length, not entire objects
 
   // Enhanced retweet information fetching
   const fetchRetweetInfo = async () => {
@@ -203,7 +203,7 @@ export const usePostsData = (posts: any[], user: any, refetch?: () => void) => {
   // Fetch retweet information for posts
   useEffect(() => {
     fetchRetweetInfo();
-  }, [posts, user]);
+  }, [posts?.length, user?.id]); // Only depend on posts length and user ID, not entire objects
 
   const handleShare = async (postId: string) => {
     try {

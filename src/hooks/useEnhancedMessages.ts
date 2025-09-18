@@ -256,13 +256,13 @@ export const useEnhancedMessages = () => {
 
   useEffect(() => {
     fetchConversationsData();
-  }, [user]);
+  }, [user?.id]); // Only depend on user ID, not entire user object
 
   useEffect(() => {
-    if (selectedConversation) {
+    if (selectedConversation && user?.id) {
       fetchMessages(selectedConversation);
     }
-  }, [selectedConversation, user]);
+  }, [selectedConversation, user?.id]); // Only depend on user ID, not entire user object
 
   return {
     conversations,
