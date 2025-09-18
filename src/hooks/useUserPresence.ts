@@ -118,21 +118,35 @@ export const useUserPresence = () => {
   }, []);
 
   useEffect(() => {
-    if (!user?.id || isInitializedRef.current) return;
+    if (!user?.id) return;
+
+    // Cleanup any existing channel before creating new one
+    if (channelRef.current) {
+      console.log('🔧 Cleaning up existing channel');
+      try {
+        supabase.removeChannel(channelRef.current);
+      } catch (error) {
+        console.error('Error removing existing channel:', error);
+      }
+      channelRef.current = null;
+      isSubscribedRef.current = false;
+    }
 
     console.log('🟢 Initializing user presence for:', user.id);
-    isInitializedRef.current = true;
 
     // Set user online when they connect
     updatePresence(true);
 
     // Set up heartbeat to keep user online (every 2 minutes)
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+    }
     heartbeatRef.current = setInterval(() => {
       updatePresence(true);
     }, 2 * 60 * 1000);
 
     // Set up real-time subscription for presence updates
-    const channelName = `user_presence_${user.id}`;
+    const channelName = `user_presence_${user.id}_${Date.now()}`;
     console.log('📡 Creating presence channel:', channelName);
     
     channelRef.current = supabase
@@ -164,11 +178,14 @@ export const useUserPresence = () => {
         }
       );
 
-    // Subscribe to the channel
+    // Subscribe to the channel only once
     channelRef.current.subscribe((status: string) => {
       console.log('📡 Presence channel subscription status:', status);
       if (status === 'SUBSCRIBED') {
         isSubscribedRef.current = true;
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('📡 Channel subscription error');
+        isSubscribedRef.current = false;
       }
     });
 
@@ -222,7 +239,7 @@ export const useUserPresence = () => {
       // Reset initialization flag
       isInitializedRef.current = false;
     };
-  }, [user?.id, updatePresence]);
+  }, [user?.id]);
 
   return {
     fetchPresenceData,
