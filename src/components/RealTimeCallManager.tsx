@@ -46,6 +46,7 @@ const RealTimeCallManager = ({
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(false);
   const [incomingCall, setIncomingCall] = useState<ActiveCall | null>(null);
+  const [callInvitationChannel, setCallInvitationChannel] = useState<any>(null);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -93,6 +94,11 @@ const RealTimeCallManager = ({
     return () => {
       console.log('Cleaning up call manager subscription');
       supabase.removeChannel(channel);
+      
+      // Also clean up call invitation channel if it exists
+      if (callInvitationChannel) {
+        supabase.removeChannel(callInvitationChannel);
+      }
     };
   }, [user?.id]); // Only depend on user.id, not participants array
 
@@ -108,6 +114,7 @@ const RealTimeCallManager = ({
       setIsInCall(true);
 
       const channel = supabase.channel(`call-invitation-${call.room_id}`);
+      setCallInvitationChannel(channel);
       await channel.subscribe();
       
       participantIds.forEach(participantId => {
@@ -180,6 +187,12 @@ const RealTimeCallManager = ({
       setActiveCall(null);
       setIsInCall(false);
       setCallType('audio');
+      
+      // Clean up call invitation channel
+      if (callInvitationChannel) {
+        supabase.removeChannel(callInvitationChannel);
+        setCallInvitationChannel(null);
+      }
       
       if (onCallEnd) onCallEnd();
 

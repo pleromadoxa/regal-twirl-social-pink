@@ -248,7 +248,7 @@ export const useStories = () => {
 
     return () => {
       // Proper cleanup
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [user?.id]); // Add user.id to dependencies
 

@@ -173,6 +173,11 @@ export class WebRTCService {
   setupSignaling(channelName: string): any {
     console.log('[WebRTC] Setting up signaling channel:', channelName);
     
+    // Clean up existing channel if it exists
+    if (this.signalingChannel) {
+      supabase.removeChannel(this.signalingChannel);
+    }
+    
     this.signalingChannel = supabase.channel(channelName);
     
     this.signalingChannel
