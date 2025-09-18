@@ -673,6 +673,48 @@ export const updateGroupProfile = async (
   }
 };
 
+export const generateNewInviteCode = async (
+  groupId: string,
+  userId: string
+): Promise<string> => {
+  try {
+    // Check if user is admin
+    const { data: memberData } = await supabase
+      .from('group_conversation_members')
+      .select('role')
+      .eq('group_id', groupId)
+      .eq('user_id', userId)
+      .single();
+
+    const { data: groupData } = await supabase
+      .from('group_conversations')
+      .select('created_by')
+      .eq('id', groupId)
+      .single();
+
+    if (!memberData || (memberData.role !== 'admin' && groupData?.created_by !== userId)) {
+      throw new Error('Only admins can generate new invite codes');
+    }
+
+    // Generate new invite code
+    const newInviteCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+    const { error } = await supabase
+      .from('group_conversations')
+      .update({ invite_code: newInviteCode })
+      .eq('id', groupId);
+
+    if (error) {
+      throw error;
+    }
+
+    return newInviteCode;
+  } catch (error) {
+    console.error('Error generating new invite code:', error);
+    throw error;
+  }
+};
+
 export const addGroupMembers = async (
   groupId: string,
   userId: string,

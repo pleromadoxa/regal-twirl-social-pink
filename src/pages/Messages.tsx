@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Bell, Archive, Search, User, Plus, Hash, Star, ArrowLeft, Phone, Video, PhoneCall, Clock, PhoneIncoming, PhoneOutgoing, PhoneMissed } from 'lucide-react';
+import { MessageCircle, Bell, Archive, Search, User, Plus, Hash, Star, ArrowLeft, Phone, Video, PhoneCall, Clock, PhoneIncoming, PhoneOutgoing, PhoneMissed, Users } from 'lucide-react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useCallHistory } from '@/hooks/useCallHistory';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,10 +22,12 @@ import WebRTCCallManager from '@/components/WebRTCCallManager';
 import { GroupOptionsMenu } from '@/components/GroupOptionsMenu';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import GroupCreationDialog from '@/components/GroupCreationDialog';
+import { JoinGroupDialog } from '@/components/JoinGroupDialog';
 
 const Messages = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showJoinGroupDialog, setShowJoinGroupDialog] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeCall, setActiveCall] = useState<{
     type: 'audio' | 'video';
@@ -114,6 +116,11 @@ const Messages = () => {
   };
 
   const handleGroupCreated = (groupId: string) => {
+    refetch();
+    setSelectedConversation(groupId);
+  };
+
+  const handleGroupJoined = (groupId: string) => {
     refetch();
     setSelectedConversation(groupId);
   };
@@ -585,6 +592,15 @@ const Messages = () => {
                 <div className="flex gap-2">
                   <MessageSearch onStartConversation={startDirectConversation} messagesData={messagesData} />
                   <GroupCreationDialog onGroupCreated={handleGroupCreated} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowJoinGroupDialog(true)}
+                    className="gap-2"
+                  >
+                    <Users className="w-4 h-4" />
+                    Join Group
+                  </Button>
                 </div>
               </>
             )}
@@ -592,7 +608,7 @@ const Messages = () => {
         </div>
 
         {/* Content */}
-        <div className="pt-16 min-h-screen bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl pb-24"> {/* Added bottom padding */}
+        <div className="pt-16 min-h-screen bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl pb-32 sm:pb-24"> {/* Increased mobile bottom padding */}
           {selectedConversation ? (
             <MessageThread 
               conversationId={selectedConversation}
@@ -667,6 +683,13 @@ const Messages = () => {
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
+
+      {/* Join Group Dialog */}
+      <JoinGroupDialog
+        isOpen={showJoinGroupDialog}
+        onClose={() => setShowJoinGroupDialog(false)}
+        onGroupJoined={handleGroupJoined}
+      />
     </div>
   );
 };

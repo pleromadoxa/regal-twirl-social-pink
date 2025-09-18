@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { PhoneOff, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { useWebRTCCall } from '@/hooks/useWebRTCCall';
 import { useCallSounds } from '@/hooks/useCallSounds';
+import { EnhancedCallControls } from './EnhancedCallControls';
 import { formatDuration } from '@/lib/utils';
 
 interface AudioCallProps {
@@ -24,6 +25,7 @@ const AudioCall = ({
   isIncoming = false 
 }: AudioCallProps) => {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(true);
   const { playRinging, stopRinging, playConnect, playEndCall } = useCallSounds();
   
   const {
@@ -74,6 +76,11 @@ const AudioCall = ({
     }
   };
 
+  const handleToggleSpeaker = () => {
+    setIsSpeakerEnabled(!isSpeakerEnabled);
+    // In a real implementation, you would toggle speaker/earpiece here
+  };
+
   const getStatusText = () => {
     switch (callState.status) {
       case 'connecting':
@@ -109,62 +116,19 @@ const AudioCall = ({
 
         {/* Call Controls */}
         <div className="flex items-center justify-center gap-6">
-          {/* Mute Button */}
-          <Button
-            variant={callState.isAudioEnabled ? "secondary" : "destructive"}
-            size="lg"
-            onClick={toggleAudio}
-            className="rounded-full w-14 h-14 p-0"
-            disabled={callState.status !== 'connected'}
-          >
-            {callState.isAudioEnabled ? (
-              <Mic className="w-6 h-6" />
-            ) : (
-              <MicOff className="w-6 h-6" />
-            )}
-          </Button>
-
-          {/* Answer/End Call Button */}
-          {isIncoming && callState.status === 'idle' ? (
-            <div className="flex gap-4">
-              <Button
-                variant="default"
-                size="lg"
-                onClick={handleAnswer}
-                className="rounded-full w-14 h-14 p-0 bg-green-500 hover:bg-green-600"
-              >
-                <Volume2 className="w-6 h-6" />
-              </Button>
-              <Button
-                variant="destructive"
-                size="lg"
-                onClick={handleEndCall}
-                className="rounded-full w-14 h-14 p-0"
-              >
-                <PhoneOff className="w-6 h-6" />
-              </Button>
-            </div>
-          ) : (
-            <Button
-              variant="destructive"
-              size="lg"
-              onClick={handleEndCall}
-              className="rounded-full w-14 h-14 p-0"
-            >
-              <PhoneOff className="w-6 h-6" />
-            </Button>
-          )}
-
-          {/* Speaker Button */}
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => {}}
-            className="rounded-full w-14 h-14 p-0"
-            disabled={callState.status !== 'connected'}
-          >
-            <Volume2 className="w-6 h-6" />
-          </Button>
+          <EnhancedCallControls
+            isAudioEnabled={callState.isAudioEnabled}
+            isVideoEnabled={false}
+            isSpeakerEnabled={isSpeakerEnabled}
+            callType="audio"
+            status={callState.status}
+            onToggleAudio={toggleAudio}
+            onToggleVideo={toggleVideo}
+            onToggleSpeaker={handleToggleSpeaker}
+            onEndCall={handleEndCall}
+            onAnswer={handleAnswer}
+            isIncoming={isIncoming}
+          />
         </div>
 
         {/* Connection Status */}

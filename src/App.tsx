@@ -32,6 +32,7 @@ import Pinned from '@/pages/Pinned';
 import AdminDashboard from '@/pages/AdminDashboard';
 import BusinessManagement from '@/pages/BusinessManagement';
 import Support from '@/pages/Support';
+import JoinGroup from '@/pages/JoinGroup';
 import AuthWrapper from '@/components/AuthWrapper';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
 
@@ -54,6 +55,7 @@ function App() {
                   <Route path="/profile/:userId" element={<AuthWrapper><Profile /></AuthWrapper>} />
                   <Route path="/hashtag/:hashtag" element={<AuthWrapper><Hashtag /></AuthWrapper>} />
                   <Route path="/messages" element={<AuthWrapper><Messages /></AuthWrapper>} />
+                  <Route path="/join-group/:inviteCode" element={<AuthWrapper><JoinGroup /></AuthWrapper>} />
                   <Route path="/notifications" element={<AuthWrapper><Notifications /></AuthWrapper>} />
                   <Route path="/gallery" element={<AuthWrapper><Gallery /></AuthWrapper>} />
                   <Route path="/settings" element={<AuthWrapper><Settings /></AuthWrapper>} />

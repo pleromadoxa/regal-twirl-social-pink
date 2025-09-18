@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, UserPlus, UserMinus, Trash2, Edit, Settings, Users } from 'lucide-react';
+import { MoreVertical, UserPlus, UserMinus, Trash2, Edit, Settings, Users, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,6 +24,7 @@ import { GroupProfileDialog } from './GroupProfileDialog';
 import { GroupMembersDialog } from './GroupMembersDialog';
 import { AddGroupMembersDialog } from './AddGroupMembersDialog';
 import { GroupSettingsDialog } from './GroupSettingsDialog';
+import { GroupShareDialog } from './GroupShareDialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface GroupOptionsMenuProps {
@@ -31,6 +32,7 @@ interface GroupOptionsMenuProps {
   groupName: string;
   groupDescription?: string;
   groupSettings?: any;
+  inviteCode?: string;
   isAdmin: boolean;
   members: Array<{ id: string; username: string; display_name: string; avatar_url: string; role: string; joined_at: string; }>;
   onGroupDissolved?: () => void;
@@ -42,6 +44,7 @@ export const GroupOptionsMenu = ({
   groupName,
   groupDescription,
   groupSettings,
+  inviteCode,
   isAdmin,
   members,
   onGroupDissolved,
@@ -52,6 +55,8 @@ export const GroupOptionsMenu = ({
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [showAddMembersDialog, setShowAddMembersDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [currentInviteCode, setCurrentInviteCode] = useState(inviteCode || '');
   const [isDissolving, setIsDissolving] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const { toast } = useToast();
@@ -125,6 +130,10 @@ export const GroupOptionsMenu = ({
           <DropdownMenuItem onClick={() => setShowMembersDialog(true)}>
             <Users className="w-4 h-4 mr-2" />
             View Members
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowShareDialog(true)}>
+            <Share2 className="w-4 h-4 mr-2" />
+            Share Group
           </DropdownMenuItem>
           {isAdmin && (
             <>
@@ -234,6 +243,19 @@ export const GroupOptionsMenu = ({
         onSettingsUpdated={() => {
           onGroupUpdated?.();
           setShowSettingsDialog(false);
+        }}
+      />
+
+      <GroupShareDialog
+        isOpen={showShareDialog}
+        onClose={() => setShowShareDialog(false)}
+        groupId={groupId}
+        groupName={groupName}
+        currentInviteCode={currentInviteCode}
+        isAdmin={isAdmin}
+        onInviteCodeUpdated={(newCode) => {
+          setCurrentInviteCode(newCode);
+          onGroupUpdated?.();
         }}
       />
     </>

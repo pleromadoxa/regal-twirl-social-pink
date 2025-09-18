@@ -23,6 +23,7 @@ interface MessageThreadHeaderProps {
     member_count?: number;
     created_by?: string;
     settings?: any;
+    invite_code?: string;
     members?: Array<{ id: string; username: string; display_name: string; avatar_url: string; role: string; joined_at: string; }>;
   };
   isGroupConversation?: boolean;
@@ -110,6 +111,7 @@ const MessageThreadHeader = ({
               groupName={groupConversation.name}
               groupDescription={groupConversation.description}
               groupSettings={groupConversation.settings}
+              inviteCode={groupConversation.invite_code}
               isAdmin={!!isGroupAdmin}
               members={groupConversation.members || []}
               onGroupDissolved={onGroupUpdated}

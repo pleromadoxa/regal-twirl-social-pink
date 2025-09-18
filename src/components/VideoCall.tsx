@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { useWebRTCCall } from '@/hooks/useWebRTCCall';
 import { useCallSounds } from '@/hooks/useCallSounds';
+import { EnhancedCallControls } from './EnhancedCallControls';
 import { formatDuration } from '@/lib/utils';
 
 interface VideoCallProps {
@@ -25,6 +26,8 @@ const VideoCall = ({
 }: VideoCallProps) => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(true);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const { playRinging, stopRinging, playConnect, playEndCall } = useCallSounds();
   
   const {
@@ -78,6 +81,33 @@ const VideoCall = ({
   const handleAnswer = () => {
     if (isIncoming) {
       initializeCall();
+    }
+  };
+
+  const handleToggleSpeaker = () => {
+    setIsSpeakerEnabled(!isSpeakerEnabled);
+    // In a real implementation, you would toggle speaker/earpiece here
+  };
+
+  const handleScreenShare = async () => {
+    try {
+      if (!isScreenSharing) {
+        // Start screen sharing
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ 
+          video: true, 
+          audio: true 
+        });
+        setIsScreenSharing(true);
+        
+        // Replace video track with screen share
+        // This would be implemented in the WebRTC service
+      } else {
+        // Stop screen sharing and return to camera
+        setIsScreenSharing(false);
+        // This would switch back to camera in the WebRTC service
+      }
+    } catch (error) {
+      console.error('Error with screen sharing:', error);
     }
   };
 
@@ -143,68 +173,21 @@ const VideoCall = ({
 
       {/* Call Controls */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
-        <div className="flex items-center justify-center gap-6 bg-black/50 backdrop-blur-md rounded-full px-8 py-4">
-          {/* Mute Button */}
-          <Button
-            variant={callState.isAudioEnabled ? "secondary" : "destructive"}
-            size="lg"
-            onClick={toggleAudio}
-            className="rounded-full w-14 h-14 p-0"
-            disabled={callState.status !== 'connected'}
-          >
-            {callState.isAudioEnabled ? (
-              <Mic className="w-6 h-6" />
-            ) : (
-              <MicOff className="w-6 h-6" />
-            )}
-          </Button>
-
-          {/* Answer/End Call Button */}
-          {isIncoming && callState.status === 'idle' ? (
-            <div className="flex gap-4">
-              <Button
-                variant="default"
-                size="lg"
-                onClick={handleAnswer}
-                className="rounded-full w-14 h-14 p-0 bg-green-500 hover:bg-green-600"
-              >
-                <Video className="w-6 h-6" />
-              </Button>
-              <Button
-                variant="destructive"
-                size="lg"
-                onClick={handleEndCall}
-                className="rounded-full w-14 h-14 p-0"
-              >
-                <PhoneOff className="w-6 h-6" />
-              </Button>
-            </div>
-          ) : (
-            <Button
-              variant="destructive"
-              size="lg"
-              onClick={handleEndCall}
-              className="rounded-full w-14 h-14 p-0"
-            >
-              <PhoneOff className="w-6 h-6" />
-            </Button>
-          )}
-
-          {/* Video Toggle Button */}
-          <Button
-            variant={callState.isVideoEnabled ? "secondary" : "destructive"}
-            size="lg"
-            onClick={toggleVideo}
-            className="rounded-full w-14 h-14 p-0"
-            disabled={callState.status !== 'connected'}
-          >
-            {callState.isVideoEnabled ? (
-              <Video className="w-6 h-6" />
-            ) : (
-              <VideoOff className="w-6 h-6" />
-            )}
-          </Button>
-        </div>
+        <EnhancedCallControls
+          isAudioEnabled={callState.isAudioEnabled}
+          isVideoEnabled={callState.isVideoEnabled}
+          isSpeakerEnabled={isSpeakerEnabled}
+          callType="video"
+          status={callState.status}
+          onToggleAudio={toggleAudio}
+          onToggleVideo={toggleVideo}
+          onToggleSpeaker={handleToggleSpeaker}
+          onEndCall={handleEndCall}
+          onScreenShare={handleScreenShare}
+          onAnswer={handleAnswer}
+          isIncoming={isIncoming}
+          isScreenSharing={isScreenSharing}
+        />
       </div>
 
       {/* Connection Status */}
