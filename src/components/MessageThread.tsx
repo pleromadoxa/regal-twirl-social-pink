@@ -11,17 +11,21 @@ import MessageThreadCallManager from './MessageThreadCallManager';
 
 interface MessageThreadProps {
   conversationId: string;
+  messagesData?: ReturnType<typeof useEnhancedMessages>;
 }
 
-const MessageThread = ({ conversationId }: MessageThreadProps) => {
+const MessageThread = ({ conversationId, messagesData }: MessageThreadProps) => {
   const { user } = useAuth();
+  
+  // Use provided messagesData or fallback to hook (for standalone usage)
+  const fallbackData = useEnhancedMessages();
   const { 
     messages, 
     sendMessage, 
     markAsRead, 
     conversations, 
     setSelectedConversation 
-  } = useEnhancedMessages();
+  } = messagesData || fallbackData;
   const { toast } = useToast();
   const [localMessages, setLocalMessages] = useState(messages);
 

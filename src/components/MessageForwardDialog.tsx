@@ -13,12 +13,16 @@ interface MessageForwardDialogProps {
   messageContent: string;
   isOpen: boolean;
   onClose: () => void;
+  messagesData?: ReturnType<typeof useEnhancedMessages>;
 }
 
-const MessageForwardDialog = ({ messageContent, isOpen, onClose }: MessageForwardDialogProps) => {
+const MessageForwardDialog = ({ messageContent, isOpen, onClose, messagesData }: MessageForwardDialogProps) => {
   const [selectedConversations, setSelectedConversations] = useState<string[]>([]);
   const [isForwarding, setIsForwarding] = useState(false);
-  const { conversations, sendMessage, setSelectedConversation } = useEnhancedMessages();
+  
+  // Use provided messagesData or fallback to hook (for standalone usage)
+  const fallbackData = useEnhancedMessages();
+  const { conversations, sendMessage, setSelectedConversation } = messagesData || fallbackData;
   const { user } = useAuth();
   const { toast } = useToast();
 

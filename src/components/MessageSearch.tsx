@@ -19,15 +19,19 @@ interface UserSearchResult {
 
 interface MessageSearchProps {
   onStartConversation: (userId: string) => void;
+  messagesData?: ReturnType<typeof useEnhancedMessages>;
 }
 
-const MessageSearch = ({ onStartConversation }: MessageSearchProps) => {
+const MessageSearch = ({ onStartConversation, messagesData }: MessageSearchProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { user } = useAuth();
-  const { startDirectConversation } = useEnhancedMessages();
+  
+  // Use provided messagesData or fallback to hook (for standalone usage)
+  const fallbackData = useEnhancedMessages();
+  const { startDirectConversation } = messagesData || fallbackData;
   const { toast } = useToast();
 
   const searchUsers = async (query: string) => {

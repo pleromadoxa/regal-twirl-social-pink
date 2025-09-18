@@ -21,6 +21,7 @@ const Messages = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const { user } = useAuth();
+  const messagesData = useEnhancedMessages();
   const {
     conversations,
     groupConversations,
@@ -32,7 +33,7 @@ const Messages = () => {
     refetch,
     startDirectConversation,
     createGroupConversation
-  } = useEnhancedMessages();
+  } = messagesData;
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -142,7 +143,7 @@ const Messages = () => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg text-purple-700 dark:text-purple-300">Conversations</CardTitle>
           <div className="flex gap-2">
-            <MessageSearch onStartConversation={startDirectConversation} />
+            <MessageSearch onStartConversation={startDirectConversation} messagesData={messagesData} />
             <GroupCreationDialog onGroupCreated={handleGroupCreated} />
           </div>
         </div>
@@ -309,7 +310,7 @@ const Messages = () => {
             Select a conversation to start chatting, or create a new one to connect with your friends.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
-            <MessageSearch onStartConversation={startDirectConversation} />
+            <MessageSearch onStartConversation={startDirectConversation} messagesData={messagesData} />
             <GroupCreationDialog onGroupCreated={handleGroupCreated} />
           </div>
         </CardContent>
@@ -341,7 +342,7 @@ const Messages = () => {
             <>
               <h1 className="text-lg font-semibold bg-gradient-primary bg-clip-text text-transparent">Chat</h1>
               <div className="flex gap-2">
-                <MessageSearch onStartConversation={startDirectConversation} />
+                <MessageSearch onStartConversation={startDirectConversation} messagesData={messagesData} />
                 <GroupCreationDialog onGroupCreated={handleGroupCreated} />
               </div>
             </>
@@ -361,9 +362,10 @@ const Messages = () => {
           {/* Chat Thread Area */}
           <div className="flex-1 flex flex-col min-w-0">
             {selectedConversation ? (
-              <MessageThread 
-                conversationId={selectedConversation}
-              />
+          <MessageThread 
+            conversationId={selectedConversation}
+            messagesData={messagesData}
+          />
             ) : (
               <div className="h-full flex flex-col items-center justify-center p-8 text-center glass">
                 <div className="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center mb-6 shadow-glow animate-pulse">
@@ -376,7 +378,7 @@ const Messages = () => {
                   Select a conversation to start chatting, or create a new one to connect with your friends.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <MessageSearch onStartConversation={startDirectConversation} />
+            <MessageSearch onStartConversation={startDirectConversation} messagesData={messagesData} />
                   <GroupCreationDialog onGroupCreated={handleGroupCreated} />
                 </div>
               </div>
