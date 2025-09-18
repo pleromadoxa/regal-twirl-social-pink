@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Notification } from '@/types/notifications';
 import { fetchNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/services/notificationService';
@@ -9,9 +9,11 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const channelRef = useRef<any>(null);
+  const initializationRef = useRef(false);
 
   useEffect(() => {
-    console.log('useNotificationsData effect running, userId:', userId, 'authLoading:', authLoading, 'initialized:', initialized);
+    console.log('useNotificationsData effect running, userId:', userId, 'authLoading:', authLoading);
     
     // Don't initialize if auth is still loading
     if (authLoading) {
@@ -20,25 +22,45 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
 
     // If no user, reset state and cleanup any existing subscription
     if (!userId) {
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.error('Error removing notifications channel:', error);
+        }
+        channelRef.current = null;
+      }
       setUnreadCount(0);
       setNotifications([]);
       setInitialized(false);
       setLoading(false);
+      initializationRef.current = false;
       return;
     }
 
     // If user exists and we haven't initialized yet
-    if (userId && !initialized) {
+    if (userId && !initializationRef.current) {
       console.log('Initializing notifications for user:', userId);
+      initializationRef.current = true;
       setInitialized(true);
       loadNotifications();
       
       // Setup realtime subscription
       console.log('Setting up realtime subscription for notifications');
       
+      // Clean up any existing channel first
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.error('Error removing existing notifications channel:', error);
+        }
+        channelRef.current = null;
+      }
+      
       // Use timestamp to ensure uniqueness
       const channelName = `notifications-${userId}-${Date.now()}`;
-      const channel = supabase
+      channelRef.current = supabase
         .channel(channelName)
         .on(
           'postgres_changes',
@@ -54,13 +76,21 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
           }
         )
         .subscribe();
-
-      return () => {
-        console.log('Cleaning up notifications subscription');
-        supabase.removeChannel(channel);
-      };
     }
-  }, [userId, authLoading, initialized]); // Add initialized back to dependencies
+
+    return () => {
+      console.log('Cleaning up notifications subscription');
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.error('Error removing notifications channel:', error);
+        }
+        channelRef.current = null;
+      }
+      initializationRef.current = false;
+    };
+  }, [userId, authLoading]); // Removed initialized from dependencies
 
   const loadNotifications = async () => {
     if (!userId) return;

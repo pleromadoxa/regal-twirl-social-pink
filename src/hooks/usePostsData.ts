@@ -133,7 +133,7 @@ export const usePostsData = (posts: any[], user: any, refetch?: () => void) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, posts?.length]); // Only depend on user ID and posts length, not entire objects
+  }, [user?.id]); // Stable dependency to prevent re-subscriptions
 
   // Enhanced retweet information fetching
   const fetchRetweetInfo = async () => {
