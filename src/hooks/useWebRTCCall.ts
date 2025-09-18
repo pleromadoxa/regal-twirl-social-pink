@@ -142,14 +142,37 @@ export const useWebRTCCall = ({
 
     } catch (error) {
       console.error('[useWebRTCCall] Error initializing call:', error);
+      
+      let errorMessage = 'Failed to initialize call';
+      let errorTitle = 'Call Failed';
+      
+      if (error instanceof Error) {
+        // Handle specific permission errors
+        if (error.name === 'NotAllowedError') {
+          errorTitle = 'Permission Denied';
+          errorMessage = `Please allow access to your ${callType === 'video' ? 'camera and microphone' : 'microphone'} and try again.`;
+        } else if (error.name === 'NotFoundError') {
+          errorTitle = 'Device Not Found';
+          errorMessage = `No ${callType === 'video' ? 'camera or microphone' : 'microphone'} found. Please check your device connections.`;
+        } else if (error.name === 'NotSupportedError') {
+          errorTitle = 'Not Supported';
+          errorMessage = 'Your browser does not support the required features for calling.';
+        } else if (error.name === 'NotReadableError') {
+          errorTitle = 'Device In Use';
+          errorMessage = `Your ${callType === 'video' ? 'camera or microphone' : 'microphone'} is being used by another application.`;
+        } else {
+          errorMessage = error.message || 'An unexpected error occurred';
+        }
+      }
+      
       updateCallState({ 
         status: 'failed', 
-        error: error instanceof Error ? error.message : 'Failed to initialize call'
+        error: errorMessage
       });
       
       toast({
-        title: "Call Failed",
-        description: "Failed to initialize call. Please check your camera and microphone permissions.",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive"
       });
     }

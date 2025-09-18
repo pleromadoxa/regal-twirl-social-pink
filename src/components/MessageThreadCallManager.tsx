@@ -58,9 +58,24 @@ const MessageThreadCallManager = ({
         
       } catch (permissionError) {
         console.error('Permission error:', permissionError);
+        
+        let errorMessage = 'Permission denied';
+        let errorTitle = 'Permission Required';
+        
+        if (permissionError instanceof Error) {
+          if (permissionError.name === 'NotAllowedError') {
+            errorMessage = `Please allow access to your ${callType === 'video' ? 'camera and microphone' : 'microphone'} in your browser settings and try again.`;
+          } else if (permissionError.name === 'NotFoundError') {
+            errorTitle = 'Device Not Found';
+            errorMessage = `No ${callType === 'video' ? 'camera or microphone' : 'microphone'} found. Please check your device connections.`;
+          } else {
+            errorMessage = permissionError.message || `Unable to access ${callType === 'video' ? 'camera and microphone' : 'microphone'}`;
+          }
+        }
+        
         toast({
-          title: "Permission required",
-          description: `Please allow access to your ${callType === 'video' ? 'camera and microphone' : 'microphone'} to make calls.`,
+          title: errorTitle,
+          description: errorMessage,
           variant: "destructive"
         });
       }

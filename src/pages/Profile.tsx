@@ -192,6 +192,7 @@ const Profile = () => {
                     tier={profile.premium_tier || 'free'} 
                     showIcon={false} 
                     country={profile.country}
+                    isOwner={isOwnProfile}
                   />
                   {canUpgrade && (
                     <UpgradeSubscriptionDialog 
