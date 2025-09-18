@@ -2508,7 +2508,7 @@ export type Database = {
         Returns: undefined
       }
       update_user_presence: {
-        Args: { is_online: boolean; user_id: string }
+        Args: { p_is_online: boolean; p_user_id: string }
         Returns: undefined
       }
     }

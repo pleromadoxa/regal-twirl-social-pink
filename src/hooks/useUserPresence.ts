@@ -16,7 +16,6 @@ export const useUserPresence = () => {
   const heartbeatRef = useRef<NodeJS.Timeout>();
   const channelRef = useRef<any>();
   const isSubscribedRef = useRef(false);
-  const isInitializedRef = useRef(false);
 
   // Update user's own presence
   const updatePresence = useCallback(async (isOnline: boolean) => {
@@ -24,8 +23,8 @@ export const useUserPresence = () => {
 
     try {
       const { error } = await supabase.rpc('update_user_presence', {
-        user_id: user.id,
-        is_online: isOnline
+        p_user_id: user.id,
+        p_is_online: isOnline
       });
 
       if (error) {
@@ -235,9 +234,6 @@ export const useUserPresence = () => {
       
       // Set user offline when component unmounts
       updatePresence(false);
-      
-      // Reset initialization flag
-      isInitializedRef.current = false;
     };
   }, [user?.id]);
 
