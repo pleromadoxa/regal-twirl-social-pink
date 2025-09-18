@@ -113,7 +113,16 @@ const RealTimeCallManager = ({
       setActiveCall(call);
       setIsInCall(true);
 
-      const channel = supabase.channel(`call-invitation-${call.room_id}`);
+      // Clean up any existing call invitation channel first
+      if (callInvitationChannel) {
+        try {
+          supabase.removeChannel(callInvitationChannel);
+        } catch (error) {
+          console.error('Error removing previous call invitation channel:', error);
+        }
+      }
+
+      const channel = supabase.channel(`call-invitation-${call.room_id}-${Date.now()}`);
       setCallInvitationChannel(channel);
       await channel.subscribe();
       

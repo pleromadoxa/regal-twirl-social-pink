@@ -132,7 +132,7 @@ export const useEnhancedMessages = () => {
       console.log('Cleaning up real-time subscriptions for user:', user.id);
       supabase.removeChannel(conversationsChannel);
     };
-  }, [user?.id, selectedConversation]); // Include selectedConversation for message updates
+  }, [user?.id]); // Removed selectedConversation to prevent multiple subscriptions
 
   const fetchMessages = async (conversationId: string) => {
     if (!user || !conversationId) return;

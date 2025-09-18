@@ -134,9 +134,32 @@ export const UserPresenceProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, []);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      // Reset state if no user
+      if (isConnectedRef.current) {
+        console.log('🔄 User logged out, cleaning up presence');
+        
+        if (heartbeatRef.current) {
+          clearInterval(heartbeatRef.current);
+          heartbeatRef.current = undefined;
+        }
+        
+        if (channelRef.current) {
+          try {
+            supabase.removeChannel(channelRef.current);
+          } catch (error) {
+            console.error('Error removing presence channel:', error);
+          }
+          channelRef.current = null;
+        }
+        
+        isConnectedRef.current = false;
+        setPresenceData({});
+      }
+      return;
+    }
 
-    // Prevent multiple initializations
+    // Prevent multiple initializations for the same user
     if (isConnectedRef.current) {
       console.log('⚠️ Presence already connected for user:', user.id);
       return;

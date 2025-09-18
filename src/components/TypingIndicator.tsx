@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -16,13 +16,29 @@ interface TypingUser {
 export const TypingIndicator = ({ conversationId, isGroup = false }: TypingIndicatorProps) => {
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const { user } = useAuth();
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (!user?.id || !conversationId) return;
 
-    const channel = supabase.channel(`typing-${conversationId}`)
+    // Create unique channel name with timestamp to avoid conflicts
+    const channelName = `typing-${conversationId}-${Date.now()}`;
+    
+    // Clean up existing channel
+    if (channelRef.current) {
+      try {
+        supabase.removeChannel(channelRef.current);
+      } catch (error) {
+        console.error('Error removing typing channel:', error);
+      }
+      channelRef.current = null;
+    }
+
+    channelRef.current = supabase.channel(channelName)
       .on('presence', { event: 'sync' }, () => {
-        const presenceState = channel.presenceState();
+        if (!channelRef.current) return;
+        
+        const presenceState = channelRef.current.presenceState();
         const users: TypingUser[] = [];
         
         Object.values(presenceState).forEach((presences: any) => {
@@ -42,35 +58,40 @@ export const TypingIndicator = ({ conversationId, isGroup = false }: TypingIndic
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.error('Error removing typing channel:', error);
+        }
+        channelRef.current = null;
+      }
     };
   }, [user?.id, conversationId]);
 
-  const handleStartTyping = () => {
-    if (!user?.id) return;
+  const handleStartTyping = useCallback(() => {
+    if (!user?.id || !channelRef.current) return;
 
-    const channel = supabase.channel(`typing-${conversationId}`);
-    channel.track({
+    channelRef.current.track({
       user_id: user.id,
       display_name: user.user_metadata?.display_name || user.email,
       username: user.user_metadata?.username,
       typing: true,
       online_at: new Date().toISOString(),
     });
-  };
+  }, [user]);
 
-  const handleStopTyping = () => {
-    if (!user?.id) return;
+  const handleStopTyping = useCallback(() => {
+    if (!user?.id || !channelRef.current) return;
 
-    const channel = supabase.channel(`typing-${conversationId}`);
-    channel.track({
+    channelRef.current.track({
       user_id: user.id,
       display_name: user.user_metadata?.display_name || user.email,
       username: user.user_metadata?.username,
       typing: false,
       online_at: new Date().toISOString(),
     });
-  };
+  }, [user]);
 
   if (typingUsers.length === 0) return null;
 
@@ -91,14 +112,26 @@ export const TypingIndicator = ({ conversationId, isGroup = false }: TypingIndic
   );
 };
 
+// Create a typing channel manager to prevent multiple subscriptions
+const typingChannels = new Map<string, any>();
+
 // Export typing functions for use in message input components
 export const useTypingIndicator = (conversationId: string) => {
   const { user } = useAuth();
 
-  const startTyping = () => {
-    if (!user?.id) return;
+  const startTyping = useCallback(() => {
+    if (!user?.id || !conversationId) return;
 
-    const channel = supabase.channel(`typing-${conversationId}`);
+    const channelName = `typing-${conversationId}`;
+    let channel = typingChannels.get(channelName);
+
+    if (!channel) {
+      channel = supabase.channel(channelName);
+      typingChannels.set(channelName, channel);
+      // Subscribe only once per channel
+      channel.subscribe();
+    }
+
     channel.track({
       user_id: user.id,
       display_name: user.user_metadata?.display_name || user.email,
@@ -106,20 +139,24 @@ export const useTypingIndicator = (conversationId: string) => {
       typing: true,
       online_at: new Date().toISOString(),
     });
-  };
+  }, [user, conversationId]);
 
-  const stopTyping = () => {
-    if (!user?.id) return;
+  const stopTyping = useCallback(() => {
+    if (!user?.id || !conversationId) return;
 
-    const channel = supabase.channel(`typing-${conversationId}`);
-    channel.track({
-      user_id: user.id,
-      display_name: user.user_metadata?.display_name || user.email,
-      username: user.user_metadata?.username,
-      typing: false,
-      online_at: new Date().toISOString(),
-    });
-  };
+    const channelName = `typing-${conversationId}`;
+    const channel = typingChannels.get(channelName);
+
+    if (channel) {
+      channel.track({
+        user_id: user.id,
+        display_name: user.user_metadata?.display_name || user.email,
+        username: user.user_metadata?.username,
+        typing: false,
+        online_at: new Date().toISOString(),
+      });
+    }
+  }, [user, conversationId]);
 
   return { startTyping, stopTyping };
 };
