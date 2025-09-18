@@ -682,7 +682,9 @@ const Messages = () => {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
+      <div className="lg:hidden">
+        <MobileBottomNav />
+      </div>
 
       {/* Join Group Dialog */}
       <JoinGroupDialog
