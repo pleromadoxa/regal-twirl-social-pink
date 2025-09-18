@@ -29,12 +29,18 @@ export const MessageThread = ({ conversationId, messagesData }: MessageThreadPro
     sendMessage, 
     markAsRead, 
     conversations, 
+    groupConversations,
     setSelectedConversation 
   } = messagesData;
   const [localMessages, setLocalMessages] = useState(messages);
 
-  // Get conversation details
+  // Get conversation details - check both regular and group conversations
   const conversation = conversations.find(c => c.id === conversationId);
+  const groupConversation = groupConversations.find(g => g.id === conversationId);
+  
+  const isGroupConversation = !!groupConversation;
+  const activeConversation = conversation || groupConversation;
+  
   const otherParticipant = conversation 
     ? (conversation.participant_1 === user?.id 
         ? conversation.participant_2_profile 
@@ -43,7 +49,7 @@ export const MessageThread = ({ conversationId, messagesData }: MessageThreadPro
 
   // Guard: If conversationId is not present or invalid, don't render input
   const isConversationIdValid = !!conversationId;
-  const isConversationValid = !!conversation && !!otherParticipant;
+  const isConversationValid = !!activeConversation && (!!otherParticipant || isGroupConversation);
 
   useEffect(() => {
     setLocalMessages(messages);
@@ -172,6 +178,8 @@ export const MessageThread = ({ conversationId, messagesData }: MessageThreadPro
           <MessageThreadHeader
             otherParticipant={otherParticipant}
             conversation={conversation}
+            groupConversation={groupConversation}
+            isGroupConversation={isGroupConversation}
             onAudioCall={() => initiateCall('audio')}
             onVideoCall={() => initiateCall('video')}
           />

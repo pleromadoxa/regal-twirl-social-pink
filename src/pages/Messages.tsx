@@ -562,7 +562,7 @@ const Messages = () => {
       </div>
 
       {/* Mobile Layout */}
-      <div className="sm:hidden min-h-screen pb-20">
+      <div className="sm:hidden min-h-screen pb-24"> {/* Increased bottom padding */}
         {/* Mobile Header */}
         <div className="fixed top-0 left-0 right-0 z-50 glass backdrop-blur-md border-b border-purple-200/50">
           <div className="flex items-center justify-between p-4">
@@ -592,7 +592,7 @@ const Messages = () => {
         </div>
 
         {/* Content */}
-        <div className="pt-16 min-h-screen bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+        <div className="pt-16 min-h-screen bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl pb-24"> {/* Added bottom padding */}
           {selectedConversation ? (
             <MessageThread 
               conversationId={selectedConversation}
@@ -632,7 +632,7 @@ const Messages = () => {
               </div>
 
               {/* Conversations List */}
-              <div className="space-y-2">
+              <div className="space-y-2 pb-24"> {/* Added bottom padding */}
                 {loading || (activeTab === 'calls' && callHistoryLoading) ? (
                   <div className="p-6 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
