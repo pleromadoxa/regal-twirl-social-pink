@@ -655,23 +655,21 @@ const Messages = () => {
 
         {/* Content */}
         <div className="pt-16 min-h-screen bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl pb-32 sm:pb-24"> {/* Increased mobile bottom padding */}
-          {selectedConversation ? (
-            <MessageThread 
-              conversationId={selectedConversation}
-              messagesData={messagesData}
-              onCallStart={(callType, otherUser) => {
-                setActiveCall({
-                  type: callType,
-                  conversationId: selectedConversation,
-                  otherUser
-                });
-                toast({
-                  title: "Initiating call",
-                  description: `Starting ${callType} call with ${otherUser.display_name || otherUser.username}...`,
-                });
-              }}
-            />
-          ) : (
+          <MessageThread 
+            conversationId={selectedConversation}
+            messagesData={messagesData}
+            onCallStart={(callType, otherUser) => {
+              setActiveCall({
+                type: callType,
+                conversationId: selectedConversation,
+                otherUser
+              });
+              toast({
+                title: "Initiating call",
+                description: `Starting ${callType} call with ${otherUser.display_name || otherUser.username}...`,
+              });
+            }}
+          />
             <div className="p-4">
               {/* Tab Navigation */}
               <div className="flex mb-4 bg-white/60 dark:bg-gray-800/60 rounded-xl p-1">

@@ -97,39 +97,120 @@ export const useEnhancedMessages = () => {
           fetchConversationsData();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `or(sender_id.eq.${user.id},recipient_id.eq.${user.id})`
+        },
+        () => {
+          console.log('Message change detected, refetching...');
+          if (selectedConversation) {
+            fetchMessages(selectedConversation);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'group_messages'
+        },
+        (payload) => {
+          console.log('Group message change detected:', payload);
+          if (selectedConversation) {
+            fetchMessages(selectedConversation);
+          }
+        }
+      )
       .subscribe();
 
     return () => {
       console.log('Cleaning up real-time subscriptions for user:', user.id);
       supabase.removeChannel(conversationsChannel);
     };
-  }, [user?.id]); // Only depend on user.id, not the entire user object
+  }, [user?.id, selectedConversation]); // Include selectedConversation for message updates
 
   const fetchMessages = async (conversationId: string) => {
     if (!user || !conversationId) return;
 
     try {
-      const conversation = conversations.find(c => c.id === conversationId);
-      if (!conversation) return;
+      // Check if it's a group conversation
+      const groupConv = groupConversations.find(g => g.id === conversationId);
+      
+      if (groupConv) {
+        // Fetch group messages
+        const { data: messagesData, error } = await supabase
+          .from('group_messages')
+          .select(`
+            *,
+            sender_profile:profiles!group_messages_sender_id_fkey(
+              id,
+              username,
+              display_name,
+              avatar_url
+            )
+          `)
+          .eq('group_id', conversationId)
+          .order('created_at', { ascending: true });
 
-      const { data: messagesData, error } = await supabase
-        .from('messages')
-        .select('*')
-        .or(`and(sender_id.eq.${user.id},recipient_id.eq.${conversation.participant_1 === user.id ? conversation.participant_2 : conversation.participant_1}),and(sender_id.eq.${conversation.participant_1 === user.id ? conversation.participant_2 : conversation.participant_1},recipient_id.eq.${user.id})`)
-        .order('created_at', { ascending: true });
+        if (error) {
+          console.error('Error fetching group messages:', error);
+          return;
+        }
 
-      if (error) {
-        console.error('Error fetching messages:', error);
-        return;
+        const transformedMessages: Message[] = (messagesData || []).map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          sender_id: msg.sender_id,
+          recipient_id: '', // Group messages don't have recipients
+          created_at: msg.created_at,
+          read_at: null,
+          edited_at: msg.edited_at,
+          message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location') || 'text',
+          metadata: {},
+          sender_profile: msg.sender_profile
+        }));
+
+        setMessages(transformedMessages);
+      } else {
+        // Fetch direct messages
+        const conversation = conversations.find(c => c.id === conversationId);
+        if (!conversation) return;
+
+        const otherParticipant = conversation.participant_1 === user.id 
+          ? conversation.participant_2 
+          : conversation.participant_1;
+
+        const { data: messagesData, error } = await supabase
+          .from('messages')
+          .select(`
+            *,
+            sender_profile:profiles!messages_sender_id_fkey(
+              id,
+              username,
+              display_name,
+              avatar_url
+            )
+          `)
+          .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherParticipant}),and(sender_id.eq.${otherParticipant},recipient_id.eq.${user.id})`)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching messages:', error);
+          return;
+        }
+
+        const transformedMessages: Message[] = (messagesData || []).map(msg => ({
+          ...msg,
+          message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location') || 'text'
+        }));
+
+        setMessages(transformedMessages);
       }
-
-      // Transform the data to match the Message interface
-      const transformedMessages: Message[] = (messagesData || []).map(msg => ({
-        ...msg,
-        message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location') || 'text'
-      }));
-
-      setMessages(transformedMessages);
     } catch (error) {
       console.error('Error in fetchMessages:', error);
     }

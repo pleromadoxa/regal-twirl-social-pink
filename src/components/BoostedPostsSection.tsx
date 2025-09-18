@@ -59,7 +59,7 @@ const BoostedPostsSection = () => {
         .from('sponsored_posts')
         .select(`
           *,
-          posts!inner(
+          posts!sponsored_posts_post_id_fkey(
             id,
             content,
             image_urls,

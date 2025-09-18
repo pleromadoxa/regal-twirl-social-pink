@@ -1,19 +1,22 @@
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Image, Video, Mic, Paperclip, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { uploadMessageAttachment, createMessageAttachment } from '@/services/attachmentService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTypingIndicator } from './TypingIndicator';
 
 interface EnhancedMessageComposerProps {
+  conversationId: string;
   onSendMessage: (content: string, attachments?: File[]) => Promise<void>;
   disabled?: boolean;
   placeholder?: string;
 }
 
 const EnhancedMessageComposer = ({
+  conversationId,
   onSendMessage,
   disabled = false,
   placeholder = "Type a message..."
@@ -29,12 +32,22 @@ const EnhancedMessageComposer = ({
   
   const { user } = useAuth();
   const { toast } = useToast();
+  const { startTyping, stopTyping } = useTypingIndicator(conversationId);
+
+  // Typing timeout ref
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!message.trim() && attachments.length === 0) || disabled) return;
 
     try {
+      // Stop typing indicator
+      stopTyping();
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
       await onSendMessage(message.trim(), attachments);
       setMessage('');
       setAttachments([]);
@@ -47,6 +60,41 @@ const EnhancedMessageComposer = ({
       });
     }
   };
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setMessage(value);
+
+    // Handle typing indicator
+    if (value.trim()) {
+      startTyping();
+      
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Set new timeout to stop typing
+      typingTimeoutRef.current = setTimeout(() => {
+        stopTyping();
+      }, 2000); // Stop typing after 2 seconds of inactivity
+    } else {
+      stopTyping();
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    }
+  };
+
+  // Clean up typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      stopTyping();
+    };
+  }, [stopTyping]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document') => {
     const files = Array.from(e.target.files || []);

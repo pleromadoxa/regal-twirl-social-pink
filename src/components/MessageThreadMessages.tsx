@@ -1,7 +1,8 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import EnhancedMessageBubble from './EnhancedMessageBubble';
+import { TypingIndicator } from './TypingIndicator';
 
 interface Message {
   id: string;
@@ -22,12 +23,16 @@ interface Message {
 interface MessageThreadMessagesProps {
   messages: Message[];
   currentUserId?: string;
+  conversationId: string;
+  isGroup?: boolean;
   onDeleteMessage: (messageId: string) => void;
 }
 
 const MessageThreadMessages = ({ 
   messages, 
   currentUserId, 
+  conversationId,
+  isGroup = false,
   onDeleteMessage 
 }: MessageThreadMessagesProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -57,13 +62,19 @@ const MessageThreadMessages = ({
           <div ref={messagesEndRef} />
         </div>
       ) : (
-        <div className="flex items-center justify-center h-full">
+        <div className="flex-1 flex items-center justify-center h-full">
           <div className="text-center">
             <p className="text-slate-500">No messages yet</p>
             <p className="text-sm text-slate-400 mt-1">Start the conversation!</p>
           </div>
         </div>
       )}
+      
+      {/* Typing Indicator */}
+      <TypingIndicator 
+        conversationId={conversationId} 
+        isGroup={isGroup} 
+      />
     </ScrollArea>
   );
 };
