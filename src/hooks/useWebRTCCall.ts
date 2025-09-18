@@ -35,6 +35,7 @@ export const useWebRTCCall = ({
   const webrtcServiceRef = useRef<any>(null);
   const callStartTimeRef = useRef<number | null>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitializingRef = useRef<boolean>(false);
 
   const [callState, setCallState] = useState<CallState>({
     status: 'idle',
@@ -75,9 +76,16 @@ export const useWebRTCCall = ({
 
   const initializeCall = useCallback(async () => {
     if (!user) return;
+    
+    // Prevent multiple initializations
+    if (isInitializingRef.current || webrtcServiceRef.current) {
+      console.log('[useWebRTCCall] Call already initializing or active');
+      return;
+    }
 
     try {
       console.log('[useWebRTCCall] Initializing call');
+      isInitializingRef.current = true;
       updateCallState({ status: 'connecting', error: null });
 
       // Initialize WebRTC service
@@ -139,9 +147,11 @@ export const useWebRTCCall = ({
       }
 
       updateCallState({ status: 'connecting' });
+      isInitializingRef.current = false;
 
     } catch (error) {
       console.error('[useWebRTCCall] Error initializing call:', error);
+      isInitializingRef.current = false;
       
       let errorMessage = 'Failed to initialize call';
       let errorTitle = 'Call Failed';
@@ -182,8 +192,11 @@ export const useWebRTCCall = ({
     console.log('[useWebRTCCall] Ending call');
     
     stopDurationTimer();
+    isInitializingRef.current = false;
     
     if (webrtcServiceRef.current) {
+      // Properly cleanup the WebRTC service
+      webrtcServiceRef.current.cleanup();
       webrtcServiceRef.current = null;
     }
 
@@ -234,17 +247,21 @@ export const useWebRTCCall = ({
   }, [callState.isVideoEnabled, callType, updateCallState, toast]);
 
   useEffect(() => {
+    // Only setup tracking, don't auto-initialize
     if (user && conversationId && otherUserId) {
-      // Placeholder - no initialization
+      console.log('[useWebRTCCall] Dependencies ready for call initialization');
     }
 
     return () => {
+      console.log('[useWebRTCCall] Cleaning up on unmount or dependency change');
+      isInitializingRef.current = false;
       if (webrtcServiceRef.current) {
+        webrtcServiceRef.current.cleanup();
         webrtcServiceRef.current = null;
       }
       stopDurationTimer();
     };
-  }, [user, conversationId, otherUserId, initializeCall, stopDurationTimer]);
+  }, [user, conversationId, otherUserId, stopDurationTimer]);
 
   return {
     callState,
