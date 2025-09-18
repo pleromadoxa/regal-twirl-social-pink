@@ -15,7 +15,7 @@ export const useUserPresence = () => {
   const { user } = useAuth();
   const heartbeatRef = useRef<NodeJS.Timeout>();
   const channelRef = useRef<any>();
-  const isSubscribedRef = useRef(false);
+  const isConnectedRef = useRef(false);
 
   // Update user's own presence
   const updatePresence = useCallback(async (isOnline: boolean) => {
@@ -117,35 +117,42 @@ export const useUserPresence = () => {
   }, []);
 
   useEffect(() => {
-    if (!user?.id) return;
-
-    // Cleanup any existing channel before creating new one
-    if (channelRef.current) {
-      console.log('🔧 Cleaning up existing channel');
-      try {
-        supabase.removeChannel(channelRef.current);
-      } catch (error) {
-        console.error('Error removing existing channel:', error);
+    // Reset connection state when user changes
+    if (isConnectedRef.current && user?.id) {
+      console.log('🔄 User changed, resetting presence connection');
+      isConnectedRef.current = false;
+      
+      // Cleanup existing connections
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = undefined;
       }
-      channelRef.current = null;
-      isSubscribedRef.current = false;
+      
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.error('Error removing existing channel:', error);
+        }
+        channelRef.current = null;
+      }
     }
 
+    if (!user?.id || isConnectedRef.current) return;
+
     console.log('🟢 Initializing user presence for:', user.id);
+    isConnectedRef.current = true;
 
     // Set user online when they connect
     updatePresence(true);
 
     // Set up heartbeat to keep user online (every 2 minutes)
-    if (heartbeatRef.current) {
-      clearInterval(heartbeatRef.current);
-    }
     heartbeatRef.current = setInterval(() => {
       updatePresence(true);
     }, 2 * 60 * 1000);
 
-    // Set up real-time subscription for presence updates
-    const channelName = `user_presence_${user.id}_${Date.now()}`;
+    // Create a unique channel name to avoid conflicts
+    const channelName = `presence_${user.id}_${Math.random().toString(36).substr(2, 9)}`;
     console.log('📡 Creating presence channel:', channelName);
     
     channelRef.current = supabase
@@ -175,18 +182,13 @@ export const useUserPresence = () => {
             }));
           }
         }
-      );
-
-    // Subscribe to the channel only once
-    channelRef.current.subscribe((status: string) => {
-      console.log('📡 Presence channel subscription status:', status);
-      if (status === 'SUBSCRIBED') {
-        isSubscribedRef.current = true;
-      } else if (status === 'CHANNEL_ERROR') {
-        console.error('📡 Channel subscription error');
-        isSubscribedRef.current = false;
-      }
-    });
+      )
+      .subscribe((status: string) => {
+        console.log('📡 Presence channel subscription status:', status);
+        if (status === 'CHANNEL_ERROR') {
+          console.error('📡 Channel subscription error');
+        }
+      });
 
     // Handle page visibility changes
     const handleVisibilityChange = () => {
@@ -218,14 +220,13 @@ export const useUserPresence = () => {
       }
       
       // Cleanup channel
-      if (channelRef.current && isSubscribedRef.current) {
+      if (channelRef.current) {
         try {
           supabase.removeChannel(channelRef.current);
         } catch (error) {
           console.error('Error removing presence channel:', error);
         }
         channelRef.current = null;
-        isSubscribedRef.current = false;
       }
 
       // Remove event listeners
@@ -234,8 +235,11 @@ export const useUserPresence = () => {
       
       // Set user offline when component unmounts
       updatePresence(false);
+      
+      // Reset connection state
+      isConnectedRef.current = false;
     };
-  }, [user?.id]);
+  }, [user?.id, updatePresence]);
 
   return {
     fetchPresenceData,
