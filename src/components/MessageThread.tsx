@@ -197,6 +197,8 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
           <MessageThreadMessages
             messages={localMessages}
             currentUserId={user?.id}
+            conversationId={conversationId || ''}
+            isGroup={isGroupConversation}
             onDeleteMessage={handleDeleteMessage}
           />
 

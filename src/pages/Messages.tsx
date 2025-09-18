@@ -654,22 +654,24 @@ const Messages = () => {
         </div>
 
         {/* Content */}
-        <div className="pt-16 min-h-screen bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl pb-32 sm:pb-24"> {/* Increased mobile bottom padding */}
-          <MessageThread 
-            conversationId={selectedConversation}
-            messagesData={messagesData}
-            onCallStart={(callType, otherUser) => {
-              setActiveCall({
-                type: callType,
-                conversationId: selectedConversation,
-                otherUser
-              });
-              toast({
-                title: "Initiating call",
-                description: `Starting ${callType} call with ${otherUser.display_name || otherUser.username}...`,
-              });
-            }}
-          />
+        <div className="pt-16 min-h-screen bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl pb-32 sm:pb-24">
+          {selectedConversation ? (
+            <MessageThread 
+              conversationId={selectedConversation}
+              messagesData={messagesData}
+              onCallStart={(callType, otherUser) => {
+                setActiveCall({
+                  type: callType,
+                  conversationId: selectedConversation,
+                  otherUser
+                });
+                toast({
+                  title: "Initiating call",
+                  description: `Starting ${callType} call with ${otherUser.display_name || otherUser.username}...`,
+                });
+              }}
+            />
+          ) : (
             <div className="p-4">
               {/* Tab Navigation */}
               <div className="flex mb-4 bg-white/60 dark:bg-gray-800/60 rounded-xl p-1">
@@ -703,7 +705,7 @@ const Messages = () => {
               </div>
 
               {/* Conversations List */}
-              <div className="space-y-2 pb-24"> {/* Added bottom padding */}
+              <div className="space-y-2 pb-24">
                 {loading || (activeTab === 'calls' && callHistoryLoading) ? (
                   <div className="p-6 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
