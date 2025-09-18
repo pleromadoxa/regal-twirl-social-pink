@@ -23,6 +23,7 @@ import { GroupOptionsMenu } from '@/components/GroupOptionsMenu';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import GroupCreationDialog from '@/components/GroupCreationDialog';
 import { JoinGroupDialog } from '@/components/JoinGroupDialog';
+import PresenceIndicator from '@/components/PresenceIndicator';
 
 const Messages = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -419,7 +420,7 @@ const Messages = () => {
                   {otherUser?.display_name?.[0] || otherUser?.username?.[0] || 'U'}
                 </AvatarFallback>
               </Avatar>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
+              <PresenceIndicator userId={otherUser?.id} className="absolute -bottom-1 -right-1" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-start mb-1">

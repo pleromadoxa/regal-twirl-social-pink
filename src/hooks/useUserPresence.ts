@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -19,7 +19,7 @@ export const useUserPresence = () => {
   const isInitializedRef = useRef(false);
 
   // Update user's own presence
-  const updatePresence = async (isOnline: boolean) => {
+  const updatePresence = useCallback(async (isOnline: boolean) => {
     if (!user) return;
 
     try {
@@ -30,14 +30,26 @@ export const useUserPresence = () => {
 
       if (error) {
         console.error('Error updating presence:', error);
+        return;
       }
+
+      // Update local state immediately
+      setPresenceData(prev => ({
+        ...prev,
+        [user.id]: {
+          user_id: user.id,
+          is_online: isOnline,
+          last_seen: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      }));
     } catch (error) {
       console.error('Error in updatePresence:', error);
     }
-  };
+  }, [user]);
 
   // Fetch presence data for multiple users
-  const fetchPresenceData = async (userIds: string[]) => {
+  const fetchPresenceData = useCallback(async (userIds: string[]) => {
     if (userIds.length === 0) return;
 
     try {
@@ -52,7 +64,15 @@ export const useUserPresence = () => {
       }
 
       const presenceMap = data.reduce((acc, presence) => {
-        acc[presence.user_id] = presence;
+        // Consider users online if they were last seen within 5 minutes
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const lastSeen = new Date(presence.last_seen);
+        const isRecentlyOnline = lastSeen > fiveMinutesAgo;
+        
+        acc[presence.user_id] = {
+          ...presence,
+          is_online: presence.is_online && isRecentlyOnline
+        };
         return acc;
       }, {} as Record<string, UserPresence>);
 
@@ -60,21 +80,28 @@ export const useUserPresence = () => {
     } catch (error) {
       console.error('Error in fetchPresenceData:', error);
     }
-  };
+  }, []);
 
   // Get user's online status
-  const getUserStatus = (userId: string) => {
+  const getUserStatus = useCallback((userId: string) => {
+    if (!userId) return { isOnline: false, lastSeen: null };
+    
     const presence = presenceData[userId];
     if (!presence) return { isOnline: false, lastSeen: null };
 
+    // Double-check online status based on last_seen time
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const lastSeen = new Date(presence.last_seen);
+    const isRecentlyOnline = lastSeen > fiveMinutesAgo;
+
     return {
-      isOnline: presence.is_online,
+      isOnline: presence.is_online && isRecentlyOnline,
       lastSeen: presence.last_seen
     };
-  };
+  }, [presenceData]);
 
   // Format last seen time
-  const formatLastSeen = (lastSeen: string) => {
+  const formatLastSeen = useCallback((lastSeen: string) => {
     const now = new Date();
     const lastSeenDate = new Date(lastSeen);
     const diffInMs = now.getTime() - lastSeenDate.getTime();
@@ -88,25 +115,25 @@ export const useUserPresence = () => {
     if (diffInDays < 7) return `${diffInDays}d ago`;
     
     return lastSeenDate.toLocaleDateString();
-  };
+  }, []);
 
   useEffect(() => {
     if (!user?.id || isInitializedRef.current) return;
 
-    console.log('Initializing user presence for:', user.id);
+    console.log('🟢 Initializing user presence for:', user.id);
     isInitializedRef.current = true;
 
     // Set user online when they connect
     updatePresence(true);
 
-    // Set up heartbeat to keep user online
+    // Set up heartbeat to keep user online (every 2 minutes)
     heartbeatRef.current = setInterval(() => {
       updatePresence(true);
-    }, 2 * 60 * 1000); // Update every 2 minutes
+    }, 2 * 60 * 1000);
 
-    // Set up real-time subscription for presence updates with unique channel name
-    const channelName = `user_presence_changes_${user.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    console.log('Creating presence channel:', channelName);
+    // Set up real-time subscription for presence updates
+    const channelName = `user_presence_${user.id}`;
+    console.log('📡 Creating presence channel:', channelName);
     
     channelRef.current = supabase
       .channel(channelName)
@@ -118,12 +145,20 @@ export const useUserPresence = () => {
           table: 'user_presence'
         },
         (payload) => {
-          console.log('Presence change:', payload);
+          console.log('📡 Presence change received:', payload);
           const presence = payload.new as UserPresence;
           if (presence) {
+            // Consider users online if they were last seen within 5 minutes
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            const lastSeen = new Date(presence.last_seen);
+            const isRecentlyOnline = lastSeen > fiveMinutesAgo;
+            
             setPresenceData(prev => ({
               ...prev,
-              [presence.user_id]: presence
+              [presence.user_id]: {
+                ...presence,
+                is_online: presence.is_online && isRecentlyOnline
+              }
             }));
           }
         }
@@ -131,7 +166,7 @@ export const useUserPresence = () => {
 
     // Subscribe to the channel
     channelRef.current.subscribe((status: string) => {
-      console.log('Presence channel subscription status:', status);
+      console.log('📡 Presence channel subscription status:', status);
       if (status === 'SUBSCRIBED') {
         isSubscribedRef.current = true;
       }
@@ -140,14 +175,17 @@ export const useUserPresence = () => {
     // Handle page visibility changes
     const handleVisibilityChange = () => {
       if (document.hidden) {
+        console.log('👻 User went offline (tab hidden)');
         updatePresence(false);
       } else {
+        console.log('🟢 User came back online (tab visible)');
         updatePresence(true);
       }
     };
 
     // Handle beforeunload to set user offline
     const handleBeforeUnload = () => {
+      console.log('👋 User leaving, setting offline');
       updatePresence(false);
     };
 
@@ -155,7 +193,7 @@ export const useUserPresence = () => {
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      console.log('Cleaning up user presence');
+      console.log('🔧 Cleaning up user presence');
       
       // Cleanup heartbeat
       if (heartbeatRef.current) {
@@ -184,12 +222,13 @@ export const useUserPresence = () => {
       // Reset initialization flag
       isInitializedRef.current = false;
     };
-  }, [user?.id]);
+  }, [user?.id, updatePresence]);
 
   return {
     fetchPresenceData,
     getUserStatus,
     formatLastSeen,
-    updatePresence
+    updatePresence,
+    presenceData
   };
 };

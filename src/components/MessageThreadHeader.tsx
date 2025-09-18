@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Phone, Video } from 'lucide-react';
 import { GroupOptionsMenu } from './GroupOptionsMenu';
 import { useAuth } from '@/contexts/AuthContext';
+import PresenceIndicator from './PresenceIndicator';
 
 interface MessageThreadHeaderProps {
   otherParticipant?: {
@@ -67,19 +68,25 @@ const MessageThreadHeader = ({
             </>
           ) : (
             <>
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={otherParticipant?.avatar_url || "/placeholder.svg"} />
-                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                  {(otherParticipant?.display_name || otherParticipant?.username || 'U')[0].toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={otherParticipant?.avatar_url || "/placeholder.svg"} />
+                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                    {(otherParticipant?.display_name || otherParticipant?.username || 'U')[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <PresenceIndicator userId={otherParticipant?.id} className="absolute -bottom-1 -right-1" />
+              </div>
               <div>
                 <h2 className="font-semibold text-slate-900 dark:text-slate-100">
                   {otherParticipant?.display_name || otherParticipant?.username}
                 </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  @{otherParticipant?.username}
-                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    @{otherParticipant?.username}
+                  </span>
+                  <PresenceIndicator userId={otherParticipant?.id} showText />
+                </div>
               </div>
             </>
           )}
