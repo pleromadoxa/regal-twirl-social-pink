@@ -31,8 +31,14 @@ const MessageSearch = ({ onStartConversation, messagesData }: MessageSearchProps
   
   // Use provided messagesData or fallback to hook (for standalone usage)
   const fallbackData = useEnhancedMessages();
-  const { startDirectConversation } = messagesData || fallbackData;
+  const messagesDataToUse = messagesData || fallbackData;
+  const { startDirectConversation } = messagesDataToUse;
   const { toast } = useToast();
+
+  // Additional safety check
+  if (!startDirectConversation) {
+    console.error('startDirectConversation is not available');
+  }
 
   const searchUsers = async (query: string) => {
     if (!query.trim()) {
@@ -73,6 +79,15 @@ const MessageSearch = ({ onStartConversation, messagesData }: MessageSearchProps
   }, [searchTerm]);
 
   const handleStartConversation = async (userId: string) => {
+    if (!startDirectConversation) {
+      toast({
+        title: "Error",
+        description: "Conversation service not available",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       await startDirectConversation(userId);
       onStartConversation(userId);

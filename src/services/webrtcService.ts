@@ -50,7 +50,25 @@ export class WebRTCService {
   }
 
   async initializeMedia(constraints: MediaConstraints): Promise<MediaStream> {
-    return Promise.reject(new Error('WebRTC functionality is disabled'));
+    console.log('[WebRTC] Initializing media with constraints:', constraints);
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.localStream = stream;
+      
+      if (this.onLocalStreamCallback) {
+        this.onLocalStreamCallback(stream);
+      }
+      
+      console.log('[WebRTC] Media initialized successfully');
+      return stream;
+    } catch (error) {
+      console.error('[WebRTC] Error initializing media:', error);
+      if (this.onErrorCallback) {
+        this.onErrorCallback(error as Error);
+      }
+      throw error;
+    }
   }
 
   initializePeerConnection(): RTCPeerConnection {
