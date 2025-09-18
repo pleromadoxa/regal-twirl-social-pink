@@ -287,6 +287,29 @@ const Messages = () => {
               onClick={(e) => {
                 e.stopPropagation();
                 // Start audio call with this user
+                if (otherUser) {
+                  const conversation = conversations.find(c => 
+                    c.participant_1 === otherUser.id || c.participant_2 === otherUser.id
+                  );
+                  if (conversation) {
+                    setActiveCall({
+                      type: 'audio',
+                      conversationId: conversation.id,
+                      otherUser
+                    });
+                    setSelectedConversation(conversation.id);
+                    toast({
+                      title: "Initiating call",
+                      description: `Starting audio call with ${otherUser.display_name || otherUser.username}...`,
+                    });
+                  } else {
+                    toast({
+                      title: "Error",
+                      description: "Could not find conversation to call this user",
+                      variant: "destructive"
+                    });
+                  }
+                }
               }}
             >
               <Phone className="w-4 h-4" />
@@ -298,6 +321,29 @@ const Messages = () => {
               onClick={(e) => {
                 e.stopPropagation();
                 // Start video call with this user
+                if (otherUser) {
+                  const conversation = conversations.find(c => 
+                    c.participant_1 === otherUser.id || c.participant_2 === otherUser.id
+                  );
+                  if (conversation) {
+                    setActiveCall({
+                      type: 'video',
+                      conversationId: conversation.id,
+                      otherUser
+                    });
+                    setSelectedConversation(conversation.id);
+                    toast({
+                      title: "Initiating call",
+                      description: `Starting video call with ${otherUser.display_name || otherUser.username}...`,
+                    });
+                  } else {
+                    toast({
+                      title: "Error",
+                      description: "Could not find conversation to call this user",
+                      variant: "destructive"
+                    });
+                  }
+                }
               }}
             >
               <Video className="w-4 h-4" />
@@ -613,6 +659,17 @@ const Messages = () => {
             <MessageThread 
               conversationId={selectedConversation}
               messagesData={messagesData}
+              onCallStart={(callType, otherUser) => {
+                setActiveCall({
+                  type: callType,
+                  conversationId: selectedConversation,
+                  otherUser
+                });
+                toast({
+                  title: "Initiating call",
+                  description: `Starting ${callType} call with ${otherUser.display_name || otherUser.username}...`,
+                });
+              }}
             />
           ) : (
             <div className="p-4">
@@ -692,6 +749,29 @@ const Messages = () => {
         onClose={() => setShowJoinGroupDialog(false)}
         onGroupJoined={handleGroupJoined}
       />
+
+      {/* Active Call Components */}
+      {activeCall && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+          {activeCall.type === 'audio' ? (
+            <AudioCall
+              conversationId={activeCall.conversationId}
+              otherUserId={activeCall.otherUser.id}
+              otherUserName={activeCall.otherUser.display_name || activeCall.otherUser.username || 'Unknown User'}
+              otherUserAvatar={activeCall.otherUser.avatar_url}
+              onCallEnd={handleCallEnd}
+            />
+          ) : (
+            <VideoCall
+              conversationId={activeCall.conversationId}
+              otherUserId={activeCall.otherUser.id}
+              otherUserName={activeCall.otherUser.display_name || activeCall.otherUser.username || 'Unknown User'}
+              otherUserAvatar={activeCall.otherUser.avatar_url}
+              onCallEnd={handleCallEnd}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 };

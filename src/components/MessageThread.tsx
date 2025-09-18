@@ -12,9 +12,10 @@ import MessageThreadCallManager from './MessageThreadCallManager';
 interface MessageThreadProps {
   conversationId: string;
   messagesData: ReturnType<typeof useEnhancedMessages>;
+  onCallStart?: (callType: 'audio' | 'video', otherUser: any) => void;
 }
 
-export const MessageThread = ({ conversationId, messagesData }: MessageThreadProps) => {
+export const MessageThread = ({ conversationId, messagesData, onCallStart }: MessageThreadProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -170,7 +171,11 @@ export const MessageThread = ({ conversationId, messagesData }: MessageThreadPro
       conversationId={conversationId}
       currentUserId={user?.id}
       otherParticipant={otherParticipant}
-      onCallStart={() => {}}
+      onCallStart={(callType) => {
+        if (onCallStart && otherParticipant) {
+          onCallStart(callType, otherParticipant);
+        }
+      }}
     >
       {(initiateCall) => (
         <div className="flex flex-col h-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-l border-r border-purple-200 dark:border-purple-800">
