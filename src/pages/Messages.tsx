@@ -7,13 +7,15 @@ import MessageThread from '@/components/MessageThread';
 import MessageSearch from '@/components/MessageSearch';
 import AudioCall from '@/components/AudioCall';
 import VideoCall from '@/components/VideoCall';
+import CallPopup from '@/components/CallPopup';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Bell, Archive, Search, User, Plus, Hash, Star, ArrowLeft } from 'lucide-react';
+import { MessageCircle, Bell, Archive, Search, User, Plus, Hash, Star, ArrowLeft, Phone, Video, PhoneCall, Clock, PhoneIncoming, PhoneOutgoing, PhoneMissed } from 'lucide-react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
+import { useCallHistory } from '@/hooks/useCallHistory';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
@@ -30,10 +32,16 @@ const Messages = () => {
     conversationId: string;
     otherUser: any;
   } | null>(null);
+  const [incomingCall, setIncomingCall] = useState<{
+    type: 'audio' | 'video';
+    conversationId: string;
+    otherUser: any;
+  } | null>(null);
   
   const { user } = useAuth();
   const { toast } = useToast();
   const messagesData = useEnhancedMessages();
+  const { callHistory, loading: callHistoryLoading } = useCallHistory();
   const {
     conversations,
     groupConversations,
@@ -126,6 +134,8 @@ const Messages = () => {
     switch (activeTab) {
       case 'all':
         return true;
+      case 'calls':
+        return false; // Don't show regular conversations in calls tab
       case 'groups':
         return false; // Direct messages don't belong in groups tab
       case 'unread':
@@ -157,6 +167,8 @@ const Messages = () => {
     switch (activeTab) {
       case 'all':
         return true;
+      case 'calls':
+        return false; // Don't show regular conversations in calls tab
       case 'groups':
         return true; // Groups belong in groups tab
       case 'unread':
@@ -175,15 +187,119 @@ const Messages = () => {
     }
   });
 
-  // Combine and sort all conversations
-  const allFilteredConversations = [
-    ...filteredConversations.map(conv => ({ ...conv, isGroup: false })),
-    ...filteredGroupConversations.map(group => ({ ...group, isGroup: true }))
-  ].sort((a, b) => {
-    const aTime = new Date(a.last_message_at || a.created_at).getTime();
-    const bTime = new Date(b.last_message_at || b.created_at).getTime();
-    return bTime - aTime;
-  });
+  // Filter by active tab
+  let displayData: any[] = [];
+  
+  if (activeTab === 'calls') {
+    displayData = callHistory.filter(call => {
+      if (searchTerm) {
+        const otherUser = call.caller_id === user?.id ? call.recipient : call.caller;
+        const searchableText = `${otherUser?.display_name || ''} ${otherUser?.username || ''}`.toLowerCase();
+        if (!searchableText.includes(searchTerm.toLowerCase())) {
+          return false;
+        }
+      }
+      return true;
+    });
+  } else {
+    // Combine and sort conversations and groups
+    displayData = [
+      ...filteredConversations.map(conv => ({ ...conv, isGroup: false })),
+      ...filteredGroupConversations.map(group => ({ ...group, isGroup: true }))
+    ].sort((a, b) => {
+      const aTime = new Date(a.last_message_at || a.created_at).getTime();
+      const bTime = new Date(b.last_message_at || b.created_at).getTime();
+      return bTime - aTime;
+    });
+  }
+
+  const renderCallHistoryItem = (call: any) => {
+    const isOutgoing = call.caller_id === user?.id;
+    const otherUser = isOutgoing ? call.recipient : call.caller;
+    
+    const getCallIcon = () => {
+      if (call.call_status === 'missed') {
+        return <PhoneMissed className="w-4 h-4 text-red-500" />;
+      } else if (isOutgoing) {
+        return <PhoneOutgoing className="w-4 h-4 text-green-500" />;
+      } else {
+        return <PhoneIncoming className="w-4 h-4 text-blue-500" />;
+      }
+    };
+
+    const formatDuration = (seconds: number | null) => {
+      if (!seconds) return 'No answer';
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    return (
+      <div
+        key={call.id}
+        className="p-4 cursor-pointer rounded-xl transition-all duration-200 bg-white/60 dark:bg-gray-800/60 hover:bg-purple-50/80 dark:hover:bg-purple-900/20"
+      >
+        <div className="flex items-center gap-3">
+          <Avatar className="w-12 h-12">
+            <AvatarImage src={otherUser?.avatar_url} />
+            <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold">
+              {otherUser?.display_name?.[0] || otherUser?.username?.[0] || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-start mb-1">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                {otherUser?.display_name || otherUser?.username || 'Unknown User'}
+              </h3>
+              <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                {new Date(call.started_at).toLocaleDateString(undefined, { 
+                  month: 'short', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              {getCallIcon()}
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {call.call_type === 'video' ? 'Video call' : 'Voice call'}
+              </span>
+              {call.call_status === 'completed' && (
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  • {formatDuration(call.duration_seconds)}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex space-x-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full p-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Start audio call with this user
+              }}
+            >
+              <Phone className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full p-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Start video call with this user
+              }}
+            >
+              <Video className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderConversationItem = (conversation: any) => {
     if (conversation.isGroup) {
@@ -302,6 +418,26 @@ const Messages = () => {
           )}
         </>
       )}
+
+      {/* Incoming Call Popup */}
+      {incomingCall && (
+        <CallPopup
+          isIncoming={true}
+          callType={incomingCall.type}
+          otherUser={incomingCall.otherUser}
+          onAccept={() => {
+            setActiveCall(incomingCall);
+            setIncomingCall(null);
+          }}
+          onDecline={() => {
+            setIncomingCall(null);
+            toast({
+              title: "Call declined",
+              description: "You declined the incoming call.",
+            });
+          }}
+        />
+      )}
       
       <WebRTCCallManager />
       
@@ -357,7 +493,7 @@ const Messages = () => {
             
             {/* Tab Navigation */}
             <div className="flex border-b border-purple-200/50 dark:border-purple-800/50 bg-white/40 dark:bg-gray-800/40">
-              {['all', 'groups', 'unread'].map((tab) => (
+              {['all', 'calls', 'groups', 'unread'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => handleTabChange(tab)}
@@ -391,22 +527,33 @@ const Messages = () => {
 
             {/* Conversations List */}
             <div className="flex-1 overflow-y-auto">
-              {loading ? (
+              {loading || (activeTab === 'calls' && callHistoryLoading) ? (
                 <div className="p-6 text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
-                  <p className="text-gray-500 text-sm">Loading conversations...</p>
+                  <p className="text-gray-500 text-sm">Loading {activeTab === 'calls' ? 'call history' : 'conversations'}...</p>
                 </div>
-              ) : allFilteredConversations.length === 0 ? (
+              ) : displayData.length === 0 ? (
                 <div className="p-8 text-center">
                   <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MessageCircle className="w-8 h-8 text-purple-400" />
+                    {activeTab === 'calls' ? (
+                      <PhoneCall className="w-8 h-8 text-purple-400" />
+                    ) : (
+                      <MessageCircle className="w-8 h-8 text-purple-400" />
+                    )}
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No conversations yet</h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Start a conversation to connect with others</p>
+                  <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    {activeTab === 'calls' ? 'No call history' : 'No conversations yet'}
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    {activeTab === 'calls' ? 'Your call history will appear here' : 'Start a conversation to connect with others'}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2 p-2">
-                  {allFilteredConversations.map(renderConversationItem)}
+                  {activeTab === 'calls'
+                    ? displayData.map(renderCallHistoryItem)
+                    : displayData.map(renderConversationItem)
+                  }
                 </div>
               )}
             </div>
@@ -455,7 +602,7 @@ const Messages = () => {
             <div className="p-4">
               {/* Tab Navigation */}
               <div className="flex mb-4 bg-white/60 dark:bg-gray-800/60 rounded-xl p-1">
-                {['all', 'groups', 'unread'].map((tab) => (
+                {['all', 'calls', 'groups', 'unread'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => handleTabChange(tab)}
@@ -486,21 +633,31 @@ const Messages = () => {
 
               {/* Conversations List */}
               <div className="space-y-2">
-                {loading ? (
+                {loading || (activeTab === 'calls' && callHistoryLoading) ? (
                   <div className="p-6 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
-                    <p className="text-gray-500 text-sm">Loading conversations...</p>
+                    <p className="text-gray-500 text-sm">Loading {activeTab === 'calls' ? 'call history' : 'conversations'}...</p>
                   </div>
-                ) : allFilteredConversations.length === 0 ? (
+                ) : displayData.length === 0 ? (
                   <div className="p-8 text-center">
                     <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <MessageCircle className="w-8 h-8 text-purple-400" />
+                      {activeTab === 'calls' ? (
+                        <PhoneCall className="w-8 h-8 text-purple-400" />
+                      ) : (
+                        <MessageCircle className="w-8 h-8 text-purple-400" />
+                      )}
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No conversations yet</h3>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Start a conversation to connect with others</p>
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      {activeTab === 'calls' ? 'No call history' : 'No conversations yet'}
+                    </h3>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                      {activeTab === 'calls' ? 'Your call history will appear here' : 'Start a conversation to connect with others'}
+                    </p>
                   </div>
                 ) : (
-                  allFilteredConversations.map(renderConversationItem)
+                  activeTab === 'calls'
+                    ? displayData.map(renderCallHistoryItem)
+                    : displayData.map(renderConversationItem)
                 )}
               </div>
             </div>
