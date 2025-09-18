@@ -28,33 +28,6 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
     { topic: "#ChristianFamily", tweets: "14.2K", growth: "+16%", category: "Family" },
   ];
 
-  const whoToFollow = [
-    { 
-      name: "Pastor Michael", 
-      handle: "@PastorMichael", 
-      followers: "25.8K",
-      isVerified: true,
-      description: "Senior Pastor & Author",
-      userId: "pastor-michael-id"
-    },
-    { 
-      name: "Grace Fellowship", 
-      handle: "@GraceFellowship", 
-      followers: "18.2K",
-      isVerified: true,
-      description: "Church community",
-      userId: "grace-fellowship-id"
-    },
-    { 
-      name: "Christian Devotions", 
-      handle: "@ChristianDevotions", 
-      followers: "42.1K",
-      isVerified: false,
-      description: "Daily inspiration",
-      userId: "christian-devotions-id"
-    },
-  ];
-
   const handleTrendClick = (trend: string) => {
     console.log('Trending hashtag clicked:', trend);
     if (onHashtagClick) {
@@ -137,62 +110,6 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
             onClick={() => navigate('/explore')}
           >
             Show more trends
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Who to Follow */}
-      <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg flex items-center text-slate-900 dark:text-slate-100">
-            <Users className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
-            Who to follow
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {whoToFollow.map((user, index) => (
-            <div key={index} className="flex items-start justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all duration-200">
-              <div 
-                className="flex items-center space-x-3 flex-1 cursor-pointer"
-                onClick={() => handleUserClick(user.userId)}
-              >
-                <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                    {user.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  {user.isVerified && (
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-1">
-                    <p className="font-semibold text-sm truncate text-slate-900 dark:text-slate-100">{user.name}</p>
-                  </div>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">{user.handle}</p>
-                  <p className="text-slate-500 dark:text-slate-500 text-xs">{user.description}</p>
-                  <p className="text-slate-400 dark:text-slate-600 text-xs">{user.followers} followers</p>
-                </div>
-              </div>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="border-blue-300 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                onClick={(e) => handleFollowClick(user.userId, e)}
-                disabled={followLoading}
-              >
-                {followLoading ? 'Following...' : 'Follow'}
-              </Button>
-            </div>
-          ))}
-          
-          <Button 
-            variant="ghost" 
-            className="w-full text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-            onClick={() => navigate('/explore')}
-          >
-            Show more suggestions
           </Button>
         </CardContent>
       </Card>
