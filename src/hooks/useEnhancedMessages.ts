@@ -50,6 +50,59 @@ export const useEnhancedMessages = () => {
     }
   };
 
+  // Set up real-time subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('Setting up real-time subscriptions for user:', user.id);
+    
+    const conversationsChannel = supabase
+      .channel('conversations-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversations'
+        },
+        () => {
+          console.log('Conversation change detected, refetching...');
+          fetchConversationsData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'group_conversations'
+        },
+        () => {
+          console.log('Group conversation change detected, refetching...');
+          fetchConversationsData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'group_conversation_members',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Group membership change detected, refetching...');
+          fetchConversationsData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up real-time subscriptions');
+      supabase.removeChannel(conversationsChannel);
+    };
+  }, [user]);
+
   const fetchMessages = async (conversationId: string) => {
     if (!user || !conversationId) return;
 
