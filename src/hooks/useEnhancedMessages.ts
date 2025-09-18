@@ -52,12 +52,14 @@ export const useEnhancedMessages = () => {
 
   // Set up real-time subscriptions
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
     console.log('Setting up real-time subscriptions for user:', user.id);
     
+    // Use unique channel name with user ID to prevent conflicts
+    const channelName = `conversations-changes-${user.id}`;
     const conversationsChannel = supabase
-      .channel('conversations-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -98,10 +100,10 @@ export const useEnhancedMessages = () => {
       .subscribe();
 
     return () => {
-      console.log('Cleaning up real-time subscriptions');
+      console.log('Cleaning up real-time subscriptions for user:', user.id);
       supabase.removeChannel(conversationsChannel);
     };
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id, not the entire user object
 
   const fetchMessages = async (conversationId: string) => {
     if (!user || !conversationId) return;
