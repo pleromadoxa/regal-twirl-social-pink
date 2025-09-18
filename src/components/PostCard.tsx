@@ -19,6 +19,7 @@ import VerificationBadge from './VerificationBadge';
 import PostComments from './PostComments';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
+import ThreadContent from './ThreadContent';
 
 interface PostCardProps {
   post: {
@@ -217,9 +218,9 @@ const PostCard = ({
             </div>
             
             <div className="mt-2">
-              <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
-                {post.content}
-              </p>
+              <div className="text-gray-900 dark:text-gray-100">
+                <ThreadContent content={post.content} />
+              </div>
               
               {post.image_urls && post.image_urls.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 gap-2 max-w-lg">
