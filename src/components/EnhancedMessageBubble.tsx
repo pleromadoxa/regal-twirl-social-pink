@@ -4,7 +4,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { ChatBubble, ChatBubbleAvatar, ChatBubbleMessage, ChatBubbleActionWrapper, ChatBubbleAction } from '@/components/ui/chat-bubble';
 import { VoiceBubble } from '@/components/ui/voice-bubble';
 import { MoreHorizontal, Edit, Trash2, Download, Play, Image, Video, FileText } from 'lucide-react';
-import MessageContextMenu from './MessageContextMenu';
 import MessageEditForm from './MessageEditForm';
 import MessageContent from './MessageContent';
 import { useToast } from '@/hooks/use-toast';

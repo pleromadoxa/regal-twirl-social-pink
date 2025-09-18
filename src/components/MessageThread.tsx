@@ -11,22 +11,26 @@ import MessageThreadCallManager from './MessageThreadCallManager';
 
 interface MessageThreadProps {
   conversationId: string;
-  messagesData?: ReturnType<typeof useEnhancedMessages>;
+  messagesData: ReturnType<typeof useEnhancedMessages>;
 }
 
-const MessageThread = ({ conversationId, messagesData }: MessageThreadProps) => {
+export const MessageThread = ({ conversationId, messagesData }: MessageThreadProps) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   
-  // Use provided messagesData or fallback to hook (for standalone usage)
-  const fallbackData = useEnhancedMessages();
+  // messagesData is required - no fallback to prevent multiple subscriptions
+  if (!messagesData) {
+    console.error('MessageThread: messagesData prop is required');
+    return null;
+  }
+  
   const { 
     messages, 
     sendMessage, 
     markAsRead, 
     conversations, 
     setSelectedConversation 
-  } = messagesData || fallbackData;
-  const { toast } = useToast();
+  } = messagesData;
   const [localMessages, setLocalMessages] = useState(messages);
 
   // Get conversation details

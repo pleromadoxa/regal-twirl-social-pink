@@ -24,17 +24,21 @@ interface ConversationCharacter extends Character {
 }
 
 interface ActiveChatBarProps {
-  messagesData?: ReturnType<typeof useEnhancedMessages>;
+  messagesData: ReturnType<typeof useEnhancedMessages>;
 }
 
-const ActiveChatBar = ({ messagesData }: ActiveChatBarProps = {}) => {
+export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { getUserStatus, formatLastSeen } = useUserPresence();
   
-  // Use provided messagesData or fallback to hook (for standalone usage)
-  const fallbackData = useEnhancedMessages();
+  // messagesData is required - no fallback to prevent multiple subscriptions
+  if (!messagesData) {
+    console.error('ActiveChatBar: messagesData prop is required');
+    return null;
+  }
+  
   const { 
     conversations, 
     startDirectConversation, 
@@ -42,7 +46,7 @@ const ActiveChatBar = ({ messagesData }: ActiveChatBarProps = {}) => {
     setSelectedConversation,
     selectedConversation,
     messages 
-  } = messagesData || fallbackData;
+  } = messagesData;
   
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [characters, setCharacters] = useState<ConversationCharacter[]>([

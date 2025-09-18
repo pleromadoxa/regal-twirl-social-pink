@@ -13,16 +13,20 @@ interface MessageForwardDialogProps {
   messageContent: string;
   isOpen: boolean;
   onClose: () => void;
-  messagesData?: ReturnType<typeof useEnhancedMessages>;
+  messagesData: ReturnType<typeof useEnhancedMessages>;
 }
 
-const MessageForwardDialog = ({ messageContent, isOpen, onClose, messagesData }: MessageForwardDialogProps) => {
+export const MessageForwardDialog = ({ messageContent, isOpen, onClose, messagesData }: MessageForwardDialogProps) => {
   const [selectedConversations, setSelectedConversations] = useState<string[]>([]);
   const [isForwarding, setIsForwarding] = useState(false);
   
-  // Use provided messagesData or fallback to hook (for standalone usage)
-  const fallbackData = useEnhancedMessages();
-  const { conversations, sendMessage, setSelectedConversation } = messagesData || fallbackData;
+  // messagesData is required - no fallback to prevent multiple subscriptions
+  if (!messagesData) {
+    console.error('MessageForwardDialog: messagesData prop is required');
+    return null;
+  }
+  
+  const { conversations, sendMessage, setSelectedConversation } = messagesData;
   const { user } = useAuth();
   const { toast } = useToast();
 

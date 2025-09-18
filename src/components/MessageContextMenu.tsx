@@ -12,6 +12,7 @@ interface MessageContextMenuProps {
   isOwnMessage: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  messagesData: any; // Add messagesData prop
 }
 
 const MessageContextMenu = ({
@@ -19,7 +20,8 @@ const MessageContextMenu = ({
   content,
   isOwnMessage,
   onEdit,
-  onDelete
+  onDelete,
+  messagesData
 }: MessageContextMenuProps) => {
   const [showForwardDialog, setShowForwardDialog] = useState(false);
   const { toast } = useToast();
@@ -81,6 +83,7 @@ const MessageContextMenu = ({
         messageContent={content}
         isOpen={showForwardDialog}
         onClose={() => setShowForwardDialog(false)}
+        messagesData={messagesData}
       />
     </>
   );

@@ -19,21 +19,24 @@ interface UserSearchResult {
 
 interface MessageSearchProps {
   onStartConversation: (userId: string) => void;
-  messagesData?: ReturnType<typeof useEnhancedMessages>;
+  messagesData: ReturnType<typeof useEnhancedMessages>;
 }
 
-const MessageSearch = ({ onStartConversation, messagesData }: MessageSearchProps) => {
+export const MessageSearch = ({ onStartConversation, messagesData }: MessageSearchProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { user } = useAuth();
-  
-  // Use provided messagesData or fallback to hook (for standalone usage)
-  const fallbackData = useEnhancedMessages();
-  const messagesDataToUse = messagesData || fallbackData;
-  const { startDirectConversation } = messagesDataToUse;
   const { toast } = useToast();
+  
+  // messagesData is required - no fallback to prevent multiple subscriptions
+  if (!messagesData) {
+    console.error('MessageSearch: messagesData prop is required');
+    return null;
+  }
+  
+  const { startDirectConversation } = messagesData;
 
   // Additional safety check
   if (!startDirectConversation) {

@@ -60,7 +60,7 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
         supabase.removeChannel(channel);
       };
     }
-  }, [userId, authLoading]); // Remove initialized from dependencies to prevent re-runs
+  }, [userId, authLoading, initialized]); // Add initialized back to dependencies
 
   const loadNotifications = async () => {
     if (!userId) return;
