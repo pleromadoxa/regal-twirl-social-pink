@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, UserPlus, UserMinus, Trash2, Edit, Settings } from 'lucide-react';
+import { MoreVertical, UserPlus, UserMinus, Trash2, Edit, Settings, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,25 +19,37 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { dissolveGroup } from '@/services/groupConversationService';
-
+import { dissolveGroup, leaveGroup } from '@/services/groupConversationService';
+import { GroupProfileDialog } from './GroupProfileDialog';
+import { GroupMembersDialog } from './GroupMembersDialog';
+import { AddGroupMembersDialog } from './AddGroupMembersDialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface GroupOptionsMenuProps {
   groupId: string;
   groupName: string;
+  groupDescription?: string;
   isAdmin: boolean;
+  members: Array<{ id: string; username: string; display_name: string; avatar_url: string; role: string; joined_at: string; }>;
   onGroupDissolved?: () => void;
+  onGroupUpdated?: () => void;
 }
 
 export const GroupOptionsMenu = ({ 
   groupId, 
-  groupName, 
-  isAdmin, 
-  onGroupDissolved 
+  groupName,
+  groupDescription,
+  isAdmin,
+  members,
+  onGroupDissolved,
+  onGroupUpdated
 }: GroupOptionsMenuProps) => {
   const [showDissolveDialog, setShowDissolveDialog] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showMembersDialog, setShowMembersDialog] = useState(false);
+  const [showAddMembersDialog, setShowAddMembersDialog] = useState(false);
   const [isDissolving, setIsDissolving] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -74,6 +86,29 @@ export const GroupOptionsMenu = ({
     }
   };
 
+  const handleLeaveGroup = async () => {
+    try {
+      setIsLeaving(true);
+      await leaveGroup(groupId, user?.id || '');
+      
+      toast({
+        title: "Left group",
+        description: `You have left ${groupName}`
+      });
+      
+      onGroupDissolved?.(); // Reuse this callback to navigate away
+    } catch (error) {
+      console.error('Error leaving group:', error);
+      toast({
+        title: "Failed to leave group",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLeaving(false);
+    }
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -83,14 +118,22 @@ export const GroupOptionsMenu = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Add Members
+          <DropdownMenuItem onClick={() => setShowMembersDialog(true)}>
+            <Users className="w-4 h-4 mr-2" />
+            View Members
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Edit className="w-4 h-4 mr-2" />
-            Edit Group Info
-          </DropdownMenuItem>
+          {isAdmin && (
+            <>
+              <DropdownMenuItem onClick={() => setShowAddMembersDialog(true)}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Add Members
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Group Info
+              </DropdownMenuItem>
+            </>
+          )}
           {isAdmin && (
             <>
               <DropdownMenuItem>
@@ -107,9 +150,14 @@ export const GroupOptionsMenu = ({
               </DropdownMenuItem>
             </>
           )}
-          <DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-red-600 focus:text-red-600"
+            onClick={handleLeaveGroup}
+            disabled={isLeaving}
+          >
             <UserMinus className="w-4 h-4 mr-2" />
-            Leave Group
+            {isLeaving ? "Leaving..." : "Leave Group"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -135,6 +183,38 @@ export const GroupOptionsMenu = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <GroupProfileDialog
+        isOpen={showProfileDialog}
+        onClose={() => setShowProfileDialog(false)}
+        groupId={groupId}
+        currentName={groupName}
+        currentDescription={groupDescription}
+        onGroupUpdated={() => {
+          onGroupUpdated?.();
+          setShowProfileDialog(false);
+        }}
+      />
+
+      <GroupMembersDialog
+        isOpen={showMembersDialog}
+        onClose={() => setShowMembersDialog(false)}
+        groupId={groupId}
+        groupName={groupName}
+        isCurrentUserAdmin={isAdmin}
+      />
+
+      <AddGroupMembersDialog
+        isOpen={showAddMembersDialog}
+        onClose={() => setShowAddMembersDialog(false)}
+        groupId={groupId}
+        groupName={groupName}
+        existingMemberIds={members.map(m => m.id)}
+        onMembersAdded={() => {
+          onGroupUpdated?.();
+          setShowAddMembersDialog(false);
+        }}
+      />
     </>
   );
 };

@@ -182,6 +182,10 @@ export const MessageThread = ({ conversationId, messagesData }: MessageThreadPro
             isGroupConversation={isGroupConversation}
             onAudioCall={() => initiateCall('audio')}
             onVideoCall={() => initiateCall('video')}
+            onGroupUpdated={() => {
+              // Refresh the group conversation data
+              window.location.reload(); // Simple refresh for now
+            }}
           />
 
           {/* Messages */}

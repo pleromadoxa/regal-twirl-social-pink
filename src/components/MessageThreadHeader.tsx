@@ -2,7 +2,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Video, MoreVertical } from 'lucide-react';
+import { Phone, Video } from 'lucide-react';
+import { GroupOptionsMenu } from './GroupOptionsMenu';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MessageThreadHeaderProps {
   otherParticipant?: {
@@ -19,10 +21,13 @@ interface MessageThreadHeaderProps {
     name: string;
     description?: string;
     member_count?: number;
+    created_by?: string;
+    members?: Array<{ id: string; username: string; display_name: string; avatar_url: string; role: string; joined_at: string; }>;
   };
   isGroupConversation?: boolean;
   onAudioCall: () => void;
   onVideoCall: () => void;
+  onGroupUpdated?: () => void;
 }
 
 const MessageThreadHeader = ({ 
@@ -31,8 +36,15 @@ const MessageThreadHeader = ({
   groupConversation,
   isGroupConversation = false, 
   onAudioCall, 
-  onVideoCall 
+  onVideoCall,
+  onGroupUpdated 
 }: MessageThreadHeaderProps) => {
+  const { user } = useAuth();
+  
+  const isGroupAdmin = groupConversation && (
+    groupConversation.created_by === user?.id ||
+    groupConversation.members?.some(m => m.id === user?.id && m.role === 'admin')
+  );
   return (
     <div className="border-b border-purple-200 dark:border-purple-800 p-4">
       <div className="flex items-center justify-between">
@@ -72,7 +84,7 @@ const MessageThreadHeader = ({
         </div>
 
         <div className="flex items-center space-x-2">
-          {!isGroupConversation && (
+          {!isGroupConversation ? (
             <>
               <Button
                 variant="ghost"
@@ -91,10 +103,17 @@ const MessageThreadHeader = ({
                 <Video className="w-4 h-4" />
               </Button>
             </>
-          )}
-          <Button variant="ghost" size="sm" className="rounded-full">
-            <MoreVertical className="w-4 h-4" />
-          </Button>
+          ) : groupConversation ? (
+            <GroupOptionsMenu
+              groupId={groupConversation.id}
+              groupName={groupConversation.name}
+              groupDescription={groupConversation.description}
+              isAdmin={!!isGroupAdmin}
+              members={groupConversation.members || []}
+              onGroupDissolved={onGroupUpdated}
+              onGroupUpdated={onGroupUpdated}
+            />
+          ) : null}
         </div>
       </div>
 

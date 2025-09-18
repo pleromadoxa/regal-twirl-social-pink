@@ -630,3 +630,153 @@ export const updateGroupSettings = async (
     throw error;
   }
 };
+
+export const updateGroupProfile = async (
+  groupId: string,
+  userId: string,
+  updates: {
+    name?: string;
+    description?: string;
+    avatar_url?: string;
+  }
+): Promise<void> => {
+  try {
+    // Check if user is admin
+    const { data: memberData } = await supabase
+      .from('group_conversation_members')
+      .select('role')
+      .eq('group_id', groupId)
+      .eq('user_id', userId)
+      .single();
+
+    const { data: groupData } = await supabase
+      .from('group_conversations')
+      .select('created_by')
+      .eq('id', groupId)
+      .single();
+
+    if (!memberData || (memberData.role !== 'admin' && groupData?.created_by !== userId)) {
+      throw new Error('Only admins can update group profile');
+    }
+
+    const { error } = await supabase
+      .from('group_conversations')
+      .update(updates)
+      .eq('id', groupId);
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error updating group profile:', error);
+    throw error;
+  }
+};
+
+export const addGroupMembers = async (
+  groupId: string,
+  userId: string,
+  memberIds: string[]
+): Promise<void> => {
+  try {
+    // Check if user is admin
+    const { data: memberData } = await supabase
+      .from('group_conversation_members')
+      .select('role')
+      .eq('group_id', groupId)
+      .eq('user_id', userId)
+      .single();
+
+    const { data: groupData } = await supabase
+      .from('group_conversations')
+      .select('created_by, max_members')
+      .eq('id', groupId)
+      .single();
+
+    if (!memberData || (memberData.role !== 'admin' && groupData?.created_by !== userId)) {
+      throw new Error('Only admins can add members');
+    }
+
+    // Check member limit
+    const { count: currentMemberCount } = await supabase
+      .from('group_conversation_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_id', groupId);
+
+    if (currentMemberCount && groupData && (currentMemberCount + memberIds.length) > groupData.max_members) {
+      throw new Error('Adding these members would exceed group limit');
+    }
+
+    // Add members
+    const membersToAdd = memberIds.map(memberId => ({
+      group_id: groupId,
+      user_id: memberId,
+      role: 'member'
+    }));
+
+    const { error } = await supabase
+      .from('group_conversation_members')
+      .insert(membersToAdd);
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error adding group members:', error);
+    throw error;
+  }
+};
+
+export const fetchGroupMembers = async (groupId: string): Promise<Array<{
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string;
+  role: string;
+  joined_at: string;
+}>> => {
+  try {
+    const { data: membersData, error } = await supabase
+      .from('group_conversation_members')
+      .select(`
+        user_id,
+        role,
+        joined_at
+      `)
+      .eq('group_id', groupId);
+
+    if (error) {
+      throw error;
+    }
+
+    if (!membersData || membersData.length === 0) {
+      return [];
+    }
+
+    // Get profiles for the members
+    const memberIds = membersData.map(m => m.user_id);
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url')
+      .in('id', memberIds);
+
+    if (!profilesData) {
+      return [];
+    }
+
+    return membersData.map(member => {
+      const profile = profilesData.find(p => p.id === member.user_id);
+      return {
+        id: member.user_id,
+        username: profile?.username || 'unknown',
+        display_name: profile?.display_name || profile?.username || 'Unknown User',
+        avatar_url: profile?.avatar_url || '',
+        role: member.role,
+        joined_at: member.joined_at
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching group members:', error);
+    return [];
+  }
+};
