@@ -1,6 +1,6 @@
 
 import { useEffect } from 'react';
-import { useUserPresence } from '@/hooks/useUserPresence';
+import { useUserPresence } from '@/contexts/UserPresenceContext';
 
 interface PresenceIndicatorProps {
   userId: string;

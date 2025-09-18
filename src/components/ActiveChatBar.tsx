@@ -13,7 +13,7 @@ import { MessageCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStreakEmoji } from '@/services/streakService';
 import PresenceIndicator from './PresenceIndicator';
-import { useUserPresence } from '@/hooks/useUserPresence';
+import { useUserPresence } from '@/contexts/UserPresenceContext';
 
 interface ConversationCharacter extends Character {
   userId?: string;

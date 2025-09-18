@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -10,7 +9,25 @@ export interface UserPresence {
   updated_at: string;
 }
 
+interface UserPresenceContextType {
+  fetchPresenceData: (userIds: string[]) => Promise<void>;
+  getUserStatus: (userId: string) => { isOnline: boolean; lastSeen: string | null };
+  formatLastSeen: (lastSeen: string) => string;
+  updatePresence: (isOnline: boolean) => Promise<void>;
+  presenceData: Record<string, UserPresence>;
+}
+
+const UserPresenceContext = createContext<UserPresenceContextType | undefined>(undefined);
+
 export const useUserPresence = () => {
+  const context = useContext(UserPresenceContext);
+  if (context === undefined) {
+    throw new Error('useUserPresence must be used within a UserPresenceProvider');
+  }
+  return context;
+};
+
+export const UserPresenceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [presenceData, setPresenceData] = useState<Record<string, UserPresence>>({});
   const { user } = useAuth();
   const heartbeatRef = useRef<NodeJS.Timeout>();
@@ -253,11 +270,17 @@ export const useUserPresence = () => {
     };
   }, [user?.id]); // Removed updatePresence from dependencies to prevent re-runs
 
-  return {
+  const value: UserPresenceContextType = {
     fetchPresenceData,
     getUserStatus,
     formatLastSeen,
     updatePresence,
     presenceData
   };
+
+  return (
+    <UserPresenceContext.Provider value={value}>
+      {children}
+    </UserPresenceContext.Provider>
+  );
 };

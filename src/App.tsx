@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
+import { UserPresenceProvider } from '@/contexts/UserPresenceContext';
 import { Toaster } from '@/components/ui/toaster';
 import Landing from '@/pages/Landing';
 import Auth from '@/pages/Auth';
@@ -43,47 +44,49 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <NotificationsProvider>
-            <Router>
-              <div className="App min-h-screen w-full overflow-x-hidden">
-                <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/home" element={<AuthWrapper><Home /></AuthWrapper>} />
-                  <Route path="/explore" element={<AuthWrapper><Explore /></AuthWrapper>} />
-                  <Route path="/reels" element={<AuthWrapper><Reels /></AuthWrapper>} />
-                  <Route path="/profile/:userId" element={<AuthWrapper><Profile /></AuthWrapper>} />
-                  <Route path="/hashtag/:hashtag" element={<AuthWrapper><Hashtag /></AuthWrapper>} />
-                  <Route path="/messages" element={<AuthWrapper><Messages /></AuthWrapper>} />
-                  <Route path="/join-group/:inviteCode" element={<AuthWrapper><JoinGroup /></AuthWrapper>} />
-                  <Route path="/notifications" element={<AuthWrapper><Notifications /></AuthWrapper>} />
-                  <Route path="/gallery" element={<AuthWrapper><Gallery /></AuthWrapper>} />
-                  <Route path="/settings" element={<AuthWrapper><Settings /></AuthWrapper>} />
-                  <Route path="/music" element={<AuthWrapper><Music /></AuthWrapper>} />
-                  <Route path="/games" element={<AuthWrapper><Games /></AuthWrapper>} />
-                  <Route path="/search" element={<AuthWrapper><Search /></AuthWrapper>} />
-                  <Route path="/pinned" element={<AuthWrapper><Pinned /></AuthWrapper>} />
-                  <Route path="/professional" element={<AuthWrapper><Professional /></AuthWrapper>} />
-                  <Route path="/create-professional" element={<AuthWrapper><CreateProfessionalAccount /></AuthWrapper>} />
-                  <Route path="/create-professional-account" element={<AuthWrapper><CreateProfessionalAccount /></AuthWrapper>} />
-                  <Route path="/professional/:pageId" element={<AuthWrapper><ProfessionalAccountProfile /></AuthWrapper>} />
-                  <Route path="/edit-professional/:pageId" element={<AuthWrapper><EditProfessionalAccount /></AuthWrapper>} />
-                  <Route path="/business-dashboard/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
-                  <Route path="/business-analytics" element={<AuthWrapper><BusinessAnalytics /></AuthWrapper>} />
-                  <Route path="/business-management" element={<AuthWrapper><BusinessManagement /></AuthWrapper>} />
-                  <Route path="/business" element={<AuthWrapper><BusinessManagement /></AuthWrapper>} />
-                  <Route path="/business/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
-                  <Route path="/admin" element={<AuthWrapper><AdminDashboard /></AuthWrapper>} />
-                  <Route path="/support" element={<AuthWrapper><Support /></AuthWrapper>} />
-                  <Route path="/ads-manager" element={<AuthWrapper><AdsManager /></AuthWrapper>} />
-                  <Route path="/create-ad" element={<AuthWrapper><CreateAd /></AuthWrapper>} />
-                  <Route path="/ai-studio" element={<AuthWrapper><AIStudio /></AuthWrapper>} />
-                </Routes>
-                <Toaster />
-                <WebRTCCallManager />
-              </div>
-            </Router>
-          </NotificationsProvider>
+          <UserPresenceProvider>
+            <NotificationsProvider>
+              <Router>
+                <div className="App min-h-screen w-full overflow-x-hidden">
+                  <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/home" element={<AuthWrapper><Home /></AuthWrapper>} />
+                    <Route path="/explore" element={<AuthWrapper><Explore /></AuthWrapper>} />
+                    <Route path="/reels" element={<AuthWrapper><Reels /></AuthWrapper>} />
+                    <Route path="/profile/:userId" element={<AuthWrapper><Profile /></AuthWrapper>} />
+                    <Route path="/hashtag/:hashtag" element={<AuthWrapper><Hashtag /></AuthWrapper>} />
+                    <Route path="/messages" element={<AuthWrapper><Messages /></AuthWrapper>} />
+                    <Route path="/join-group/:inviteCode" element={<AuthWrapper><JoinGroup /></AuthWrapper>} />
+                    <Route path="/notifications" element={<AuthWrapper><Notifications /></AuthWrapper>} />
+                    <Route path="/gallery" element={<AuthWrapper><Gallery /></AuthWrapper>} />
+                    <Route path="/settings" element={<AuthWrapper><Settings /></AuthWrapper>} />
+                    <Route path="/music" element={<AuthWrapper><Music /></AuthWrapper>} />
+                    <Route path="/games" element={<AuthWrapper><Games /></AuthWrapper>} />
+                    <Route path="/search" element={<AuthWrapper><Search /></AuthWrapper>} />
+                    <Route path="/pinned" element={<AuthWrapper><Pinned /></AuthWrapper>} />
+                    <Route path="/professional" element={<AuthWrapper><Professional /></AuthWrapper>} />
+                    <Route path="/create-professional" element={<AuthWrapper><CreateProfessionalAccount /></AuthWrapper>} />
+                    <Route path="/create-professional-account" element={<AuthWrapper><CreateProfessionalAccount /></AuthWrapper>} />
+                    <Route path="/professional/:pageId" element={<AuthWrapper><ProfessionalAccountProfile /></AuthWrapper>} />
+                    <Route path="/edit-professional/:pageId" element={<AuthWrapper><EditProfessionalAccount /></AuthWrapper>} />
+                    <Route path="/business-dashboard/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
+                    <Route path="/business-analytics" element={<AuthWrapper><BusinessAnalytics /></AuthWrapper>} />
+                    <Route path="/business-management" element={<AuthWrapper><BusinessManagement /></AuthWrapper>} />
+                    <Route path="/business" element={<AuthWrapper><BusinessManagement /></AuthWrapper>} />
+                    <Route path="/business/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
+                    <Route path="/admin" element={<AuthWrapper><AdminDashboard /></AuthWrapper>} />
+                    <Route path="/support" element={<AuthWrapper><Support /></AuthWrapper>} />
+                    <Route path="/ads-manager" element={<AuthWrapper><AdsManager /></AuthWrapper>} />
+                    <Route path="/create-ad" element={<AuthWrapper><CreateAd /></AuthWrapper>} />
+                    <Route path="/ai-studio" element={<AuthWrapper><AIStudio /></AuthWrapper>} />
+                  </Routes>
+                  <Toaster />
+                  <WebRTCCallManager />
+                </div>
+              </Router>
+            </NotificationsProvider>
+          </UserPresenceProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
