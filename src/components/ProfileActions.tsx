@@ -69,18 +69,100 @@ const ProfileActions = ({ userId, username, isOwnProfile = false, isFollowing = 
     }
   };
 
-  const handleCall = () => {
-    toast({
-      title: "Voice Call",
-      description: "Voice calling feature coming soon!",
-    });
+  const handleCall = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to make calls",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (user.id === userId) {
+      toast({
+        title: "Cannot call yourself",
+        description: "You cannot call your own profile",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Check if conversation already exists
+      let conversation = await findExistingConversation(user.id, userId);
+      
+      if (!conversation) {
+        // Create new conversation
+        conversation = await createConversation(user.id, userId);
+      }
+      
+      // Navigate to messages with call parameter
+      navigate(`/messages?call=audio&conversation=${conversation.id}`);
+      
+      toast({
+        title: "Starting audio call",
+        description: `Calling ${username || 'user'}...`,
+      });
+    } catch (error) {
+      console.error('Error starting call:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start call",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVideoCall = () => {
-    toast({
-      title: "Video Call",
-      description: "Video calling feature coming soon!",
-    });
+  const handleVideoCall = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to make calls",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (user.id === userId) {
+      toast({
+        title: "Cannot call yourself",
+        description: "You cannot call your own profile",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Check if conversation already exists
+      let conversation = await findExistingConversation(user.id, userId);
+      
+      if (!conversation) {
+        // Create new conversation
+        conversation = await createConversation(user.id, userId);
+      }
+      
+      // Navigate to messages with call parameter
+      navigate(`/messages?call=video&conversation=${conversation.id}`);
+      
+      toast({
+        title: "Starting video call",
+        description: `Calling ${username || 'user'}...`,
+      });
+    } catch (error) {
+      console.error('Error starting call:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start call",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFollow = () => {
@@ -107,20 +189,22 @@ const ProfileActions = ({ userId, username, isOwnProfile = false, isFollowing = 
       
       <Button
         onClick={handleCall}
+        disabled={loading}
         variant="outline"
         className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
       >
         <Phone className="w-4 h-4 mr-2" />
-        Call
+        {loading ? 'Loading...' : 'Call'}
       </Button>
       
       <Button
         onClick={handleVideoCall}
+        disabled={loading}
         variant="outline"
         className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
       >
         <Video className="w-4 h-4 mr-2" />
-        Video
+        {loading ? 'Loading...' : 'Video'}
       </Button>
 
       <Button

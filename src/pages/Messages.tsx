@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'react-router-dom';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import MessageThread from '@/components/MessageThread';
 import MessageSearch from '@/components/MessageSearch';
+import AudioCall from '@/components/AudioCall';
+import VideoCall from '@/components/VideoCall';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { MessageCircle, Bell, Archive, Search, User, Plus, Hash, Star, ArrowLeft } from 'lucide-react';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
 import { GroupOptionsMenu } from '@/components/GroupOptionsMenu';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -20,7 +24,15 @@ import GroupCreationDialog from '@/components/GroupCreationDialog';
 const Messages = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeCall, setActiveCall] = useState<{
+    type: 'audio' | 'video';
+    conversationId: string;
+    otherUser: any;
+  } | null>(null);
+  
   const { user } = useAuth();
+  const { toast } = useToast();
   const messagesData = useEnhancedMessages();
   const {
     conversations,
@@ -34,6 +46,42 @@ const Messages = () => {
     startDirectConversation,
     createGroupConversation
   } = messagesData;
+
+  // Handle URL parameters for calls
+  useEffect(() => {
+    const callType = searchParams.get('call') as 'audio' | 'video' | null;
+    const conversationId = searchParams.get('conversation');
+    
+    if (callType && conversationId && !activeCall) {
+      // Find the conversation
+      const conversation = conversations.find(c => c.id === conversationId);
+      if (conversation && user) {
+        const otherUser = conversation.participant_1 === user.id 
+          ? conversation.participant_2_profile 
+          : conversation.participant_1_profile;
+        
+        if (otherUser) {
+          setActiveCall({
+            type: callType,
+            conversationId,
+            otherUser
+          });
+          setSelectedConversation(conversationId);
+          
+          // Clear URL parameters
+          setSearchParams({});
+        }
+      }
+    }
+  }, [searchParams, conversations, user, activeCall, setSelectedConversation, setSearchParams]);
+
+  const handleCallEnd = () => {
+    setActiveCall(null);
+    toast({
+      title: "Call ended",
+      description: "The call has been ended.",
+    });
+  };
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -232,6 +280,29 @@ const Messages = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 dark:from-violet-950 dark:via-purple-950 dark:to-pink-950">
+      {/* Active Call Overlay */}
+      {activeCall && (
+        <>
+          {activeCall.type === 'audio' ? (
+            <AudioCall
+              conversationId={activeCall.conversationId}
+              otherUserId={activeCall.otherUser.id}
+              otherUserName={activeCall.otherUser.display_name || activeCall.otherUser.username}
+              otherUserAvatar={activeCall.otherUser.avatar_url}
+              onCallEnd={handleCallEnd}
+            />
+          ) : (
+            <VideoCall
+              conversationId={activeCall.conversationId}
+              otherUserId={activeCall.otherUser.id}
+              otherUserName={activeCall.otherUser.display_name || activeCall.otherUser.username}
+              otherUserAvatar={activeCall.otherUser.avatar_url}
+              onCallEnd={handleCallEnd}
+            />
+          )}
+        </>
+      )}
+      
       <WebRTCCallManager />
       
       {/* Desktop Sidebar - Hidden on mobile */}
