@@ -10,10 +10,15 @@ import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { 
   Menu,
-  X
+  X,
+  Home,
+  Search,
+  MessageCircle,
+  Bell,
+  User
 } from 'lucide-react';
 
-const SidebarNav = () => {
+const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean }) => {
   const location = useLocation();
   const { user, profile } = useAuth();
   const isMobile = useIsMobile();
@@ -41,9 +46,44 @@ const SidebarNav = () => {
     isAdmin
   });
 
-  // Handle mobile responsive behavior
+  // Mobile bottom navigation - show only main items
+  if (isMobileBottomNav) {
+    const mainNavItems = [
+      { name: 'Home', path: '/home', icon: Home },
+      { name: 'Explore', path: '/explore', icon: Search },
+      { name: 'Chat', path: '/messages', icon: MessageCircle },
+      { name: 'Notifications', path: '/notifications', icon: Bell },
+      { name: 'Profile', path: `/profile/${user?.id}`, icon: User }
+    ];
+
+    return (
+      <div className="flex items-center justify-around w-full">
+        {mainNavItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          const IconComponent = item.icon;
+          
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 ${
+                isActive
+                  ? 'bg-gradient-primary text-white shadow-glow'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-primary'
+              }`}
+            >
+              <IconComponent className="w-5 h-5 mb-1" />
+              <span className="text-xs font-medium">{item.name}</span>
+            </Link>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Handle mobile responsive behavior for full sidebar
   const sidebarWidth = isMobile ? (isCollapsed ? 'w-0' : 'w-80') : (isCollapsed ? 'w-16' : 'w-80');
-  const sidebarClass = `fixed left-0 top-0 h-full ${sidebarWidth} bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-r border-purple-200 dark:border-purple-800 z-40 transition-all duration-300 ${isMobile && isCollapsed ? '-translate-x-full' : 'translate-x-0'} max-w-[80vw]`;
+  const sidebarClass = `fixed left-0 top-0 h-full ${sidebarWidth} glass backdrop-blur-xl border-r border-white/30 dark:border-white/10 z-40 transition-all duration-300 ${isMobile && isCollapsed ? '-translate-x-full' : 'translate-x-0'} max-w-[80vw]`;
 
   return (
     <>

@@ -14,6 +14,7 @@ import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
 import { GroupOptionsMenu } from '@/components/GroupOptionsMenu';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import GroupCreationDialog from '@/components/GroupCreationDialog';
 
 const Messages = () => {
