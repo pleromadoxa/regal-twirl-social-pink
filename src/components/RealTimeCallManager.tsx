@@ -56,10 +56,14 @@ const RealTimeCallManager = ({
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
+    console.log('Setting up call manager subscriptions for user:', user.id);
+    
+    // Use unique channel name with timestamp and random component
+    const channelName = `incoming-calls-${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const channel = supabase
-      .channel(`incoming-calls-${user.id}`) // Use unique channel name per user
+      .channel(channelName)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -87,9 +91,10 @@ const RealTimeCallManager = ({
       .subscribe();
 
     return () => {
+      console.log('Cleaning up call manager subscription');
       supabase.removeChannel(channel);
     };
-  }, [user, participants]);
+  }, [user?.id]); // Only depend on user.id, not participants array
 
   const startCall = async (type: 'audio' | 'video' | 'group') => {
     if (!user) return;

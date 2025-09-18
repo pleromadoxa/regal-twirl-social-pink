@@ -91,7 +91,7 @@ export const useUserPresence = () => {
   };
 
   useEffect(() => {
-    if (!user || isInitializedRef.current) return;
+    if (!user?.id || isInitializedRef.current) return;
 
     console.log('Initializing user presence for:', user.id);
     isInitializedRef.current = true;
@@ -104,38 +104,38 @@ export const useUserPresence = () => {
       updatePresence(true);
     }, 2 * 60 * 1000); // Update every 2 minutes
 
-    // Set up real-time subscription for presence updates only if not already subscribed
-    if (!channelRef.current && !isSubscribedRef.current) {
-      const channelName = `user_presence_changes_${user.id}_${Date.now()}`;
-      channelRef.current = supabase
-        .channel(channelName)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'user_presence'
-          },
-          (payload) => {
-            console.log('Presence change:', payload);
-            const presence = payload.new as UserPresence;
-            if (presence) {
-              setPresenceData(prev => ({
-                ...prev,
-                [presence.user_id]: presence
-              }));
-            }
+    // Set up real-time subscription for presence updates with unique channel name
+    const channelName = `user_presence_changes_${user.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log('Creating presence channel:', channelName);
+    
+    channelRef.current = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_presence'
+        },
+        (payload) => {
+          console.log('Presence change:', payload);
+          const presence = payload.new as UserPresence;
+          if (presence) {
+            setPresenceData(prev => ({
+              ...prev,
+              [presence.user_id]: presence
+            }));
           }
-        );
-
-      // Subscribe to the channel
-      channelRef.current.subscribe((status: string) => {
-        console.log('Presence channel subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
         }
-      });
-    }
+      );
+
+    // Subscribe to the channel
+    channelRef.current.subscribe((status: string) => {
+      console.log('Presence channel subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        isSubscribedRef.current = true;
+      }
+    });
 
     // Handle page visibility changes
     const handleVisibilityChange = () => {

@@ -18,7 +18,7 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
       return;
     }
 
-    // If no user, reset state
+    // If no user, reset state and cleanup any existing subscription
     if (!userId) {
       setUnreadCount(0);
       setNotifications([]);
@@ -36,8 +36,10 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
       // Setup realtime subscription
       console.log('Setting up realtime subscription for notifications');
       
+      // Use timestamp to ensure uniqueness
+      const channelName = `notifications-${userId}-${Date.now()}`;
       const channel = supabase
-        .channel(`notifications-${userId}`) // Use unique channel name per user
+        .channel(channelName)
         .on(
           'postgres_changes',
           {
@@ -58,7 +60,7 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
         supabase.removeChannel(channel);
       };
     }
-  }, [userId, authLoading, initialized]);
+  }, [userId, authLoading]); // Remove initialized from dependencies to prevent re-runs
 
   const loadNotifications = async () => {
     if (!userId) return;
