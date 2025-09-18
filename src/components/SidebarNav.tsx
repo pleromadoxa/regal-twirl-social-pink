@@ -22,7 +22,7 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
   const location = useLocation();
   const { user, profile } = useAuth();
   const isMobile = useIsMobile();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(isMobile); // Start collapsed on mobile
   const { pages } = useBusinessPages();
   const { hasValidSubscription, subscriptionData } = useSubscriptionStatus(
     user?.email === 'pleromadoxa@gmail.com' || profile?.username === 'pleromadoxa',
@@ -82,8 +82,14 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
   }
 
   // Handle mobile responsive behavior for full sidebar
-  const sidebarWidth = isMobile ? (isCollapsed ? 'w-0' : 'w-80') : (isCollapsed ? 'w-16' : 'w-80');
-  const sidebarClass = `fixed left-0 top-0 h-full ${sidebarWidth} glass backdrop-blur-xl border-r border-white/30 dark:border-white/10 z-40 transition-all duration-300 ${isMobile && isCollapsed ? '-translate-x-full' : 'translate-x-0'} max-w-[80vw]`;
+  const sidebarWidth = isMobile ? 'w-80' : (isCollapsed ? 'w-16' : 'w-80');
+  const sidebarClass = `fixed left-0 top-0 h-full ${sidebarWidth} glass backdrop-blur-xl border-r border-white/30 dark:border-white/10 z-40 transition-all duration-300 ${isMobile && isCollapsed ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100'} max-w-[85vw]`;
+
+  // Auto-collapse on mobile when route changes
+  const prevLocation = location.pathname;
+  if (isMobile && prevLocation !== location.pathname) {
+    setIsCollapsed(true);
+  }
 
   return (
     <>
@@ -92,10 +98,10 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
         <Button
           variant="ghost"
           size="icon"
-          className="fixed top-4 left-4 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl"
+          className="fixed top-4 left-4 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-lg rounded-full"
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
-          {isCollapsed ? <Menu className="w-6 h-6" /> : <X className="w-6 h-6" />}
+          {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
         </Button>
       )}
 
