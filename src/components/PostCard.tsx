@@ -266,11 +266,12 @@ const PostCard = ({
                   isOwnPost 
                     ? 'text-gray-400 cursor-not-allowed' 
                     : isRetweeted 
-                    ? 'text-green-500' 
-                    : 'text-gray-500 hover:text-green-500'
-                }`}
+                    ? 'text-green-500 bg-green-50 dark:bg-green-900/20' 
+                    : 'text-gray-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
+                } transition-colors rounded-full px-3 py-1`}
+                title={isOwnPost ? "Cannot re-share your own post" : isRetweeted ? "Remove re-share" : "Re-share post"}
               >
-                <Repeat2 className="w-4 h-4" />
+                <Repeat2 className={`w-4 h-4 ${isRetweeted ? 'fill-current' : ''}`} />
                 <span>{post.retweets_count}</span>
               </Button>
               

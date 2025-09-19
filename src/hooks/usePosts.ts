@@ -250,6 +250,9 @@ export const usePosts = () => {
       // Add user interaction flags for new post
       const newPost: Post = {
         ...data,
+        likes_count: data.likes_count || 0,
+        retweets_count: data.retweets_count || 0,
+        replies_count: data.replies_count || 0,
         views_count: data.views_count || 0,
         trending_score: data.trending_score || 0,
         user_liked: false,
@@ -439,6 +442,24 @@ export const usePosts = () => {
 
   useEffect(() => {
     fetchPosts();
+    
+    // Listen for reply added events to update counts
+    const handleReplyAdded = (event: CustomEvent) => {
+      const { postId } = event.detail;
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === postId 
+            ? { ...p, replies_count: p.replies_count + 1 }
+            : p
+        )
+      );
+    };
+
+    window.addEventListener('replyAdded', handleReplyAdded as EventListener);
+    
+    return () => {
+      window.removeEventListener('replyAdded', handleReplyAdded as EventListener);
+    };
   }, []);
 
   return {

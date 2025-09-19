@@ -100,6 +100,11 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
       setNewComment('');
       await fetchComments();
       
+      // Trigger a custom event to update post count
+      window.dispatchEvent(new CustomEvent('replyAdded', { 
+        detail: { postId } 
+      }));
+      
       toast({
         title: "Comment posted",
         description: "Your comment has been added successfully."

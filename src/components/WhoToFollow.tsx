@@ -111,8 +111,12 @@ const WhoToFollow = () => {
 
       if (error) throw error;
 
-      // Remove the followed user from the suggestions
-      setUsers(prev => prev.filter(u => u.id !== userId));
+      // Update the follower count locally for immediate feedback
+      setUsers(prev => prev.map(u => 
+        u.id === userId 
+          ? { ...u, followers_count: u.followers_count + 1 }
+          : u
+      ).filter(u => u.id !== userId)); // Also remove from suggestions
       
       toast({
         title: "Success",
