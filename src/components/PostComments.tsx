@@ -125,8 +125,8 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] bg-white dark:bg-slate-800 flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+      <Card className="w-full max-w-2xl h-[80vh] bg-white dark:bg-slate-800 flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
           <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-900 dark:text-slate-100">
             <MessageCircle className="w-5 h-5" />
             Comments
@@ -136,8 +136,8 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
           </Button>
         </div>
 
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
@@ -177,7 +177,7 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
           </div>
 
           {user && (
-            <div className="border-t border-slate-200 dark:border-slate-700 p-4">
+            <div className="border-t border-slate-200 dark:border-slate-700 p-4 flex-shrink-0 bg-white dark:bg-slate-800">
               <div className="flex space-x-3">
                 <Avatar className="w-8 h-8 flex-shrink-0">
                   <AvatarImage src={user.user_metadata?.avatar_url} />
@@ -192,13 +192,13 @@ const PostComments = ({ postId, isOpen, onClose }: PostCommentsProps) => {
                     placeholder="Write a comment..."
                     onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmitComment()}
                     disabled={submitting}
-                    className="flex-1"
+                    className="flex-1 border-slate-300 dark:border-slate-600 focus:border-purple-500 dark:focus:border-purple-400"
                   />
                   <Button
                     onClick={handleSubmitComment}
                     disabled={!newComment.trim() || submitting}
                     size="sm"
-                    className="px-3"
+                    className="px-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                   >
                     {submitting ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
