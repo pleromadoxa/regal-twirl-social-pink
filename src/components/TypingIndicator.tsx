@@ -18,12 +18,27 @@ export const TypingIndicator = ({ conversationId, isGroup = false }: TypingIndic
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
+  const subscriptionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!user?.id || !conversationId) return;
 
+    // Clean up any existing subscription first
+    if (subscriptionRef.current) {
+      subscriptionRef.current();
+      subscriptionRef.current = null;
+    }
+
+    // Use the messageService typing system to avoid conflicts
+    const typingSubscription = subscribeToTyping(conversationId, user.id, (isTyping, userId) => {
+      // This is just a placeholder - the actual typing state is managed by the presence system
+      // The TypingIndicator will show typing users through the presence channel
+    });
+
+    subscriptionRef.current = typingSubscription.unsubscribe;
+
     // Create unique channel name with timestamp to avoid conflicts
-    const channelName = `typing-${conversationId}-${Date.now()}`;
+    const channelName = `typing-${conversationId}-${user.id}-${Date.now()}`;
     
     // Clean up existing channel
     if (channelRef.current) {
@@ -55,10 +70,19 @@ export const TypingIndicator = ({ conversationId, isGroup = false }: TypingIndic
         });
         
         setTypingUsers(users);
-      })
-      .subscribe();
+      });
+
+    // Subscribe only if not already subscribed
+    if (channelRef.current.state !== 'joined' && channelRef.current.state !== 'joining') {
+      channelRef.current.subscribe();
+    }
 
     return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current();
+        subscriptionRef.current = null;
+      }
+      
       if (channelRef.current) {
         try {
           supabase.removeChannel(channelRef.current);

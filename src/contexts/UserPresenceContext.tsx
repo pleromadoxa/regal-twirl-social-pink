@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { channelManager, createUniqueChannelName } from '@/services/channelManager';
 
 export interface UserPresence {
   user_id: string;
@@ -159,18 +160,18 @@ export const UserPresenceProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
-    // Prevent multiple initializations for the same user
+    // Prevent multiple initializations for the same user - set IMMEDIATELY to prevent race conditions
     if (isConnectedRef.current) {
       console.log('⚠️ Presence already connected for user:', user.id);
       return;
     }
 
+    // Mark as connected IMMEDIATELY to prevent re-runs in React strict mode
+    isConnectedRef.current = true;
     console.log('🟢 Initializing user presence for:', user.id);
     
     const initializePresence = async () => {
       try {
-        // Mark as connected immediately to prevent re-runs
-        isConnectedRef.current = true;
 
         // Set user online when they connect
         await updatePresence(true);
@@ -181,30 +182,18 @@ export const UserPresenceProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }, 2 * 60 * 1000);
 
         // Create a unique channel name to avoid conflicts
-        const channelName = `presence_${user.id}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        const channelName = createUniqueChannelName('presence', user.id);
         console.log('📡 Creating presence channel:', channelName);
         
-        // Ensure any existing channel is cleaned up first
-        if (channelRef.current) {
-          try {
-            await supabase.removeChannel(channelRef.current);
-          } catch (error) {
-            console.error('Error removing previous channel:', error);
-          }
-          channelRef.current = null;
-        }
-
-        // Create new channel
-        channelRef.current = supabase
-          .channel(channelName)
-          .on(
-            'postgres_changes',
-            {
+        // Use channel manager to prevent duplicate subscriptions
+        channelRef.current = channelManager.subscribeToChannel(channelName, {
+          postgres_changes: {
+            config: {
               event: '*',
               schema: 'public',
               table: 'user_presence'
             },
-            (payload) => {
+            callback: (payload) => {
               console.log('📡 Presence change received:', payload);
               const presence = payload.new as UserPresence;
               if (presence) {
@@ -222,15 +211,6 @@ export const UserPresenceProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 }));
               }
             }
-          );
-
-        // Subscribe to the channel
-        channelRef.current.subscribe((status: string) => {
-          console.log('📡 Presence channel subscription status:', status);
-          if (status === 'CHANNEL_ERROR') {
-            console.error('📡 Channel subscription error');
-            // Reset connection state on error
-            isConnectedRef.current = false;
           }
         });
 
