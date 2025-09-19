@@ -1,6 +1,8 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { createCall } from '@/services/callService';
 
 interface MessageThreadCallManagerProps {
   conversationId: string;
@@ -49,12 +51,47 @@ const MessageThreadCallManager = ({
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         stream.getTracks().forEach(track => track.stop()); // Stop the test stream
         
+        // Create call in database and get call details
+        const call = await createCall(currentUserId!, callType, [otherParticipant.id]);
+        
+        // Broadcast call invitation to the other participant
+        const callChannel = supabase.channel(`call-invitation-${call.room_id}`);
+        
+        await callChannel.send({
+          type: 'broadcast',
+          event: 'incoming-call',
+          payload: {
+            call_id: call.id,
+            room_id: call.room_id,
+            caller_id: currentUserId,
+            call_type: callType,
+            caller_profile: {
+              display_name: 'You', // This will be updated by the receiving end
+              username: 'caller',
+              avatar_url: null
+            }
+          }
+        });
+
+        // Subscribe to channel to listen for call responses
+        callChannel.subscribe();
+        
+        // Start the call on our end
         onCallStart(callType);
         
         toast({
-          title: "Starting call",
-          description: `Initiating ${callType} call...`
+          title: "Calling...",
+          description: `${callType === 'video' ? 'Video' : 'Audio'} call to ${otherParticipant.display_name || otherParticipant.username}`
         });
+        
+        // Clean up channel after some time
+        setTimeout(() => {
+          try {
+            supabase.removeChannel(callChannel);
+          } catch (error) {
+            console.error('Error cleaning up call channel:', error);
+          }
+        }, 60000); // Clean up after 1 minute
         
       } catch (permissionError) {
         console.error('Permission error:', permissionError);

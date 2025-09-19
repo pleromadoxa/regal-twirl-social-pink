@@ -2,160 +2,170 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface WebRTCConfig {
   iceServers: RTCIceServer[];
-  iceCandidatePoolSize?: number;
-}
-
-export interface MediaConstraints {
-  video: boolean | MediaTrackConstraints;
-  audio: boolean | MediaTrackConstraints;
 }
 
 export class WebRTCService {
   private peerConnection: RTCPeerConnection | null = null;
   private localStream: MediaStream | null = null;
   private remoteStream: MediaStream | null = null;
+  private dataChannel: RTCDataChannel | null = null;
   private signalingChannel: any = null;
-  private isInitiator: boolean = false;
-  private currentUserId: string | null = null;
-  
-  private readonly config: WebRTCConfig = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' },
-      { urls: 'stun:stun3.l.google.com:19302' },
-      { urls: 'stun:stun4.l.google.com:19302' }
-    ],
-    iceCandidatePoolSize: 10
-  };
+  private roomId: string | null = null;
+  private userId: string | null = null;
 
+  // Event callbacks
   private onLocalStreamCallback?: (stream: MediaStream) => void;
   private onRemoteStreamCallback?: (stream: MediaStream) => void;
   private onConnectionStateChangeCallback?: (state: RTCPeerConnectionState) => void;
   private onIceConnectionStateChangeCallback?: (state: RTCIceConnectionState) => void;
   private onErrorCallback?: (error: Error) => void;
+  private onDataChannelMessageCallback?: (data: any) => void;
 
-  constructor() {
-    console.log('[WebRTC] Service initialized');
-    this.getCurrentUserId();
+  constructor(config?: Partial<WebRTCConfig>) {
+    const defaultConfig: WebRTCConfig = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    };
+
+    this.config = { ...defaultConfig, ...config };
   }
 
-  private async getCurrentUserId(): Promise<void> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      this.currentUserId = user?.id || null;
-    } catch (error) {
-      console.error('[WebRTC] Error getting current user:', error);
-    }
+  private config: WebRTCConfig;
+
+  // Event handler setters
+  onLocalStream(callback: (stream: MediaStream) => void) {
+    this.onLocalStreamCallback = callback;
   }
 
-  async initializeMedia(constraints: MediaConstraints): Promise<MediaStream> {
-    console.log('[WebRTC] Initializing media with constraints:', constraints);
-    
+  onRemoteStream(callback: (stream: MediaStream) => void) {
+    this.onRemoteStreamCallback = callback;
+  }
+
+  onConnectionStateChange(callback: (state: RTCPeerConnectionState) => void) {
+    this.onConnectionStateChangeCallback = callback;
+  }
+
+  onIceConnectionStateChange(callback: (state: RTCIceConnectionState) => void) {
+    this.onIceConnectionStateChangeCallback = callback;
+  }
+
+  onError(callback: (error: Error) => void) {
+    this.onErrorCallback = callback;
+  }
+
+  onDataChannelMessage(callback: (data: any) => void) {
+    this.onDataChannelMessageCallback = callback;
+  }
+
+  async initializeMedia(constraints: MediaStreamConstraints): Promise<MediaStream> {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      this.localStream = stream;
+      console.log('[WebRTCService] Requesting user media with constraints:', constraints);
+      
+      this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      console.log('[WebRTCService] Successfully obtained local stream');
       
       if (this.onLocalStreamCallback) {
-        this.onLocalStreamCallback(stream);
+        this.onLocalStreamCallback(this.localStream);
       }
-      
-      console.log('[WebRTC] Media initialized successfully');
-      return stream;
+
+      return this.localStream;
     } catch (error) {
-      console.error('[WebRTC] Error initializing media:', error);
+      console.error('[WebRTCService] Failed to get user media:', error);
+      
       if (this.onErrorCallback) {
         this.onErrorCallback(error as Error);
       }
+      
       throw error;
     }
   }
 
-  initializePeerConnection(): RTCPeerConnection {
-    console.log('[WebRTC] Initializing peer connection with config:', this.config);
-    
-    this.peerConnection = new RTCPeerConnection(this.config);
-    
-    this.peerConnection.onconnectionstatechange = () => {
-      const state = this.peerConnection?.connectionState;
-      console.log('[WebRTC] Connection state changed:', state);
+  initializePeerConnection(): void {
+    try {
+      console.log('[WebRTCService] Creating peer connection with config:', this.config);
       
-      if (this.onConnectionStateChangeCallback) {
-        this.onConnectionStateChangeCallback(state!);
-      }
-      
-      if (state === 'failed' || state === 'disconnected') {
-        console.error('[WebRTC] Connection failed or disconnected, attempting to restart');
-        this.handleConnectionFailure();
-      }
-    };
+      this.peerConnection = new RTCPeerConnection(this.config);
 
-    this.peerConnection.oniceconnectionstatechange = () => {
-      const state = this.peerConnection?.iceConnectionState;
-      console.log('[WebRTC] ICE connection state changed:', state);
-      
-      if (this.onIceConnectionStateChangeCallback) {
-        this.onIceConnectionStateChangeCallback(state!);
-      }
-      
-      if (state === 'failed') {
-        console.error('[WebRTC] ICE connection failed, restarting ICE');
-        this.restartIce();
-      }
-    };
-
-    this.peerConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        console.log('[WebRTC] New ICE candidate:', {
-          type: event.candidate.type,
-          protocol: event.candidate.protocol,
-          address: event.candidate.address
-        });
+      // Handle connection state changes
+      this.peerConnection.onconnectionstatechange = () => {
+        const state = this.peerConnection?.connectionState;
+        console.log('[WebRTCService] Connection state changed:', state);
         
-        if (this.signalingChannel) {
+        if (this.onConnectionStateChangeCallback && state) {
+          this.onConnectionStateChangeCallback(state);
+        }
+      };
+
+      // Handle ICE connection state changes
+      this.peerConnection.oniceconnectionstatechange = () => {
+        const state = this.peerConnection?.iceConnectionState;
+        console.log('[WebRTCService] ICE connection state changed:', state);
+        
+        if (this.onIceConnectionStateChangeCallback && state) {
+          this.onIceConnectionStateChangeCallback(state);
+        }
+      };
+
+      // Handle remote stream
+      this.peerConnection.ontrack = (event) => {
+        console.log('[WebRTCService] Received remote track:', event);
+        
+        if (event.streams && event.streams[0]) {
+          this.remoteStream = event.streams[0];
+          
+          if (this.onRemoteStreamCallback) {
+            this.onRemoteStreamCallback(this.remoteStream);
+          }
+        }
+      };
+
+      // Handle ICE candidates
+      this.peerConnection.onicecandidate = (event) => {
+        if (event.candidate && this.signalingChannel) {
+          console.log('[WebRTCService] Sending ICE candidate');
+          
           this.signalingChannel.send({
             type: 'broadcast',
             event: 'ice-candidate',
             payload: {
               candidate: event.candidate,
-              from: this.getUserId()
+              roomId: this.roomId
             }
           });
         }
-      } else {
-        console.log('[WebRTC] ICE candidate gathering completed');
-      }
-    };
+      };
 
-    this.peerConnection.ontrack = (event) => {
-      console.log('[WebRTC] Received remote track:', {
-        kind: event.track.kind,
-        streams: event.streams.length,
-        trackId: event.track.id
-      });
+      // Handle incoming data channel
+      this.peerConnection.ondatachannel = (event) => {
+        const channel = event.channel;
+        console.log('[WebRTCService] Received data channel:', channel.label);
+        
+        channel.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (this.onDataChannelMessageCallback) {
+              this.onDataChannelMessageCallback(data);
+            }
+          } catch (error) {
+            console.error('[WebRTCService] Error parsing data channel message:', error);
+          }
+        };
+      };
+
+      console.log('[WebRTCService] Peer connection initialized successfully');
       
-      if (event.streams && event.streams[0]) {
-        this.remoteStream = event.streams[0];
-        
-        this.remoteStream.getTracks().forEach((track, index) => {
-          console.log(`[WebRTC] Remote track ${index}:`, {
-            kind: track.kind,
-            enabled: track.enabled,
-            readyState: track.readyState
-          });
-        });
-        
-        if (this.onRemoteStreamCallback) {
-          this.onRemoteStreamCallback(this.remoteStream);
-        }
+    } catch (error) {
+      console.error('[WebRTCService] Failed to initialize peer connection:', error);
+      
+      if (this.onErrorCallback) {
+        this.onErrorCallback(error as Error);
       }
-    };
-
-    this.peerConnection.ondatachannel = (event) => {
-      console.log('[WebRTC] Data channel received:', event.channel.label);
-    };
-
-    return this.peerConnection;
+      
+      throw error;
+    }
   }
 
   async addLocalStream(stream: MediaStream): Promise<void> {
@@ -163,289 +173,323 @@ export class WebRTCService {
       throw new Error('Peer connection not initialized');
     }
 
-    console.log('[WebRTC] Adding local stream tracks to peer connection');
-    
-    const senders = this.peerConnection.getSenders();
-    for (const sender of senders) {
-      if (sender.track) {
-        console.log('[WebRTC] Removing existing track:', sender.track.kind);
-        this.peerConnection.removeTrack(sender);
+    try {
+      console.log('[WebRTCService] Adding local stream to peer connection');
+      
+      // Add all tracks from the local stream
+      stream.getTracks().forEach(track => {
+        if (this.peerConnection && stream) {
+          this.peerConnection.addTrack(track, stream);
+        }
+      });
+
+      // Create data channel for text messaging during calls
+      this.dataChannel = this.peerConnection.createDataChannel('messages', {
+        ordered: true
+      });
+
+      this.dataChannel.onopen = () => {
+        console.log('[WebRTCService] Data channel opened');
+      };
+
+      this.dataChannel.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (this.onDataChannelMessageCallback) {
+            this.onDataChannelMessageCallback(data);
+          }
+        } catch (error) {
+          console.error('[WebRTCService] Error parsing data channel message:', error);
+        }
+      };
+
+      console.log('[WebRTCService] Local stream added successfully');
+      
+    } catch (error) {
+      console.error('[WebRTCService] Failed to add local stream:', error);
+      
+      if (this.onErrorCallback) {
+        this.onErrorCallback(error as Error);
+      }
+      
+      throw error;
+    }
+  }
+
+  setupSignaling(roomId: string, userId?: string): void {
+    try {
+      console.log('[WebRTCService] Setting up signaling for room:', roomId);
+      
+      this.roomId = roomId;
+      this.userId = userId || null;
+
+      // Create unique channel name to avoid conflicts
+      const channelName = `webrtc-${roomId}-${Date.now()}`;
+      
+      this.signalingChannel = supabase.channel(channelName)
+        .on('broadcast', { event: 'offer' }, async (payload) => {
+          console.log('[WebRTCService] Received offer:', payload);
+          await this.handleOffer(payload.payload);
+        })
+        .on('broadcast', { event: 'answer' }, async (payload) => {
+          console.log('[WebRTCService] Received answer:', payload);
+          await this.handleAnswer(payload.payload);
+        })
+        .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
+          console.log('[WebRTCService] Received ICE candidate:', payload);
+          await this.handleIceCandidate(payload.payload);
+        })
+        .on('broadcast', { event: 'call-end' }, () => {
+          console.log('[WebRTCService] Call ended by remote peer');
+          this.cleanup();
+        })
+        .subscribe();
+
+      console.log('[WebRTCService] Signaling setup completed');
+      
+    } catch (error) {
+      console.error('[WebRTCService] Failed to setup signaling:', error);
+      
+      if (this.onErrorCallback) {
+        this.onErrorCallback(error as Error);
       }
     }
+  }
 
-    for (const track of stream.getTracks()) {
-      console.log('[WebRTC] Adding track:', {
-        kind: track.kind,
-        enabled: track.enabled,
-        readyState: track.readyState
-      });
+  async createOffer(): Promise<void> {
+    if (!this.peerConnection || !this.signalingChannel) {
+      throw new Error('Peer connection or signaling not initialized');
+    }
+
+    try {
+      console.log('[WebRTCService] Creating offer');
       
-      const sender = this.peerConnection.addTrack(track, stream);
-      console.log('[WebRTC] Track added successfully, sender:', sender);
-    }
+      const offer = await this.peerConnection.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      });
 
-    const updatedSenders = this.peerConnection.getSenders();
-    console.log('[WebRTC] Total senders after adding tracks:', updatedSenders.length);
-  }
+      await this.peerConnection.setLocalDescription(offer);
 
-  setupSignaling(channelName: string): any {
-    console.log('[WebRTC] Setting up signaling channel:', channelName);
-    
-    // Clean up existing channel if it exists
-    if (this.signalingChannel) {
-      supabase.removeChannel(this.signalingChannel);
-    }
-    
-    this.signalingChannel = supabase.channel(channelName);
-    
-    this.signalingChannel
-      .on('broadcast', { event: 'offer' }, this.handleOffer.bind(this))
-      .on('broadcast', { event: 'answer' }, this.handleAnswer.bind(this))
-      .on('broadcast', { event: 'ice-candidate' }, this.handleIceCandidate.bind(this))
-      .on('broadcast', { event: 'call-end' }, this.handleCallEnd.bind(this));
-
-    this.signalingChannel.subscribe((status: string) => {
-      console.log('[WebRTC] Signaling channel status:', status);
-    });
-
-    return this.signalingChannel;
-  }
-
-  async createOffer(): Promise<RTCSessionDescriptionInit> {
-    if (!this.peerConnection) {
-      throw new Error('Peer connection not initialized');
-    }
-
-    console.log('[WebRTC] Creating offer');
-    this.isInitiator = true;
-    
-    const offer = await this.peerConnection.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: true
-    });
-    
-    await this.peerConnection.setLocalDescription(offer);
-    console.log('[WebRTC] Local description set (offer):', offer.type);
-    
-    if (this.signalingChannel) {
+      // Send offer through signaling channel
       this.signalingChannel.send({
         type: 'broadcast',
         event: 'offer',
         payload: {
-          offer,
-          from: this.getUserId()
+          offer: offer,
+          roomId: this.roomId
         }
       });
-    }
-    
-    return offer;
-  }
 
-  async createAnswer(): Promise<RTCSessionDescriptionInit> {
-    if (!this.peerConnection) {
-      throw new Error('Peer connection not initialized');
-    }
-
-    console.log('[WebRTC] Creating answer');
-    
-    const answer = await this.peerConnection.createAnswer();
-    await this.peerConnection.setLocalDescription(answer);
-    console.log('[WebRTC] Local description set (answer):', answer.type);
-    
-    return answer;
-  }
-
-  private async handleOffer(payload: any): Promise<void> {
-    const { offer, from } = payload.payload;
-    
-    if (from === this.getUserId()) return;
-    
-    console.log('[WebRTC] Received offer from:', from);
-    
-    try {
-      if (!this.peerConnection) {
-        this.initializePeerConnection();
+      console.log('[WebRTCService] Offer created and sent');
+      
+    } catch (error) {
+      console.error('[WebRTCService] Failed to create offer:', error);
+      
+      if (this.onErrorCallback) {
+        this.onErrorCallback(error as Error);
       }
       
-      await this.peerConnection!.setRemoteDescription(new RTCSessionDescription(offer));
-      console.log('[WebRTC] Remote description set (offer)');
+      throw error;
+    }
+  }
+
+  async createAnswer(offer: RTCSessionDescriptionInit): Promise<void> {
+    if (!this.peerConnection || !this.signalingChannel) {
+      throw new Error('Peer connection or signaling not initialized');
+    }
+
+    try {
+      console.log('[WebRTCService] Creating answer for offer');
       
-      const answer = await this.createAnswer();
+      await this.peerConnection.setRemoteDescription(offer);
       
+      const answer = await this.peerConnection.createAnswer();
+      await this.peerConnection.setLocalDescription(answer);
+
+      // Send answer through signaling channel
       this.signalingChannel.send({
         type: 'broadcast',
         event: 'answer',
         payload: {
-          answer,
-          from: this.getUserId(),
-          to: from
+          answer: answer,
+          roomId: this.roomId
         }
       });
+
+      console.log('[WebRTCService] Answer created and sent');
+      
     } catch (error) {
-      console.error('[WebRTC] Error handling offer:', error);
+      console.error('[WebRTCService] Failed to create answer:', error);
+      
       if (this.onErrorCallback) {
         this.onErrorCallback(error as Error);
       }
+      
+      throw error;
+    }
+  }
+
+  private async handleOffer(payload: any): Promise<void> {
+    if (payload.roomId !== this.roomId) return;
+    
+    try {
+      await this.createAnswer(payload.offer);
+    } catch (error) {
+      console.error('[WebRTCService] Failed to handle offer:', error);
     }
   }
 
   private async handleAnswer(payload: any): Promise<void> {
-    const { answer, from } = payload.payload;
-    
-    if (from === this.getUserId()) return;
-    
-    console.log('[WebRTC] Received answer from:', from);
+    if (payload.roomId !== this.roomId || !this.peerConnection) return;
     
     try {
-      if (this.peerConnection) {
-        await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-        console.log('[WebRTC] Remote description set (answer)');
-      }
+      await this.peerConnection.setRemoteDescription(payload.answer);
+      console.log('[WebRTCService] Answer handled successfully');
     } catch (error) {
-      console.error('[WebRTC] Error handling answer:', error);
-      if (this.onErrorCallback) {
-        this.onErrorCallback(error as Error);
-      }
+      console.error('[WebRTCService] Failed to handle answer:', error);
     }
   }
 
   private async handleIceCandidate(payload: any): Promise<void> {
-    const { candidate, from } = payload.payload;
-    
-    if (from === this.getUserId()) return;
-    
-    console.log('[WebRTC] Received ICE candidate from:', from);
+    if (payload.roomId !== this.roomId || !this.peerConnection) return;
     
     try {
-      if (this.peerConnection && this.peerConnection.remoteDescription) {
-        await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-        console.log('[WebRTC] ICE candidate added successfully');
-      } else {
-        console.warn('[WebRTC] Cannot add ICE candidate - no remote description');
-      }
+      await this.peerConnection.addIceCandidate(payload.candidate);
+      console.log('[WebRTCService] ICE candidate added successfully');
     } catch (error) {
-      console.error('[WebRTC] Error adding ICE candidate:', error);
+      console.error('[WebRTCService] Failed to add ICE candidate:', error);
     }
-  }
-
-  private handleCallEnd(payload: any): void {
-    const { from } = payload.payload;
-    if (from !== this.getUserId()) {
-      console.log('[WebRTC] Call ended by remote peer');
-      this.cleanup();
-    }
-  }
-
-  private async restartIce(): Promise<void> {
-    if (!this.peerConnection || !this.isInitiator) return;
-    
-    console.log('[WebRTC] Restarting ICE connection');
-    
-    try {
-      const offer = await this.peerConnection.createOffer({ iceRestart: true });
-      await this.peerConnection.setLocalDescription(offer);
-      
-      this.signalingChannel.send({
-        type: 'broadcast',
-        event: 'offer',
-        payload: {
-          offer,
-          from: this.getUserId()
-        }
-      });
-    } catch (error) {
-      console.error('[WebRTC] Error restarting ICE:', error);
-    }
-  }
-
-  private handleConnectionFailure(): void {
-    console.log('[WebRTC] Handling connection failure');
-    
-    this.restartIce();
-    
-    setTimeout(() => {
-      if (this.peerConnection?.connectionState === 'failed') {
-        console.error('[WebRTC] Connection recovery failed');
-        if (this.onErrorCallback) {
-          this.onErrorCallback(new Error('Connection failed and could not be recovered'));
-        }
-      }
-    }, 10000);
   }
 
   toggleAudio(enabled: boolean): void {
     if (this.localStream) {
-      const audioTracks = this.localStream.getAudioTracks();
-      audioTracks.forEach(track => {
+      this.localStream.getAudioTracks().forEach(track => {
         track.enabled = enabled;
-        console.log('[WebRTC] Audio track enabled:', enabled);
       });
+      console.log('[WebRTCService] Audio toggled:', enabled);
     }
   }
 
   toggleVideo(enabled: boolean): void {
     if (this.localStream) {
-      const videoTracks = this.localStream.getVideoTracks();
-      videoTracks.forEach(track => {
+      this.localStream.getVideoTracks().forEach(track => {
         track.enabled = enabled;
-        console.log('[WebRTC] Video track enabled:', enabled);
       });
+      console.log('[WebRTCService] Video toggled:', enabled);
+    }
+  }
+
+  sendDataChannelMessage(data: any): void {
+    if (this.dataChannel && this.dataChannel.readyState === 'open') {
+      this.dataChannel.send(JSON.stringify(data));
+    }
+  }
+
+  async switchCamera(): Promise<void> {
+    if (!this.localStream) return;
+
+    try {
+      const videoTrack = this.localStream.getVideoTracks()[0];
+      if (!videoTrack) return;
+
+      const constraints = {
+        video: {
+          facingMode: videoTrack.getSettings().facingMode === 'user' ? 'environment' : 'user'
+        }
+      };
+
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const newVideoTrack = newStream.getVideoTracks()[0];
+
+      // Replace the track in peer connection
+      if (this.peerConnection) {
+        const sender = this.peerConnection.getSenders().find(s => 
+          s.track && s.track.kind === 'video'
+        );
+        
+        if (sender) {
+          await sender.replaceTrack(newVideoTrack);
+        }
+      }
+
+      // Replace track in local stream
+      this.localStream.removeTrack(videoTrack);
+      this.localStream.addTrack(newVideoTrack);
+      
+      videoTrack.stop();
+
+      console.log('[WebRTCService] Camera switched successfully');
+      
+    } catch (error) {
+      console.error('[WebRTCService] Failed to switch camera:', error);
+      
+      if (this.onErrorCallback) {
+        this.onErrorCallback(error as Error);
+      }
     }
   }
 
   cleanup(): void {
-    console.log('[WebRTC] Cleaning up resources');
-    
-    if (this.localStream) {
-      this.localStream.getTracks().forEach(track => {
-        track.stop();
-        console.log('[WebRTC] Stopped local track:', track.kind);
-      });
-      this.localStream = null;
+    console.log('[WebRTCService] Cleaning up WebRTC resources');
+
+    // Close data channel
+    if (this.dataChannel) {
+      this.dataChannel.close();
+      this.dataChannel = null;
     }
 
+    // Close peer connection
     if (this.peerConnection) {
       this.peerConnection.close();
       this.peerConnection = null;
     }
 
+    // Stop local stream tracks
+    if (this.localStream) {
+      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream = null;
+    }
+
+    // Clear remote stream
+    this.remoteStream = null;
+
+    // Clean up signaling channel
     if (this.signalingChannel) {
-      supabase.removeChannel(this.signalingChannel);
+      try {
+        supabase.removeChannel(this.signalingChannel);
+      } catch (error) {
+        console.error('[WebRTCService] Error removing signaling channel:', error);
+      }
       this.signalingChannel = null;
     }
 
-    this.remoteStream = null;
+    // Notify about call end
+    if (this.onConnectionStateChangeCallback) {
+      this.onConnectionStateChangeCallback('closed');
+    }
+
+    console.log('[WebRTCService] Cleanup completed');
   }
 
-  onLocalStream(callback: (stream: MediaStream) => void): void {
-    this.onLocalStreamCallback = callback;
+  // Utility methods
+  getLocalStream(): MediaStream | null {
+    return this.localStream;
   }
 
-  onRemoteStream(callback: (stream: MediaStream) => void): void {
-    this.onRemoteStreamCallback = callback;
+  getRemoteStream(): MediaStream | null {
+    return this.remoteStream;
   }
 
-  onConnectionStateChange(callback: (state: RTCPeerConnectionState) => void): void {
-    this.onConnectionStateChangeCallback = callback;
+  getPeerConnection(): RTCPeerConnection | null {
+    return this.peerConnection;
   }
 
-  onIceConnectionStateChange(callback: (state: RTCIceConnectionState) => void): void {
-    this.onIceConnectionStateChangeCallback = callback;
-  }
-
-  onError(callback: (error: Error) => void): void {
-    this.onErrorCallback = callback;
-  }
-
-  private getUserId(): string {
-    return this.currentUserId || 'unknown-user';
-  }
-
-  get connectionState(): RTCPeerConnectionState | null {
+  getConnectionState(): RTCPeerConnectionState | null {
     return this.peerConnection?.connectionState || null;
   }
 
-  get iceConnectionState(): RTCIceConnectionState | null {
+  getIceConnectionState(): RTCIceConnectionState | null {
     return this.peerConnection?.iceConnectionState || null;
   }
 }
