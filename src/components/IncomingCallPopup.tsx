@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Phone, PhoneOff, Video, Mic } from 'lucide-react';
+import { Phone, PhoneOff, Video, Mic, Users } from 'lucide-react';
 import { useCallSounds } from '@/hooks/useCallSounds';
 
 interface IncomingCallPopupProps {
   callId: string;
   callerName: string;
   callerAvatar?: string | null;
-  callType: 'audio' | 'video';
+  callType: 'audio' | 'video' | 'group';
   onAccept: () => void;
   onDecline: () => void;
 }
@@ -57,7 +57,7 @@ const IncomingCallPopup = ({
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium mb-4">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            Incoming {callType} call
+            Incoming {callType === 'group' ? 'group' : callType} call
           </div>
         </div>
 
@@ -66,13 +66,13 @@ const IncomingCallPopup = ({
           <Avatar className="w-24 h-24 mx-auto mb-4 ring-4 ring-white/20">
             <AvatarImage src={callerAvatar || undefined} />
             <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl">
-              {callerName[0]?.toUpperCase() || 'U'}
+              {callType === 'group' ? <Users className="w-8 h-8" /> : (callerName[0]?.toUpperCase() || 'U')}
             </AvatarFallback>
           </Avatar>
           
           <h2 className="text-xl font-bold mb-1">{callerName}</h2>
           <p className="text-gray-300 text-sm">
-            {callType === 'video' ? 'Video call' : 'Voice call'}
+            {callType === 'group' ? 'Group call' : callType === 'video' ? 'Video call' : 'Voice call'}
           </p>
         </div>
 
@@ -95,7 +95,9 @@ const IncomingCallPopup = ({
             onClick={handleAccept}
             className="rounded-full w-16 h-16 p-0 bg-green-500 hover:bg-green-600 shadow-lg"
           >
-            {callType === 'video' ? (
+            {callType === 'group' ? (
+              <Users className="w-6 h-6" />
+            ) : callType === 'video' ? (
               <Video className="w-6 h-6" />
             ) : (
               <Phone className="w-6 h-6" />

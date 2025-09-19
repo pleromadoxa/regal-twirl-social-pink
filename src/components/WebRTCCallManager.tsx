@@ -8,8 +8,10 @@ import IncomingCallPopup from '@/components/IncomingCallPopup';
 interface IncomingCall {
   id: string;
   caller_id: string;
-  call_type: 'audio' | 'video';
+  call_type: 'audio' | 'video' | 'group';
   room_id: string;
+  group_id?: string;
+  participants?: string[];
   caller_profile: {
     display_name?: string;
     username?: string;
@@ -62,6 +64,37 @@ const WebRTCCallManager = () => {
           duration: 10000
         });
       })
+      .on('broadcast', { event: 'incoming-group-call' }, (payload) => {
+        console.log('[WebRTCCallManager] Received incoming group call:', payload);
+        
+        const callData = payload.payload;
+        
+        // Don't show incoming call popup for calls initiated by this user
+        if (callData.caller_id === user.id) {
+          return;
+        }
+
+        setIncomingCall({
+          id: callData.call_id || callData.room_id,
+          caller_id: callData.caller_id,
+          call_type: 'group',
+          room_id: callData.room_id,
+          group_id: callData.group_id,
+          participants: callData.participants,
+          caller_profile: callData.caller_profile || {
+            display_name: 'Unknown User',
+            username: 'unknown',
+            avatar_url: null
+          }
+        });
+
+        // Show notification
+        toast({
+          title: "Incoming group call",
+          description: `${callData.caller_profile?.display_name || 'Unknown'} started a group call`,
+          duration: 10000
+        });
+      })
       .on('broadcast', { event: 'call-ended' }, (payload) => {
         console.log('[WebRTCCallManager] Call ended:', payload);
         setIncomingCall(null);
@@ -85,17 +118,21 @@ const WebRTCCallManager = () => {
     };
   }, [user?.id, toast]);
 
-  const handleAcceptCall = (callId: string, callType: 'audio' | 'video') => {
+  const handleAcceptCall = (callId: string, callType: 'audio' | 'video' | 'group') => {
     console.log('[WebRTCCallManager] Accepting call:', callId, callType);
     
     setIncomingCall(null);
     
     // Redirect to messages page with call parameters
     const params = new URLSearchParams({
-      call: callType,
-      conversation: callId,
+      call: callType === 'group' ? 'group' : callType,
+      conversation: callType === 'group' ? (incomingCall?.room_id || callId) : callId,
       incoming: 'true'
     });
+    
+    if (callType === 'group' && incomingCall?.group_id) {
+      params.set('group', incomingCall.group_id);
+    }
     
     window.location.href = `/messages?${params.toString()}`;
   };

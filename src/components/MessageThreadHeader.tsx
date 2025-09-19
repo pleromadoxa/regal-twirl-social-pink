@@ -2,8 +2,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Video } from 'lucide-react';
+import { Phone, Video, Users } from 'lucide-react';
 import { GroupOptionsMenu } from './GroupOptionsMenu';
+import GroupCallDialog from './GroupCallDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import PresenceIndicator from './PresenceIndicator';
 
@@ -99,7 +100,7 @@ const MessageThreadHeader = ({
                 variant="ghost"
                 size="sm"
                 onClick={onAudioCall}
-                className="rounded-full"
+                className="rounded-full hover:bg-primary/10 transition-colors"
               >
                 <Phone className="w-4 h-4" />
               </Button>
@@ -107,23 +108,35 @@ const MessageThreadHeader = ({
                 variant="ghost"
                 size="sm"
                 onClick={onVideoCall}
-                className="rounded-full"
+                className="rounded-full hover:bg-primary/10 transition-colors"
               >
                 <Video className="w-4 h-4" />
               </Button>
             </>
           ) : groupConversation ? (
-            <GroupOptionsMenu
-              groupId={groupConversation.id}
-              groupName={groupConversation.name}
-              groupDescription={groupConversation.description}
-              groupSettings={groupConversation.settings}
-              inviteCode={groupConversation.invite_code}
-              isAdmin={!!isGroupAdmin}
-              members={groupConversation.members || []}
-              onGroupDissolved={onGroupUpdated}
-              onGroupUpdated={onGroupUpdated}
-            />
+            <div className="flex items-center space-x-1">
+              <GroupCallDialog
+                groupId={groupConversation.id}
+                participants={groupConversation.members || []}
+                callType="audio"
+              />
+              <GroupCallDialog
+                groupId={groupConversation.id}
+                participants={groupConversation.members || []}
+                callType="video"
+              />
+              <GroupOptionsMenu
+                groupId={groupConversation.id}
+                groupName={groupConversation.name}
+                groupDescription={groupConversation.description}
+                groupSettings={groupConversation.settings}
+                inviteCode={groupConversation.invite_code}
+                isAdmin={!!isGroupAdmin}
+                members={groupConversation.members || []}
+                onGroupDissolved={onGroupUpdated}
+                onGroupUpdated={onGroupUpdated}
+              />
+            </div>
           ) : null}
         </div>
       </div>
