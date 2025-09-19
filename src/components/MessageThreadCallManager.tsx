@@ -51,13 +51,20 @@ const MessageThreadCallManager = ({
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         stream.getTracks().forEach(track => track.stop()); // Stop the test stream
         
+        // Get caller profile info
+        const { data: callerProfile } = await supabase
+          .from('profiles')
+          .select('display_name, username, avatar_url')
+          .eq('id', currentUserId)
+          .single();
+
         // Create call in database and get call details
         const call = await createCall(currentUserId!, callType, [otherParticipant.id]);
         
-        // Broadcast call invitation to the other participant
-        const callChannel = supabase.channel(`call-invitation-${call.room_id}`);
+        // Broadcast call invitation directly to the other participant's channel
+        const recipientChannel = supabase.channel(`user-calls-${otherParticipant.id}`);
         
-        await callChannel.send({
+        await recipientChannel.send({
           type: 'broadcast',
           event: 'incoming-call',
           payload: {
@@ -66,15 +73,15 @@ const MessageThreadCallManager = ({
             caller_id: currentUserId,
             call_type: callType,
             caller_profile: {
-              display_name: 'You', // This will be updated by the receiving end
-              username: 'caller',
-              avatar_url: null
+              display_name: callerProfile?.display_name || callerProfile?.username || 'Unknown User',
+              username: callerProfile?.username || 'unknown',
+              avatar_url: callerProfile?.avatar_url || null
             }
           }
         });
 
         // Subscribe to channel to listen for call responses
-        callChannel.subscribe();
+        recipientChannel.subscribe();
         
         // Start the call on our end
         onCallStart(callType);
@@ -87,7 +94,7 @@ const MessageThreadCallManager = ({
         // Clean up channel after some time
         setTimeout(() => {
           try {
-            supabase.removeChannel(callChannel);
+            supabase.removeChannel(recipientChannel);
           } catch (error) {
             console.error('Error cleaning up call channel:', error);
           }

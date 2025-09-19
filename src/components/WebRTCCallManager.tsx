@@ -28,8 +28,8 @@ const WebRTCCallManager = () => {
 
     console.log('[WebRTCCallManager] Setting up call manager for user:', user.id);
 
-    // Create unique channel for this user
-    const channelName = `call-manager-${user.id}-${Date.now()}`;
+    // Listen on user-specific channel for incoming calls
+    const channelName = `user-calls-${user.id}`;
     
     channelRef.current = supabase
       .channel(channelName)
