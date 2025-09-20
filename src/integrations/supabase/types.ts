@@ -2491,6 +2491,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_business_page_url: {
+        Args: { page_id: string }
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string

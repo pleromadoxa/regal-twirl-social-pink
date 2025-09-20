@@ -35,6 +35,7 @@ import BusinessManagement from '@/pages/BusinessManagement';
 import Support from '@/pages/Support';
 import JoinGroup from '@/pages/JoinGroup';
 import AuthWrapper from '@/components/AuthWrapper';
+import BusinessPage from '@/pages/BusinessPage';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
 
 const queryClient = new QueryClient();
@@ -74,6 +75,7 @@ function App() {
                     <Route path="/business-analytics" element={<AuthWrapper><BusinessAnalytics /></AuthWrapper>} />
                     <Route path="/business-management" element={<AuthWrapper><BusinessManagement /></AuthWrapper>} />
                     <Route path="/business" element={<AuthWrapper><BusinessManagement /></AuthWrapper>} />
+                    <Route path="/business/:pageSlug/:pageId" element={<AuthWrapper><BusinessPage /></AuthWrapper>} />
                     <Route path="/business/:pageId" element={<AuthWrapper><BusinessDashboard /></AuthWrapper>} />
                     <Route path="/admin" element={<AuthWrapper><AdminDashboard /></AuthWrapper>} />
                     <Route path="/support" element={<AuthWrapper><Support /></AuthWrapper>} />

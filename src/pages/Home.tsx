@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { testSupabaseConnection } from '@/integrations/supabase/client';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
-import TweetComposer from '@/components/TweetComposer';
+import EnhancedPostComposer from '@/components/EnhancedPostComposer';
 import PostsList from '@/components/PostsList';
 import { StoriesBar } from '@/components/StoriesBar';
 import HomeFeedNav from '@/components/HomeFeedNav';
@@ -87,9 +87,9 @@ const Home = () => {
                   {/* Home Feed Navigation */}
                   <HomeFeedNav onFilterChange={setFeedFilter} />
 
-                  {/* Tweet Composer */}
+                  {/* Enhanced Post Composer */}
                   <div className="border-b border-purple-200 dark:border-purple-800">
-                    <TweetComposer />
+                    <EnhancedPostComposer />
                   </div>
 
                   {/* Posts Feed */}
@@ -136,9 +136,9 @@ const Home = () => {
                 {/* Home Feed Navigation */}
                 <HomeFeedNav onFilterChange={setFeedFilter} />
 
-                {/* Tweet Composer */}
+                {/* Enhanced Post Composer */}
                 <div className="border-b border-purple-200 dark:border-purple-800">
-                  <TweetComposer />
+                  <EnhancedPostComposer />
                 </div>
 
                 {/* Posts Feed */}

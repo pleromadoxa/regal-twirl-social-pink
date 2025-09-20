@@ -207,7 +207,12 @@ const PostCard = ({
                       </DropdownMenuItem>
                     </>
                   )}
-                  {!isOwnPost && (
+                  {isOwnPost ? (
+                    <DropdownMenuItem onClick={handleDelete} className="text-red-600 focus:text-red-600">
+                      <Flag className="w-4 h-4 mr-2" />
+                      Delete Post
+                    </DropdownMenuItem>
+                  ) : (
                     <DropdownMenuItem onClick={handleReport}>
                       <Flag className="w-4 h-4 mr-2" />
                       Report Post
