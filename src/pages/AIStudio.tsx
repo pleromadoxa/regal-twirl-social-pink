@@ -185,33 +185,33 @@ const AIStudio = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 ml-80 mr-96 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+      <div className={`flex-1 ${isMobile ? 'pb-20' : 'ml-80 mr-96 border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl`}>
         {/* Header */}
-        <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
-          <div className="flex items-center justify-between">
+        <div className={`sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl ${isMobile ? '' : 'border-b border-purple-200 dark:border-purple-800'} ${isMobile ? 'p-3' : 'p-6'} z-10`}>
+          <div className={`flex ${isMobile ? 'flex-col gap-3' : 'items-center justify-between'}`}>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-3">
-                <Brain className="w-8 h-8 text-purple-600" />
+              <h1 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-3`}>
+                <Brain className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-purple-600`} />
                 AI Studio
               </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-2">
+              <p className={`text-slate-600 dark:text-slate-400 ${isMobile ? 'text-sm mt-1' : 'mt-2'}`}>
                 Generate amazing content with advanced AI models
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <Badge variant={remainingGenerations > 0 ? "default" : "destructive"} className="bg-gradient-to-r from-purple-500 to-pink-500">
-                <Zap className="w-4 h-4 mr-1" />
+              <Badge variant={remainingGenerations > 0 ? "default" : "destructive"} className={`bg-gradient-to-r from-purple-500 to-pink-500 ${isMobile ? 'text-xs' : ''}`}>
+                <Zap className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-1`} />
                 {remainingGenerations} generations left
               </Badge>
             </div>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className={`${isMobile ? 'p-3' : 'p-6'} space-y-6`}>
           {/* Main Generation Interface */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={`grid grid-cols-1 ${isMobile ? 'gap-4' : 'lg:grid-cols-2 gap-6'}`}>
             {/* Input Panel */}
             <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800 shadow-lg">
               <CardHeader className="pb-4">

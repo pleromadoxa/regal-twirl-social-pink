@@ -16,20 +16,20 @@ const Collaboration = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 px-4" style={{ marginLeft: '320px', marginRight: '384px' }}>
-        <main className="w-full max-w-2xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto">
+      <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
+        <main className={`w-full ${isMobile ? '' : 'max-w-2xl border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto`}>
           {/* Header */}
-          <div className="sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-4 z-10">
+          <div className={`sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl ${isMobile ? '' : 'border-b border-purple-200 dark:border-purple-800'} p-4 z-10`}>
             <div className="flex items-center space-x-3">
-              <Users className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-bold text-foreground">Collaboration</h1>
+              <Users className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-primary`} />
+              <h1 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-foreground`}>Collaboration</h1>
             </div>
           </div>
 
           {/* Content */}
-          <div className="p-4">
+          <div className={`${isMobile ? 'p-2' : 'p-4'}`}>
             <Tabs defaultValue="invites" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="invites" className="flex items-center space-x-2">

@@ -3,6 +3,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import SidebarNav from '@/components/SidebarNav';
+import RightSidebar from '@/components/RightSidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +30,7 @@ const Professional = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { myPages, pages, loading } = useBusinessPages();
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredPages, setFilteredPages] = useState(pages);
   const [activeTab, setActiveTab] = useState('discover');
@@ -103,15 +108,19 @@ const Professional = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
+      {!isMobile && <SidebarNav />}
+      
+      <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
+        <main className={`w-full ${isMobile ? '' : 'max-w-6xl border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto ${isMobile ? 'p-3' : 'p-6'} space-y-6`}>
+          {/* Header */}
+      <div className={`flex ${isMobile ? 'flex-col' : 'flex-col sm:flex-row'} justify-between items-start ${isMobile ? '' : 'sm:items-center'} gap-4`}>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
-            <Building className="w-8 h-8 text-purple-600" />
+          <h1 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3`}>
+            <Building className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-purple-600`} />
             Professional Accounts
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className={`text-gray-600 dark:text-gray-400 ${isMobile ? 'text-sm mt-1' : 'mt-2'}`}>
             Discover and connect with professional accounts on Regal Network
           </p>
         </div>
@@ -144,7 +153,7 @@ const Professional = () => {
           </div>
 
           {/* Featured Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-3 gap-4'}`}>
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -185,7 +194,7 @@ const Professional = () => {
           </div>
 
           {/* Professional Accounts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
             {filteredPages.map((account) => (
               <Card key={account.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
                 <CardContent className="p-6">
@@ -402,6 +411,11 @@ const Professional = () => {
           </Card>
         </TabsContent>
       </Tabs>
+        </main>
+      </div>
+      
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };
