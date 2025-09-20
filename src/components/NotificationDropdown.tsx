@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Bell, User, Heart, Repeat, UserCheck, MessageCircle, PhoneMissed, Flame, AlertTriangle } from 'lucide-react';
+import { Bell, User, Heart, Repeat, UserCheck, MessageCircle, PhoneMissed, Flame, AlertTriangle, Users, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,10 +12,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useCollaboration } from '@/hooks/useCollaboration';
 import { formatDistanceToNow } from 'date-fns';
 
 const NotificationDropdown = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
+  const { respondToInvite, loading: collaborationLoading } = useCollaboration();
   const [isOpen, setIsOpen] = useState(false);
 
   console.log('NotificationDropdown render:', { 
@@ -38,6 +40,10 @@ const NotificationDropdown = () => {
         return <MessageCircle className="w-4 h-4 text-blue-500" />;
       case 'missed_call':
         return <PhoneMissed className="w-4 h-4 text-red-500" />;
+      case 'collaboration_invite':
+        return <Users className="w-4 h-4 text-purple-500" />;
+      case 'collaboration_response':
+        return <Users className="w-4 h-4 text-green-500" />;
       case 'streak_warning':
         return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
       case 'streak_lost':
@@ -61,6 +67,40 @@ const NotificationDropdown = () => {
   const handleNotificationClick = (notificationId: string) => {
     console.log('Notification clicked:', notificationId);
     markAsRead(notificationId);
+  };
+
+  const handleCollaborationResponse = async (e: React.MouseEvent, inviteId: string, status: 'accepted' | 'declined') => {
+    e.stopPropagation();
+    await respondToInvite(inviteId, status);
+  };
+
+  const renderCollaborationActions = (notification: any) => {
+    if (notification.type === 'collaboration_invite' && notification.data?.invite_id) {
+      return (
+        <div className="flex gap-2 mt-2" onClick={e => e.stopPropagation()}>
+          <Button 
+            size="sm" 
+            onClick={(e) => handleCollaborationResponse(e, notification.data.invite_id, 'accepted')}
+            disabled={collaborationLoading}
+            className="h-6 text-xs"
+          >
+            <Check className="w-3 h-3 mr-1" />
+            Accept
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={(e) => handleCollaborationResponse(e, notification.data.invite_id, 'declined')}
+            disabled={collaborationLoading}
+            className="h-6 text-xs"
+          >
+            <X className="w-3 h-3 mr-1" />
+            Decline
+          </Button>
+        </div>
+      );
+    }
+    return null;
   };
 
   const handleMarkAllAsRead = () => {
@@ -143,6 +183,7 @@ const NotificationDropdown = () => {
                     <p className="text-xs text-gray-500 mt-1">
                       {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                     </p>
+                    {renderCollaborationActions(notification)}
                   </div>
                   {!notification.read && (
                     <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>

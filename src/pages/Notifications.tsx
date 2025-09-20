@@ -5,14 +5,16 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, Heart, MessageCircle, Repeat, UserPlus, User, PhoneMissed, Flame, AlertTriangle } from 'lucide-react';
+import { Bell, Heart, MessageCircle, Repeat, UserPlus, User, PhoneMissed, Flame, AlertTriangle, Users, Check, X } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useCollaboration } from '@/hooks/useCollaboration';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 
 const Notifications = () => {
   const { notifications, loading, markAsRead, markAllAsRead, unreadCount } = useNotifications();
+  const { respondToInvite, loading: collaborationLoading } = useCollaboration();
   const isMobile = useIsMobile();
 
   const getNotificationIcon = (type: string) => {
@@ -27,6 +29,10 @@ const Notifications = () => {
         return <UserPlus className="w-5 h-5 text-purple-500" />;
       case 'missed_call':
         return <PhoneMissed className="w-5 h-5 text-red-500" />;
+      case 'collaboration_invite':
+        return <Users className="w-5 h-5 text-purple-500" />;
+      case 'collaboration_response':
+        return <Users className="w-5 h-5 text-green-500" />;
       case 'message':
         return <MessageCircle className="w-5 h-5 text-blue-500" />;
       case 'streak_warning':
@@ -47,6 +53,40 @@ const Notifications = () => {
       return notification.message || 'Streak notification';
     }
     return notification.message || 'New notification';
+  };
+
+  const handleCollaborationResponse = async (e: React.MouseEvent, inviteId: string, status: 'accepted' | 'declined') => {
+    e.stopPropagation();
+    await respondToInvite(inviteId, status);
+  };
+
+  const renderCollaborationActions = (notification: any) => {
+    if (notification.type === 'collaboration_invite' && notification.data?.invite_id) {
+      return (
+        <div className="flex gap-2 mt-3" onClick={e => e.stopPropagation()}>
+          <Button 
+            size="sm" 
+            onClick={(e) => handleCollaborationResponse(e, notification.data.invite_id, 'accepted')}
+            disabled={collaborationLoading}
+            className="h-8"
+          >
+            <Check className="w-4 h-4 mr-2" />
+            Accept Collaboration
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={(e) => handleCollaborationResponse(e, notification.data.invite_id, 'declined')}
+            disabled={collaborationLoading}
+            className="h-8"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Decline
+          </Button>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
@@ -149,6 +189,7 @@ const Notifications = () => {
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                           </p>
+                          {renderCollaborationActions(notification)}
                         </div>
                         {!notification.read && (
                           <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
