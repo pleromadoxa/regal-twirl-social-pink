@@ -148,7 +148,7 @@ const Profile = () => {
                   {isOwnProfile && (
                     <>
                       <Button
-                        onClick={() => navigate('/?compose=true')}
+                        onClick={() => navigate('/home?compose=true')}
                         className={`bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white hover-scale ${isMobile ? 'w-full' : ''}`}
                       >
                         <Plus className="w-4 h-4 mr-2" />

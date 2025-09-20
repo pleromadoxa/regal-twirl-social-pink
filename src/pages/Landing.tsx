@@ -1,16 +1,44 @@
 
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
 import { BackgroundGradientAnimation } from '@/components/ui/background-gradient-animation';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { Sparkles, Heart, Users, BookOpen, Star, Zap } from 'lucide-react';
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  // Redirect authenticated users to home
+  useEffect(() => {
+    if (!loading && user) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const compose = urlParams.get('compose');
+      if (compose === 'true') {
+        navigate('/home?compose=true');
+      } else {
+        navigate('/home');
+      }
+    }
+  }, [user, loading, navigate]);
 
   const handleEnterClick = () => {
     console.log('Join Network button clicked, navigating to /auth');
     navigate('/auth');
   };
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden overflow-y-auto">

@@ -13,6 +13,7 @@ interface Profile {
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<any>;
@@ -25,6 +26,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,6 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (!mounted) return;
       
+      setSession(session);
       setUser(session?.user || null);
       
       if (session?.user) {
@@ -70,6 +73,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (!mounted) return;
         
+        setSession(session);
         setUser(session?.user || null);
         
         if (session?.user) {
@@ -208,6 +212,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         console.error('Error signing out:', error);
       }
+      setSession(null);
       setUser(null);
       setProfile(null);
     } catch (error) {
@@ -244,6 +249,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const value = {
     user,
+    session,
     profile,
     loading,
     signIn,
