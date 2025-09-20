@@ -178,7 +178,7 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
       }}
     >
       {(initiateCall) => (
-        <div className="flex flex-col h-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-l border-r border-purple-200 dark:border-purple-800">
+        <div className="flex flex-col h-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-l border-r border-purple-200 dark:border-purple-800 pb-20 md:pb-0">
           {/* Header */}
           <MessageThreadHeader
             otherParticipant={otherParticipant}

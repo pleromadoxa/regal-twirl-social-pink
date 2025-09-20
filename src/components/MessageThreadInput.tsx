@@ -47,7 +47,7 @@ const MessageThreadInput = ({ onSendMessage, disabled = false }: MessageThreadIn
       }}
       className="border-t border-purple-200 dark:border-purple-800"
     >
-      <div className="p-3 sm:p-4 pb-28 sm:pb-4 space-y-3">
+      <div className="p-3 sm:p-4 pb-safe space-y-3">
         {/* Attachment Upload */}
         <AttachmentUpload
           attachments={attachments}
@@ -71,7 +71,7 @@ const MessageThreadInput = ({ onSendMessage, disabled = false }: MessageThreadIn
         )}
 
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" className="rounded-full hidden sm:flex">
+          <Button variant="ghost" size="sm" className="rounded-full hidden sm:flex shrink-0">
             <Smile className="w-4 h-4" />
           </Button>
           <Input
@@ -79,13 +79,13 @@ const MessageThreadInput = ({ onSendMessage, disabled = false }: MessageThreadIn
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
-            className="flex-1 rounded-full bg-slate-100 dark:bg-slate-800 border-0 text-sm sm:text-base"
+            className="flex-1 rounded-full bg-slate-100 dark:bg-slate-800 border-0 text-sm sm:text-base min-w-0"
             disabled={disabled}
           />
           <Button
             onClick={handleSendMessage}
             disabled={disabled || (!newMessage.trim() && attachments.length === 0 && !sharedLocation)}
-            className="rounded-full w-8 h-8 sm:w-10 sm:h-10 p-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            className="rounded-full w-8 h-8 sm:w-10 sm:h-10 p-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shrink-0"
           >
             <Send className="w-3 h-3 sm:w-4 sm:h-4" />
           </Button>
