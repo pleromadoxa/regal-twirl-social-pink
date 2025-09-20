@@ -70,7 +70,7 @@ const Home = () => {
         {/* Desktop Layout */}
         <div className="hidden lg:flex">
           <div className="flex-1 ml-80 mr-96">
-            <main className="w-full max-w-2xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto">
+            <main className="w-full max-w-4xl border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto">
               {/* Stories Bar */}
               <div className="border-b border-purple-200 dark:border-purple-800 p-4">
                 <StoriesBar />
