@@ -21,6 +21,8 @@ import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 import ThreadContent from './ThreadContent';
 import ImageViewer from './ImageViewer';
+import UserBlockMuteMenu from './UserBlockMuteMenu';
+import PollComponent from './PollComponent';
 
 interface PostCardProps {
   post: {
@@ -196,13 +198,20 @@ const PostCard = ({
                 )}
               </div>
               
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
+               <div className="flex items-center space-x-1">
+                {!isOwnPost && (
+                  <UserBlockMuteMenu 
+                    userId={post.user_id}
+                    username={post.profiles?.username}
+                  />
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
                   {user && (
                     <>
                       <DropdownMenuItem onClick={handlePin}>
@@ -227,13 +236,17 @@ const PostCard = ({
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
-              </DropdownMenu>
+                </DropdownMenu>
+              </div>
             </div>
             
             <div className="mt-2">
               <div className="text-gray-900 dark:text-gray-100">
                 <ThreadContent content={post.content} />
               </div>
+              
+              {/* Poll Component */}
+              <PollComponent postId={post.id} />
               
               {post.image_urls && post.image_urls.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 gap-2 max-w-lg">

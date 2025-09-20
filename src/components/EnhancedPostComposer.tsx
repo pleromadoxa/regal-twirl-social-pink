@@ -19,6 +19,9 @@ import LocationPicker from './LocationPicker';
 import CalendarPicker from './CalendarPicker';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import AIPostEnhancer from './AIPostEnhancer';
+import { usePolls } from '@/hooks/usePolls';
+import { Input } from '@/components/ui/input';
+import { BarChart3, Plus, Minus } from 'lucide-react';
 
 const EnhancedPostComposer = () => {
   const [tweetText, setTweetText] = useState('');
@@ -44,10 +47,17 @@ const EnhancedPostComposer = () => {
   const [showBusinessMentions, setShowBusinessMentions] = useState(false);
   const [businessMentionSearchTerm, setBusinessMentionSearchTerm] = useState('');
   
+  // Poll state
+  const [showPollCreator, setShowPollCreator] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState(['', '']);
+  const [pollEndsAt, setPollEndsAt] = useState('');
+  
   const { toast } = useToast();
   const { createPost } = usePosts();
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { createPoll } = usePolls();
   const audioRef = useRef<HTMLAudioElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const maxLength = 280;

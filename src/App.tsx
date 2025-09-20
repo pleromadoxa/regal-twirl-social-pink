@@ -34,6 +34,7 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import BusinessManagement from '@/pages/BusinessManagement';
 import Support from '@/pages/Support';
 import JoinGroup from '@/pages/JoinGroup';
+import Events from '@/pages/Events';
 import AuthWrapper from '@/components/AuthWrapper';
 import BusinessPage from '@/pages/BusinessPage';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
@@ -82,6 +83,7 @@ function App() {
                     <Route path="/ads-manager" element={<AuthWrapper><AdsManager /></AuthWrapper>} />
                     <Route path="/create-ad" element={<AuthWrapper><CreateAd /></AuthWrapper>} />
                     <Route path="/ai-studio" element={<AuthWrapper><AIStudio /></AuthWrapper>} />
+                    <Route path="/events" element={<AuthWrapper><Events /></AuthWrapper>} />
                   </Routes>
                   <Toaster />
                   <WebRTCCallManager />

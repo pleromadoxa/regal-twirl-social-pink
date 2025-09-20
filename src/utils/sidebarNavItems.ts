@@ -47,6 +47,7 @@ export const getSidebarNavItems = ({
   const baseItems: NavItem[] = [
     { name: 'Home', path: '/home', icon: Home },
     { name: 'Explore', path: '/explore', icon: Search },
+    { name: 'Events', path: '/events', icon: Calendar },
     { name: 'Chat', path: '/messages', icon: MessageCircle },
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Reels', path: '/reels', icon: Play },
