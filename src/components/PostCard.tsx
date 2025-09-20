@@ -20,6 +20,7 @@ import PostComments from './PostComments';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 import ThreadContent from './ThreadContent';
+import ImageViewer from './ImageViewer';
 
 interface PostCardProps {
   post: {
@@ -81,6 +82,8 @@ const PostCard = ({
   const { isPostPinned, togglePin } = usePinnedPosts();
   const { verificationLevel } = useVerifiedStatus(post.profiles);
   const [showComments, setShowComments] = useState(false);
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   
   const isOwnPost = user?.id === post.user_id;
   const hasBusinessPages = myPages && myPages.length > 0;
@@ -132,6 +135,11 @@ const PostCard = ({
       return;
     }
     if (onRetweet) onRetweet();
+  };
+
+  const handleImageClick = (index: number) => {
+    setSelectedImageIndex(index);
+    setShowImageViewer(true);
   };
 
   return (
@@ -234,7 +242,8 @@ const PostCard = ({
                       key={index}
                       src={url}
                       alt=""
-                      className="rounded-lg object-cover w-full h-48"
+                      className="rounded-lg object-cover w-full h-48 cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => handleImageClick(index)}
                     />
                   ))}
                 </div>
@@ -319,6 +328,16 @@ const PostCard = ({
         isOpen={showComments}
         onClose={() => setShowComments(false)}
       />
+      
+      {/* Image Viewer Modal */}
+      {post.image_urls && (
+        <ImageViewer
+          images={post.image_urls}
+          isOpen={showImageViewer}
+          onClose={() => setShowImageViewer(false)}
+          initialIndex={selectedImageIndex}
+        />
+      )}
     </Card>
   );
 };
