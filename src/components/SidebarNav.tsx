@@ -93,17 +93,15 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
 
   return (
     <>
-      {/* Mobile toggle button */}
-      {isMobile && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="fixed top-4 left-4 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-lg rounded-full"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-        >
-          {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
-        </Button>
-      )}
+      {/* Toggle button - always visible on all screens */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="fixed top-4 left-4 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-lg rounded-full"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+      </Button>
 
       {/* Sidebar */}
       <div className={sidebarClass}>
