@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { createCall } from '@/services/callService';
+import { createCall, checkWebRTCSupport } from '@/services/callService';
+import { getMobileBrowserInfo } from '@/utils/mobileWebRTC';
 
 interface MessageThreadCallManagerProps {
   conversationId: string;
@@ -28,28 +29,79 @@ const MessageThreadCallManager = ({
 
   const initiateCall = async (callType: 'audio' | 'video') => {
     try {
-      // Check WebRTC support first
-      const { checkWebRTCSupport } = await import('@/services/callService');
-      const { supported, missing } = checkWebRTCSupport();
+      // Enhanced WebRTC support check with mobile compatibility
+      const { supported, missing, warnings } = checkWebRTCSupport();
+      const browserInfo = getMobileBrowserInfo();
+      
+      console.log('[CallManager] Browser info:', browserInfo);
+      console.log('[CallManager] WebRTC support:', { supported, missing, warnings });
       
       if (!supported) {
+        let errorDescription = `Missing: ${missing.join(', ')}`;
+        
+        if (browserInfo.isMobile) {
+          if (browserInfo.isIOS && browserInfo.version < 11) {
+            errorDescription = 'Please update to iOS Safari 11+ for video calling support.';
+          } else if (browserInfo.isAndroid && browserInfo.version < 56) {
+            errorDescription = 'Please update to Chrome 56+ for reliable mobile calling.';
+          } else {
+            errorDescription = `Video calling not supported on your ${browserInfo.isIOS ? 'iOS' : 'Android'} browser version.`;
+          }
+        }
+        
         toast({
           title: "Call not supported",
-          description: `Missing: ${missing.join(', ')}`,
+          description: errorDescription,
           variant: "destructive"
         });
         return;
       }
 
-      // Check microphone and camera permissions
+      // Show warnings for mobile users
+      if (browserInfo.isMobile && warnings.length > 0) {
+        console.log('[CallManager] Mobile warnings:', warnings);
+        toast({
+          title: "Mobile Call Notice",
+          description: warnings.join('. '),
+          variant: "default"
+        });
+      }
+
+      // Enhanced permission request for mobile devices
       try {
-        const constraints = {
+        const constraints: MediaStreamConstraints = {
           audio: true,
           video: callType === 'video'
         };
         
+        // Mobile-specific constraints
+        if (browserInfo.isMobile) {
+          if (constraints.audio) {
+            constraints.audio = {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              sampleRate: 16000, // Optimized for mobile
+              channelCount: 1
+            } as MediaTrackConstraints;
+          }
+          
+          if (constraints.video && callType === 'video') {
+            constraints.video = {
+              width: { ideal: browserInfo.isIOS ? 480 : 640, max: 1280 },
+              height: { ideal: browserInfo.isIOS ? 360 : 480, max: 720 },
+              frameRate: { ideal: 15, max: browserInfo.isIOS ? 24 : 30 },
+              facingMode: 'user'
+            } as MediaTrackConstraints;
+          }
+        }
+        
+        console.log('[CallManager] Testing media permissions with constraints:', constraints);
+        
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         stream.getTracks().forEach(track => track.stop()); // Stop the test stream
+        
+        console.log('[CallManager] Media permissions granted successfully');
         
         // Get caller profile info
         const { data: callerProfile } = await supabase
@@ -76,7 +128,8 @@ const MessageThreadCallManager = ({
               display_name: callerProfile?.display_name || callerProfile?.username || 'Unknown User',
               username: callerProfile?.username || 'unknown',
               avatar_url: callerProfile?.avatar_url || null
-            }
+            },
+            mobile_optimized: browserInfo.isMobile // Flag for mobile optimization
           }
         });
 
@@ -86,9 +139,13 @@ const MessageThreadCallManager = ({
         // Start the call on our end
         onCallStart(callType);
         
+        const callDescription = browserInfo.isMobile 
+          ? `${callType === 'video' ? 'Video' : 'Audio'} call to ${otherParticipant.display_name || otherParticipant.username} (mobile optimized)`
+          : `${callType === 'video' ? 'Video' : 'Audio'} call to ${otherParticipant.display_name || otherParticipant.username}`;
+        
         toast({
           title: "Calling...",
-          description: `${callType === 'video' ? 'Video' : 'Audio'} call to ${otherParticipant.display_name || otherParticipant.username}`
+          description: callDescription
         });
         
         // Clean up channel after some time
@@ -108,12 +165,31 @@ const MessageThreadCallManager = ({
         
         if (permissionError instanceof Error) {
           if (permissionError.name === 'NotAllowedError') {
-            errorMessage = `Please allow access to your ${callType === 'video' ? 'camera and microphone' : 'microphone'} in your browser settings and try again.`;
+            errorTitle = 'Permission Denied';
+            if (browserInfo.isMobile) {
+              errorMessage = `Please allow camera/microphone access in your ${browserInfo.isIOS ? 'iOS Safari' : 'Android browser'} settings. You may need to refresh the page after granting permissions.`;
+            } else {
+              errorMessage = `Please allow access to your ${callType === 'video' ? 'camera and microphone' : 'microphone'} in your browser settings and try again.`;
+            }
           } else if (permissionError.name === 'NotFoundError') {
             errorTitle = 'Device Not Found';
-            errorMessage = `No ${callType === 'video' ? 'camera or microphone' : 'microphone'} found. Please check your device connections.`;
+            errorMessage = browserInfo.isMobile
+              ? 'No camera or microphone found on your mobile device. Please check your device hardware.'
+              : `No ${callType === 'video' ? 'camera or microphone' : 'microphone'} found. Please check your device connections.`;
+          } else if (permissionError.name === 'NotReadableError') {
+            errorTitle = 'Device In Use';
+            errorMessage = browserInfo.isMobile
+              ? 'Your camera or microphone is being used by another app. Please close other apps and try again.'
+              : `Your ${callType === 'video' ? 'camera or microphone' : 'microphone'} is being used by another application.`;
+          } else if (permissionError.name === 'OverconstrainedError') {
+            errorTitle = 'Device Constraints';
+            errorMessage = browserInfo.isMobile
+              ? 'Your mobile device does not support the required call quality. Please try with a different device or update your browser.'
+              : 'Your device does not support the required call settings.';
           } else {
-            errorMessage = permissionError.message || `Unable to access ${callType === 'video' ? 'camera and microphone' : 'microphone'}`;
+            errorMessage = browserInfo.isMobile
+              ? `Mobile call error: ${permissionError.message || 'Unable to access camera/microphone'}`
+              : permissionError.message || `Unable to access ${callType === 'video' ? 'camera and microphone' : 'microphone'}`;
           }
         }
         
@@ -126,9 +202,17 @@ const MessageThreadCallManager = ({
       
     } catch (error) {
       console.error('Error initiating call:', error);
+      
+      const browserInfo = getMobileBrowserInfo();
+      let errorDescription = "Failed to start call. Please try again.";
+      
+      if (browserInfo.isMobile) {
+        errorDescription = "Failed to start mobile call. Please check your connection and try again.";
+      }
+      
       toast({
         title: "Call failed",
-        description: "Failed to start call. Please try again.",
+        description: errorDescription,
         variant: "destructive"
       });
     }

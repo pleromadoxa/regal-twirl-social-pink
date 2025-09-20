@@ -1,4 +1,12 @@
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  getMobileBrowserInfo, 
+  getMobileOptimizedConstraints, 
+  requestMobileMediaPermissions,
+  createMobileOptimizedPeerConnection,
+  handleMobileAudioContext,
+  optimizeCallForMobile
+} from '@/utils/mobileWebRTC';
 
 export interface WebRTCConfig {
   iceServers: RTCIceServer[];
@@ -22,10 +30,18 @@ export class WebRTCService {
   private onDataChannelMessageCallback?: (data: any) => void;
 
   constructor(config?: Partial<WebRTCConfig>) {
+    const browserInfo = getMobileBrowserInfo();
+    
+    // Mobile-optimized default configuration
     const defaultConfig: WebRTCConfig = {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        // Additional STUN servers for better mobile connectivity
+        ...(browserInfo.isMobile ? [
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+        ] : [])
       ]
     };
 
@@ -63,7 +79,22 @@ export class WebRTCService {
     try {
       console.log('[WebRTCService] Requesting user media with constraints:', constraints);
       
-      this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const browserInfo = getMobileBrowserInfo();
+      
+      // Use mobile-optimized constraints if on mobile
+      const optimizedConstraints = browserInfo.isMobile 
+        ? getMobileOptimizedConstraints(constraints.video ? 'video' : 'audio', browserInfo)
+        : constraints;
+      
+      console.log('[WebRTCService] Using optimized constraints for mobile:', optimizedConstraints);
+      
+      // Initialize mobile audio context if needed
+      if (browserInfo.isMobile && constraints.audio) {
+        await handleMobileAudioContext();
+      }
+      
+      // Use mobile-optimized media request
+      this.localStream = await requestMobileMediaPermissions(optimizedConstraints);
       
       console.log('[WebRTCService] Successfully obtained local stream');
       
@@ -74,6 +105,28 @@ export class WebRTCService {
       return this.localStream;
     } catch (error) {
       console.error('[WebRTCService] Failed to get user media:', error);
+      
+      // Enhanced mobile error handling
+      const browserInfo = getMobileBrowserInfo();
+      if (browserInfo.isMobile && error instanceof Error) {
+        let enhancedError = error;
+        
+        if (error.name === 'NotAllowedError') {
+          enhancedError = new Error(`Camera/microphone access denied. Please check your browser permissions and try again. On ${browserInfo.isIOS ? 'iOS' : 'Android'}, you may need to refresh the page after granting permissions.`);
+        } else if (error.name === 'NotFoundError') {
+          enhancedError = new Error('No camera or microphone found. Please ensure your device has the required hardware and try again.');
+        } else if (error.name === 'NotReadableError') {
+          enhancedError = new Error('Camera or microphone is already in use by another application. Please close other apps and try again.');
+        } else if (error.name === 'OverconstrainedError') {
+          enhancedError = new Error('Camera or microphone does not support the required settings. Trying with reduced quality...');
+        }
+        
+        if (this.onErrorCallback) {
+          this.onErrorCallback(enhancedError);
+        }
+        
+        throw enhancedError;
+      }
       
       if (this.onErrorCallback) {
         this.onErrorCallback(error as Error);
@@ -87,7 +140,8 @@ export class WebRTCService {
     try {
       console.log('[WebRTCService] Creating peer connection with config:', this.config);
       
-      this.peerConnection = new RTCPeerConnection(this.config);
+      // Use mobile-optimized peer connection
+      this.peerConnection = createMobileOptimizedPeerConnection(this.config.iceServers);
 
       // Handle connection state changes
       this.peerConnection.onconnectionstatechange = () => {
@@ -182,6 +236,13 @@ export class WebRTCService {
           this.peerConnection.addTrack(track, stream);
         }
       });
+
+      // Apply mobile optimizations
+      const browserInfo = getMobileBrowserInfo();
+      if (browserInfo.isMobile && this.peerConnection) {
+        const callType = stream.getVideoTracks().length > 0 ? 'video' : 'audio';
+        optimizeCallForMobile(this.peerConnection, callType);
+      }
 
       // Create data channel for text messaging during calls
       this.dataChannel = this.peerConnection.createDataChannel('messages', {
@@ -393,14 +454,22 @@ export class WebRTCService {
       const videoTrack = this.localStream.getVideoTracks()[0];
       if (!videoTrack) return;
 
-      const constraints = {
-        video: {
-          facingMode: videoTrack.getSettings().facingMode === 'user' ? 'environment' : 'user'
-        }
-      };
+      const browserInfo = getMobileBrowserInfo();
+      const currentFacingMode = videoTrack.getSettings().facingMode;
+      const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
 
-      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      // Mobile-optimized camera switch constraints
+      const constraints = getMobileOptimizedConstraints('video', browserInfo);
+      if (constraints.video && typeof constraints.video === 'object') {
+        (constraints.video as MediaTrackConstraints).facingMode = newFacingMode;
+      }
+
+      const newStream = await requestMobileMediaPermissions(constraints);
       const newVideoTrack = newStream.getVideoTracks()[0];
+
+      if (!newVideoTrack) {
+        throw new Error('Failed to get new video track');
+      }
 
       // Replace the track in peer connection
       if (this.peerConnection) {
@@ -419,10 +488,33 @@ export class WebRTCService {
       
       videoTrack.stop();
 
-      console.log('[WebRTCService] Camera switched successfully');
+      // Update local stream callback
+      if (this.onLocalStreamCallback) {
+        this.onLocalStreamCallback(this.localStream);
+      }
+
+      console.log('[WebRTCService] Camera switched successfully to:', newFacingMode);
       
     } catch (error) {
       console.error('[WebRTCService] Failed to switch camera:', error);
+      
+      // Enhanced mobile error handling for camera switch
+      const browserInfo = getMobileBrowserInfo();
+      if (browserInfo.isMobile && error instanceof Error) {
+        let enhancedError = error;
+        
+        if (error.name === 'OverconstrainedError') {
+          enhancedError = new Error('Camera switch not supported on this device. Try using the default camera.');
+        } else if (error.name === 'NotFoundError') {
+          enhancedError = new Error('No alternative camera found on this device.');
+        }
+        
+        if (this.onErrorCallback) {
+          this.onErrorCallback(enhancedError);
+        }
+        
+        throw enhancedError;
+      }
       
       if (this.onErrorCallback) {
         this.onErrorCallback(error as Error);

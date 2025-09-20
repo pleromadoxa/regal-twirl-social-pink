@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { getMobileBrowserInfo, getMobileOptimizedConstraints } from '@/utils/mobileWebRTC';
 
 export interface CallState {
   status: 'idle' | 'connecting' | 'connected' | 'ended' | 'failed';
@@ -126,11 +127,11 @@ export const useWebRTCCall = ({
         });
       });
 
-      // Initialize media
-      const constraints = {
-        audio: true,
-        video: callType === 'video'
-      };
+      // Initialize media with mobile-optimized constraints
+      const browserInfo = getMobileBrowserInfo();
+      const constraints = getMobileOptimizedConstraints(callType, browserInfo);
+      
+      console.log('[useWebRTCCall] Using mobile-optimized constraints:', constraints, 'Browser info:', browserInfo);
 
       const localStream = await service.initializeMedia(constraints);
       
@@ -157,21 +158,40 @@ export const useWebRTCCall = ({
       let errorTitle = 'Call Failed';
       
       if (error instanceof Error) {
-        // Handle specific permission errors
+        const browserInfo = getMobileBrowserInfo();
+        
+        // Enhanced mobile-specific error handling
         if (error.name === 'NotAllowedError') {
           errorTitle = 'Permission Denied';
-          errorMessage = `Please allow access to your ${callType === 'video' ? 'camera and microphone' : 'microphone'} and try again.`;
+          if (browserInfo.isMobile) {
+            errorMessage = `Please allow camera/microphone access in your ${browserInfo.isIOS ? 'iOS Safari' : 'Android browser'} settings. You may need to refresh the page after granting permissions.`;
+          } else {
+            errorMessage = `Please allow access to your ${callType === 'video' ? 'camera and microphone' : 'microphone'} and try again.`;
+          }
         } else if (error.name === 'NotFoundError') {
           errorTitle = 'Device Not Found';
-          errorMessage = `No ${callType === 'video' ? 'camera or microphone' : 'microphone'} found. Please check your device connections.`;
+          errorMessage = browserInfo.isMobile 
+            ? 'No camera or microphone found on your mobile device. Please check your device hardware and try again.'
+            : `No ${callType === 'video' ? 'camera or microphone' : 'microphone'} found. Please check your device connections.`;
         } else if (error.name === 'NotSupportedError') {
           errorTitle = 'Not Supported';
-          errorMessage = 'Your browser does not support the required features for calling.';
+          errorMessage = browserInfo.isMobile
+            ? `Your mobile browser (${browserInfo.isIOS ? 'iOS Safari' : browserInfo.isAndroid ? 'Android Chrome' : 'mobile browser'}) does not support video calling. Please try updating your browser.`
+            : 'Your browser does not support the required features for calling.';
         } else if (error.name === 'NotReadableError') {
           errorTitle = 'Device In Use';
-          errorMessage = `Your ${callType === 'video' ? 'camera or microphone' : 'microphone'} is being used by another application.`;
+          errorMessage = browserInfo.isMobile
+            ? 'Your camera or microphone is being used by another app. Please close other apps and try again.'
+            : `Your ${callType === 'video' ? 'camera or microphone' : 'microphone'} is being used by another application.`;
+        } else if (error.name === 'OverconstrainedError') {
+          errorTitle = 'Device Constraints';
+          errorMessage = browserInfo.isMobile
+            ? 'Your mobile device does not support the required call quality. Trying with optimized settings...'
+            : 'Your device does not support the required call settings.';
         } else {
-          errorMessage = error.message || 'An unexpected error occurred';
+          errorMessage = browserInfo.isMobile && error.message
+            ? `Mobile call error: ${error.message}`
+            : error.message || 'An unexpected error occurred';
         }
       }
       
@@ -217,9 +237,13 @@ export const useWebRTCCall = ({
       webrtcServiceRef.current.toggleAudio(newState);
       updateCallState({ isAudioEnabled: newState });
       
+      const browserInfo = getMobileBrowserInfo();
+      
       toast({
         title: newState ? "Microphone enabled" : "Microphone disabled",
-        description: newState ? "You can now be heard" : "You are now muted"
+        description: newState 
+          ? (browserInfo.isMobile ? "You can now be heard on mobile" : "You can now be heard")
+          : (browserInfo.isMobile ? "You are muted on mobile" : "You are now muted")
       });
     }
   }, [callState.isAudioEnabled, updateCallState, toast]);
@@ -239,9 +263,13 @@ export const useWebRTCCall = ({
       webrtcServiceRef.current.toggleVideo(newState);
       updateCallState({ isVideoEnabled: newState });
       
+      const browserInfo = getMobileBrowserInfo();
+      
       toast({
         title: newState ? "Camera enabled" : "Camera disabled", 
-        description: newState ? "Your video is now visible" : "Your video is now hidden"
+        description: newState 
+          ? (browserInfo.isMobile ? "Your video is visible on mobile" : "Your video is now visible")
+          : (browserInfo.isMobile ? "Your video is hidden on mobile" : "Your video is now hidden")
       });
     }
   }, [callState.isVideoEnabled, callType, updateCallState, toast]);

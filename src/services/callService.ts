@@ -142,26 +142,95 @@ export const subscribeToCallUpdates = (
   };
 };
 
-export const checkWebRTCSupport = (): { supported: boolean; missing: string[] } => {
+export const checkWebRTCSupport = (): { supported: boolean; missing: string[]; warnings: string[] } => {
   const missing: string[] = [];
+  const warnings: string[] = [];
   let supported = true;
 
-  if (typeof RTCPeerConnection === 'undefined') {
+  // Detect browser and OS
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(userAgent);
+  const isSafari = /safari/.test(userAgent) && !/chrome/.test(userAgent);
+  const isChrome = /chrome/.test(userAgent);
+  const isFirefox = /firefox/.test(userAgent);
+  const isAndroid = /android/.test(userAgent);
+  const isMobile = /mobile|android|iphone|ipad|ipod/.test(userAgent);
+
+  // Check RTCPeerConnection with mobile browser compatibility
+  if (typeof RTCPeerConnection === 'undefined' && 
+      typeof webkitRTCPeerConnection === 'undefined' && 
+      typeof mozRTCPeerConnection === 'undefined') {
     missing.push('RTCPeerConnection');
     supported = false;
   }
 
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  // Check getUserMedia with legacy support
+  if (!navigator.mediaDevices?.getUserMedia && 
+      !navigator.getUserMedia && 
+      !navigator.webkitGetUserMedia && 
+      !navigator.mozGetUserMedia) {
     missing.push('getUserMedia API');
     supported = false;
   }
 
-  if (!window.location.protocol.includes('https') && window.location.hostname !== 'localhost') {
-    missing.push('Secure context (HTTPS)');
+  // Enhanced secure context check
+  if (!window.isSecureContext && 
+      !window.location.protocol.includes('https') && 
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1') {
+    missing.push('Secure context (HTTPS required for mobile calls)');
     supported = false;
   }
 
-  return { supported, missing };
+  // Mobile-specific checks and warnings
+  if (isMobile) {
+    // iOS Safari specific limitations
+    if (isIOS && isSafari) {
+      const version = userAgent.match(/version\/(\d+)/);
+      const safariVersion = version ? parseInt(version[1]) : 0;
+      
+      if (safariVersion < 11) {
+        missing.push('Safari 11+ required for WebRTC on iOS');
+        supported = false;
+      } else if (safariVersion < 14) {
+        warnings.push('iOS Safari version may have limited WebRTC features');
+      }
+    }
+
+    // Android Chrome checks
+    if (isAndroid && isChrome) {
+      const chromeVersion = userAgent.match(/chrome\/(\d+)/);
+      const version = chromeVersion ? parseInt(chromeVersion[1]) : 0;
+      
+      if (version < 56) {
+        missing.push('Chrome 56+ required for reliable mobile WebRTC');
+        supported = false;
+      }
+    }
+
+    // Check for camera/microphone availability
+    if (navigator.mediaDevices?.enumerateDevices) {
+      navigator.mediaDevices.enumerateDevices().then(devices => {
+        const hasAudio = devices.some(device => device.kind === 'audioinput');
+        const hasVideo = devices.some(device => device.kind === 'videoinput');
+        
+        if (!hasAudio) warnings.push('No microphone detected');
+        if (!hasVideo) warnings.push('No camera detected');
+      }).catch(() => {
+        warnings.push('Could not enumerate media devices');
+      });
+    }
+
+    // Mobile-specific warnings
+    if (isMobile) {
+      warnings.push('Mobile calls may require user interaction to start');
+      if (isIOS) {
+        warnings.push('iOS may require speaker mode for audio calls');
+      }
+    }
+  }
+
+  return { supported, missing, warnings };
 };
 
 export const checkSecureContext = (): boolean => {
