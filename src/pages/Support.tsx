@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +12,7 @@ import { HelpCircle, MessageSquare, Mail, Phone, Clock } from 'lucide-react';
 import SupportTicketDialog from '@/components/SupportTicketDialog';
 
 const Support = () => {
+  const isMobile = useIsMobile();
   const [showTicketDialog, setShowTicketDialog] = useState(false);
 
   return (
@@ -83,7 +86,8 @@ const Support = () => {
         </main>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
       
       <SupportTicketDialog 
         ticket={null}

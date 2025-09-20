@@ -2,6 +2,8 @@
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const CreateProfessionalAccount = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -169,7 +172,8 @@ const CreateProfessionalAccount = () => {
         </main>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

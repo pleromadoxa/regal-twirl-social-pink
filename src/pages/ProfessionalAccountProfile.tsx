@@ -5,6 +5,8 @@ import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { supabase } from '@/integrations/supabase/client';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -25,6 +27,7 @@ import BusinessShopSection from '@/components/business/BusinessShopSection';
 
 const ProfessionalAccountProfile = () => {
   const { pageId } = useParams();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { pages, searchPages } = useBusinessPages();
@@ -304,7 +307,8 @@ const ProfessionalAccountProfile = () => {
         </main>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

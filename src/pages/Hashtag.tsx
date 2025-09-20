@@ -9,8 +9,11 @@ import { Hash, TrendingUp } from 'lucide-react';
 import { Post } from '@/hooks/usePosts';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 const Hashtag = () => {
+  const isMobile = useIsMobile();
   const { hashtag } = useParams<{ hashtag: string }>();
   const { user } = useAuth();
   const { toast } = useToast();

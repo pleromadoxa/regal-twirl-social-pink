@@ -1,6 +1,8 @@
 
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +16,7 @@ import { useBusinessPages } from '@/hooks/useBusinessPages';
 type ViewMode = 'grid' | 'list';
 
 const ProfessionalDirectory = () => {
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const { pages, loading, searchPages } = useBusinessPages();
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -233,7 +236,8 @@ const ProfessionalDirectory = () => {
         </div>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

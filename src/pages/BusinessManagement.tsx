@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import BusinessPageDialog from '@/components/BusinessPageDialog';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +24,7 @@ import {
 } from 'lucide-react';
 
 const BusinessManagement = () => {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { myPages, loading } = useBusinessPages();
   const navigate = useNavigate();
@@ -195,7 +198,8 @@ const BusinessManagement = () => {
         </main>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

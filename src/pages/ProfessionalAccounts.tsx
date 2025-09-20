@@ -9,6 +9,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import BusinessPageDialog from '@/components/BusinessPageDialog';
 import { 
   Building2, 
@@ -27,6 +29,7 @@ import {
 
 const ProfessionalAccounts = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const { myPages, loading, refetch } = useBusinessPages();
   const navigate = useNavigate();
 
@@ -52,7 +55,8 @@ const ProfessionalAccounts = () => {
         <div className="flex-1 ml-80 mr-96 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
         </div>
-        <RightSidebar />
+        {!isMobile && <RightSidebar />}
+        {isMobile && <MobileBottomNav />}
       </div>
     );
   }
@@ -185,7 +189,8 @@ const ProfessionalAccounts = () => {
         </div>
       </div>
 
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

@@ -2,10 +2,13 @@
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import GalleryUpload from "@/components/GalleryUpload";
 
 const Gallery = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   if (!user) {
     return null;
@@ -24,7 +27,8 @@ const Gallery = () => {
         </main>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

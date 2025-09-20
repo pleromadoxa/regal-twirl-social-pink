@@ -6,6 +6,8 @@ import { usePosts } from '@/hooks/usePosts';
 import { useOpenRouterAI } from '@/hooks/useOpenRouterAI';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -37,6 +39,7 @@ interface Generation {
 
 const AIStudio = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   const { createPost } = usePosts();
   const { generateText, loading } = useOpenRouterAI();
@@ -439,7 +442,8 @@ const AIStudio = () => {
         </div>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
+import { useIsMobile } from '@/hooks/use-mobile';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const CreateAd = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const { myPages } = useBusinessPages();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -469,7 +472,8 @@ const CreateAd = () => {
         </div>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

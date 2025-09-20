@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
+import { useIsMobile } from '@/hooks/use-mobile';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import MobileBottomNav from '@/components/MobileBottomNav';
 // import ActiveChatBar from '@/components/ActiveChatBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 
 const AdsManager = () => {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { myPages } = useBusinessPages();
   const navigate = useNavigate();
@@ -508,7 +511,8 @@ const AdsManager = () => {
         </div>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

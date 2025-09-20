@@ -2,6 +2,8 @@
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import TweetComposer from "@/components/TweetComposer";
 import PostsList from "@/components/PostsList";
 import ReelsSection from "@/components/ReelsSection";
@@ -12,6 +14,7 @@ import { useLocation } from "react-router-dom";
 
 const Index = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [feedFilter, setFeedFilter] = useState<'all' | 'professional' | 'trending'>('all');
   const location = useLocation();
   const isReelsView = location.search.includes('tab=reels');
@@ -52,7 +55,8 @@ const Index = () => {
         </main>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

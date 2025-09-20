@@ -2,6 +2,8 @@
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import ReelsSection from "@/components/ReelsSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +12,7 @@ import { Video, TrendingUp, DollarSign, Music, Heart, Eye, Flame } from "lucide-
 
 const Reels = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   if (!user) {
     return null;
@@ -164,7 +167,8 @@ const Reels = () => {
         </main>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };
