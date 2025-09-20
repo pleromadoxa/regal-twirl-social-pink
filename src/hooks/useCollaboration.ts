@@ -112,31 +112,61 @@ export const useCollaboration = () => {
 
   // Invite user to collaborate on a post
   const inviteCollaborator = async (postId: string, userId: string, message?: string) => {
-    if (!user) return false;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to send invitations",
+        variant: "destructive"
+      });
+      return false;
+    }
 
     try {
       setLoading(true);
+      
+      // Check if invite already exists
+      const { data: existingInvite } = await supabase
+        .from('collaboration_invites')
+        .select('id')
+        .eq('post_id', postId)
+        .eq('inviter_id', user.id)
+        .eq('invitee_id', userId)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      if (existingInvite) {
+        toast({
+          title: "Invitation already sent",
+          description: "This user already has a pending invitation for this post",
+          variant: "destructive"
+        });
+        return false;
+      }
+
       const { error } = await supabase
         .from('collaboration_invites')
         .insert({
           post_id: postId,
           inviter_id: user.id,
           invitee_id: userId,
-          message
+          message: message || null
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error inviting collaborator:', error);
+        throw error;
+      }
 
       toast({
         title: "Invitation sent",
         description: "The user has been invited to collaborate on this post"
       });
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error inviting collaborator:', error);
       toast({
-        title: "Error",
-        description: "Failed to send collaboration invite. Please try again.",
+        title: "Failed to send invitation",
+        description: error?.message || "Please try again later",
         variant: "destructive"
       });
       return false;

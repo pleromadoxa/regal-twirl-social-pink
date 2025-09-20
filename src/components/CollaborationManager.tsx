@@ -96,7 +96,7 @@ const CollaborationManager = ({
         )}
       </DialogTrigger>
       
-      <DialogContent className="max-w-md max-h-[80vh]">
+      <DialogContent className="max-w-md lg:max-w-2xl max-h-[80vh] lg:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <Users className="w-5 h-5 mr-2" />
@@ -104,7 +104,7 @@ const CollaborationManager = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 lg:space-y-6">
           {/* Current Collaborators */}
           <div>
             <h3 className="font-medium text-sm mb-3">Current Collaborators</h3>
@@ -113,12 +113,12 @@ const CollaborationManager = ({
                 No collaborators yet
               </p>
             ) : (
-              <ScrollArea className="max-h-48">
+              <ScrollArea className="max-h-48 lg:max-h-80">
                 <div className="space-y-2">
                   {collaborators.map((collaborator) => (
-                    <div key={collaborator.id} className="flex items-center justify-between p-2 rounded-lg border bg-card">
+                    <div key={collaborator.id} className="flex items-center justify-between p-2 lg:p-3 rounded-lg border bg-card">
                       <div className="flex items-center space-x-3">
-                        <Avatar className="w-8 h-8">
+                        <Avatar className="w-8 h-8 lg:w-10 lg:h-10">
                           <AvatarImage src={collaborator.profiles.avatar_url} />
                           <AvatarFallback>
                             {collaborator.profiles.display_name?.[0]?.toUpperCase() || 
@@ -126,12 +126,12 @@ const CollaborationManager = ({
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
+                          <p className="text-sm lg:text-base font-medium truncate">
                             {collaborator.profiles.display_name || collaborator.profiles.username}
                           </p>
                           <div className="flex items-center space-x-2">
                             {getRoleIcon(collaborator.role)}
-                            <span className="text-xs text-muted-foreground capitalize">
+                            <span className="text-xs lg:text-sm text-muted-foreground capitalize">
                               {collaborator.role}
                             </span>
                           </div>
@@ -173,9 +173,9 @@ const CollaborationManager = ({
                   />
                   
                   {selectedUser && (
-                    <div className="p-3 rounded-lg border bg-muted/50">
+                    <div className="p-3 lg:p-4 rounded-lg border bg-muted/50">
                       <div className="flex items-center space-x-3 mb-3">
-                        <Avatar className="w-8 h-8">
+                        <Avatar className="w-8 h-8 lg:w-10 lg:h-10">
                           <AvatarImage src={selectedUser.avatar_url} />
                           <AvatarFallback>
                             {selectedUser.display_name?.[0]?.toUpperCase() || 
@@ -183,10 +183,10 @@ const CollaborationManager = ({
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-sm">
+                          <p className="font-medium text-sm lg:text-base">
                             {selectedUser.display_name || selectedUser.username}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs lg:text-sm text-muted-foreground">
                             @{selectedUser.username}
                           </p>
                         </div>
@@ -197,14 +197,14 @@ const CollaborationManager = ({
                         value={inviteMessage}
                         onChange={(e) => setInviteMessage(e.target.value)}
                         rows={2}
-                        className="mb-3"
+                        className="mb-3 lg:mb-4 text-sm lg:text-base"
                       />
                       
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 lg:gap-3">
                         <Button 
                           onClick={handleInviteUser}
                           disabled={loading}
-                          className="flex-1"
+                          className="flex-1 text-sm lg:text-base"
                         >
                           {loading ? 'Sending...' : 'Send Invite'}
                         </Button>
@@ -215,6 +215,7 @@ const CollaborationManager = ({
                             setInviteMessage('');
                             setShowUserSearch(false);
                           }}
+                          className="text-sm lg:text-base"
                         >
                           Cancel
                         </Button>

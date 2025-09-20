@@ -94,27 +94,27 @@ const CollaboratorSearch = ({
       </div>
 
       {searchQuery.length >= 2 && (
-        <div className="border rounded-lg bg-card max-h-48 overflow-hidden">
+        <div className="border rounded-lg bg-card max-h-48 lg:max-h-80 overflow-hidden">
           {loading ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
+            <div className="p-4 text-center text-sm lg:text-base text-muted-foreground">
               Searching users...
             </div>
           ) : users.length === 0 ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
+            <div className="p-4 text-center text-sm lg:text-base text-muted-foreground">
               No users found
             </div>
           ) : (
-            <ScrollArea className="max-h-48">
+            <ScrollArea className="max-h-48 lg:max-h-80">
               <div className="p-2 space-y-1">
                 {users.map((user) => (
                   <Button
                     key={user.id}
                     variant="ghost"
-                    className="w-full justify-start h-auto p-2"
+                    className="w-full justify-start h-auto p-2 lg:p-3"
                     onClick={() => handleUserSelect(user)}
                   >
                     <div className="flex items-center space-x-3">
-                      <Avatar className="w-8 h-8">
+                      <Avatar className="w-8 h-8 lg:w-10 lg:h-10">
                         <AvatarImage src={user.avatar_url} />
                         <AvatarFallback>
                           {user.display_name?.[0]?.toUpperCase() || 
@@ -122,10 +122,10 @@ const CollaboratorSearch = ({
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 text-left">
-                        <p className="font-medium text-sm">
+                        <p className="font-medium text-sm lg:text-base">
                           {user.display_name || user.username}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs lg:text-sm text-muted-foreground">
                           @{user.username} • {user.followers_count} followers
                         </p>
                       </div>
