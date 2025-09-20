@@ -22,7 +22,7 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
   const location = useLocation();
   const { user, profile } = useAuth();
   const isMobile = useIsMobile();
-  const [isCollapsed, setIsCollapsed] = useState(isMobile); // Start collapsed on mobile
+  const [isCollapsed, setIsCollapsed] = useState(true); // Always start collapsed
   const { pages } = useBusinessPages();
   const { hasValidSubscription, subscriptionData } = useSubscriptionStatus(
     user?.email === 'pleromadoxa@gmail.com' || profile?.username === 'pleromadoxa',
@@ -81,7 +81,7 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
     );
   }
 
-  // Handle mobile responsive behavior for full sidebar
+  // Handle responsive behavior for sidebar
   const sidebarWidth = isMobile ? 'w-80' : (isCollapsed ? 'w-16' : 'w-80');
   const sidebarClass = `fixed left-0 top-0 h-full ${sidebarWidth} glass backdrop-blur-xl border-r border-white/30 dark:border-white/10 z-40 transition-all duration-300 ${isMobile && isCollapsed ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100'} max-w-[85vw]`;
 
@@ -93,17 +93,17 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
 
   return (
     <>
-      {/* Mobile toggle button */}
-      {isMobile && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="fixed top-4 left-4 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-lg rounded-full"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-        >
-          {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
-        </Button>
-      )}
+      {/* Toggle button - Always visible */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`fixed top-4 left-4 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-lg rounded-full transition-all duration-300 ${
+          isCollapsed || isMobile ? 'opacity-100' : 'opacity-100'
+        }`}
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+      </Button>
 
       {/* Sidebar */}
       <div className={sidebarClass}>
@@ -111,18 +111,26 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
           {/* Logo */}
           <div className="p-6 border-b border-purple-200 dark:border-purple-800">
             <Link to="/home" className="flex flex-col items-center space-y-2">
-              <img 
-                src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
-                alt="Regal Network Logo" 
-                className="h-12 sm:h-16 md:h-20 w-auto mx-auto transition-transform hover:scale-110 filter drop-shadow-2xl"
-              />
-              {!isCollapsed && (
-                <div className="text-center">
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    Regal Network
-                  </h1>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">A Global Christian Social Network</p>
-                </div>
+              {!isCollapsed ? (
+                <>
+                  <img 
+                    src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
+                    alt="Regal Network Logo" 
+                    className="h-12 sm:h-16 md:h-20 w-auto mx-auto transition-transform hover:scale-110 filter drop-shadow-2xl"
+                  />
+                  <div className="text-center">
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                      Regal Network
+                    </h1>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">A Global Christian Social Network</p>
+                  </div>
+                </>
+              ) : (
+                <img 
+                  src="/lovable-uploads/793ed9cd-aba3-48c4-b69c-6e09bf34f5fa.png"
+                  alt="Regal Network Logo" 
+                  className="h-8 w-auto mx-auto transition-transform hover:scale-110 filter drop-shadow-2xl"
+                />
               )}
             </Link>
           </div>
