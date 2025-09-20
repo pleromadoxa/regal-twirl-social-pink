@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Calendar, Link as LinkIcon, Crown, Plus } from 'lucide-react';
+import { MapPin, Calendar, Link as LinkIcon, Crown, Plus, LogOut } from 'lucide-react';
 import ProfilePostsList from '@/components/ProfilePostsList';
 import ProfileReelsList from '@/components/ProfileReelsList';
 import ProfileRepliesList from '@/components/ProfileRepliesList';
@@ -31,7 +31,7 @@ import { useState } from 'react';
 
 const Profile = () => {
   const { userId } = useParams<{ userId: string }>();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { profile, loading, isFollowing, toggleFollow } = useProfile(userId);
   const { verificationLevel } = useVerifiedStatus(profile);
@@ -164,6 +164,14 @@ const Profile = () => {
                           </Button>
                         }
                       />
+                      <Button
+                        onClick={signOut}
+                        variant="destructive"
+                        className={`hover-scale ${isMobile ? 'w-full' : ''}`}
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                      </Button>
                     </>
                   )}
                   {!isOwnProfile && (
