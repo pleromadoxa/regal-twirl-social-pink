@@ -22,7 +22,7 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
   const location = useLocation();
   const { user, profile } = useAuth();
   const isMobile = useIsMobile();
-  const [isCollapsed, setIsCollapsed] = useState(true); // Always start collapsed
+  const [isCollapsed, setIsCollapsed] = useState(isMobile); // Start collapsed on mobile
   const { pages } = useBusinessPages();
   const { hasValidSubscription, subscriptionData } = useSubscriptionStatus(
     user?.email === 'pleromadoxa@gmail.com' || profile?.username === 'pleromadoxa',
