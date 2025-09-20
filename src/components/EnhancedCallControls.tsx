@@ -57,7 +57,7 @@ export const EnhancedCallControls = ({
   const canUseControls = isCallActive || (isIncoming && status === 'idle');
 
   return (
-    <div className="flex items-center justify-center gap-4 bg-black/50 backdrop-blur-md rounded-full px-6 py-4">
+    <div className="flex items-center justify-center gap-2 sm:gap-4 bg-black/50 backdrop-blur-md rounded-full px-4 sm:px-6 py-3 sm:py-4 max-w-fit mx-auto overflow-x-auto">
       {/* Audio Control */}
       <Button
         variant={isAudioEnabled ? "secondary" : "destructive"}

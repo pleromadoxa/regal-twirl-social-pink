@@ -19,25 +19,18 @@ const EnhancedAudioCall = ({
   onCallEnd, 
   isIncoming = false 
 }: EnhancedAudioCallProps) => {
-  // Component maintained for compatibility but no call functionality
+  // Import the regular AudioCall component
+  const AudioCall = require('./AudioCall').default;
+  
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black flex flex-col items-center justify-center">
-      <div className="text-center text-white space-y-8">
-        <div>
-          <h2 className="text-2xl font-bold">Call Unavailable</h2>
-          <p className="text-lg opacity-75 mt-2">Audio calling is currently disabled</p>
-        </div>
-
-        <Button
-          variant="destructive"
-          size="lg"
-          onClick={onCallEnd}
-          className="rounded-full w-14 h-14 p-0"
-        >
-          <PhoneOff className="w-6 h-6" />
-        </Button>
-      </div>
-    </div>
+    <AudioCall
+      conversationId={conversationId}
+      otherUserId={otherUserId}
+      otherUserName={otherUserName}
+      otherUserAvatar={otherUserAvatar}
+      onCallEnd={onCallEnd}
+      isIncoming={isIncoming}
+    />
   );
 };
 
