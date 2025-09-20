@@ -648,6 +648,7 @@ const EnhancedPostComposer = () => {
             </div>
             
             <InteractiveHoverButton
+              text={isUploading ? 'Posting...' : (isThreadMode ? 'Post Thread' : 'Post')}
               onClick={handleSubmit}
               disabled={isUploading || (
                 !tweetText.trim() && 
@@ -657,16 +658,7 @@ const EnhancedPostComposer = () => {
                 (!isThreadMode || threadTweets.every(tweet => !tweet.trim()))
               )}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full px-8 py-2 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isUploading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Posting...</span>
-                </div>
-              ) : (
-                isThreadMode ? 'Post Thread' : 'Post'
-              )}
-            </InteractiveHoverButton>
+            />
           </div>
         </div>
       </div>
