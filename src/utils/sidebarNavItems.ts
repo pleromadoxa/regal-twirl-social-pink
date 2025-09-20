@@ -17,7 +17,8 @@ import {
   TrendingUp,
   Calendar,
   Users,
-  HelpCircle
+  HelpCircle,
+  UserPlus
 } from 'lucide-react';
 
 interface NavItem {
@@ -48,6 +49,7 @@ export const getSidebarNavItems = ({
     { name: 'Home', path: '/home', icon: Home },
     { name: 'Explore', path: '/explore', icon: Search },
     { name: 'Events', path: '/events', icon: Calendar },
+    { name: 'Collaboration', path: '/collaboration', icon: UserPlus },
     { name: 'Chat', path: '/messages', icon: MessageCircle },
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Reels', path: '/reels', icon: Play },

@@ -1,8 +1,8 @@
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Flag, Pin, Bookmark, Megaphone } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Flag, Pin, Bookmark, Megaphone, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,6 +23,9 @@ import ThreadContent from './ThreadContent';
 import ImageViewer from './ImageViewer';
 import UserBlockMuteMenu from './UserBlockMuteMenu';
 import PollComponent from './PollComponent';
+import CollaborationManager from './CollaborationManager';
+import CollaboratorsDisplay from './CollaboratorsDisplay';
+import { useCollaboration } from '@/hooks/useCollaboration';
 
 interface PostCardProps {
   post: {
@@ -83,9 +86,11 @@ const PostCard = ({
   const { myPages } = useBusinessPages();
   const { isPostPinned, togglePin } = usePinnedPosts();
   const { verificationLevel } = useVerifiedStatus(post.profiles);
+  const { getPostCollaborators } = useCollaboration();
   const [showComments, setShowComments] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [collaborators, setCollaborators] = useState<any[]>([]);
   
   const isOwnPost = user?.id === post.user_id;
   const hasBusinessPages = myPages && myPages.length > 0;
@@ -143,6 +148,15 @@ const PostCard = ({
     setSelectedImageIndex(index);
     setShowImageViewer(true);
   };
+
+  const fetchCollaborators = async () => {
+    const collabs = await getPostCollaborators(post.id);
+    setCollaborators(collabs);
+  };
+
+  React.useEffect(() => {
+    fetchCollaborators();
+  }, [post.id]);
 
   return (
     <Card className="mb-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-purple-200/50 dark:border-purple-800/50 hover:shadow-lg transition-all duration-300">
@@ -329,9 +343,37 @@ const PostCard = ({
                    postId={post.id} 
                    businessPageId={myPages?.[0]?.id} 
                  />
-               )}
-             </div>
-          </div>
+                )}
+              </div>
+
+              {/* Collaborators Display */}
+              {collaborators.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-purple-200/50 dark:border-purple-800/50">
+                  <CollaboratorsDisplay 
+                    collaborators={collaborators} 
+                    compact={true}
+                    maxDisplay={3}
+                  />
+                </div>
+              )}
+
+              {/* Collaboration Manager for post owner */}
+              {isOwnPost && (
+                <div className="mt-3 pt-3 border-t border-purple-200/50 dark:border-purple-800/50">
+                  <CollaborationManager
+                    postId={post.id}
+                    collaborators={collaborators}
+                    onCollaboratorsUpdate={fetchCollaborators}
+                    trigger={
+                      <Button variant="outline" size="sm" className="w-full">
+                        <Users className="w-4 h-4 mr-2" />
+                        Manage Collaborators
+                      </Button>
+                    }
+                  />
+                </div>
+              )}
+            </div>
         </div>
       </CardContent>
       

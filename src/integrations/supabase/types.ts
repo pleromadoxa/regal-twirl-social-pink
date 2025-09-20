@@ -844,6 +844,97 @@ export type Database = {
           },
         ]
       }
+      collaboration_invites: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          invitee_id: string
+          inviter_id: string
+          message: string | null
+          post_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitee_id: string
+          inviter_id: string
+          message?: string | null
+          post_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitee_id?: string
+          inviter_id?: string
+          message?: string | null
+          post_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collaboration_invites_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collaborative_drafts: {
+        Row: {
+          collaborators: Json
+          content: string
+          created_at: string
+          creator_id: string
+          draft_data: Json
+          id: string
+          published_post_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          collaborators?: Json
+          content?: string
+          created_at?: string
+          creator_id: string
+          draft_data?: Json
+          id?: string
+          published_post_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          collaborators?: Json
+          content?: string
+          created_at?: string
+          creator_id?: string
+          draft_data?: Json
+          id?: string
+          published_post_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collaborative_drafts_published_post_id_fkey"
+            columns: ["published_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_discussion_likes: {
         Row: {
           created_at: string
@@ -1678,6 +1769,50 @@ export type Database = {
             columns: ["poll_id"]
             isOneToOne: false
             referencedRelation: "post_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_collaborators: {
+        Row: {
+          created_at: string
+          id: string
+          invited_at: string
+          invited_by: string
+          post_id: string
+          responded_at: string | null
+          role: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_at?: string
+          invited_by: string
+          post_id: string
+          responded_at?: string | null
+          role?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string
+          post_id?: string
+          responded_at?: string | null
+          role?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_collaborators_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]
