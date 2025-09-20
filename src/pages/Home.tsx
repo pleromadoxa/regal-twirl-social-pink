@@ -116,9 +116,9 @@ const Home = () => {
 
         {/* Mobile Layout */}
         <div className="lg:hidden min-h-screen pb-20">
-          <main className="w-full bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl min-h-screen">
+          <main className="w-full bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl min-h-screen px-2">
             {/* Top Padding for Mobile Menu Button */}
-            <div className="h-16"></div>
+            <div className="h-12"></div>
             
             {/* Stories Bar */}
             <div className="border-b border-purple-200 dark:border-purple-800 p-4">
