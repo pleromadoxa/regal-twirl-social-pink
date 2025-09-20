@@ -112,17 +112,17 @@ const Games = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
+      <div className={`flex-1 flex gap-8 ${isMobile ? 'px-4 pb-20' : 'pl-80 pr-[420px]'}`}>
         <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <Gamepad2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Games</h1>
+          <div className="p-4 lg:p-6">
+            <div className="flex items-center gap-3 mb-4 lg:mb-6">
+              <Gamepad2 className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600 dark:text-purple-400" />
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">Games</h1>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {games.map((game) => (
                 <Card key={game.id} className="group hover:shadow-lg transition-all duration-200 cursor-pointer">
                   <CardHeader className="p-4">

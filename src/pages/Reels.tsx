@@ -20,19 +20,19 @@ const Reels = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 flex gap-8 pl-80 pr-[400px] max-w-full overflow-hidden">
+      <div className={`flex-1 flex gap-8 ${isMobile ? 'px-4 pb-20' : 'pl-80 pr-[400px]'} max-w-full overflow-hidden`}>
         <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-4xl mx-auto min-w-0">
           {/* Header */}
-          <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
+          <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-4 lg:p-6 z-10">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
-                  <Video className="w-6 h-6 text-purple-600" />
+                <h1 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
+                  <Video className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600" />
                   Reels
                 </h1>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">
+                <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm lg:text-base">
                   Discover trending short videos and create your own
                 </p>
               </div>
@@ -40,8 +40,8 @@ const Reels = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="p-6 border-b border-purple-200 dark:border-purple-800">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 lg:p-6 border-b border-purple-200 dark:border-purple-800">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
               <Card className="bg-gradient-to-br from-pink-500 to-red-500 text-white">
                 <CardContent className="p-3 text-center">
                   <Flame className="w-6 h-6 mx-auto mb-1" />
@@ -74,23 +74,25 @@ const Reels = () => {
           </div>
 
           {/* Reels Tabs */}
-          <div className="p-6">
-            <Tabs defaultValue="for-you" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-                <TabsTrigger value="for-you" className="flex items-center gap-2">
-                  <Flame className="w-4 h-4" />
-                  For You
+          <div className="p-4 lg:p-6">
+            <Tabs defaultValue="for-you" className="space-y-4 lg:space-y-6">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl h-auto p-1">"
+                <TabsTrigger value="for-you" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm py-2">
+                  <Flame className="w-3 h-3 lg:w-4 lg:h-4" />
+                  <span className="hidden sm:inline">For You</span>
+                  <span className="sm:hidden">For U</span>
                 </TabsTrigger>
-                <TabsTrigger value="trending" className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Trending
+                <TabsTrigger value="trending" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm py-2">
+                  <TrendingUp className="w-3 h-3 lg:w-4 lg:h-4" />
+                  <span className="hidden sm:inline">Trending</span>
+                  <span className="sm:hidden">Trend</span>
                 </TabsTrigger>
-                <TabsTrigger value="music" className="flex items-center gap-2">
-                  <Music className="w-4 h-4" />
+                <TabsTrigger value="music" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm py-2 lg:flex hidden">
+                  <Music className="w-3 h-3 lg:w-4 lg:h-4" />
                   Music
                 </TabsTrigger>
-                <TabsTrigger value="following" className="flex items-center gap-2">
-                  <Heart className="w-4 h-4" />
+                <TabsTrigger value="following" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm py-2 lg:flex hidden">
+                  <Heart className="w-3 h-3 lg:w-4 lg:h-4" />
                   Following
                 </TabsTrigger>
               </TabsList>

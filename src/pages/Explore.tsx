@@ -87,10 +87,10 @@ const Explore = () => {
       {!isMobile && <SidebarNav />}
       
       <div className={`flex-1 ${isMobile ? 'px-4 pb-20' : 'ml-80 mr-96'} transition-all duration-300`}>
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="max-w-4xl mx-auto p-4 lg:p-6">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+          <div className="mb-6 lg:mb-8">
+            <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
               Explore Regal Network
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
@@ -110,13 +110,13 @@ const Explore = () => {
             />
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-              <CardContent className="p-4 text-center">
-                <Flame className="w-8 h-8 mx-auto mb-2" />
-                <p className="text-2xl font-bold">2.4k</p>
-                <p className="text-sm opacity-90">Trending Posts</p>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6 lg:mb-8">
+              <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                <CardContent className="p-3 lg:p-4 text-center">
+                  <Flame className="w-6 h-6 lg:w-8 lg:h-8 mx-auto mb-2" />
+                  <p className="text-lg lg:text-2xl font-bold">2.4k</p>
+                  <p className="text-xs lg:text-sm opacity-90">Trending Posts</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
