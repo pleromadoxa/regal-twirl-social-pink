@@ -22,7 +22,7 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
   const location = useLocation();
   const { user, profile } = useAuth();
   const isMobile = useIsMobile();
-  const [isCollapsed, setIsCollapsed] = useState(isMobile); // Start collapsed on mobile
+  const [isCollapsed, setIsCollapsed] = useState(isMobile); // Only start collapsed on mobile
   const { pages } = useBusinessPages();
   const { hasValidSubscription, subscriptionData } = useSubscriptionStatus(
     user?.email === 'pleromadoxa@gmail.com' || profile?.username === 'pleromadoxa',
@@ -82,7 +82,7 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
   }
 
   // Handle mobile responsive behavior for full sidebar
-  const sidebarWidth = isMobile ? 'w-80' : (isCollapsed ? 'w-16' : 'w-80');
+  const sidebarWidth = isMobile ? 'w-80' : 'w-80'; // Always full width on desktop
   const sidebarClass = `fixed left-0 top-0 h-full ${sidebarWidth} glass backdrop-blur-xl border-r border-white/30 dark:border-white/10 z-40 transition-all duration-300 ${isMobile && isCollapsed ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100'} max-w-[85vw]`;
 
   // Auto-collapse on mobile when route changes
@@ -93,15 +93,17 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
 
   return (
     <>
-      {/* Toggle button - always visible on all screens */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-lg rounded-full"
-        onClick={() => setIsCollapsed(!isCollapsed)}
-      >
-        {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
-      </Button>
+      {/* Mobile toggle button - only visible on mobile */}
+      {isMobile && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="fixed top-4 left-4 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-lg rounded-full"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+        </Button>
+      )}
 
       {/* Sidebar */}
       <div className={sidebarClass}>
@@ -114,7 +116,7 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
                 alt="Regal Network Logo" 
                 className="h-12 sm:h-16 md:h-20 w-auto mx-auto transition-transform hover:scale-110 filter drop-shadow-2xl"
               />
-              {!isCollapsed && (
+              {(!isMobile || !isCollapsed) && (
                 <div className="text-center">
                   <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                     Regal Network
@@ -160,7 +162,7 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
                             : 'text-gray-600 dark:text-gray-400'
                         }`} />
                       </div>
-                      {!isCollapsed && (
+                      {(!isMobile || !isCollapsed) && (
                         <span className="font-medium">{item.name}</span>
                       )}
                     </Link>
@@ -171,7 +173,7 @@ const SidebarNav = ({ isMobileBottomNav = false }: { isMobileBottomNav?: boolean
           </nav>
 
           {/* User Profile */}
-          {user && !isCollapsed && (
+          {user && (!isMobile || !isCollapsed) && (
             <div className="p-4 border-t border-purple-200 dark:border-purple-800">
               <Link
                 to={`/profile/${user.id}`}
