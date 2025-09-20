@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Flag, Pin, Bookmark, Megaphone, Users } from 'lucide-react';
@@ -154,7 +154,7 @@ const PostCard = ({
     setCollaborators(collabs);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchCollaborators();
   }, [post.id]);
 
