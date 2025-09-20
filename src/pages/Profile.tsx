@@ -65,10 +65,11 @@ const Profile = () => {
                 <div className="h-4 bg-gray-300 rounded mb-4"></div>
               </div>
             </div>
-          </main>
-        </div>
-        <RightSidebar />
+        </main>
       </div>
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
+    </div>
     );
   }
 
@@ -572,7 +573,8 @@ const Profile = () => {
         </main>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
 
       {/* Media Preview */}
       <MediaPreview
