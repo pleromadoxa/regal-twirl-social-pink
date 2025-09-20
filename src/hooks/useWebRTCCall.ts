@@ -107,15 +107,37 @@ export const useWebRTCCall = ({
       service.onConnectionStateChange((state) => {
         updateCallState({ connectionState: state });
         if (state === 'connected') {
-          updateCallState({ status: 'connected' });
+          updateCallState({ status: 'connected', error: null });
           startDurationTimer();
-        } else if (state === 'failed' || state === 'disconnected') {
-          updateCallState({ status: 'failed', error: 'Connection failed' });
+        } else if (state === 'failed') {
+          // Only fail immediately on actual failures, not temporary disconnections
+          updateCallState({ status: 'failed', error: 'Connection failed. Please check your internet connection and try again.' });
+          toast({
+            title: "Connection Lost",
+            description: "The call connection has failed. This may be due to network issues.",
+            variant: "destructive"
+          });
+        } else if (state === 'connecting') {
+          updateCallState({ status: 'connecting', error: null });
         }
       });
 
       service.onIceConnectionStateChange((state) => {
         updateCallState({ iceConnectionState: state });
+        
+        // Provide user feedback on connection attempts
+        if (state === 'checking') {
+          updateCallState({ error: 'Establishing connection...' });
+        } else if (state === 'connected' || state === 'completed') {
+          updateCallState({ error: null });
+        } else if (state === 'disconnected') {
+          updateCallState({ error: 'Connection interrupted, attempting to reconnect...' });
+        } else if (state === 'failed') {
+          updateCallState({ 
+            status: 'failed', 
+            error: 'Unable to establish connection. This may be due to firewall or network restrictions.' 
+          });
+        }
       });
 
       service.onError((error) => {

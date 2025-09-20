@@ -32,16 +32,29 @@ export class WebRTCService {
   constructor(config?: Partial<WebRTCConfig>) {
     const browserInfo = getMobileBrowserInfo();
     
-    // Mobile-optimized default configuration
+    // Mobile-optimized default configuration with TURN servers for NAT traversal
     const defaultConfig: WebRTCConfig = {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        // Additional STUN servers for better mobile connectivity
-        ...(browserInfo.isMobile ? [
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-        ] : [])
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        // Free TURN servers for better connectivity through firewalls/NAT
+        {
+          urls: 'turn:openrelay.metered.ca:80',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        }
       ]
     };
 
@@ -143,76 +156,32 @@ export class WebRTCService {
       // Use mobile-optimized peer connection
       this.peerConnection = createMobileOptimizedPeerConnection(this.config.iceServers);
 
-      // Handle connection state changes
-      this.peerConnection.onconnectionstatechange = () => {
-        const state = this.peerConnection?.connectionState;
-        console.log('[WebRTCService] Connection state changed:', state);
-        
-        if (this.onConnectionStateChangeCallback && state) {
-          this.onConnectionStateChangeCallback(state);
-        }
-      };
-
-      // Handle ICE connection state changes
-      this.peerConnection.oniceconnectionstatechange = () => {
-        const state = this.peerConnection?.iceConnectionState;
-        console.log('[WebRTCService] ICE connection state changed:', state);
-        
-        if (this.onIceConnectionStateChangeCallback && state) {
-          this.onIceConnectionStateChangeCallback(state);
-        }
-      };
-
-      // Handle remote stream
-      this.peerConnection.ontrack = (event) => {
-        console.log('[WebRTCService] Received remote track:', event);
-        
-        if (event.streams && event.streams[0]) {
-          this.remoteStream = event.streams[0];
-          
-          if (this.onRemoteStreamCallback) {
-            this.onRemoteStreamCallback(this.remoteStream);
-          }
-        }
-      };
-
-      // Handle ICE candidates
-      this.peerConnection.onicecandidate = (event) => {
-        if (event.candidate && this.signalingChannel) {
-          console.log('[WebRTCService] Sending ICE candidate');
-          
-          this.signalingChannel.send({
-            type: 'broadcast',
-            event: 'ice-candidate',
-            payload: {
-              candidate: event.candidate,
-              roomId: this.roomId
-            }
-          });
-        }
-      };
-
-      // Handle incoming data channel
-      this.peerConnection.ondatachannel = (event) => {
-        const channel = event.channel;
-        console.log('[WebRTCService] Received data channel:', channel.label);
-        
-        channel.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (this.onDataChannelMessageCallback) {
-              this.onDataChannelMessageCallback(data);
-            }
-          } catch (error) {
-            console.error('[WebRTCService] Error parsing data channel message:', error);
-          }
-        };
-      };
+      // Set up all event handlers
+      this.setupPeerConnectionHandlers();
 
       console.log('[WebRTCService] Peer connection initialized successfully');
       
     } catch (error) {
       console.error('[WebRTCService] Failed to initialize peer connection:', error);
+      
+      // Try with basic configuration if enhanced config fails
+      if (!this.peerConnection) {
+        try {
+          console.log('[WebRTCService] Retrying with basic configuration...');
+          this.peerConnection = new RTCPeerConnection({
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' }
+            ]
+          });
+          this.setupPeerConnectionHandlers();
+        } catch (fallbackError) {
+          console.error('[WebRTCService] Fallback initialization also failed:', fallbackError);
+          if (this.onErrorCallback) {
+            this.onErrorCallback(fallbackError as Error);
+          }
+          throw fallbackError;
+        }
+      }
       
       if (this.onErrorCallback) {
         this.onErrorCallback(error as Error);
@@ -445,6 +414,117 @@ export class WebRTCService {
     if (this.dataChannel && this.dataChannel.readyState === 'open') {
       this.dataChannel.send(JSON.stringify(data));
     }
+  }
+
+  private async handleConnectionFailure(): Promise<void> {
+    try {
+      if (!this.peerConnection || !this.signalingChannel) return;
+
+      console.log('[WebRTCService] Attempting to recover connection...');
+      
+      // Create new offer with ICE restart
+      const offer = await this.peerConnection.createOffer({
+        iceRestart: true,
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      });
+
+      await this.peerConnection.setLocalDescription(offer);
+
+      // Send recovery offer
+      this.signalingChannel.send({
+        type: 'broadcast',
+        event: 'offer',
+        payload: {
+          offer: offer,
+          roomId: this.roomId,
+          recovery: true
+        }
+      });
+
+      console.log('[WebRTCService] Recovery offer sent');
+    } catch (error) {
+      console.error('[WebRTCService] Connection recovery failed:', error);
+      if (this.onErrorCallback) {
+        this.onErrorCallback(new Error('Connection lost and recovery failed'));
+      }
+    }
+  }
+
+  private setupPeerConnectionHandlers(): void {
+    if (!this.peerConnection) return;
+
+    // Handle connection state changes
+    this.peerConnection.onconnectionstatechange = () => {
+      const state = this.peerConnection?.connectionState;
+      console.log('[WebRTCService] Connection state changed:', state);
+      
+      if (this.onConnectionStateChangeCallback && state) {
+        this.onConnectionStateChangeCallback(state);
+      }
+    };
+
+    // Handle ICE connection state changes with retry logic
+    this.peerConnection.oniceconnectionstatechange = () => {
+      const state = this.peerConnection?.iceConnectionState;
+      console.log('[WebRTCService] ICE connection state changed:', state);
+      
+      // Handle connection failures with retry
+      if (state === 'failed' || state === 'disconnected') {
+        console.log('[WebRTCService] Connection failed, attempting ICE restart...');
+        this.handleConnectionFailure();
+      }
+      
+      if (this.onIceConnectionStateChangeCallback && state) {
+        this.onIceConnectionStateChangeCallback(state);
+      }
+    };
+
+    // Handle remote stream
+    this.peerConnection.ontrack = (event) => {
+      console.log('[WebRTCService] Received remote track:', event);
+      
+      if (event.streams && event.streams[0]) {
+        this.remoteStream = event.streams[0];
+        
+        if (this.onRemoteStreamCallback) {
+          this.onRemoteStreamCallback(this.remoteStream);
+        }
+      }
+    };
+
+    // Handle ICE candidates
+    this.peerConnection.onicecandidate = (event) => {
+      if (event.candidate && this.signalingChannel) {
+        console.log('[WebRTCService] Sending ICE candidate');
+        
+        this.signalingChannel.send({
+          type: 'broadcast',
+          event: 'ice-candidate',
+          payload: {
+            candidate: event.candidate,
+            roomId: this.roomId
+          }
+        });
+      }
+    };
+
+    // Handle incoming data channel
+    this.peerConnection.ondatachannel = (event) => {
+      const channel = event.channel;
+      console.log('[WebRTCService] Received data channel:', channel.label);
+      
+      channel.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (this.onDataChannelMessageCallback) {
+            this.onDataChannelMessageCallback(data);
+          }
+        } catch (error) {
+          console.error('[WebRTCService] Error parsing data channel message:', error);
+        }
+      };
+    };
   }
 
   async switchCamera(): Promise<void> {
