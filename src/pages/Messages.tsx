@@ -59,6 +59,35 @@ const Messages = () => {
     startDirectConversation,
     createGroupConversation
   } = messagesData;
+
+  // ✅ Move ALL useEffect hooks here BEFORE any conditional returns
+  // Handle URL parameters for calls
+  useEffect(() => {
+    const callType = searchParams.get('call') as 'audio' | 'video' | null;
+    const conversationId = searchParams.get('conversation');
+    
+    if (callType && conversationId && !activeCall && user) {
+      // Find the conversation
+      const conversation = conversations.find(c => c.id === conversationId);
+      if (conversation) {
+        const otherUser = conversation.participant_1 === user.id 
+          ? conversation.participant_2_profile 
+          : conversation.participant_1_profile;
+        
+        if (otherUser) {
+          setActiveCall({
+            type: callType,
+            conversationId,
+            otherUser
+          });
+          setSelectedConversation(conversationId);
+          
+          // Clear URL parameters
+          setSearchParams({});
+        }
+      }
+    }
+  }, [searchParams, conversations, user, activeCall, setSelectedConversation, setSearchParams]);
   
   // ✅ Now safe to have conditional returns after ALL hooks
   if (!user) {
@@ -82,9 +111,6 @@ const Messages = () => {
       </div>
     );
   }
-
-  // Handle URL parameters for calls
-  useEffect(() => {
     const callType = searchParams.get('call') as 'audio' | 'video' | null;
     const conversationId = searchParams.get('conversation');
     
@@ -109,8 +135,6 @@ const Messages = () => {
         }
       }
     }
-  }, [searchParams, conversations, user, activeCall, setSelectedConversation, setSearchParams]);
-
   const handleCallEnd = () => {
     setActiveCall(null);
     toast({
