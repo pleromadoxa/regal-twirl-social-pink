@@ -1,13 +1,14 @@
-import { useAuth } from "@/contexts/AuthContext";
-import { testSupabaseConnection } from "@/integrations/supabase/client";
-import SidebarNav from "@/components/SidebarNav";
-import RightSidebar from "@/components/RightSidebar";
-import TweetComposer from "@/components/TweetComposer";
-import PostsList from "@/components/PostsList";
-import { StoriesBar } from "@/components/StoriesBar";
-import HomeFeedNav from "@/components/HomeFeedNav";
-import ThreadUI from "@/components/ThreadUI";
-import MobileBottomNav from "@/components/MobileBottomNav";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
+import { testSupabaseConnection } from '@/integrations/supabase/client';
+import SidebarNav from '@/components/SidebarNav';
+import RightSidebar from '@/components/RightSidebar';
+import TweetComposer from '@/components/TweetComposer';
+import PostsList from '@/components/PostsList';
+import { StoriesBar } from '@/components/StoriesBar';
+import HomeFeedNav from '@/components/HomeFeedNav';
+import ThreadUI from '@/components/ThreadUI';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 
@@ -16,6 +17,7 @@ const Home = () => {
   const { user, loading } = useAuth();
   console.log('Home: Auth state - user:', !!user, 'loading:', loading);
   const [feedFilter, setFeedFilter] = useState<'all' | 'professional' | 'trending'>('all');
+  const isMobile = useIsMobile();
 
   // Test Supabase connection on mount
   useEffect(() => {
@@ -109,7 +111,7 @@ const Home = () => {
           </div>
           
           {/* Right Sidebar - Desktop Only */}
-          <RightSidebar />
+          {!isMobile && <RightSidebar />}
         </div>
 
         {/* Mobile Layout */}

@@ -2,6 +2,8 @@
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import RegalAIBot from '@/components/RegalAIBot';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings as SettingsIcon, User, Bell, Shield, Palette, Terminal } from 'lucide-react';
 import { useUserSettings } from '@/hooks/useUserSettings';
@@ -15,6 +17,7 @@ import SystemSettings from '@/components/SystemSettings';
 const Settings = () => {
   const { loading: settingsLoading } = useUserSettings();
   const { profile, isAdmin } = useSidebarProfile();
+  const isMobile = useIsMobile();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
@@ -87,7 +90,8 @@ const Settings = () => {
         </main>
       </div>
 
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
       <RegalAIBot />
     </div>
   );

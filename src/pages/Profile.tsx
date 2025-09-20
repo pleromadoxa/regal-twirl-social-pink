@@ -25,6 +25,8 @@ import { usePosts } from '@/hooks/usePosts';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import SimpleOrdersTab from '@/components/SimpleOrdersTab';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useState } from 'react';
 
 const Profile = () => {
@@ -40,6 +42,7 @@ const Profile = () => {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Filter posts for this specific user
   const userPosts = allPosts.filter(post => post.user_id === userId);
@@ -81,10 +84,11 @@ const Profile = () => {
                 <p className="text-gray-600 dark:text-gray-400">This user profile could not be loaded.</p>
               </div>
             </div>
-          </main>
-        </div>
-        <RightSidebar />
+        </main>
       </div>
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
+    </div>
     );
   }
 
@@ -112,9 +116,9 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
+      <div className={`flex-1 flex gap-8 ${isMobile ? 'px-4 pb-20' : 'pl-80 pr-[420px]'}`}>
         <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
           {/* Profile Header */}
           <div className="relative">

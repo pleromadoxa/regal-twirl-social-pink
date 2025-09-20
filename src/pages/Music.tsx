@@ -1,6 +1,8 @@
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import MusicUpload from '@/components/MusicUpload';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +48,7 @@ const Music = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { isTrackLiked, toggleLike } = useMusicLikes();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchTracks();
@@ -339,9 +342,9 @@ const Music = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
+      <div className={`flex-1 flex gap-8 ${isMobile ? 'px-4 pb-20' : 'pl-80 pr-[420px]'}`}>
         <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
@@ -449,7 +452,8 @@ const Music = () => {
         </main>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

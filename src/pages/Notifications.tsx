@@ -1,6 +1,8 @@
 
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Bell, Heart, MessageCircle, Repeat, UserPlus, User, PhoneMissed, Flame, AlertTriangle } from 'lucide-react';
@@ -11,6 +13,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 const Notifications = () => {
   const { notifications, loading, markAsRead, markAllAsRead, unreadCount } = useNotifications();
+  const isMobile = useIsMobile();
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -48,9 +51,9 @@ const Notifications = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
+      <div className={`flex-1 flex gap-8 ${isMobile ? 'px-4 pb-20' : 'pl-80 pr-[420px]'}`}>
         <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
@@ -160,7 +163,8 @@ const Notifications = () => {
         </main>
       </div>
       
-      <RightSidebar />
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };
