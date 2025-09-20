@@ -40,14 +40,22 @@ const CollaboratorSearch = ({
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Build the excluded IDs list properly
+      const excludedIds = [currentUser?.id, ...excludeUserIds].filter(Boolean);
+      
+      let queryBuilder = supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url, bio, followers_count')
-        .or(
-          `username.ilike.%${query}%,display_name.ilike.%${query}%`
-        )
-        .not('id', 'in', `(${[currentUser?.id, ...excludeUserIds].filter(Boolean).join(',')})`)
+        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
         .limit(10);
+
+      // Only add the not condition if we have IDs to exclude
+      if (excludedIds.length > 0) {
+        queryBuilder = queryBuilder.not('id', 'in', `(${excludedIds.join(',')})`);
+      }
+
+      const { data, error } = await queryBuilder;
 
       if (error) throw error;
       setUsers(data || []);
