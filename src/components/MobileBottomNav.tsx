@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Home, Search, MessageCircle, Bell, User } from 'lucide-react';
+import { Home, Search, MessageCircle, Bell, User, Play } from 'lucide-react';
 
 const MobileBottomNav = () => {
   const location = useLocation();
@@ -9,8 +9,8 @@ const MobileBottomNav = () => {
   const navItems = [
     { name: 'Home', path: '/home', icon: Home },
     { name: 'Explore', path: '/explore', icon: Search },
+    { name: 'Reels', path: '/reels', icon: Play },
     { name: 'Chat', path: '/messages', icon: MessageCircle },
-    { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Profile', path: `/profile/${user?.id}`, icon: User }
   ];
 

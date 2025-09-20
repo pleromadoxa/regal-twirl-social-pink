@@ -196,37 +196,38 @@ const AdsManager = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-        <SidebarNav />
-        <div className="flex-1 ml-80 mr-96 flex items-center justify-center">
+        {!isMobile && <SidebarNav />}
+        <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'ml-80 mr-96'} flex items-center justify-center`}>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
         </div>
+        {isMobile && <MobileBottomNav />}
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 ml-80 mr-96 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
+      <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'ml-80 mr-96 border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl`}>
         {/* Header */}
-        <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
-          <div className="flex items-center justify-between">
+        <div className={`sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl ${isMobile ? '' : 'border-b border-purple-200 dark:border-purple-800'} ${isMobile ? 'p-3' : 'p-6'} z-10`}>
+          <div className={`flex ${isMobile ? 'flex-col gap-3' : 'items-center justify-between'}`}>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
-                <Megaphone className="w-6 h-6 text-purple-600" />
+              <h1 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2`}>
+                <Megaphone className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-purple-600`} />
                 Ads Manager
               </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-1">
+              <p className={`text-slate-600 dark:text-slate-400 ${isMobile ? 'text-sm mt-1' : 'mt-1'}`}>
                 Manage your business advertisements and sponsored posts
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center gap-4'}`}>
               {/* Business Page Filter */}
               <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                <Building2 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-slate-600 dark:text-slate-400`} />
                 <Select value={selectedPage} onValueChange={setSelectedPage}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className={`${isMobile ? 'w-full' : 'w-48'}`}>
                     <SelectValue placeholder="Select business page" />
                   </SelectTrigger>
                   <SelectContent>
@@ -241,18 +242,18 @@ const AdsManager = () => {
               </div>
               <Button 
                 onClick={() => navigate('/create-ad')}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                className={`bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 ${isMobile ? 'w-full' : ''}`}
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-2`} />
                 Create Ad
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className={`${isMobile ? 'p-3' : 'p-6'} space-y-6`}>
           {/* Analytics Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-1 md:grid-cols-4 gap-4'}`}>
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">

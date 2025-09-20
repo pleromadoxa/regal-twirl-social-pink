@@ -21,14 +21,14 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
 
-      <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <SettingsIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
+      <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'flex gap-8 pl-80 pr-[420px]'}`}>
+        <main className={`flex-1 ${isMobile ? '' : 'border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl ${isMobile ? '' : 'max-w-3xl mx-auto'}`}>
+          <div className={`${isMobile ? 'p-3' : 'p-6'}`}>
+            <div className={`flex items-center gap-3 ${isMobile ? 'mb-4' : 'mb-6'}`}>
+              <SettingsIcon className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-purple-600 dark:text-purple-400`} />
+              <h1 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-gray-900 dark:text-gray-100`}>Settings</h1>
               {settingsLoading && (
                 <div className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                   Loading...
@@ -37,7 +37,7 @@ const Settings = () => {
             </div>
 
             <Tabs defaultValue="account" className="w-full">
-              <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'}`}>
+              <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'} ${isMobile ? 'text-xs' : ''}`}>
                 <TabsTrigger value="account" className="flex items-center gap-2">
                   <User className="w-4 h-4" />
                   Account
