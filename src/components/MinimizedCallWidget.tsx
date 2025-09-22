@@ -39,56 +39,71 @@ const MinimizedCallWidget = ({
   onToggleVideo
 }: MinimizedCallWidgetProps) => {
   return (
-    <Card className="fixed bottom-20 right-4 z-50 bg-background/90 backdrop-blur-sm border shadow-lg">
-      <CardContent className="p-3">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={otherUserAvatar} />
-            <AvatarFallback>{otherUserName[0]?.toUpperCase()}</AvatarFallback>
-          </Avatar>
-          
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{otherUserName}</p>
-            <p className="text-xs text-muted-foreground">{duration}</p>
+    <Card className="fixed bottom-20 right-4 z-50 w-80 bg-card/95 backdrop-blur-sm border shadow-lg animate-slide-in-right">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 animate-pulse">
+              <AvatarImage src={otherUserAvatar} />
+              <AvatarFallback>{otherUserName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium text-sm">{otherUserName}</p>
+              <p className="text-xs text-muted-foreground">
+                {duration}
+              </p>
+            </div>
           </div>
-
-          <div className="flex items-center gap-1">
+          
+          <div className="flex items-center gap-2">
+            {/* Toggle Audio */}
             <Button
-              variant="ghost"
+              variant={isAudioEnabled ? "secondary" : "destructive"}
               size="sm"
               onClick={onToggleAudio}
-              className="h-8 w-8 p-0"
+              className="rounded-full w-8 h-8 p-0 transition-all duration-200 hover:scale-110 active:scale-95"
             >
-              {isAudioEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+              {isAudioEnabled ? (
+                <Mic className="w-4 h-4 transition-transform duration-200" />
+              ) : (
+                <MicOff className="w-4 h-4 transition-transform duration-200" />
+              )}
             </Button>
-            
+
+            {/* Toggle Video (for video calls) */}
             {callType === 'video' && (
               <Button
-                variant="ghost"
+                variant={isVideoEnabled ? "secondary" : "destructive"}
                 size="sm"
                 onClick={onToggleVideo}
-                className="h-8 w-8 p-0"
+                className="rounded-full w-8 h-8 p-0 transition-all duration-200 hover:scale-110 active:scale-95"
               >
-                {isVideoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+                {isVideoEnabled ? (
+                  <Video className="w-4 h-4 transition-transform duration-200" />
+                ) : (
+                  <VideoOff className="w-4 h-4 transition-transform duration-200" />
+                )}
               </Button>
             )}
-            
+
+            {/* Maximize */}
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={onMaximize}
-              className="h-8 w-8 p-0"
+              className="rounded-full w-8 h-8 p-0 transition-all duration-200 hover:scale-110 active:scale-95"
             >
-              <Maximize2 className="h-4 w-4" />
+              <Maximize2 className="w-4 h-4 transition-transform duration-200" />
             </Button>
-            
+
+            {/* End Call */}
             <Button
               variant="destructive"
               size="sm"
               onClick={onEndCall}
-              className="h-8 w-8 p-0"
+              className="rounded-full w-8 h-8 p-0 transition-all duration-200 hover:scale-110 active:scale-95"
             >
-              <PhoneOff className="h-4 w-4" />
+              <PhoneOff className="w-4 h-4 transition-transform duration-200" />
             </Button>
           </div>
         </div>

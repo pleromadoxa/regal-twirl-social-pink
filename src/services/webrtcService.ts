@@ -20,6 +20,7 @@ export class WebRTCService {
   private signalingChannel: any = null;
   private roomId: string | null = null;
   private userId: string | null = null;
+  private queuedIceCandidates: RTCIceCandidateInit[] = [];
 
   // Event callbacks
   private onLocalStreamCallback?: (stream: MediaStream) => void;
@@ -267,7 +268,14 @@ export class WebRTCService {
         })
         .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
           console.log('[WebRTCService] Received ICE candidate:', payload);
-          await this.handleIceCandidate(payload.payload);
+          // Only handle ICE candidates if we have a remote description
+          if (this.peerConnection?.remoteDescription) {
+            await this.handleIceCandidate(payload.payload);
+          } else {
+            // Queue the candidate for later processing
+            this.queuedIceCandidates.push(payload.payload.candidate);
+            console.log('[WebRTCService] Queued ICE candidate (no remote description yet)');
+          }
         })
         .on('broadcast', { event: 'call-end' }, () => {
           console.log('[WebRTCService] Call ended by remote peer');
@@ -365,6 +373,9 @@ export class WebRTCService {
     
     try {
       await this.createAnswer(payload.offer);
+      
+      // Process queued ICE candidates
+      await this.processQueuedIceCandidates();
     } catch (error) {
       console.error('[WebRTCService] Failed to handle offer:', error);
     }
@@ -376,6 +387,9 @@ export class WebRTCService {
     try {
       await this.peerConnection.setRemoteDescription(payload.answer);
       console.log('[WebRTCService] Answer handled successfully');
+      
+      // Process queued ICE candidates
+      await this.processQueuedIceCandidates();
     } catch (error) {
       console.error('[WebRTCService] Failed to handle answer:', error);
     }
@@ -602,6 +616,23 @@ export class WebRTCService {
     }
   }
 
+  private async processQueuedIceCandidates() {
+    console.log(`[WebRTCService] Processing ${this.queuedIceCandidates.length} queued ICE candidates`);
+    
+    for (const candidate of this.queuedIceCandidates) {
+      try {
+        if (this.peerConnection) {
+          await this.peerConnection.addIceCandidate(candidate);
+          console.log('[WebRTCService] Processed queued ICE candidate successfully');
+        }
+      } catch (error) {
+        console.error('[WebRTCService] Failed to process queued ICE candidate:', error);
+      }
+    }
+    
+    this.queuedIceCandidates = [];
+  }
+
   cleanup(): void {
     console.log('[WebRTCService] Cleaning up WebRTC resources');
 
@@ -625,6 +656,9 @@ export class WebRTCService {
 
     // Clear remote stream
     this.remoteStream = null;
+    
+    // Clear queued ICE candidates
+    this.queuedIceCandidates = [];
 
     // Clean up signaling channel
     if (this.signalingChannel) {
