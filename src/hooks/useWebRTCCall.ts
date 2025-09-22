@@ -184,11 +184,11 @@ export const useWebRTCCall = ({
         
         // Enhanced mobile-specific error handling
         if (error.name === 'NotAllowedError') {
-          errorTitle = 'Permission Denied';
+          errorTitle = 'Camera/Microphone Access Required';
           if (browserInfo.isMobile) {
-            errorMessage = `Please allow camera/microphone access in your ${browserInfo.isIOS ? 'iOS Safari' : 'Android browser'} settings. You may need to refresh the page after granting permissions.`;
+            errorMessage = `Please tap "Allow" when your browser asks for ${callType === 'video' ? 'camera and microphone' : 'microphone'} access. On ${browserInfo.isIOS ? 'iOS Safari' : 'Android Chrome'}, you may need to check Settings if the prompt doesn't appear.`;
           } else {
-            errorMessage = `Please allow access to your ${callType === 'video' ? 'camera and microphone' : 'microphone'} and try again.`;
+            errorMessage = `Please click "Allow" when your browser prompts for ${callType === 'video' ? 'camera and microphone' : 'microphone'} access, then try calling again.`;
           }
         } else if (error.name === 'NotFoundError') {
           errorTitle = 'Device Not Found';

@@ -93,14 +93,38 @@ export class WebRTCService {
     try {
       console.log('[WebRTCService] Requesting user media with constraints:', constraints);
       
+      // Check if we already have a local stream to avoid multiple permission requests
+      if (this.localStream && this.localStream.active) {
+        console.log('[WebRTCService] Reusing existing local stream');
+        return this.localStream;
+      }
+      
       const browserInfo = getMobileBrowserInfo();
+      
+      // Check permission state first to avoid unnecessary requests
+      if (navigator.permissions) {
+        try {
+          const audioPermission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+          if (constraints.video) {
+            const videoPermission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+            if (audioPermission.state === 'denied' || videoPermission.state === 'denied') {
+              throw new Error('Camera or microphone access has been denied. Please enable permissions in your browser settings and refresh the page.');
+            }
+          } else if (audioPermission.state === 'denied') {
+            throw new Error('Microphone access has been denied. Please enable permissions in your browser settings and refresh the page.');
+          }
+        } catch (permError) {
+          console.log('[WebRTCService] Permission API not available or failed:', permError);
+          // Continue with getUserMedia if permissions API is not available
+        }
+      }
       
       // Use mobile-optimized constraints if on mobile
       const optimizedConstraints = browserInfo.isMobile 
         ? getMobileOptimizedConstraints(constraints.video ? 'video' : 'audio', browserInfo)
         : constraints;
       
-      console.log('[WebRTCService] Using optimized constraints for mobile:', optimizedConstraints);
+      console.log('[WebRTCService] Using optimized constraints:', optimizedConstraints);
       
       // Initialize mobile audio context if needed
       if (browserInfo.isMobile && constraints.audio) {
@@ -126,7 +150,7 @@ export class WebRTCService {
         let enhancedError = error;
         
         if (error.name === 'NotAllowedError') {
-          enhancedError = new Error(`Camera/microphone access denied. Please check your browser permissions and try again. On ${browserInfo.isIOS ? 'iOS' : 'Android'}, you may need to refresh the page after granting permissions.`);
+          enhancedError = new Error(`Permission denied: Please allow ${constraints.video ? 'camera and microphone' : 'microphone'} access when prompted by your browser. On ${browserInfo.isIOS ? 'iOS Safari' : 'Android'}, check Settings > Safari/Chrome > Camera & Microphone permissions.`);
         } else if (error.name === 'NotFoundError') {
           enhancedError = new Error('No camera or microphone found. Please ensure your device has the required hardware and try again.');
         } else if (error.name === 'NotReadableError') {
@@ -251,11 +275,18 @@ export class WebRTCService {
     try {
       console.log('[WebRTCService] Setting up signaling for room:', roomId);
       
+      // Cleanup existing channel to avoid subscription conflicts
+      if (this.signalingChannel) {
+        console.log('[WebRTCService] Cleaning up existing signaling channel');
+        this.signalingChannel.unsubscribe();
+        this.signalingChannel = null;
+      }
+      
       this.roomId = roomId;
       this.userId = userId || null;
 
       // Create unique channel name to avoid conflicts
-      const channelName = `webrtc-${roomId}-${Date.now()}`;
+      const channelName = `webrtc-${roomId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       this.signalingChannel = supabase.channel(channelName)
         .on('broadcast', { event: 'offer' }, async (payload) => {
