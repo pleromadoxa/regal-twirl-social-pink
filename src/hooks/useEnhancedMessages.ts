@@ -221,7 +221,7 @@ export const useEnhancedMessages = () => {
     }
   };
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' = 'text', metadata: any = {}) => {
     if (!user || !selectedConversation || !content.trim()) {
       return;
     }
@@ -240,7 +240,8 @@ export const useEnhancedMessages = () => {
           sender_id: user.id,
           recipient_id: recipientId,
           content: content.trim(),
-          message_type: 'text'
+          message_type: messageType,
+          metadata: Object.keys(metadata).length > 0 ? metadata : null
         })
         .select()
         .single();

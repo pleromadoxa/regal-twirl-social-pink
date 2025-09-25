@@ -110,7 +110,7 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
       }
 
       // Send the message first
-      const message = await sendMessage(messageContent);
+      const message = await sendMessage(messageContent, messageType, metadata);
       
       if (!message) {
         throw new Error('Failed to send message');
