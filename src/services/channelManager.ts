@@ -4,6 +4,7 @@ interface ChannelRegistry {
   [channelName: string]: {
     channel: any;
     subscribers: number;
+    subscribed: boolean;
   };
 }
 
@@ -24,7 +25,8 @@ class ChannelManager {
     const channel = supabase.channel(channelName);
     this.registry[channelName] = {
       channel,
-      subscribers: 1
+      subscribers: 1,
+      subscribed: false
     };
 
     return channel;
@@ -58,10 +60,11 @@ class ChannelManager {
    */
   subscribeToChannel(channelName: string, config: any): any {
     const channel = this.getChannel(channelName);
+    const registry = this.registry[channelName];
     
     // Check if channel is already subscribed
-    if (channel.state === 'joined' || channel.state === 'joining') {
-      console.log(`📡 Channel ${channelName} already subscribed with state: ${channel.state}`);
+    if (registry && registry.subscribed) {
+      console.log(`📡 Channel ${channelName} already subscribed`);
       return channel;
     }
 
@@ -74,9 +77,12 @@ class ChannelManager {
       }
     });
 
-    // Subscribe
+    // Subscribe only once
     channel.subscribe((status: string) => {
       console.log(`📡 Channel ${channelName} subscription status: ${status}`);
+      if (status === 'SUBSCRIBED' && registry) {
+        registry.subscribed = true;
+      }
     });
 
     return channel;
@@ -108,7 +114,7 @@ class ChannelManager {
 // Singleton instance
 export const channelManager = new ChannelManager();
 
-// Helper function to create unique channel names
+// Helper function to create stable channel names (removed timestamp)
 export const createUniqueChannelName = (prefix: string, identifier: string): string => {
-  return `${prefix}-${identifier}-${Date.now()}`;
+  return `${prefix}-${identifier}`;
 };
