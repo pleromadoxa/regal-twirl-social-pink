@@ -436,8 +436,8 @@ const Messages = () => {
         </div>
       </div>
 
-      {/* Right Section - Chat Area - Full Width */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Right Section - Chat Area - Full Width with left margin */}
+      <div className="flex-1 flex flex-col min-w-0 ml-4">
         {selectedConversation ? (
           <MessageThread
             conversationId={selectedConversation}

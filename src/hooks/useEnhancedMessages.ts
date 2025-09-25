@@ -145,15 +145,7 @@ export const useEnhancedMessages = () => {
         // Fetch group messages
         const { data: messagesData, error } = await supabase
           .from('group_messages')
-          .select(`
-            *,
-            sender_profile:profiles!group_messages_sender_id_fkey(
-              id,
-              username,
-              display_name,
-              avatar_url
-            )
-          `)
+          .select('*')
           .eq('group_id', conversationId)
           .order('created_at', { ascending: true });
 
@@ -162,18 +154,28 @@ export const useEnhancedMessages = () => {
           return;
         }
 
-        const transformedMessages: Message[] = (messagesData || []).map(msg => ({
-          id: msg.id,
-          content: msg.content,
-          sender_id: msg.sender_id,
-          recipient_id: '', // Group messages don't have recipients
-          created_at: msg.created_at,
-          read_at: null,
-          edited_at: msg.edited_at,
-          message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location') || 'text',
-          metadata: {},
-          sender_profile: msg.sender_profile
-        }));
+        // Fetch sender profiles separately
+        const senderIds = [...new Set(messagesData?.map(m => m.sender_id) || [])];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', senderIds);
+
+        const transformedMessages: Message[] = (messagesData || []).map(msg => {
+          const senderProfile = profiles?.find(p => p.id === msg.sender_id);
+          return {
+            id: msg.id,
+            content: msg.content,
+            sender_id: msg.sender_id,
+            recipient_id: '', // Group messages don't have recipients
+            created_at: msg.created_at,
+            read_at: null,
+            edited_at: msg.edited_at,
+            message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location') || 'text',
+            metadata: {},
+            sender_profile: senderProfile
+          };
+        });
 
         setMessages(transformedMessages);
       } else {
@@ -187,15 +189,7 @@ export const useEnhancedMessages = () => {
 
         const { data: messagesData, error } = await supabase
           .from('messages')
-          .select(`
-            *,
-            sender_profile:profiles!messages_sender_id_fkey(
-              id,
-              username,
-              display_name,
-              avatar_url
-            )
-          `)
+          .select('*')
           .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherParticipant}),and(sender_id.eq.${otherParticipant},recipient_id.eq.${user.id})`)
           .order('created_at', { ascending: true });
 
@@ -204,10 +198,21 @@ export const useEnhancedMessages = () => {
           return;
         }
 
-        const transformedMessages: Message[] = (messagesData || []).map(msg => ({
-          ...msg,
-          message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location') || 'text'
-        }));
+        // Fetch sender profiles separately
+        const senderIds = [...new Set(messagesData?.map(m => m.sender_id) || [])];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', senderIds);
+
+        const transformedMessages: Message[] = (messagesData || []).map(msg => {
+          const senderProfile = profiles?.find(p => p.id === msg.sender_id);
+          return {
+            ...msg,
+            message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location') || 'text',
+            sender_profile: senderProfile
+          };
+        });
 
         setMessages(transformedMessages);
       }
