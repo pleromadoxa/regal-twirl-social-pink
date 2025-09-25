@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import EnhancedMessageBubble from './EnhancedMessageBubble';
 import { TypingIndicator } from './TypingIndicator';
+import { Button } from '@/components/ui/button';
+import WebRTCDebugger from './WebRTCDebugger';
 
 interface Message {
   id: string;
@@ -39,6 +41,7 @@ const MessageThreadMessages = ({
 }: MessageThreadMessagesProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [showDebugger, setShowDebugger] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -49,85 +52,104 @@ const MessageThreadMessages = ({
   }, [messages]);
 
   return (
-    <ScrollArea className="flex-1 px-4 py-2 bg-white dark:bg-gray-900" ref={scrollAreaRef}>
-      {messages.length > 0 ? (
-        <div className="space-y-1">
-          {messages.map((message, index) => {
-            // Show username if it's the first message from this sender in a sequence
-            const previousMessage = index > 0 ? messages[index - 1] : null;
-            const showUsername = message.sender_id !== currentUserId && 
-              (!previousMessage || previousMessage.sender_id !== message.sender_id);
-            
-            // Show timestamp based on time interval (5+ minutes gap or different day)
-            const showTimestamp = !previousMessage || 
-              new Date(message.created_at).getTime() - new Date(previousMessage.created_at).getTime() > 5 * 60 * 1000 ||
-              new Date(message.created_at).toDateString() !== new Date(previousMessage.created_at).toDateString();
-            
-            return (
-              <div key={message.id}>
-                {showTimestamp && (
-                  <div className="flex justify-center mb-2">
-                    <div className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-                      {(() => {
-                        const messageDate = new Date(message.created_at);
-                        const today = new Date();
-                        const yesterday = new Date(today);
-                        yesterday.setDate(yesterday.getDate() - 1);
-                        
-                        if (messageDate.toDateString() === today.toDateString()) {
-                          return `Today ${messageDate.toLocaleTimeString('en-US', { 
-                            hour: 'numeric', 
-                            minute: '2-digit',
-                            hour12: true 
-                          })}`;
-                        } else if (messageDate.toDateString() === yesterday.toDateString()) {
-                          return `Yesterday ${messageDate.toLocaleTimeString('en-US', { 
-                            hour: 'numeric', 
-                            minute: '2-digit',
-                            hour12: true 
-                          })}`;
-                        } else {
-                          return messageDate.toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          });
-                        }
-                      })()}
+    <>
+      <ScrollArea className="flex-1 px-4 py-2 bg-white dark:bg-gray-900" ref={scrollAreaRef}>
+        {/* Debug Button */}
+        <div className="fixed top-4 right-4 z-50">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowDebugger(true)}
+            className="bg-white/90 dark:bg-gray-800/90"
+          >
+            Debug WebRTC
+          </Button>
+        </div>
+
+        {messages.length > 0 ? (
+          <div className="space-y-1">
+            {messages.map((message, index) => {
+              // Show username if it's the first message from this sender in a sequence
+              const previousMessage = index > 0 ? messages[index - 1] : null;
+              const showUsername = message.sender_id !== currentUserId && 
+                (!previousMessage || previousMessage.sender_id !== message.sender_id);
+              
+              // Show timestamp based on time interval (5+ minutes gap or different day)
+              const showTimestamp = !previousMessage || 
+                new Date(message.created_at).getTime() - new Date(previousMessage.created_at).getTime() > 5 * 60 * 1000 ||
+                new Date(message.created_at).toDateString() !== new Date(previousMessage.created_at).toDateString();
+              
+              return (
+                <div key={message.id}>
+                  {showTimestamp && (
+                    <div className="flex justify-center mb-2">
+                      <div className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                        {(() => {
+                          const messageDate = new Date(message.created_at);
+                          const today = new Date();
+                          const yesterday = new Date(today);
+                          yesterday.setDate(yesterday.getDate() - 1);
+                          
+                          if (messageDate.toDateString() === today.toDateString()) {
+                            return `Today ${messageDate.toLocaleTimeString('en-US', { 
+                              hour: 'numeric', 
+                              minute: '2-digit',
+                              hour12: true 
+                            })}`;
+                          } else if (messageDate.toDateString() === yesterday.toDateString()) {
+                            return `Yesterday ${messageDate.toLocaleTimeString('en-US', { 
+                              hour: 'numeric', 
+                              minute: '2-digit',
+                              hour12: true 
+                            })}`;
+                          } else {
+                            return messageDate.toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true
+                            });
+                          }
+                        })()}
+                      </div>
                     </div>
-                  </div>
-                )}
-                <EnhancedMessageBubble
-                  message={message}
-                  isOwn={message.sender_id === currentUserId}
-                  currentUserId={currentUserId || ''}
-                  onDelete={onDeleteMessage}
-                  showUsername={showUsername}
-                  showTimestamp={false}
-                  onReply={onReply}
-                />
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-      ) : (
-        <div className="flex-1 flex items-center justify-center h-full">
-          <div className="text-center">
-            <p className="text-slate-500">No messages yet</p>
-            <p className="text-sm text-slate-400 mt-1">Start the conversation!</p>
+                  )}
+                  <EnhancedMessageBubble
+                    message={message}
+                    isOwn={message.sender_id === currentUserId}
+                    currentUserId={currentUserId || ''}
+                    onDelete={onDeleteMessage}
+                    showUsername={showUsername}
+                    showTimestamp={false}
+                    onReply={onReply}
+                  />
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex-1 flex items-center justify-center h-full">
+            <div className="text-center">
+              <p className="text-slate-500">No messages yet</p>
+              <p className="text-sm text-slate-400 mt-1">Start the conversation!</p>
+            </div>
+          </div>
+        )}
+        
+        {/* Typing Indicator */}
+        <TypingIndicator 
+          conversationId={conversationId} 
+          isGroup={isGroup} 
+        />
+      </ScrollArea>
       
-      {/* Typing Indicator */}
-      <TypingIndicator 
-        conversationId={conversationId} 
-        isGroup={isGroup} 
+      <WebRTCDebugger 
+        isOpen={showDebugger} 
+        onClose={() => setShowDebugger(false)} 
       />
-    </ScrollArea>
+    </>
   );
 };
 

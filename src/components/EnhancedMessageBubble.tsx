@@ -136,7 +136,7 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
 
   return (
     <div 
-      className={`group mb-2 ${isOwn ? 'flex flex-col items-end' : 'flex flex-col items-start'}`}
+      className={`group relative mb-2 ${isOwn ? 'flex flex-col items-end' : 'flex flex-col items-start'}`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
@@ -181,27 +181,27 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
                 </div>
               )}
 
-              {/* Action buttons - visible on hover */}
+              {/* Action buttons - always positioned on right, visible on hover */}
               <div className={`
-                absolute top-0 transition-opacity duration-200 z-10
-                -right-10
-                ${showActions ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-                flex gap-1
+                absolute -top-2 -right-12 z-20
+                transition-all duration-200
+                ${showActions ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}
               `}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 bg-white dark:bg-gray-800 border shadow-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="h-8 w-8 p-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
                       title="More options"
                     >
-                      <MoreHorizontal className="h-3 w-3" />
+                      <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent 
                     align="end" 
-                    className="bg-white dark:bg-gray-800 border shadow-lg z-50"
+                    sideOffset={8}
+                    className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl z-50 min-w-40"
                   >
                     <DropdownMenuItem onClick={handleReact}>
                       <Smile className="h-3 w-3 mr-2" />
