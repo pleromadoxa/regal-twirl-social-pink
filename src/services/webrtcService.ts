@@ -279,6 +279,7 @@ export class WebRTCService {
       if (this.signalingChannel) {
         console.log('[WebRTCService] Cleaning up existing signaling channel');
         try {
+          this.signalingChannel.unsubscribe();
           supabase.removeChannel(this.signalingChannel);
         } catch (cleanupError) {
           console.error('[WebRTCService] Error cleaning up signaling channel:', cleanupError);
@@ -289,8 +290,8 @@ export class WebRTCService {
       this.roomId = roomId;
       this.userId = userId || null;
 
-      // Create unique channel name
-      const channelName = `webrtc-signaling-${roomId}`;
+      // Create unique channel name with timestamp to prevent conflicts
+      const channelName = `webrtc-signaling-${roomId}-${Date.now()}`;
       
       console.log('[WebRTCService] Creating signaling channel:', channelName);
       
@@ -778,12 +779,17 @@ export class WebRTCService {
     // Clean up signaling channel
     if (this.signalingChannel) {
       try {
+        this.signalingChannel.unsubscribe();
         supabase.removeChannel(this.signalingChannel);
       } catch (error) {
         console.error('[WebRTCService] Error removing signaling channel:', error);
       }
       this.signalingChannel = null;
     }
+
+    // Reset identifiers
+    this.roomId = null;
+    this.userId = null;
 
     // Notify about call end
     if (this.onConnectionStateChangeCallback) {

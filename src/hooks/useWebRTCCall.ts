@@ -92,7 +92,7 @@ export const useWebRTCCall = ({
     
     // Prevent multiple initializations
     if (isInitializingRef.current || webrtcServiceRef.current) {
-      console.log('[useWebRTCCall] Call already initializing or active');
+      console.log('[useWebRTCCall] Call already initializing or active, skipping');
       return;
     }
 
@@ -287,8 +287,11 @@ export const useWebRTCCall = ({
     
     if (webrtcServiceRef.current) {
       // Properly cleanup the WebRTC service
-      webrtcServiceRef.current.cleanup();
-      webrtcServiceRef.current = null;
+      if (webrtcServiceRef.current) {
+        console.log('[useWebRTCCall] Cleaning up existing WebRTC service');
+        webrtcServiceRef.current.cleanup();
+        webrtcServiceRef.current = null;
+      }
     }
 
     updateCallState({ 
@@ -433,6 +436,7 @@ export const useWebRTCCall = ({
       clearInterval(checkCallUpdates);
       isInitializingRef.current = false;
       if (webrtcServiceRef.current) {
+        console.log('[useWebRTCCall] Cleaning up WebRTC service on unmount');
         webrtcServiceRef.current.cleanup();
         webrtcServiceRef.current = null;
       }
