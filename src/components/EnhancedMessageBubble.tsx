@@ -184,22 +184,10 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
               {/* Action buttons - visible on hover */}
               <div className={`
                 absolute top-0 transition-opacity duration-200 z-10
-                ${isOwn ? '-left-28' : '-right-28'}
+                -right-10
                 ${showActions ? 'opacity-100' : 'opacity-0 pointer-events-none'}
                 flex gap-1
               `}>
-                {!isOwn && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 bg-white dark:bg-gray-800 border shadow-md hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={handleReply}
-                    title="Reply"
-                  >
-                    <Reply className="h-3 w-3" />
-                  </Button>
-                )}
-                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
