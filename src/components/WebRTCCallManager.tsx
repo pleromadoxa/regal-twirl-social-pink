@@ -142,6 +142,19 @@ const WebRTCCallManager = () => {
         console.log('[WebRTCCallManager] Channel subscription status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('[WebRTCCallManager] Successfully subscribed to channel:', channelName);
+          
+          // Test channel connection
+          try {
+            const testResult = await channelRef.current.send({
+              type: 'broadcast',
+              event: 'connection-test',
+              payload: { userId: user.id, timestamp: Date.now() }
+            });
+            console.log('[WebRTCCallManager] Channel test result:', testResult);
+          } catch (error) {
+            console.error('[WebRTCCallManager] Channel test failed:', error);
+          }
+          
         } else if (status === 'CHANNEL_ERROR') {
           console.error('[WebRTCCallManager] Channel error on:', channelName);
           toast({
@@ -156,6 +169,8 @@ const WebRTCCallManager = () => {
             description: "Call connection timed out. Please try again.",
             variant: "destructive"
           });
+        } else if (status === 'CLOSED') {
+          console.warn('[WebRTCCallManager] Channel closed:', channelName);
         }
       });
 
