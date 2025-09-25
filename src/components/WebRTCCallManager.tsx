@@ -44,8 +44,8 @@ const WebRTCCallManager = () => {
       channelRef.current = null;
     }
 
-    // Listen on user-specific channel for incoming calls with timestamp for uniqueness
-    const channelName = `user-calls-${user.id}-${Date.now()}`;
+    // Listen on user-specific channel for incoming calls - use consistent name without timestamp
+    const channelName = `user-calls-${user.id}`;
     
     console.log('[WebRTCCallManager] Listening on channel:', channelName);
     
@@ -255,8 +255,8 @@ const WebRTCCallManager = () => {
   return (
     <IncomingCallPopup
       callId={incomingCall.id}
-      callerName={incomingCall.caller_profile.display_name || incomingCall.caller_profile.username}
-      callerAvatar={incomingCall.caller_profile.avatar_url}
+      callerName={incomingCall.caller_profile?.display_name || incomingCall.caller_profile?.username || 'Unknown User'}
+      callerAvatar={incomingCall.caller_profile?.avatar_url}
       callType={incomingCall.call_type}
       callerId={incomingCall.caller_id}
       onAccept={() => handleAcceptCall(incomingCall.id, incomingCall.call_type)}

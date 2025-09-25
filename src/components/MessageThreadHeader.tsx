@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import PresenceIndicator from './PresenceIndicator';
 import { useUserLocationContext } from '@/contexts/UserLocationContext';
 import { formatLocation } from '@/services/locationService';
+import { useNavigate } from 'react-router-dom';
 
 interface MessageThreadHeaderProps {
   otherParticipant?: {
@@ -46,6 +48,7 @@ const MessageThreadHeader = ({
   onGroupUpdated 
 }: MessageThreadHeaderProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   // Safely get location context
   let getUserLocation: ((userId: string) => any) | undefined;
@@ -64,6 +67,12 @@ const MessageThreadHeader = ({
 
   const otherUserLocation = otherParticipant && getUserLocation ? 
     getUserLocation(otherParticipant.id) : null;
+
+  const handleProfileClick = () => {
+    if (otherParticipant && !isGroupConversation) {
+      navigate(`/profile/${otherParticipant.id}`);
+    }
+  };
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3">
       <div className="flex items-center justify-between">
@@ -83,21 +92,26 @@ const MessageThreadHeader = ({
               </div>
             </>
           ) : (
-            <>
-              <div className="relative">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={otherParticipant?.avatar_url || "/placeholder.svg"} />
-                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                    {(otherParticipant?.display_name || otherParticipant?.username || 'U')[0].toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <PresenceIndicator userId={otherParticipant?.id} className="absolute -bottom-1 -right-1" />
-              </div>
-              <div className="flex-1 text-center">
+            <div className="relative flex items-center space-x-3">
+              <Avatar 
+                className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleProfileClick}
+              >
+                <AvatarImage src={otherParticipant?.avatar_url || "/placeholder.svg"} />
+                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                  {(otherParticipant?.display_name || otherParticipant?.username || 'U')[0].toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <PresenceIndicator userId={otherParticipant?.id} className="absolute -bottom-1 -right-1" />
+              
+              <div 
+                className="flex-1 cursor-pointer hover:bg-accent/20 rounded-md p-1 -m-1 transition-colors"
+                onClick={handleProfileClick}
+              >
                 <h2 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
                   {otherParticipant?.display_name || otherParticipant?.username}
                 </h2>
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center gap-2">
                   <PresenceIndicator userId={otherParticipant?.id} showText />
                   {otherUserLocation && (
                     <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
@@ -107,7 +121,7 @@ const MessageThreadHeader = ({
                   )}
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
 

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { VoiceBubble } from '@/components/ui/voice-bubble';
 import { Edit, Trash2, Download, FileText, Reply, Forward, MoreHorizontal, Smile } from 'lucide-react';
@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import MessageForwardDialog from './MessageForwardDialog';
+import { useNavigate } from 'react-router-dom';
 
 interface Message {
   id: string;
@@ -46,6 +47,13 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
   const [showForwardDialog, setShowForwardDialog] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleUserProfileClick = (userId: string) => {
+    if (userId && userId !== currentUserId) {
+      navigate(`/profile/${userId}`);
+    }
+  };
 
   const handleReply = () => {
     if (onReply) {
@@ -145,7 +153,10 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
     >
       {/* Username at the beginning of chat */}
       {showUsername && !isOwn && (
-        <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 px-2">
+        <div 
+          className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 px-2 cursor-pointer hover:text-primary transition-colors"
+          onClick={() => handleUserProfileClick(message.sender_id)}
+        >
           {message.sender_profile?.display_name || message.sender_profile?.username || 'Unknown'}
         </div>
       )}
