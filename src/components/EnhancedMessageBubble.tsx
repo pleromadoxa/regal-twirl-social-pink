@@ -2,12 +2,13 @@
 import { useState } from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { VoiceBubble } from '@/components/ui/voice-bubble';
-import { Edit, Trash2, Download, FileText } from 'lucide-react';
+import { Edit, Trash2, Download, FileText, Reply, Forward, MoreHorizontal } from 'lucide-react';
 import MessageEditForm from './MessageEditForm';
 import MessageContent from './MessageContent';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface Message {
   id: string;
@@ -32,12 +33,24 @@ interface EnhancedMessageBubbleProps {
   onDelete: (messageId: string) => void;
   showUsername?: boolean;
   showTimestamp?: boolean;
+  onReply?: (messageId: string) => void;
 }
 
-const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUsername = false, showTimestamp = false }: EnhancedMessageBubbleProps) => {
+const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUsername = false, showTimestamp = false, onReply }: EnhancedMessageBubbleProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [showForwardDialog, setShowForwardDialog] = useState(false);
   const { toast } = useToast();
+
+  const handleReply = () => {
+    if (onReply) {
+      onReply(message.id);
+    }
+  };
+
+  const handleForward = () => {
+    setShowForwardDialog(true);
+  };
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -162,29 +175,57 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
                 </div>
               )}
 
-              {/* Action buttons - only visible on hover for own messages */}
-              {isOwn && showActions && !isVoiceNote && (
+              {/* Action buttons - only visible on hover */}
+              {showActions && (
                 <div className={`
                   absolute top-0 transition-opacity duration-200
-                  ${isOwn ? '-left-20' : '-right-20'}
+                  ${isOwn ? '-left-24' : '-right-24'}
                   flex gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-1
                 `}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={handleEdit}
-                  >
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
-                    onClick={handleDelete}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                  {!isOwn && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={handleReply}
+                      title="Reply"
+                    >
+                      <Reply className="h-3 w-3" />
+                    </Button>
+                  )}
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <MoreHorizontal className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleForward}>
+                        <Forward className="h-3 w-3 mr-2" />
+                        Forward
+                      </DropdownMenuItem>
+                      {isOwn && (
+                        <>
+                          <DropdownMenuItem onClick={handleEdit}>
+                            <Edit className="h-3 w-3 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={handleDelete}
+                            className="text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="h-3 w-3 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               )}
             </div>
@@ -267,6 +308,11 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
               </div>
             )}
 
+            {/* Simple reactions placeholder */}
+            <div className="mt-1">
+              {/* Reactions will be added later */}
+            </div>
+
             {/* WhatsApp/Instagram style timestamp - only shown when showTimestamp is true */}
             {showTimestamp && (
               <div className={`text-xs text-gray-400 px-2 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
@@ -277,6 +323,22 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
           </>
         )}
       </div>
+
+      {/* Simple Forward Dialog placeholder */}
+      {showForwardDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h3 className="text-lg font-semibold mb-4">Forward Message</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              Forward: "{message.content.substring(0, 50)}..."
+            </p>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowForwardDialog(false)} variant="outline">Cancel</Button>
+              <Button onClick={() => setShowForwardDialog(false)}>Forward</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

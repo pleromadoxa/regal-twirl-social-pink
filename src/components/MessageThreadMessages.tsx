@@ -26,6 +26,7 @@ interface MessageThreadMessagesProps {
   conversationId: string;
   isGroup?: boolean;
   onDeleteMessage: (messageId: string) => void;
+  onReply?: (messageId: string) => void;
 }
 
 const MessageThreadMessages = ({ 
@@ -33,7 +34,8 @@ const MessageThreadMessages = ({
   currentUserId, 
   conversationId,
   isGroup = false,
-  onDeleteMessage 
+  onDeleteMessage,
+  onReply
 }: MessageThreadMessagesProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -104,6 +106,7 @@ const MessageThreadMessages = ({
                   onDelete={onDeleteMessage}
                   showUsername={showUsername}
                   showTimestamp={false}
+                  onReply={onReply}
                 />
               </div>
             );

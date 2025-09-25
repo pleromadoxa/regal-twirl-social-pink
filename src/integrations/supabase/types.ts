@@ -1053,25 +1053,40 @@ export type Database = {
       }
       conversations: {
         Row: {
+          archived_by_participant_1: boolean | null
+          archived_by_participant_2: boolean | null
           created_at: string | null
+          disappearing_messages_duration: number | null
           id: string
           last_message_at: string | null
+          muted_by_participant_1: boolean | null
+          muted_by_participant_2: boolean | null
           participant_1: string
           participant_2: string
           streak_count: number | null
         }
         Insert: {
+          archived_by_participant_1?: boolean | null
+          archived_by_participant_2?: boolean | null
           created_at?: string | null
+          disappearing_messages_duration?: number | null
           id?: string
           last_message_at?: string | null
+          muted_by_participant_1?: boolean | null
+          muted_by_participant_2?: boolean | null
           participant_1: string
           participant_2: string
           streak_count?: number | null
         }
         Update: {
+          archived_by_participant_1?: boolean | null
+          archived_by_participant_2?: boolean | null
           created_at?: string | null
+          disappearing_messages_duration?: number | null
           id?: string
           last_message_at?: string | null
+          muted_by_participant_1?: boolean | null
+          muted_by_participant_2?: boolean | null
           participant_1?: string
           participant_2?: string
           streak_count?: number | null
@@ -1099,6 +1114,33 @@ export type Database = {
           id?: string
           name?: string
           symbol?: string
+        }
+        Relationships: []
+      }
+      enhanced_user_presence: {
+        Row: {
+          is_typing_in_conversation: string | null
+          last_seen: string | null
+          status: string | null
+          typing_started_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          is_typing_in_conversation?: string | null
+          last_seen?: string | null
+          status?: string | null
+          typing_started_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          is_typing_in_conversation?: string | null
+          last_seen?: string | null
+          status?: string | null
+          typing_started_at?: string | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1489,38 +1531,77 @@ export type Database = {
         }
         Relationships: []
       }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
           created_at: string | null
+          delivery_status: string | null
           edited_at: string | null
+          expires_at: string | null
+          forwarded_from_message_id: string | null
+          forwarded_from_user_id: string | null
           id: string
           message_type: string | null
           metadata: Json | null
           read_at: string | null
           recipient_id: string
+          reply_to_message_id: string | null
           sender_id: string
         }
         Insert: {
           content: string
           created_at?: string | null
+          delivery_status?: string | null
           edited_at?: string | null
+          expires_at?: string | null
+          forwarded_from_message_id?: string | null
+          forwarded_from_user_id?: string | null
           id?: string
           message_type?: string | null
           metadata?: Json | null
           read_at?: string | null
           recipient_id: string
+          reply_to_message_id?: string | null
           sender_id: string
         }
         Update: {
           content?: string
           created_at?: string | null
+          delivery_status?: string | null
           edited_at?: string | null
+          expires_at?: string | null
+          forwarded_from_message_id?: string | null
+          forwarded_from_user_id?: string | null
           id?: string
           message_type?: string | null
           metadata?: Json | null
           read_at?: string | null
           recipient_id?: string
+          reply_to_message_id?: string | null
           sender_id?: string
         }
         Relationships: []
@@ -2815,6 +2896,10 @@ export type Database = {
           type: string
           user_id: string
         }
+        Returns: undefined
+      }
+      delete_expired_messages: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       generate_invite_code: {
