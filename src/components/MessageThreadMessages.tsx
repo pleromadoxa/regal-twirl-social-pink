@@ -56,15 +56,56 @@ const MessageThreadMessages = ({
             const showUsername = message.sender_id !== currentUserId && 
               (!previousMessage || previousMessage.sender_id !== message.sender_id);
             
+            // Show timestamp based on time interval (5+ minutes gap or different day)
+            const showTimestamp = !previousMessage || 
+              new Date(message.created_at).getTime() - new Date(previousMessage.created_at).getTime() > 5 * 60 * 1000 ||
+              new Date(message.created_at).toDateString() !== new Date(previousMessage.created_at).toDateString();
+            
             return (
-              <EnhancedMessageBubble
-                key={message.id}
-                message={message}
-                isOwn={message.sender_id === currentUserId}
-                currentUserId={currentUserId || ''}
-                onDelete={onDeleteMessage}
-                showUsername={showUsername}
-              />
+              <div key={message.id}>
+                {showTimestamp && (
+                  <div className="flex justify-center mb-2">
+                    <div className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                      {(() => {
+                        const messageDate = new Date(message.created_at);
+                        const today = new Date();
+                        const yesterday = new Date(today);
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        
+                        if (messageDate.toDateString() === today.toDateString()) {
+                          return `Today ${messageDate.toLocaleTimeString('en-US', { 
+                            hour: 'numeric', 
+                            minute: '2-digit',
+                            hour12: true 
+                          })}`;
+                        } else if (messageDate.toDateString() === yesterday.toDateString()) {
+                          return `Yesterday ${messageDate.toLocaleTimeString('en-US', { 
+                            hour: 'numeric', 
+                            minute: '2-digit',
+                            hour12: true 
+                          })}`;
+                        } else {
+                          return messageDate.toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          });
+                        }
+                      })()}
+                    </div>
+                  </div>
+                )}
+                <EnhancedMessageBubble
+                  message={message}
+                  isOwn={message.sender_id === currentUserId}
+                  currentUserId={currentUserId || ''}
+                  onDelete={onDeleteMessage}
+                  showUsername={showUsername}
+                  showTimestamp={false}
+                />
+              </div>
             );
           })}
           <div ref={messagesEndRef} />

@@ -31,9 +31,10 @@ interface EnhancedMessageBubbleProps {
   currentUserId: string;
   onDelete: (messageId: string) => void;
   showUsername?: boolean;
+  showTimestamp?: boolean;
 }
 
-const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUsername = false }: EnhancedMessageBubbleProps) => {
+const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUsername = false, showTimestamp = false }: EnhancedMessageBubbleProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const { toast } = useToast();
@@ -266,11 +267,13 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
               </div>
             )}
 
-            {/* WhatsApp/Instagram style timestamp */}
-            <div className={`text-xs text-gray-400 px-2 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-              {formatTimestamp(message.created_at)}
-              {message.edited_at && ' • edited'}
-            </div>
+            {/* WhatsApp/Instagram style timestamp - only shown when showTimestamp is true */}
+            {showTimestamp && (
+              <div className={`text-xs text-gray-400 px-2 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
+                {formatTimestamp(message.created_at)}
+                {message.edited_at && ' • edited'}
+              </div>
+            )}
           </>
         )}
       </div>
