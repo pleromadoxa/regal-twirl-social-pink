@@ -443,6 +443,7 @@ const Messages = () => {
             conversationId={selectedConversation}
             messagesData={messagesData}
             onCallStart={(callType, otherUser) => {
+              console.log('[Messages] Starting call:', callType, otherUser);
               setActiveCall({
                 type: callType,
                 conversationId: selectedConversation,

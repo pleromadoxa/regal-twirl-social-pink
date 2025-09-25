@@ -45,6 +45,13 @@ const MessageThreadHeader = ({
 }: MessageThreadHeaderProps) => {
   const { user } = useAuth();
   
+  // Debug logging
+  console.log('[MessageThreadHeader] Render:', { 
+    isGroupConversation, 
+    hasOtherParticipant: !!otherParticipant,
+    otherParticipantId: otherParticipant?.id 
+  });
+  
   const isGroupAdmin = groupConversation && (
     groupConversation.created_by === user?.id ||
     groupConversation.members?.some(m => m.id === user?.id && m.role === 'admin')
@@ -91,21 +98,29 @@ const MessageThreadHeader = ({
         </div>
 
         <div className="flex items-center space-x-1">
-          {!isGroupConversation && (
+          {!isGroupConversation && otherParticipant && (
             <>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onAudioCall}
+                onClick={() => {
+                  console.log('[MessageThreadHeader] Audio call clicked', { otherParticipant, isGroupConversation });
+                  onAudioCall();
+                }}
                 className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                title="Audio call"
               >
                 <Phone className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onVideoCall}
+                onClick={() => {
+                  console.log('[MessageThreadHeader] Video call clicked', { otherParticipant, isGroupConversation });
+                  onVideoCall();
+                }}
                 className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                title="Video call"
               >
                 <Video className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </Button>
