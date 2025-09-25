@@ -65,6 +65,7 @@ const RealTimeCallManager = ({
     const cleanup = () => {
       if (callInvitationChannel) {
         try {
+          callInvitationChannel.unsubscribe();
           supabase.removeChannel(callInvitationChannel);
         } catch (error) {
           console.error('Error removing call invitation channel:', error);
@@ -128,10 +129,12 @@ const RealTimeCallManager = ({
       // Clean up any existing call invitation channel first
       if (callInvitationChannel) {
         try {
+          callInvitationChannel.unsubscribe();
           supabase.removeChannel(callInvitationChannel);
         } catch (error) {
           console.error('Error removing previous call invitation channel:', error);
         }
+        setCallInvitationChannel(null);
       }
 
       // Use stable channel name without timestamps
@@ -139,8 +142,8 @@ const RealTimeCallManager = ({
       const channel = supabase.channel(inviteChannelName);
       setCallInvitationChannel(channel);
       
-      // Subscribe and then send invitations
-      await channel.subscribe((status) => {
+      // Subscribe once and send invitations after subscription
+      channel.subscribe((status) => {
         console.log('[RealTimeCallManager] Invite channel status:', status);
         if (status === 'SUBSCRIBED') {
           // Send invitations after successful subscription
@@ -219,7 +222,12 @@ const RealTimeCallManager = ({
       
       // Clean up call invitation channel
       if (callInvitationChannel) {
-        supabase.removeChannel(callInvitationChannel);
+        try {
+          callInvitationChannel.unsubscribe();
+          supabase.removeChannel(callInvitationChannel);
+        } catch (error) {
+          console.error('Error cleaning up call invitation channel:', error);
+        }
         setCallInvitationChannel(null);
       }
       
