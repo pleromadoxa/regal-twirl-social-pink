@@ -42,9 +42,23 @@ export const MessageForwardDialog = ({ messageContent, isOpen, onClose, messages
 
     setIsForwarding(true);
     try {
+      // Store the current conversation to restore it later
+      const currentConversation = messagesData.selectedConversation;
+      
       for (const conversationId of selectedConversations) {
+        // Temporarily switch to target conversation
         setSelectedConversation(conversationId);
+        
+        // Wait a moment for the conversation to be set
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Send the forwarded message
         await sendMessage(`🔄 Forwarded message: ${messageContent}`);
+      }
+
+      // Restore the original conversation
+      if (currentConversation) {
+        setSelectedConversation(currentConversation);
       }
 
       toast({

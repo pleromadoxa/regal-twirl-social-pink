@@ -89,11 +89,24 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
       let messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' = 'text';
       let metadata: any = {};
 
+      // Handle reply
+      if (replyToMessageId) {
+        const originalMessage = localMessages.find(msg => msg.id === replyToMessageId);
+        if (originalMessage) {
+          metadata.replyTo = {
+            messageId: replyToMessageId,
+            content: originalMessage.content,
+            senderId: originalMessage.sender_id,
+            senderName: originalMessage.sender_profile?.display_name || originalMessage.sender_profile?.username || 'Unknown'
+          };
+        }
+      }
+
       // Handle location sharing
       if (sharedLocation) {
         messageContent = `📍 Shared location: ${sharedLocation.address}`;
         messageType = 'location';
-        metadata = { location: sharedLocation };
+        metadata = { ...metadata, location: sharedLocation };
       }
 
       // Send the message first
@@ -131,6 +144,11 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
             });
           }
         }
+      }
+
+      // Clear reply state after sending
+      if (replyToMessageId) {
+        setReplyToMessageId(null);
       }
 
       toast({

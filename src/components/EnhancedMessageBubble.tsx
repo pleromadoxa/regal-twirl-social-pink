@@ -6,6 +6,7 @@ import { Edit, Trash2, Download, FileText, Reply, Forward, MoreHorizontal, Smile
 import MessageEditForm from './MessageEditForm';
 import MessageContent from './MessageContent';
 import MessageReactions from './MessageReactions';
+import MessageReplyIndicator from './MessageReplyIndicator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -160,6 +161,14 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
           />
         ) : (
           <>
+            {/* Reply Indicator */}
+            {message.metadata?.replyTo && (
+              <MessageReplyIndicator 
+                replyData={message.metadata.replyTo}
+                className="mb-2"
+              />
+            )}
+
             {/* Professional Message Bubble */}
             <div className="relative">
               {/* Voice Note Bubble */}
