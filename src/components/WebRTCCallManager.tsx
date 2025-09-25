@@ -30,8 +30,19 @@ const WebRTCCallManager = () => {
 
     console.log('[WebRTCCallManager] Setting up call manager for user:', user.id);
 
-    // Listen on user-specific channel for incoming calls
-    const channelName = `user-calls-${user.id}`;
+    // Clean up any existing channel first
+    if (channelRef.current) {
+      try {
+        channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
+      } catch (error) {
+        console.warn('Error cleaning up existing channel:', error);
+      }
+      channelRef.current = null;
+    }
+
+    // Listen on user-specific channel for incoming calls with timestamp to avoid conflicts
+    const channelName = `user-calls-${user.id}-${Date.now()}`;
     
     channelRef.current = supabase
       .channel(channelName)
@@ -109,6 +120,7 @@ const WebRTCCallManager = () => {
       console.log('[WebRTCCallManager] Cleaning up call manager');
       if (channelRef.current) {
         try {
+          channelRef.current.unsubscribe();
           supabase.removeChannel(channelRef.current);
         } catch (error) {
           console.error('Error removing call manager channel:', error);
@@ -143,15 +155,19 @@ const WebRTCCallManager = () => {
     setIncomingCall(null);
     
     // Notify the caller that call was declined
-    if (channelRef.current) {
-      channelRef.current.send({
-        type: 'broadcast',
-        event: 'call-declined',
-        payload: {
-          call_id: callId,
-          declined_by: user?.id
-        }
-      });
+    if (channelRef.current && channelRef.current.state === 'joined') {
+      try {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'call-declined',
+          payload: {
+            call_id: callId,
+            declined_by: user?.id
+          }
+        });
+      } catch (error) {
+        console.error('Error sending call declined message:', error);
+      }
     }
 
     toast({

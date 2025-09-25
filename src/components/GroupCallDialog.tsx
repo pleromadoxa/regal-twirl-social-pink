@@ -60,7 +60,7 @@ const GroupCallDialog = ({ groupId, participants, callType = 'audio' }: GroupCal
       
       // Broadcast to all participants
       const broadcastPromises = participants.map(participant => {
-        const channel = supabase.channel(`user-calls-${participant.id}`);
+        const channel = supabase.channel(`user-calls-${participant.id}-${Date.now()}`);
         return channel.send({
           type: 'broadcast',
           event: 'incoming-group-call',

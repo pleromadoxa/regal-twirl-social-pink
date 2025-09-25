@@ -114,7 +114,7 @@ const MessageThreadCallManager = ({
         const call = await createCall(currentUserId!, callType, [otherParticipant.id]);
         
         // Broadcast call invitation directly to the other participant's channel
-        const recipientChannel = supabase.channel(`user-calls-${otherParticipant.id}`);
+        const recipientChannel = supabase.channel(`user-calls-${otherParticipant.id}-${Date.now()}`);
         
         await recipientChannel.send({
           type: 'broadcast',
