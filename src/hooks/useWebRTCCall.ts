@@ -266,23 +266,57 @@ export const useWebRTCCall = ({
   }, [stopDurationTimer, updateCallState, onCallEnd]);
 
   const toggleAudio = useCallback(() => {
-    if (webrtcServiceRef.current) {
+    console.log('[useWebRTCCall] toggleAudio called, current state:', callState.isAudioEnabled);
+    
+    if (webrtcServiceRef.current && callState.localStream) {
       const newState = !callState.isAudioEnabled;
-      webrtcServiceRef.current.toggleAudio(newState);
-      updateCallState({ isAudioEnabled: newState });
+      console.log('[useWebRTCCall] Toggling audio to:', newState);
       
-      const browserInfo = getMobileBrowserInfo();
-      
+      try {
+        // Toggle audio tracks directly
+        callState.localStream.getAudioTracks().forEach(track => {
+          track.enabled = newState;
+          console.log('[useWebRTCCall] Audio track enabled set to:', newState);
+        });
+        
+        // Also call service method
+        webrtcServiceRef.current.toggleAudio(newState);
+        
+        // Update state
+        updateCallState({ isAudioEnabled: newState });
+        
+        const browserInfo = getMobileBrowserInfo();
+        
+        toast({
+          title: newState ? "Microphone enabled" : "Microphone disabled",
+          description: newState 
+            ? (browserInfo.isMobile ? "You can now be heard on mobile" : "You can now be heard")
+            : (browserInfo.isMobile ? "You are muted on mobile" : "You are now muted"),
+          duration: 2000
+        });
+        
+        console.log('[useWebRTCCall] Audio toggle completed successfully');
+      } catch (error) {
+        console.error('[useWebRTCCall] Error toggling audio:', error);
+        toast({
+          title: "Audio toggle failed",
+          description: "There was an error toggling your microphone",
+          variant: "destructive"
+        });
+      }
+    } else {
+      console.warn('[useWebRTCCall] Cannot toggle audio - service or stream not available');
       toast({
-        title: newState ? "Microphone enabled" : "Microphone disabled",
-        description: newState 
-          ? (browserInfo.isMobile ? "You can now be heard on mobile" : "You can now be heard")
-          : (browserInfo.isMobile ? "You are muted on mobile" : "You are now muted")
+        title: "Audio not available",
+        description: "Cannot toggle microphone at this time",
+        variant: "destructive"
       });
     }
-  }, [callState.isAudioEnabled, updateCallState, toast]);
+  }, [callState.isAudioEnabled, callState.localStream, updateCallState, toast]);
 
   const toggleVideo = useCallback(() => {
+    console.log('[useWebRTCCall] toggleVideo called, current state:', callState.isVideoEnabled);
+    
     if (callType === 'audio') {
       toast({
         title: "Video not available",
@@ -292,21 +326,51 @@ export const useWebRTCCall = ({
       return;
     }
 
-    if (webrtcServiceRef.current) {
+    if (webrtcServiceRef.current && callState.localStream) {
       const newState = !callState.isVideoEnabled;
-      webrtcServiceRef.current.toggleVideo(newState);
-      updateCallState({ isVideoEnabled: newState });
+      console.log('[useWebRTCCall] Toggling video to:', newState);
       
-      const browserInfo = getMobileBrowserInfo();
-      
+      try {
+        // Toggle video tracks directly
+        callState.localStream.getVideoTracks().forEach(track => {
+          track.enabled = newState;
+          console.log('[useWebRTCCall] Video track enabled set to:', newState);
+        });
+        
+        // Also call service method
+        webrtcServiceRef.current.toggleVideo(newState);
+        
+        // Update state
+        updateCallState({ isVideoEnabled: newState });
+        
+        const browserInfo = getMobileBrowserInfo();
+        
+        toast({
+          title: newState ? "Camera enabled" : "Camera disabled", 
+          description: newState 
+            ? (browserInfo.isMobile ? "Your video is visible on mobile" : "Your video is now visible")
+            : (browserInfo.isMobile ? "Your video is hidden on mobile" : "Your video is now hidden"),
+          duration: 2000
+        });
+        
+        console.log('[useWebRTCCall] Video toggle completed successfully');
+      } catch (error) {
+        console.error('[useWebRTCCall] Error toggling video:', error);
+        toast({
+          title: "Camera toggle failed",
+          description: "There was an error toggling your camera",
+          variant: "destructive"
+        });
+      }
+    } else {
+      console.warn('[useWebRTCCall] Cannot toggle video - service or stream not available');
       toast({
-        title: newState ? "Camera enabled" : "Camera disabled", 
-        description: newState 
-          ? (browserInfo.isMobile ? "Your video is visible on mobile" : "Your video is now visible")
-          : (browserInfo.isMobile ? "Your video is hidden on mobile" : "Your video is now hidden")
+        title: "Camera not available",
+        description: "Cannot toggle camera at this time",
+        variant: "destructive"
       });
     }
-  }, [callState.isVideoEnabled, callType, updateCallState, toast]);
+  }, [callState.isVideoEnabled, callState.localStream, callType, updateCallState, toast]);
 
   useEffect(() => {
     // Only setup tracking, don't auto-initialize

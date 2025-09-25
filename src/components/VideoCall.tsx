@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Maximize2, Minimize2 } from 'lucide-react';
 import { useWebRTCCall } from '@/hooks/useWebRTCCall';
 import { useCallSounds } from '@/hooks/useCallSounds';
 import { EnhancedCallControls } from './EnhancedCallControls';
+import { CallQualityIndicator } from './CallQualityIndicator';
 import { formatDuration } from '@/lib/utils';
 
 interface VideoCallProps {
@@ -28,6 +29,7 @@ const VideoCall = ({
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isLocalVideoExpanded, setIsLocalVideoExpanded] = useState(false);
   const { playRinging, stopRinging, playConnect, playEndCall } = useCallSounds();
   
   const {
@@ -125,37 +127,56 @@ const VideoCall = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col z-50">
+    <div className="fixed inset-0 bg-black flex flex-col z-50 overflow-hidden">
       {/* Video Streams */}
       <div className="relative flex-1">
+        {/* Connection Status Indicator */}
+        <div className="absolute top-4 left-4 z-30">
+          <CallQualityIndicator
+            connectionState={callState.connectionState}
+            iceConnectionState={callState.iceConnectionState}
+            className="animate-fade-in"
+          />
+        </div>
+        
         {/* Remote Video (Main) */}
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-all duration-300"
         />
         
         {/* Remote User Placeholder (when no video) */}
         {(!callState.remoteStream || callState.status !== 'connected') && (
           <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black flex items-center justify-center">
-            <div className="text-center text-white space-y-4">
-              <Avatar className="w-32 h-32 mx-auto ring-4 ring-white/20">
+            {/* Animated background elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-purple-500/10 rounded-full animate-pulse blur-xl" />
+              <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-blue-500/10 rounded-full animate-pulse blur-xl animation-delay-1000" />
+            </div>
+            
+            <div className="text-center text-white space-y-6 relative z-10">
+              <Avatar className="w-40 h-40 mx-auto ring-4 ring-white/30 shadow-2xl">
                 <AvatarImage src={otherUserAvatar} />
-                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-4xl">
+                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-5xl">
                   {otherUserName[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h2 className="text-2xl font-bold">{otherUserName}</h2>
-                <p className="text-lg opacity-75">{getStatusText()}</p>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+                  {otherUserName}
+                </h2>
+                <p className="text-xl opacity-90">{getStatusText()}</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Local Video (Picture-in-Picture) */}
-        <div className="absolute top-4 right-4 w-32 h-40 bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+        <div 
+          className={`absolute ${isLocalVideoExpanded ? 'top-4 left-4 w-80 h-60' : 'top-4 right-4 w-32 h-40'} bg-gray-900 rounded-xl overflow-hidden shadow-2xl transition-all duration-300 z-20 border-2 border-white/20`}
+        >
           <video
             ref={localVideoRef}
             autoPlay
@@ -163,11 +184,39 @@ const VideoCall = ({
             muted
             className="w-full h-full object-cover"
           />
+          
+          {/* Local video overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+          
+          {/* Local video controls */}
+          <div className="absolute top-2 right-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsLocalVideoExpanded(!isLocalVideoExpanded)}
+              className="w-8 h-8 p-0 bg-black/50 hover:bg-black/70 text-white rounded-full"
+            >
+              {isLocalVideoExpanded ? (
+                <Minimize2 className="w-4 h-4" />
+              ) : (
+                <Maximize2 className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+          
           {!callState.isVideoEnabled && (
-            <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-              <VideoOff className="w-8 h-8 text-gray-400" />
+            <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
+              <div className="text-center">
+                <VideoOff className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <span className="text-xs text-gray-400">Camera Off</span>
+              </div>
             </div>
           )}
+          
+          {/* Local video label */}
+          <div className="absolute bottom-2 left-2">
+            <span className="text-xs text-white/80 bg-black/50 px-2 py-1 rounded">You</span>
+          </div>
         </div>
       </div>
 
