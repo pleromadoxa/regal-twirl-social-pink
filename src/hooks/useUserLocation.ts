@@ -78,7 +78,7 @@ export const useUserLocation = () => {
           timestamp: new Date().toISOString()
         };
 
-        await locationChannelRef.current.subscribe(async (status: string) => {
+        locationChannelRef.current.subscribe(async (status: string) => {
           if (status === 'SUBSCRIBED') {
             console.log('[useUserLocation] Location channel subscribed');
             await locationChannelRef.current.track(locationState);
@@ -124,7 +124,7 @@ export const useUserLocation = () => {
             });
           });
 
-        await presenceChannelRef.current.subscribe((status: string) => {
+        presenceChannelRef.current.subscribe((status: string) => {
           if (status === 'SUBSCRIBED') {
             console.log('[useUserLocation] Presence channel subscribed');
           }
