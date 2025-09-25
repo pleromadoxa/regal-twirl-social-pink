@@ -49,16 +49,24 @@ const MessageThreadMessages = ({
   return (
     <ScrollArea className="flex-1 px-4 py-2 bg-white dark:bg-gray-900" ref={scrollAreaRef}>
       {messages.length > 0 ? (
-        <div className="space-y-4">
-          {messages.map((message) => (
-            <EnhancedMessageBubble
-              key={message.id}
-              message={message}
-              isOwn={message.sender_id === currentUserId}
-              currentUserId={currentUserId || ''}
-              onDelete={onDeleteMessage}
-            />
-          ))}
+        <div className="space-y-1">
+          {messages.map((message, index) => {
+            // Show username if it's the first message from this sender in a sequence
+            const previousMessage = index > 0 ? messages[index - 1] : null;
+            const showUsername = message.sender_id !== currentUserId && 
+              (!previousMessage || previousMessage.sender_id !== message.sender_id);
+            
+            return (
+              <EnhancedMessageBubble
+                key={message.id}
+                message={message}
+                isOwn={message.sender_id === currentUserId}
+                currentUserId={currentUserId || ''}
+                onDelete={onDeleteMessage}
+                showUsername={showUsername}
+              />
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
       ) : (

@@ -1,9 +1,8 @@
 
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { ChatBubble, ChatBubbleAvatar, ChatBubbleMessage, ChatBubbleActionWrapper, ChatBubbleAction } from '@/components/ui/chat-bubble';
+import { format, isToday, isYesterday } from 'date-fns';
 import { VoiceBubble } from '@/components/ui/voice-bubble';
-import { MoreHorizontal, Edit, Trash2, Download, Play, Image, Video, FileText } from 'lucide-react';
+import { Edit, Trash2, Download, FileText } from 'lucide-react';
 import MessageEditForm from './MessageEditForm';
 import MessageContent from './MessageContent';
 import { useToast } from '@/hooks/use-toast';
@@ -31,9 +30,10 @@ interface EnhancedMessageBubbleProps {
   isOwn: boolean;
   currentUserId: string;
   onDelete: (messageId: string) => void;
+  showUsername?: boolean;
 }
 
-const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: EnhancedMessageBubbleProps) => {
+const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUsername = false }: EnhancedMessageBubbleProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const { toast } = useToast();
@@ -102,17 +102,29 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
   // Check for attachments
   const hasAttachments = (message as any).attachments && (message as any).attachments.length > 0;
 
+  // Format timestamp WhatsApp/Instagram style
+  const formatTimestamp = (dateString: string) => {
+    const date = new Date(dateString);
+    if (isToday(date)) {
+      return format(date, 'h:mm a');
+    } else if (isYesterday(date)) {
+      return `Yesterday ${format(date, 'h:mm a')}`;
+    } else {
+      return format(date, 'MMM d, h:mm a');
+    }
+  };
+
   return (
     <div 
-      className={`group flex items-end gap-2 mb-4 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
+      className={`group mb-2 ${isOwn ? 'flex flex-col items-end' : 'flex flex-col items-start'}`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      {!isOwn && (
-        <ChatBubbleAvatar
-          src={message.sender_profile?.avatar_url}
-          fallback={message.sender_profile?.display_name?.[0] || message.sender_profile?.username?.[0] || '?'}
-        />
+      {/* Username at the beginning of chat */}
+      {showUsername && !isOwn && (
+        <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 px-2">
+          {message.sender_profile?.display_name || message.sender_profile?.username || 'Unknown'}
+        </div>
       )}
       
       <div className={`flex flex-col gap-1 ${isOwn ? 'items-end' : 'items-start'} max-w-[70%]`}>
@@ -254,21 +266,14 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
               </div>
             )}
 
-            {/* Timestamp - smaller and less intrusive */}
-            <div className={`text-xs text-gray-400 px-2 ${isOwn ? 'text-right' : 'text-left'}`}>
-              {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+            {/* WhatsApp/Instagram style timestamp */}
+            <div className={`text-xs text-gray-400 px-2 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
+              {formatTimestamp(message.created_at)}
               {message.edited_at && ' • edited'}
             </div>
           </>
         )}
       </div>
-      
-      {isOwn && (
-        <ChatBubbleAvatar
-          src={message.sender_profile?.avatar_url}
-          fallback={message.sender_profile?.display_name?.[0] || message.sender_profile?.username?.[0] || 'M'}
-        />
-      )}
     </div>
   );
 };
