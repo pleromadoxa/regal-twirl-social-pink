@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getMobileBrowserInfo, getMobileOptimizedConstraints } from '@/utils/mobileWebRTC';
+import { enhancedCallService, type EnhancedCall } from '@/services/enhancedCallService';
 
 export interface CallState {
   status: 'idle' | 'connecting' | 'connected' | 'ended' | 'failed';
@@ -13,6 +14,8 @@ export interface CallState {
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
   error: string | null;
+  enhancedCall: EnhancedCall | null;
+  participantCount: number;
 }
 
 export interface UseWebRTCCallOptions {
@@ -30,7 +33,7 @@ export const useWebRTCCall = ({
   isIncoming = false,
   onCallEnd
 }: UseWebRTCCallOptions) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   
   const webrtcServiceRef = useRef<any>(null);
@@ -47,7 +50,9 @@ export const useWebRTCCall = ({
     isVideoEnabled: callType === 'video',
     localStream: null,
     remoteStream: null,
-    error: null
+    error: null,
+    enhancedCall: null,
+    participantCount: 0
   });
 
   const updateCallState = useCallback((updates: Partial<CallState>) => {
@@ -96,6 +101,20 @@ export const useWebRTCCall = ({
       isInitializingRef.current = true;
       updateCallState({ status: 'connecting', error: null });
 
+      // Start enhanced call service
+      const enhancedCall = await enhancedCallService.startCall(
+        callType,
+        user.id,
+        [otherUserId],
+        {
+          display_name: profile?.display_name,
+          username: profile?.username,
+          avatar_url: profile?.avatar_url
+        }
+      );
+
+      updateCallState({ enhancedCall, participantCount: enhancedCall.participants.length });
+
       // Test connection first
       console.log('[useWebRTCCall] Testing connection prerequisites...');
       
@@ -121,6 +140,11 @@ export const useWebRTCCall = ({
         if (state === 'connected') {
           updateCallState({ status: 'connected', error: null });
           startDurationTimer();
+          
+          // Update enhanced call service
+          if (user?.id) {
+            enhancedCallService.updateParticipantStatus(user.id, 'connected');
+          }
         } else if (state === 'failed') {
           // Only fail immediately on actual failures, not temporary disconnections
           updateCallState({ status: 'failed', error: 'Connection failed. Please check your internet connection and try again.' });
@@ -131,6 +155,11 @@ export const useWebRTCCall = ({
           });
         } else if (state === 'connecting') {
           updateCallState({ status: 'connecting', error: null });
+          
+          // Update enhanced call service
+          if (user?.id) {
+            enhancedCallService.updateParticipantStatus(user.id, 'connecting');
+          }
         }
       });
 
@@ -248,6 +277,14 @@ export const useWebRTCCall = ({
     stopDurationTimer();
     isInitializingRef.current = false;
     
+    // End enhanced call
+    if (user?.id && profile) {
+      await enhancedCallService.endCall(
+        user.id,
+        profile.display_name || profile.username || 'Unknown User'
+      );
+    }
+    
     if (webrtcServiceRef.current) {
       // Properly cleanup the WebRTC service
       webrtcServiceRef.current.cleanup();
@@ -257,13 +294,15 @@ export const useWebRTCCall = ({
     updateCallState({ 
       status: 'ended',
       localStream: null,
-      remoteStream: null
+      remoteStream: null,
+      enhancedCall: null,
+      participantCount: 0
     });
 
     if (onCallEnd) {
       onCallEnd();
     }
-  }, [stopDurationTimer, updateCallState, onCallEnd]);
+  }, [stopDurationTimer, updateCallState, onCallEnd, user?.id, profile]);
 
   const toggleAudio = useCallback(() => {
     console.log('[useWebRTCCall] toggleAudio called, current state:', callState.isAudioEnabled);
@@ -378,8 +417,20 @@ export const useWebRTCCall = ({
       console.log('[useWebRTCCall] Dependencies ready for call initialization');
     }
 
+    // Monitor enhanced call service for updates
+    const checkCallUpdates = setInterval(() => {
+      const currentCall = enhancedCallService.getCurrentCall();
+      if (currentCall && currentCall !== callState.enhancedCall) {
+        updateCallState({ 
+          enhancedCall: currentCall,
+          participantCount: currentCall.participants.length 
+        });
+      }
+    }, 1000);
+
     return () => {
       console.log('[useWebRTCCall] Cleaning up on unmount or dependency change');
+      clearInterval(checkCallUpdates);
       isInitializingRef.current = false;
       if (webrtcServiceRef.current) {
         webrtcServiceRef.current.cleanup();
@@ -387,13 +438,39 @@ export const useWebRTCCall = ({
       }
       stopDurationTimer();
     };
-  }, [user, conversationId, otherUserId, stopDurationTimer]);
+  }, [user, conversationId, otherUserId, stopDurationTimer, callState.enhancedCall, updateCallState]);
 
   return {
     callState,
     endCall,
     toggleAudio,
     toggleVideo,
-    initializeCall
+    initializeCall,
+    joinCall: useCallback(async (callId: string) => {
+      if (!user || !profile) return;
+      
+      try {
+        await enhancedCallService.joinCall(callId, user.id, {
+          display_name: profile.display_name,
+          username: profile.username,
+          avatar_url: profile.avatar_url
+        });
+        
+        const currentCall = enhancedCallService.getCurrentCall();
+        if (currentCall) {
+          updateCallState({ 
+            enhancedCall: currentCall,
+            participantCount: currentCall.participants.length 
+          });
+        }
+      } catch (error) {
+        console.error('Error joining call:', error);
+        toast({
+          title: "Failed to join call",
+          description: "Could not join the call. It may have ended.",
+          variant: "destructive"
+        });
+      }
+    }, [user, profile, updateCallState, toast])
   };
 };

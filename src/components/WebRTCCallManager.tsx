@@ -18,16 +18,18 @@ interface IncomingCall {
 }
 
 const WebRTCCallManager = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const channelRef = useRef<any>(null);
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || isInitializedRef.current) return;
 
     console.log('[WebRTCCallManager] Setting up call manager for user:', user.id);
+    isInitializedRef.current = true;
 
     // Clean up any existing channel first
     if (channelRef.current) {
@@ -103,14 +105,34 @@ const WebRTCCallManager = () => {
           duration: 10000
         });
       })
-      .on('broadcast', { event: 'call-ended' }, (payload) => {
-        console.log('[WebRTCCallManager] Call ended:', payload);
-        setIncomingCall(null);
-      })
-      .on('broadcast', { event: 'call-declined' }, (payload) => {
-        console.log('[WebRTCCallManager] Call declined:', payload);
-        setIncomingCall(null);
-      })
+        .on('broadcast', { event: 'call-ended' }, (payload) => {
+          console.log('[WebRTCCallManager] Call ended:', payload);
+          const endedData = payload.payload;
+          
+          // Show notification that call ended
+          if (endedData.ended_by !== user?.id) {
+            toast({
+              title: "Call ended",
+              description: `Call ended by ${endedData.ended_by_name || 'other party'}`,
+              variant: "default"
+            });
+          }
+          
+          setIncomingCall(null);
+        })
+        .on('broadcast', { event: 'call-accepted' }, (payload) => {
+          console.log('[WebRTCCallManager] Call accepted:', payload);
+          const acceptData = payload.payload;
+          
+          // Show notification that call was accepted
+          if (acceptData.accepted_by !== user?.id) {
+            toast({
+              title: "Call accepted",
+              description: `${acceptData.accepted_by_name || 'User'} joined the call`,
+              variant: "default"
+            });
+          }
+        })
       .subscribe(async (status) => {
         console.log('[WebRTCCallManager] Channel subscription status:', status);
         if (status === 'SUBSCRIBED') {
@@ -120,6 +142,7 @@ const WebRTCCallManager = () => {
 
     return () => {
       console.log('[WebRTCCallManager] Cleaning up call manager');
+      isInitializedRef.current = false;
       if (channelRef.current) {
         try {
           channelRef.current.unsubscribe();
@@ -132,10 +155,31 @@ const WebRTCCallManager = () => {
     };
   }, [user?.id, toast]);
 
-  const handleAcceptCall = (callId: string, callType: 'audio' | 'video' | 'group') => {
+  const handleAcceptCall = async (callId: string, callType: 'audio' | 'video' | 'group') => {
     if (!incomingCall) return;
     
     console.log('[WebRTCCallManager] Accepting call:', callId, callType);
+    
+    try {
+      // Notify caller that call was accepted
+      const callerChannelName = `user-calls-${incomingCall.caller_id}`;
+      const acceptChannel = supabase.channel(`call-accept-${Date.now()}`);
+      
+      await acceptChannel.send({
+        type: 'broadcast',
+        event: 'call-accepted',
+        payload: {
+          call_id: callId,
+          room_id: incomingCall.room_id,
+          accepted_by: user?.id,
+          accepted_by_name: profile?.display_name || profile?.username || 'Unknown User'
+        }
+      });
+
+      console.log('[WebRTCCallManager] Call accept notification sent');
+    } catch (error) {
+      console.error('[WebRTCCallManager] Error sending accept notification:', error);
+    }
     
     // Navigate using React Router instead of window.location.href to prevent page refresh
     const searchParams = new URLSearchParams({
@@ -149,20 +193,43 @@ const WebRTCCallManager = () => {
     setIncomingCall(null);
   };
 
-  const handleDeclineCall = (callId: string) => {
+  const handleDeclineCall = async (callId: string) => {
     console.log('[WebRTCCallManager] Declining call:', callId);
     
     if (incomingCall) {
-      // Notify caller that call was declined
-      const declineChannel = supabase.channel(`call-response-${incomingCall.room_id}`);
-      declineChannel.send({
-        type: 'broadcast',
-        event: 'call-declined',
-        payload: {
-          call_id: callId,
-          declined_by: user?.id
-        }
-      });
+      try {
+        // Notify caller that call was declined via their channel
+        const callerChannelName = `user-calls-${incomingCall.caller_id}`;
+        const declineChannel = supabase.channel(`call-decline-${Date.now()}`);
+        
+        await declineChannel.send({
+          type: 'broadcast',
+          event: 'call-declined',
+          payload: {
+            call_id: callId,
+            room_id: incomingCall.room_id,
+            declined_by: user?.id,
+            declined_by_name: profile?.display_name || profile?.username || 'Unknown User'
+          }
+        });
+
+        // Also notify on the caller's dedicated channel
+        const callerNotificationChannel = supabase.channel(callerChannelName);
+        await callerNotificationChannel.send({
+          type: 'broadcast',
+          event: 'call-declined',
+          payload: {
+            call_id: callId,
+            room_id: incomingCall.room_id,
+            declined_by: user?.id,
+            declined_by_name: profile?.display_name || profile?.username || 'Unknown User'
+          }
+        });
+
+        console.log('[WebRTCCallManager] Call decline notification sent');
+      } catch (error) {
+        console.error('[WebRTCCallManager] Error sending decline notification:', error);
+      }
     }
     
     setIncomingCall(null);
