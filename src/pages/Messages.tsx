@@ -436,7 +436,7 @@ const Messages = () => {
         </div>
       </div>
 
-      {/* Right Section - Chat Area */}
+      {/* Right Section - Chat Area - Full Width */}
       <div className="flex-1 flex flex-col min-w-0">
         {selectedConversation ? (
           <MessageThread
@@ -475,11 +475,6 @@ const Messages = () => {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Far Right Sidebar */}
-      <div className="hidden xl:flex xl:w-80 flex-shrink-0">
-        <RightSidebar />
       </div>
 
       {/* Mobile Bottom Navigation */}

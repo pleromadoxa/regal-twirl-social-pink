@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Send, Smile } from 'lucide-react';
 import AttachmentUpload from './AttachmentUpload';
 import DragDropMediaUpload from './DragDropMediaUpload';
+import EnhancedEmojiPicker from './EnhancedEmojiPicker';
+import AnimatedEmoji, { EmojiRain } from './AnimatedEmoji';
 
 interface MessageThreadInputProps {
   onSendMessage: (content: string, attachments: File[], location?: {lat: number; lng: number; address: string}) => void;
@@ -17,6 +19,17 @@ const MessageThreadInput = ({ onSendMessage, disabled = false }: MessageThreadIn
   const [sharedLocation, setSharedLocation] = useState<{lat: number; lng: number; address: string} | null>(null);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [uploadedTypes, setUploadedTypes] = useState<string[]>([]);
+  const [showEmojiRain, setShowEmojiRain] = useState<string | null>(null);
+
+  const handleEmojiSelect = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+    
+    // Trigger special effects for certain emojis
+    const specialEmojis = ['🎉', '🎊', '✨', '🔥', '💥', '🌟'];
+    if (specialEmojis.includes(emoji)) {
+      setShowEmojiRain(emoji);
+    }
+  };
 
   const handleSendMessage = () => {
     if (!newMessage.trim() && attachments.length === 0 && !sharedLocation) return;
@@ -71,25 +84,41 @@ const MessageThreadInput = ({ onSendMessage, disabled = false }: MessageThreadIn
         )}
 
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" className="rounded-full hidden sm:flex shrink-0">
-            <Smile className="w-4 h-4" />
-          </Button>
+          <EnhancedEmojiPicker onEmojiSelect={handleEmojiSelect}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="rounded-full shrink-0 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+              type="button"
+            >
+              <AnimatedEmoji emoji="😊" animation="pulse" size="sm" />
+            </Button>
+          </EnhancedEmojiPicker>
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
-            className="flex-1 rounded-full bg-slate-100 dark:bg-slate-800 border-0 text-sm sm:text-base min-w-0"
+            className="flex-1 rounded-full bg-slate-100 dark:bg-slate-800 border-0 text-sm sm:text-base min-w-0 focus:ring-2 focus:ring-purple-500"
             disabled={disabled}
           />
           <Button
             onClick={handleSendMessage}
             disabled={disabled || (!newMessage.trim() && attachments.length === 0 && !sharedLocation)}
-            className="rounded-full w-8 h-8 sm:w-10 sm:h-10 p-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shrink-0"
+            className="rounded-full w-8 h-8 sm:w-10 sm:h-10 p-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shrink-0 transition-all duration-200 hover:scale-105"
           >
             <Send className="w-3 h-3 sm:w-4 sm:h-4" />
           </Button>
         </div>
+        
+        {/* Emoji Rain Effect */}
+        {showEmojiRain && (
+          <EmojiRain
+            emoji={showEmojiRain}
+            duration={2000}
+            onComplete={() => setShowEmojiRain(null)}
+          />
+        )}
       </div>
     </DragDropMediaUpload>
   );
