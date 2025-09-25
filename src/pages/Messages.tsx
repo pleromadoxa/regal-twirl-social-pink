@@ -53,7 +53,7 @@ const Messages = () => {
   const { callHistory, loading: callHistoryLoading } = useCallHistory();
 
   const selectedConversation = searchParams.get('conversation');
-  const { conversations, groupConversations, loading, error } = messagesData;
+  const { conversations, groupConversations, loading } = messagesData;
 
   // handlers, filters
 
@@ -171,7 +171,14 @@ const Messages = () => {
           {selectedConversation ? (
             <MessageThread
               conversationId={selectedConversation}
-              onBack={() => setSearchParams({})}
+              messagesData={messagesData}
+              onCallStart={(callType, otherUser) => {
+                setActiveCall({
+                  type: callType,
+                  conversationId: selectedConversation,
+                  otherUser
+                });
+              }}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-gray-800/50 dark:to-purple-900/20">
@@ -253,9 +260,15 @@ const Messages = () => {
       {/* Incoming Call Popup */}
       {incomingCall && (
         <CallPopup
-          type={incomingCall.type}
-          callerName={incomingCall.otherUser.display_name || incomingCall.otherUser.username || 'Unknown User'}
-          callerAvatar={incomingCall.otherUser.avatar_url}
+          isIncoming={true}
+          callType={incomingCall.type}
+          otherUser={{
+            id: incomingCall.otherUser.id,
+            username: incomingCall.otherUser.username,
+            display_name: incomingCall.otherUser.display_name,
+            avatar_url: incomingCall.otherUser.avatar_url,
+            is_verified: incomingCall.otherUser.is_verified
+          }}
           onAccept={() => {
             setActiveCall(incomingCall);
             setIncomingCall(null);
