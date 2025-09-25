@@ -4,7 +4,6 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import IncomingCallPopup from '@/components/IncomingCallPopup';
 import { useNavigate } from 'react-router-dom';
-import { subscriptionManager } from '@/utils/subscriptionManager';
 
 interface IncomingCall {
   id: string;
@@ -23,7 +22,7 @@ const WebRTCCallManager = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
-  const unsubscribeRef = useRef<(() => void) | null>(null);
+  const channelRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
 
   useEffect(() => {
@@ -32,132 +31,126 @@ const WebRTCCallManager = () => {
     console.log('[WebRTCCallManager] Setting up call manager for user:', user.id);
     isInitializedRef.current = true;
 
-    // Clean up any existing subscription first
-    if (unsubscribeRef.current) {
+    // Clean up any existing channel first
+    if (channelRef.current) {
       try {
-        unsubscribeRef.current();
+        channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
       } catch (error) {
-        console.warn('Error cleaning up existing subscription:', error);
+        console.warn('Error cleaning up existing channel:', error);
       }
-      unsubscribeRef.current = null;
+      channelRef.current = null;
     }
 
-    // Listen on user-specific channel for incoming calls using subscription manager
-    const channelName = `user-calls-${user.id}`;
+    // Listen on user-specific channel for incoming calls with timestamp for uniqueness
+    const channelName = `user-calls-${user.id}-${Date.now()}`;
     
     console.log('[WebRTCCallManager] Listening on channel:', channelName);
     
-    unsubscribeRef.current = subscriptionManager.subscribe(channelName, {
-      broadcast: [
-        {
-          event: 'incoming-call',
-          callback: (payload: any) => {
-            console.log('[WebRTCCallManager] Received incoming call:', payload);
-            
-            const callData = payload.payload;
-            
-            // Don't show incoming call popup for calls initiated by this user
-            if (callData.caller_id === user.id) {
-              return;
-            }
-
-            setIncomingCall({
-              id: callData.call_id || callData.room_id,
-              caller_id: callData.caller_id,
-              call_type: callData.call_type || 'audio',
-              room_id: callData.room_id,
-              caller_profile: callData.caller_profile || {
-                display_name: 'Unknown User',
-                username: 'unknown',
-                avatar_url: null
-              }
-            });
-
-            // Show notification
-            toast({
-              title: `Incoming ${callData.call_type || 'audio'} call`,
-              description: `${callData.caller_profile?.display_name || 'Unknown'} is calling you...`,
-              duration: 10000
-            });
-          }
-        },
-        {
-          event: 'incoming-group-call',
-          callback: (payload: any) => {
-            console.log('[WebRTCCallManager] Received incoming group call:', payload);
-            
-            const callData = payload.payload;
-            
-            if (callData.caller_id === user.id) {
-              return;
-            }
-
-            setIncomingCall({
-              id: callData.call_id || callData.room_id,
-              caller_id: callData.caller_id,
-              call_type: 'group',
-              room_id: callData.room_id,
-              caller_profile: callData.caller_profile || {
-                display_name: 'Unknown User',
-                username: 'unknown',
-                avatar_url: null
-              }
-            });
-
-            toast({
-              title: "Incoming group call",
-              description: `${callData.caller_profile?.display_name || 'Unknown'} invited you to a group call`,
-              duration: 10000
-            });
-          }
-        },
-        {
-          event: 'call-ended',
-          callback: (payload: any) => {
-            console.log('[WebRTCCallManager] Call ended:', payload);
-            const endedData = payload.payload;
-            
-            // Show notification that call ended
-            if (endedData.ended_by !== user?.id) {
-              toast({
-                title: "Call ended",
-                description: `Call ended by ${endedData.ended_by_name || 'other party'}`,
-                variant: "default"
-              });
-            }
-            
-            setIncomingCall(null);
-          }
-        },
-        {
-          event: 'call-accepted',
-          callback: (payload: any) => {
-            console.log('[WebRTCCallManager] Call accepted:', payload);
-            const acceptData = payload.payload;
-            
-            // Show notification that call was accepted
-            if (acceptData.accepted_by !== user?.id) {
-              toast({
-                title: "Call accepted",
-                description: `${acceptData.accepted_by_name || 'User'} joined the call`,
-                variant: "default"
-              });
-            }
-          }
+    channelRef.current = supabase
+      .channel(channelName)
+      .on('broadcast', { event: 'incoming-call' }, (payload) => {
+        console.log('[WebRTCCallManager] Received incoming call:', payload);
+        
+        const callData = payload.payload;
+        
+        // Don't show incoming call popup for calls initiated by this user
+        if (callData.caller_id === user.id) {
+          return;
         }
-      ]
-    });
+
+        setIncomingCall({
+          id: callData.call_id || callData.room_id,
+          caller_id: callData.caller_id,
+          call_type: callData.call_type || 'audio',
+          room_id: callData.room_id,
+          caller_profile: callData.caller_profile || {
+            display_name: 'Unknown User',
+            username: 'unknown',
+            avatar_url: null
+          }
+        });
+
+        // Show notification
+        toast({
+          title: `Incoming ${callData.call_type || 'audio'} call`,
+          description: `${callData.caller_profile?.display_name || 'Unknown'} is calling you...`,
+          duration: 10000
+        });
+      })
+      .on('broadcast', { event: 'incoming-group-call' }, (payload) => {
+        console.log('[WebRTCCallManager] Received incoming group call:', payload);
+        
+        const callData = payload.payload;
+        
+        if (callData.caller_id === user.id) {
+          return;
+        }
+
+        setIncomingCall({
+          id: callData.call_id || callData.room_id,
+          caller_id: callData.caller_id,
+          call_type: 'group',
+          room_id: callData.room_id,
+          caller_profile: callData.caller_profile || {
+            display_name: 'Unknown User',
+            username: 'unknown',
+            avatar_url: null
+          }
+        });
+
+        toast({
+          title: "Incoming group call",
+          description: `${callData.caller_profile?.display_name || 'Unknown'} invited you to a group call`,
+          duration: 10000
+        });
+      })
+      .on('broadcast', { event: 'call-ended' }, (payload) => {
+        console.log('[WebRTCCallManager] Call ended:', payload);
+        const endedData = payload.payload;
+        
+        // Show notification that call ended
+        if (endedData.ended_by !== user?.id) {
+          toast({
+            title: "Call ended",
+            description: `Call ended by ${endedData.ended_by_name || 'other party'}`,
+            variant: "default"
+          });
+        }
+        
+        setIncomingCall(null);
+      })
+      .on('broadcast', { event: 'call-accepted' }, (payload) => {
+        console.log('[WebRTCCallManager] Call accepted:', payload);
+        const acceptData = payload.payload;
+        
+        // Show notification that call was accepted
+        if (acceptData.accepted_by !== user?.id) {
+          toast({
+            title: "Call accepted",
+            description: `${acceptData.accepted_by_name || 'User'} joined the call`,
+            variant: "default"
+          });
+        }
+      })
+      .subscribe(async (status) => {
+        console.log('[WebRTCCallManager] Channel subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[WebRTCCallManager] Successfully subscribed to channel:', channelName);
+        }
+      });
 
     return () => {
       console.log('[WebRTCCallManager] Cleaning up call manager');
       isInitializedRef.current = false;
-      if (unsubscribeRef.current) {
+      if (channelRef.current) {
         try {
-          unsubscribeRef.current();
+          channelRef.current.unsubscribe();
+          supabase.removeChannel(channelRef.current);
         } catch (error) {
-          console.error('Error cleaning up subscription:', error);
+          console.error('Error cleaning up channel:', error);
         }
-        unsubscribeRef.current = null;
+        channelRef.current = null;
       }
     };
   }, [user?.id, toast]);
