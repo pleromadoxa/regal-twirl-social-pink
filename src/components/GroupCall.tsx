@@ -69,7 +69,12 @@ const GroupCall = ({ roomId, callType, onCallEnd }: GroupCallProps) => {
   }, [roomId]);
 
   const initializeGroupCall = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('[GroupCall] No user available for initialization');
+      return;
+    }
+
+    console.log('[GroupCall] Initializing group call...', { roomId, callType });
 
     try {
       // Get media stream

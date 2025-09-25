@@ -69,9 +69,14 @@ const Messages = () => {
 
   // Auto-start call based on URL parameters
   useEffect(() => {
+    console.log('[Messages] URL params check:', { callType, selectedConversation, roomId, isGroupCall, activeCall: !!activeCall });
+    
     if (callType && selectedConversation && !activeCall) {
+      console.log('[Messages] Auto-starting call...');
+      
       if (isGroupCall && roomId) {
         // Start group call
+        console.log('[Messages] Starting group call with room:', roomId);
         setActiveCall({
           type: 'group',
           conversationId: selectedConversation,
@@ -81,10 +86,14 @@ const Messages = () => {
       } else {
         // Start regular call - find the other user
         const conversation = conversations.find(c => c.id === selectedConversation);
+        console.log('[Messages] Found conversation for regular call:', !!conversation);
+        
         if (conversation) {
           const otherUser = conversation.participant_1 === user?.id 
             ? conversation.participant_2_profile 
             : conversation.participant_1_profile;
+          
+          console.log('[Messages] Other user found:', !!otherUser);
           
           if (otherUser) {
             setActiveCall({
@@ -558,41 +567,54 @@ const Messages = () => {
       {/* Active Call Components */}
       {activeCall && (
         <div className="fixed inset-0 z-50">
-          {activeCall.type === 'group' ? (
-            <GroupCall
-              roomId={activeCall.roomId || ''}
-              callType={callType as 'audio' | 'video' || 'audio'}
-              onCallEnd={() => {
-                setActiveCall(null);
-                // Clear URL parameters
-                setSearchParams({ conversation: selectedConversation || '' });
-              }}
-            />
-          ) : activeCall.type === 'audio' ? (
-            <AudioCall
-              conversationId={activeCall.conversationId}
-              otherUserId={activeCall.otherUser?.id || ''}
-              otherUserName={activeCall.otherUser?.display_name || activeCall.otherUser?.username || 'Unknown User'}
-              otherUserAvatar={activeCall.otherUser?.avatar_url}
-              onCallEnd={() => {
-                setActiveCall(null);
-                // Clear URL parameters
-                setSearchParams({ conversation: selectedConversation || '' });
-              }}
-            />
-          ) : (
-            <VideoCall
-              conversationId={activeCall.conversationId}
-              otherUserId={activeCall.otherUser?.id || ''}
-              otherUserName={activeCall.otherUser?.display_name || activeCall.otherUser?.username || 'Unknown User'}
-              otherUserAvatar={activeCall.otherUser?.avatar_url}
-              onCallEnd={() => {
-                setActiveCall(null);
-                // Clear URL parameters
-                setSearchParams({ conversation: selectedConversation || '' });
-              }}
-            />
-          )}
+          {(() => {
+            console.log('[Messages] Rendering active call:', activeCall.type, activeCall);
+            
+            if (activeCall.type === 'group') {
+              return (
+                <GroupCall
+                  roomId={activeCall.roomId || ''}
+                  callType={callType as 'audio' | 'video' || 'audio'}
+                  onCallEnd={() => {
+                    console.log('[Messages] Group call ended');
+                    setActiveCall(null);
+                    // Clear URL parameters
+                    setSearchParams({ conversation: selectedConversation || '' });
+                  }}
+                />
+              );
+            } else if (activeCall.type === 'audio') {
+              return (
+                <AudioCall
+                  conversationId={activeCall.conversationId}
+                  otherUserId={activeCall.otherUser?.id || ''}
+                  otherUserName={activeCall.otherUser?.display_name || activeCall.otherUser?.username || 'Unknown User'}
+                  otherUserAvatar={activeCall.otherUser?.avatar_url}
+                  onCallEnd={() => {
+                    console.log('[Messages] Audio call ended');
+                    setActiveCall(null);
+                    // Clear URL parameters
+                    setSearchParams({ conversation: selectedConversation || '' });
+                  }}
+                />
+              );
+            } else {
+              return (
+                <VideoCall
+                  conversationId={activeCall.conversationId}
+                  otherUserId={activeCall.otherUser?.id || ''}
+                  otherUserName={activeCall.otherUser?.display_name || activeCall.otherUser?.username || 'Unknown User'}
+                  otherUserAvatar={activeCall.otherUser?.avatar_url}
+                  onCallEnd={() => {
+                    console.log('[Messages] Video call ended');
+                    setActiveCall(null);
+                    // Clear URL parameters
+                    setSearchParams({ conversation: selectedConversation || '' });
+                  }}
+                />
+              );
+            }
+          })()}
         </div>
       )}
 
