@@ -186,9 +186,13 @@ const WebRTCCallManager = () => {
     // Navigate using React Router instead of window.location.href to prevent page refresh
     const searchParams = new URLSearchParams({
       conversation: incomingCall.caller_id,
-      call: callType,
+      call: callType === 'group' ? 'audio' : callType,
       room: incomingCall.room_id
     });
+    
+    if (callType === 'group') {
+      searchParams.set('type', 'group');
+    }
     
     navigate(`/messages?${searchParams.toString()}`);
     
