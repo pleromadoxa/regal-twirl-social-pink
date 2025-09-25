@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Image, Video, Mic, Paperclip, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { uploadMessageAttachment, createMessageAttachment } from '@/services/attachmentService';
+import { uploadMessageAttachment, createMessageAttachment } from '@/services/messageAttachmentService';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTypingIndicator } from './TypingIndicator';
 
 interface EnhancedMessageComposerProps {
   conversationId: string;
@@ -32,8 +31,7 @@ const EnhancedMessageComposer = ({
   
   const { user } = useAuth();
   const { toast } = useToast();
-  const { startTyping, stopTyping } = useTypingIndicator(conversationId);
-
+  
   // Typing timeout ref
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -42,8 +40,7 @@ const EnhancedMessageComposer = ({
     if ((!message.trim() && attachments.length === 0) || disabled) return;
 
     try {
-      // Stop typing indicator
-      stopTyping();
+      // Clear typing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -67,8 +64,6 @@ const EnhancedMessageComposer = ({
 
     // Handle typing indicator
     if (value.trim()) {
-      startTyping();
-      
       // Clear existing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -76,10 +71,9 @@ const EnhancedMessageComposer = ({
       
       // Set new timeout to stop typing
       typingTimeoutRef.current = setTimeout(() => {
-        stopTyping();
+        // Typing stopped after inactivity
       }, 2000); // Stop typing after 2 seconds of inactivity
     } else {
-      stopTyping();
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -92,9 +86,8 @@ const EnhancedMessageComposer = ({
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      stopTyping();
     };
-  }, [stopTyping]);
+  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document') => {
     const files = Array.from(e.target.files || []);

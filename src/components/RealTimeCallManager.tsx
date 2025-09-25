@@ -59,10 +59,24 @@ const RealTimeCallManager = ({
   useEffect(() => {
     if (!user?.id) return;
 
-    console.log('Setting up call manager subscriptions for user:', user.id);
+    console.log('[RealTimeCallManager] Setting up call manager subscriptions for user:', user.id);
     
-    // Use unique channel name with timestamp and random component
-    const channelName = `incoming-calls-${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Clean up existing channels first
+    const cleanup = () => {
+      if (callInvitationChannel) {
+        try {
+          supabase.removeChannel(callInvitationChannel);
+        } catch (error) {
+          console.error('Error removing call invitation channel:', error);
+        }
+        setCallInvitationChannel(null);
+      }
+    };
+
+    cleanup();
+    
+    // Use stable channel name without random components
+    const channelName = `incoming-calls-${user.id}`;
     const channel = supabase
       .channel(channelName)
       .on('postgres_changes', {
@@ -89,18 +103,16 @@ const RealTimeCallManager = ({
           });
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[RealTimeCallManager] Channel subscription status:', status);
+      });
 
     return () => {
-      console.log('Cleaning up call manager subscription');
+      console.log('[RealTimeCallManager] Cleaning up call manager subscription');
       supabase.removeChannel(channel);
-      
-      // Also clean up call invitation channel if it exists
-      if (callInvitationChannel) {
-        supabase.removeChannel(callInvitationChannel);
-      }
+      cleanup();
     };
-  }, [user?.id]); // Only depend on user.id, not participants array
+  }, [user?.id, toast]); // Stable dependencies
 
   const startCall = async (type: 'audio' | 'video' | 'group') => {
     if (!user) return;
@@ -122,23 +134,31 @@ const RealTimeCallManager = ({
         }
       }
 
-      const channel = supabase.channel(`call-invitation-${call.room_id}-${Date.now()}`);
+      // Use stable channel name without timestamps
+      const inviteChannelName = `call-invitation-${call.room_id}`;
+      const channel = supabase.channel(inviteChannelName);
       setCallInvitationChannel(channel);
-      await channel.subscribe();
       
-      participantIds.forEach(participantId => {
-        channel.send({
-          type: 'broadcast',
-          event: 'call-invitation',
-          payload: {
-            call_id: call.id,
-            room_id: call.room_id,
-            caller_id: user.id,
-            caller_name: user.user_metadata?.display_name || user.email,
-            call_type: type,
-            recipient_id: participantId
-          }
-        });
+      // Subscribe and then send invitations
+      await channel.subscribe((status) => {
+        console.log('[RealTimeCallManager] Invite channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          // Send invitations after successful subscription
+          participantIds.forEach(participantId => {
+            channel.send({
+              type: 'broadcast',
+              event: 'call-invitation',
+              payload: {
+                call_id: call.id,
+                room_id: call.room_id,
+                caller_id: user.id,
+                caller_name: user.user_metadata?.display_name || user.email,
+                call_type: type,
+                recipient_id: participantId
+              }
+            });
+          });
+        }
       });
 
       toast({

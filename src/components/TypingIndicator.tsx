@@ -1,7 +1,6 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { subscribeToTyping } from '@/services/messageService';
 
 interface TypingIndicatorProps {
   conversationId: string;
@@ -18,31 +17,17 @@ export const TypingIndicator = ({ conversationId, isGroup = false }: TypingIndic
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
-  const subscriptionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!user?.id || !conversationId) return;
 
-    // Clean up any existing subscription first
-    if (subscriptionRef.current) {
-      subscriptionRef.current();
-      subscriptionRef.current = null;
-    }
+    console.log('[TypingIndicator] Setting up for conversation:', conversationId);
 
-    // Use the messageService typing system to avoid conflicts
-    const typingSubscription = subscribeToTyping(conversationId, user.id, (isTyping, userId) => {
-      // This is just a placeholder - the actual typing state is managed by the presence system
-      // The TypingIndicator will show typing users through the presence channel
-    });
-
-    subscriptionRef.current = typingSubscription.unsubscribe;
-
-    // Create unique channel name with timestamp to avoid conflicts
-    const channelName = `typing-${conversationId}-${user.id}-${Date.now()}`;
-    
-    // Clean up existing channel
+    // Clean up existing channel first
     if (channelRef.current) {
       try {
+        console.log('[TypingIndicator] Cleaning up existing channel');
+        channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
       } catch (error) {
         console.error('Error removing typing channel:', error);
@@ -50,6 +35,9 @@ export const TypingIndicator = ({ conversationId, isGroup = false }: TypingIndic
       channelRef.current = null;
     }
 
+    // Create stable channel name without timestamps
+    const channelName = `typing-${conversationId}`;
+    
     channelRef.current = supabase.channel(channelName)
       .on('presence', { event: 'sync' }, () => {
         if (!channelRef.current) return;
@@ -72,19 +60,16 @@ export const TypingIndicator = ({ conversationId, isGroup = false }: TypingIndic
         setTypingUsers(users);
       });
 
-    // Subscribe only if not already subscribed
-    if (channelRef.current.state !== 'joined' && channelRef.current.state !== 'joining') {
-      channelRef.current.subscribe();
-    }
+    // Subscribe to the channel
+    channelRef.current.subscribe((status: string) => {
+      console.log('[TypingIndicator] Channel subscription status:', status);
+    });
 
     return () => {
-      if (subscriptionRef.current) {
-        subscriptionRef.current();
-        subscriptionRef.current = null;
-      }
-      
+      console.log('[TypingIndicator] Cleaning up');
       if (channelRef.current) {
         try {
+          channelRef.current.unsubscribe();
           supabase.removeChannel(channelRef.current);
         } catch (error) {
           console.error('Error removing typing channel:', error);
@@ -93,30 +78,6 @@ export const TypingIndicator = ({ conversationId, isGroup = false }: TypingIndic
       }
     };
   }, [user?.id, conversationId]);
-
-  const handleStartTyping = useCallback(() => {
-    if (!user?.id || !channelRef.current) return;
-
-    channelRef.current.track({
-      user_id: user.id,
-      display_name: user.user_metadata?.display_name || user.email,
-      username: user.user_metadata?.username,
-      typing: true,
-      online_at: new Date().toISOString(),
-    });
-  }, [user]);
-
-  const handleStopTyping = useCallback(() => {
-    if (!user?.id || !channelRef.current) return;
-
-    channelRef.current.track({
-      user_id: user.id,
-      display_name: user.user_metadata?.display_name || user.email,
-      username: user.user_metadata?.username,
-      typing: false,
-      online_at: new Date().toISOString(),
-    });
-  }, [user]);
 
   if (typingUsers.length === 0) return null;
 
@@ -135,25 +96,4 @@ export const TypingIndicator = ({ conversationId, isGroup = false }: TypingIndic
       </span>
     </div>
   );
-};
-
-// Unified typing functions that use the messageService system
-export const useTypingIndicator = (conversationId: string) => {
-  const { user } = useAuth();
-
-  const startTyping = useCallback(() => {
-    if (!user?.id || !conversationId) return;
-
-    // Use the unified subscribeToTyping from messageService
-    subscribeToTyping(conversationId, user.id, () => {});
-  }, [user, conversationId]);
-
-  const stopTyping = useCallback(() => {
-    if (!user?.id || !conversationId) return;
-    
-    // The actual typing state is managed by the messageService
-    // This is just a placeholder for now since subscribeToTyping handles the state
-  }, [user, conversationId]);
-
-  return { startTyping, stopTyping };
 };
