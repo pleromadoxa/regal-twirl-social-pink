@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import IncomingCallPopup from '@/components/IncomingCallPopup';
 import { useNavigate } from 'react-router-dom';
+import { createMissedCallNotification } from '@/services/missedCallNotificationService';
 
 interface IncomingCall {
   id: string;
@@ -227,6 +228,16 @@ const WebRTCCallManager = () => {
         });
 
         console.log('[WebRTCCallManager] Call decline notification sent');
+
+        // Create missed call notification in the conversation
+        await createMissedCallNotification({
+          callId: callId,
+          callerId: incomingCall.caller_id,
+          receiverId: user?.id || '',
+          callType: incomingCall.call_type === 'video' ? 'video' : 'audio',
+          duration: 0
+        });
+
       } catch (error) {
         console.error('[WebRTCCallManager] Error sending decline notification:', error);
       }

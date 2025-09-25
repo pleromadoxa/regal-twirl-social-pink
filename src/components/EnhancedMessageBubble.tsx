@@ -20,7 +20,7 @@ interface Message {
   created_at: string;
   read_at?: string;
   edited_at?: string;
-  message_type?: string;
+  message_type?: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'missed_call';
   metadata?: any;
   sender_profile?: {
     avatar_url?: string;

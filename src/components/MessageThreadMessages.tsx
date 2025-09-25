@@ -3,22 +3,7 @@ import { useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import EnhancedMessageBubble from './EnhancedMessageBubble';
 import { TypingIndicator } from './TypingIndicator';
-
-interface Message {
-  id: string;
-  content: string;
-  sender_id: string;
-  created_at: string;
-  read_at?: string;
-  edited_at?: string;
-  message_type?: string;
-  metadata?: any;
-  sender_profile?: {
-    avatar_url?: string;
-    display_name?: string;
-    username?: string;
-  };
-}
+import type { Message } from '@/types/messages';
 
 interface MessageThreadMessagesProps {
   messages: Message[];

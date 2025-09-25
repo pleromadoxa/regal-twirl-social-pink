@@ -57,78 +57,74 @@ export const useEnhancedMessages = () => {
 
     console.log('Setting up real-time subscriptions for user:', user.id);
     
-    // Use subscription manager to prevent duplicate subscriptions
-    const channelName = `conversations-changes-${user.id}`;
+    // Create direct subscription without subscription manager for now
+    const channelName = `conversations-changes-${user.id}-${Date.now()}`;
     
-    const unsubscribe = subscriptionManager.subscribe(channelName, {
-      postgres_changes: [
-        {
-          config: {
-            event: '*',
-            schema: 'public',
-            table: 'conversations'
-          },
-          callback: () => {
-            console.log('Conversation change detected, refetching...');
-            fetchConversationsData();
-          }
-        },
-        {
-          config: {
-            event: '*',
-            schema: 'public',
-            table: 'group_conversations'
-          },
-          callback: () => {
-            console.log('Group conversation change detected, refetching...');
-            fetchConversationsData();
-          }
-        },
-        {
-          config: {
-            event: '*',
-            schema: 'public',
-            table: 'group_conversation_members',
-            filter: `user_id=eq.${user.id}`
-          },
-          callback: () => {
-            console.log('Group membership change detected, refetching...');
-            fetchConversationsData();
-          }
-        },
-        {
-          config: {
-            event: '*',
-            schema: 'public',
-            table: 'messages',
-            filter: `or(sender_id.eq.${user.id},recipient_id.eq.${user.id})`
-          },
-          callback: () => {
-            console.log('Message change detected, refetching...');
-            if (selectedConversation) {
-              fetchMessages(selectedConversation);
-            }
-          }
-        },
-        {
-          config: {
-            event: '*',
-            schema: 'public',
-            table: 'group_messages'
-          },
-          callback: (payload: any) => {
-            console.log('Group message change detected:', payload);
-            if (selectedConversation) {
-              fetchMessages(selectedConversation);
-            }
-          }
-        }
-      ]
+    const channel = supabase.channel(channelName);
+    // Set up postgres change listeners
+    channel.on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'conversations'
+    }, () => {
+      console.log('Conversation change detected, refetching...');
+      fetchConversationsData();
+    });
+
+    channel.on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'group_conversations'
+    }, () => {
+      console.log('Group conversation change detected, refetching...');
+      fetchConversationsData();
+    });
+
+    channel.on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'group_conversation_members',
+      filter: `user_id=eq.${user.id}`
+    }, () => {
+      console.log('Group membership change detected, refetching...');
+      fetchConversationsData();
+    });
+
+    channel.on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'messages',
+      filter: `or(sender_id.eq.${user.id},recipient_id.eq.${user.id})`
+    }, () => {
+      console.log('Message change detected, refetching...');
+      if (selectedConversation) {
+        fetchMessages(selectedConversation);
+      }
+    });
+
+    channel.on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'group_messages'
+    }, (payload: any) => {
+      console.log('Group message change detected:', payload);
+      if (selectedConversation) {
+        fetchMessages(selectedConversation);
+      }
+    });
+
+    channel.subscribe((status: string) => {
+      console.log('Channel subscription status:', status);
     });
 
     return () => {
       console.log('Cleaning up real-time subscriptions for user:', user.id);
-      unsubscribe();
+      try {
+        channel.unsubscribe();
+        supabase.removeChannel(channel);
+      } catch (error) {
+        console.error('Error cleaning up channel:', error);
+      }
     };
   }, [user?.id]); // Removed selectedConversation to prevent multiple subscriptions
 
@@ -169,7 +165,7 @@ export const useEnhancedMessages = () => {
             created_at: msg.created_at,
             read_at: null,
             edited_at: msg.edited_at,
-            message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location') || 'text',
+            message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'missed_call') || 'text',
             metadata: {},
             sender_profile: senderProfile
           };
@@ -207,7 +203,7 @@ export const useEnhancedMessages = () => {
           const senderProfile = profiles?.find(p => p.id === msg.sender_id);
           return {
             ...msg,
-            message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location') || 'text',
+            message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'missed_call') || 'text',
             sender_profile: senderProfile
           };
         });
@@ -219,7 +215,7 @@ export const useEnhancedMessages = () => {
     }
   };
 
-  const sendMessage = async (content: string, messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' = 'text', metadata: any = {}) => {
+  const sendMessage = async (content: string, messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'missed_call' = 'text', metadata: any = {}) => {
     if (!user || !selectedConversation || !content.trim()) {
       return;
     }

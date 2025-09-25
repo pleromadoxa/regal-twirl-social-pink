@@ -4,7 +4,7 @@ export interface Message {
   sender_id: string;
   recipient_id: string;
   content: string;
-  message_type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location';
+  message_type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'missed_call';
   created_at: string;
   read_at?: string;
   edited_at?: string;
