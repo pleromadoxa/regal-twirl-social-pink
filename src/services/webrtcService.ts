@@ -366,12 +366,26 @@ export class WebRTCService {
 
   private testSignalingConnection(): void {
     if (this.signalingChannel) {
-      console.log('[WebRTCService] Testing signaling connection');
-      this.signalingChannel.send({
-        type: 'broadcast',
-        event: 'connection-test',
-        payload: { timestamp: Date.now(), roomId: this.roomId }
-      });
+      console.log('[WebRTCService] Testing signaling connection for room:', this.roomId);
+      try {
+        const testPayload = { 
+          timestamp: Date.now(), 
+          roomId: this.roomId,
+          testId: Math.random().toString(36).substr(2, 9)
+        };
+        
+        this.signalingChannel.send({
+          type: 'broadcast',
+          event: 'connection-test',
+          payload: testPayload
+        });
+        
+        console.log('[WebRTCService] Sent connection test:', testPayload);
+      } catch (error) {
+        console.error('[WebRTCService] Failed to send connection test:', error);
+      }
+    } else {
+      console.error('[WebRTCService] No signaling channel available for test');
     }
   }
 

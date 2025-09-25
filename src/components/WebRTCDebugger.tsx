@@ -62,26 +62,56 @@ const WebRTCDebugger: React.FC<WebRTCDebuggerProps> = ({ isOpen, onClose }) => {
       try {
         const testChannel = supabase.channel('webrtc-test-' + Date.now());
         let signalReceived = false;
+        let subscriptionStatus = 'PENDING';
         
-        testChannel.on('broadcast', { event: 'test' }, () => {
-          signalReceived = true;
+        const testPromise = new Promise<boolean>((resolve) => {
+          const timeout = setTimeout(() => {
+            resolve(false);
+          }, 5000);
+
+          testChannel.on('broadcast', { event: 'test' }, (payload) => {
+            console.log('Test signal received:', payload);
+            signalReceived = true;
+            clearTimeout(timeout);
+            resolve(true);
+          });
+
+          testChannel.subscribe(async (status, err) => {
+            console.log('Test channel status:', status, err);
+            subscriptionStatus = status;
+            
+            if (status === 'SUBSCRIBED') {
+              // Wait a bit for channel to be ready
+              setTimeout(() => {
+                console.log('Sending test signal...');
+                testChannel.send({
+                  type: 'broadcast',
+                  event: 'test',
+                  payload: { test: true, timestamp: Date.now() }
+                });
+              }, 500);
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+              clearTimeout(timeout);
+              resolve(false);
+            }
+          });
         });
 
-        await testChannel.subscribe();
+        const success = await testPromise;
+        info.signaling = { 
+          success, 
+          subscriptionStatus,
+          details: success ? 'Signaling working correctly' : 'Failed to receive test signal'
+        };
         
-        testChannel.send({
-          type: 'broadcast',
-          event: 'test',
-          payload: { test: true }
-        });
-
-        // Wait for signal
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        info.signaling = { success: signalReceived };
         supabase.removeChannel(testChannel);
       } catch (err) {
-        info.signaling = { success: false, error: (err as Error).message };
+        console.error('Signaling test error:', err);
+        info.signaling = { 
+          success: false, 
+          error: (err as Error).message,
+          details: 'Exception occurred during signaling test'
+        };
       }
 
       setDebugInfo(info);
@@ -179,6 +209,12 @@ const WebRTCDebugger: React.FC<WebRTCDebuggerProps> = ({ isOpen, onClose }) => {
                 <Badge variant={debugInfo.signaling?.success ? "default" : "destructive"}>
                   {debugInfo.signaling?.success ? "Working" : "Failed"}
                 </Badge>
+                {debugInfo.signaling?.details && (
+                  <p className="text-sm text-gray-600 mt-1">{debugInfo.signaling.details}</p>
+                )}
+                {debugInfo.signaling?.subscriptionStatus && (
+                  <p className="text-sm text-blue-600 mt-1">Status: {debugInfo.signaling.subscriptionStatus}</p>
+                )}
                 {debugInfo.signaling?.error && (
                   <p className="text-sm text-red-600 mt-1">{debugInfo.signaling.error}</p>
                 )}
