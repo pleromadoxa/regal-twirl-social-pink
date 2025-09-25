@@ -59,7 +59,7 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
       }
       
       // Use timestamp to ensure uniqueness
-      const channelName = `notifications-${userId}-${Date.now()}`;
+      const channelName = `notifications-${userId}`;
       channelRef.current = supabase
         .channel(channelName)
         .on(

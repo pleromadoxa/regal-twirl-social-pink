@@ -94,7 +94,7 @@ export const usePostsData = (posts: any[], user: any, refetch?: () => void) => {
     if (!user || !posts) return;
 
     const channel = supabase
-      .channel(`new-posts-notifications-${user.id}-${Date.now()}`) // Use unique channel name
+      .channel(`new-posts-notifications-${user.id}`) // Remove timestamp to prevent multiple channels
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',

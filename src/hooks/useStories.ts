@@ -236,7 +236,7 @@ export const useStories = () => {
 
     // Set up real-time subscription with proper cleanup
     const channel = supabase
-      .channel(`stories-changes-${Date.now()}`) // Use unique channel name
+      .channel(`stories-changes-${user.id}`) // Use stable channel name
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
