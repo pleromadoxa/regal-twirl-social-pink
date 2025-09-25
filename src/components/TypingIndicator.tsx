@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/utils/subscriptionManager';
 
 interface TypingIndicatorProps {
   conversationId: string;
@@ -16,65 +17,59 @@ interface TypingUser {
 export const TypingIndicator = ({ conversationId, isGroup = false }: TypingIndicatorProps) => {
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const { user } = useAuth();
-  const channelRef = useRef<any>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!user?.id || !conversationId) return;
 
     console.log('[TypingIndicator] Setting up for conversation:', conversationId);
 
-    // Clean up existing channel first
-    if (channelRef.current) {
-      try {
-        console.log('[TypingIndicator] Cleaning up existing channel');
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
-      } catch (error) {
-        console.error('Error removing typing channel:', error);
-      }
-      channelRef.current = null;
+    // Clean up existing subscription
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
     }
 
-    // Create stable channel name without timestamps
+    // Create stable channel name
     const channelName = `typing-${conversationId}`;
     
-    channelRef.current = supabase.channel(channelName)
-      .on('presence', { event: 'sync' }, () => {
-        if (!channelRef.current) return;
-        
-        const presenceState = channelRef.current.presenceState();
-        const users: TypingUser[] = [];
-        
-        Object.values(presenceState).forEach((presences: any) => {
-          presences.forEach((presence: any) => {
-            if (presence.user_id !== user.id && presence.typing) {
-              users.push({
-                id: presence.user_id,
-                display_name: presence.display_name,
-                username: presence.username
-              });
-            }
+    // Subscribe using the subscription manager
+    unsubscribeRef.current = subscriptionManager.subscribe(channelName, {
+      presence: {
+        event: 'sync',
+        callback: () => {
+          // Get presence state from the active channel
+          const subscription = subscriptionManager.getDebugInfo().find(s => s.channel === channelName);
+          if (!subscription) return;
+          
+          // We need to access the channel directly for presence state
+          // This is a limitation of the abstraction - for now, keep the original approach
+          const channel = supabase.channel(channelName);
+          const presenceState = channel.presenceState();
+          const users: TypingUser[] = [];
+          
+          Object.values(presenceState).forEach((presences: any) => {
+            presences.forEach((presence: any) => {
+              if (presence.user_id !== user.id && presence.typing) {
+                users.push({
+                  id: presence.user_id,
+                  display_name: presence.display_name,
+                  username: presence.username
+                });
+              }
+            });
           });
-        });
-        
-        setTypingUsers(users);
-      });
-
-    // Subscribe to the channel
-    channelRef.current.subscribe((status: string) => {
-      console.log('[TypingIndicator] Channel subscription status:', status);
+          
+          setTypingUsers(users);
+        }
+      }
     });
 
     return () => {
       console.log('[TypingIndicator] Cleaning up');
-      if (channelRef.current) {
-        try {
-          channelRef.current.unsubscribe();
-          supabase.removeChannel(channelRef.current);
-        } catch (error) {
-          console.error('Error removing typing channel:', error);
-        }
-        channelRef.current = null;
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
       }
     };
   }, [user?.id, conversationId]);
