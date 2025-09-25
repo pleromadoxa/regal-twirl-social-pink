@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getMobileBrowserInfo, getMobileOptimizedConstraints } from '@/utils/mobileWebRTC';
 import { enhancedCallService, type EnhancedCall } from '@/services/enhancedCallService';
+import { mediaPermissionManager } from '@/utils/mediaPermissionManager';
 
 export interface CallState {
   status: 'idle' | 'connecting' | 'connected' | 'ended' | 'failed';
@@ -285,14 +286,8 @@ export const useWebRTCCall = ({
       );
     }
     
-    if (webrtcServiceRef.current) {
-      // Properly cleanup the WebRTC service
-      if (webrtcServiceRef.current) {
-        console.log('[useWebRTCCall] Cleaning up existing WebRTC service');
-        webrtcServiceRef.current.cleanup();
-        webrtcServiceRef.current = null;
-      }
-    }
+    // Additional cleanup for any remaining streams
+    mediaPermissionManager.cleanupAllStreams();
 
     updateCallState({ 
       status: 'ended',
@@ -439,6 +434,11 @@ export const useWebRTCCall = ({
         console.log('[useWebRTCCall] Cleaning up WebRTC service on unmount');
         webrtcServiceRef.current.cleanup();
         webrtcServiceRef.current = null;
+      }
+      // Also cleanup any orphaned streams
+      if (mediaPermissionManager.getActiveStreamCount() > 0) {
+        console.log('[useWebRTCCall] Cleaning up orphaned media streams');
+        mediaPermissionManager.cleanupAllStreams();
       }
       stopDurationTimer();
     };

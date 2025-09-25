@@ -7,6 +7,7 @@ import {
   handleMobileAudioContext,
   optimizeCallForMobile
 } from '@/utils/mobileWebRTC';
+import { mediaPermissionManager } from '@/utils/mediaPermissionManager';
 
 export interface WebRTCConfig {
   iceServers: RTCIceServer[];
@@ -764,9 +765,9 @@ export class WebRTCService {
       this.peerConnection = null;
     }
 
-    // Stop local stream tracks
+    // Use media permission manager to properly cleanup streams
     if (this.localStream) {
-      this.localStream.getTracks().forEach(track => track.stop());
+      mediaPermissionManager.cleanupStream(this.localStream);
       this.localStream = null;
     }
 

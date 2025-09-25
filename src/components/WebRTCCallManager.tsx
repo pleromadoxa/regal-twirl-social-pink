@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import IncomingCallPopup from '@/components/IncomingCallPopup';
 import { useNavigate } from 'react-router-dom';
 import { createMissedCallNotification } from '@/services/missedCallNotificationService';
+import { mediaPermissionManager } from '@/utils/mediaPermissionManager';
 
 interface IncomingCall {
   id: string;
@@ -237,6 +238,9 @@ const WebRTCCallManager = () => {
           callType: incomingCall.call_type === 'video' ? 'video' : 'audio',
           duration: 0
         });
+
+        // Cleanup any active media streams to prevent permission conflicts
+        mediaPermissionManager.cleanupAllStreams();
 
       } catch (error) {
         console.error('[WebRTCCallManager] Error sending decline notification:', error);
