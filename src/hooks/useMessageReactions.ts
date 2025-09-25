@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { subscriptionManager } from '@/utils/subscriptionManager';
 
 interface MessageReaction {
   id: string;
@@ -91,26 +92,23 @@ export const useMessageReactions = (messageId: string) => {
     if (messageId) {
       fetchReactions();
 
-      // Set up realtime subscription
-      const subscription = supabase
-        .channel(`message_reactions:${messageId}`)
-        .on(
-          'postgres_changes',
-          {
+      // Set up realtime subscription using subscription manager
+      const channelName = `message_reactions:${messageId}`;
+      const unsubscribe = subscriptionManager.subscribe(channelName, {
+        postgres_changes: {
+          config: {
             event: '*',
             schema: 'public',
             table: 'message_reactions',
             filter: `message_id=eq.${messageId}`
           },
-          () => {
+          callback: () => {
             fetchReactions();
           }
-        )
-        .subscribe();
+        }
+      });
 
-      return () => {
-        subscription.unsubscribe();
-      };
+      return unsubscribe;
     }
   }, [messageId]);
 

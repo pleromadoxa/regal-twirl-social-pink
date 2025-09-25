@@ -3,13 +3,14 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Notification } from '@/types/notifications';
 import { fetchNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/services/notificationService';
+import { subscriptionManager } from '@/utils/subscriptionManager';
 
 export const useNotificationsData = (userId: string | undefined, authLoading: boolean) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
-  const channelRef = useRef<any>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
   const initializationRef = useRef(false);
 
   useEffect(() => {
@@ -22,13 +23,13 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
 
     // If no user, reset state and cleanup any existing subscription
     if (!userId) {
-      if (channelRef.current) {
+      if (unsubscribeRef.current) {
         try {
-          supabase.removeChannel(channelRef.current);
+          unsubscribeRef.current();
         } catch (error) {
-          console.error('Error removing notifications channel:', error);
+          console.error('Error unsubscribing from notifications:', error);
         }
-        channelRef.current = null;
+        unsubscribeRef.current = null;
       }
       setUnreadCount(0);
       setNotifications([]);
@@ -45,48 +46,45 @@ export const useNotificationsData = (userId: string | undefined, authLoading: bo
       setInitialized(true);
       loadNotifications();
       
-      // Setup realtime subscription
+      // Setup realtime subscription using subscription manager
       console.log('Setting up realtime subscription for notifications');
       
-      // Clean up any existing channel first
-      if (channelRef.current) {
+      // Clean up any existing subscription first
+      if (unsubscribeRef.current) {
         try {
-          supabase.removeChannel(channelRef.current);
+          unsubscribeRef.current();
         } catch (error) {
-          console.error('Error removing existing notifications channel:', error);
+          console.error('Error cleaning up existing notifications subscription:', error);
         }
-        channelRef.current = null;
+        unsubscribeRef.current = null;
       }
       
-      // Use timestamp to ensure uniqueness
       const channelName = `notifications-${userId}`;
-      channelRef.current = supabase
-        .channel(channelName)
-        .on(
-          'postgres_changes',
-          {
+      unsubscribeRef.current = subscriptionManager.subscribe(channelName, {
+        postgres_changes: {
+          config: {
             event: '*',
             schema: 'public',
             table: 'notifications',
             filter: `user_id=eq.${userId}`
           },
-          (payload) => {
+          callback: (payload: any) => {
             console.log('Notification realtime update:', payload);
             loadNotifications();
           }
-        )
-        .subscribe();
+        }
+      });
     }
 
     return () => {
       console.log('Cleaning up notifications subscription');
-      if (channelRef.current) {
+      if (unsubscribeRef.current) {
         try {
-          supabase.removeChannel(channelRef.current);
+          unsubscribeRef.current();
         } catch (error) {
-          console.error('Error removing notifications channel:', error);
+          console.error('Error unsubscribing from notifications:', error);
         }
-        channelRef.current = null;
+        unsubscribeRef.current = null;
       }
       initializationRef.current = false;
     };

@@ -2,9 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Message } from '@/types/messages';
 import { updateConversationStreak } from './streakService';
-
-// Keep track of active channels to prevent duplicate subscriptions
-const activeChannels = new Map<string, { channel: any; subscribed: boolean }>();
+import { subscriptionManager } from '@/utils/subscriptionManager';
 
 export const fetchMessages = async (userId: string, otherUserId: string): Promise<Message[]> => {
   const { data: messageData, error: messageError } = await supabase
@@ -113,112 +111,54 @@ export const markMessageAsRead = async (messageId: string) => {
     .eq('id', messageId);
 };
 
-// Real-time subscription for messages
+// Real-time subscription for messages using subscription manager
 export const subscribeToMessages = (
   conversationId: string,
   userId: string,
   otherUserId: string,
   onNewMessage: (message: Message) => void
 ) => {
-  // Create unique channel name to prevent conflicts
   const channelName = `messages-${conversationId}-${userId}-${otherUserId}`;
   
-  // Check if channel already exists and is subscribed
-  const existing = activeChannels.get(channelName);
-  if (existing && existing.subscribed) {
-    console.warn('Channel already exists and subscribed:', channelName);
-    return () => {};
-  }
+  return subscriptionManager.subscribe(channelName, {
+    postgres_changes: {
+      config: {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `or(and(sender_id.eq.${userId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${userId}))`
+      },
+      callback: async (payload: any) => {
+        console.log('Real-time message received:', payload);
+        
+        // Fetch sender profile for the new message
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .eq('id', payload.new.sender_id)
+          .single();
 
-  // Clean up existing channel if it exists but not subscribed
-  if (existing && !existing.subscribed) {
-    try {
-      supabase.removeChannel(existing.channel);
-    } catch (error) {
-      console.error('Error removing existing channel:', error);
-    }
-    activeChannels.delete(channelName);
-  }
+        const messageWithProfile = {
+          ...payload.new,
+          conversation_id: conversationId,
+          message_type: 'text' as const,
+          sender_profile: senderProfile || null
+        } as Message;
 
-  const channel = supabase
-    .channel(channelName)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-      filter: `or(and(sender_id.eq.${userId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${userId}))`
-    }, async (payload) => {
-      console.log('Real-time message received:', payload);
-      
-      // Fetch sender profile for the new message
-      const { data: senderProfile } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url')
-        .eq('id', payload.new.sender_id)
-        .single();
-
-      const messageWithProfile = {
-        ...payload.new,
-        conversation_id: conversationId,
-        message_type: 'text' as const,
-        sender_profile: senderProfile || null
-      } as Message;
-
-      onNewMessage(messageWithProfile);
-    });
-
-  // Store the channel with subscription status
-  activeChannels.set(channelName, { channel, subscribed: false });
-
-  // Subscribe to the channel
-  channel.subscribe((status) => {
-    console.log('Message channel subscription status:', status);
-    if (status === 'SUBSCRIBED') {
-      const channelInfo = activeChannels.get(channelName);
-      if (channelInfo) {
-        channelInfo.subscribed = true;
+        onNewMessage(messageWithProfile);
       }
     }
   });
-
-  return () => {
-    const channelInfo = activeChannels.get(channelName);
-    if (channelInfo) {
-      try {
-        supabase.removeChannel(channelInfo.channel);
-      } catch (error) {
-        console.error('Error removing channel:', error);
-      }
-      activeChannels.delete(channelName);
-    }
-  };
 };
 
+// Typing indicators need direct presence channels as they use track() method
 export const subscribeToTyping = (
   conversationId: string,
   userId: string,
   onTypingUpdate: (isTyping: boolean, userId: string) => void
 ) => {
-  // Create unique channel name to prevent conflicts
-  const channelName = `typing-${conversationId}-${userId}`;
+  const channelName = `typing-${conversationId}-${userId}-${Date.now()}`;
   
-  // Check if channel already exists and is subscribed
-  const existing = activeChannels.get(channelName);
-  if (existing && existing.subscribed) {
-    console.warn('Typing channel already exists and subscribed:', channelName);
-    return { unsubscribe: () => {}, sendTypingIndicator: async () => {} };
-  }
-
-  // Clean up existing channel if it exists but not subscribed
-  if (existing && !existing.subscribed) {
-    try {
-      supabase.removeChannel(existing.channel);
-    } catch (error) {
-      console.error('Error removing existing typing channel:', error);
-    }
-    activeChannels.delete(channelName);
-  }
-
   const channel = supabase
     .channel(channelName)
     .on('presence', { event: 'sync' }, () => {
@@ -242,24 +182,19 @@ export const subscribeToTyping = (
       console.log('Typing leave:', key, leftPresences);
     });
 
-  // Store the channel with subscription status
-  activeChannels.set(channelName, { channel, subscribed: false });
+  let subscribed = false;
 
   // Subscribe to the channel
   channel.subscribe((status) => {
     console.log('Typing channel subscription status:', status);
     if (status === 'SUBSCRIBED') {
-      const channelInfo = activeChannels.get(channelName);
-      if (channelInfo) {
-        channelInfo.subscribed = true;
-      }
+      subscribed = true;
     }
   });
 
   const sendTypingIndicator = async (isTyping: boolean) => {
-    const channelInfo = activeChannels.get(channelName);
-    if (channelInfo && channelInfo.subscribed) {
-      await channelInfo.channel.track({
+    if (subscribed) {
+      await channel.track({
         user_id: userId,
         typing: isTyping,
         online_at: new Date().toISOString()
@@ -269,14 +204,11 @@ export const subscribeToTyping = (
 
   return {
     unsubscribe: () => {
-      const channelInfo = activeChannels.get(channelName);
-      if (channelInfo) {
-        try {
-          supabase.removeChannel(channelInfo.channel);
-        } catch (error) {
-          console.error('Error removing typing channel:', error);
-        }
-        activeChannels.delete(channelName);
+      try {
+        channel.unsubscribe();
+        supabase.removeChannel(channel);
+      } catch (error) {
+        console.error('Error removing typing channel:', error);
       }
     },
     sendTypingIndicator
