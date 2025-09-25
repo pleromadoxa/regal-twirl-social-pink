@@ -278,7 +278,11 @@ export class WebRTCService {
       // Cleanup existing channel to avoid subscription conflicts
       if (this.signalingChannel) {
         console.log('[WebRTCService] Cleaning up existing signaling channel');
-        this.signalingChannel.unsubscribe();
+        try {
+          supabase.removeChannel(this.signalingChannel);
+        } catch (cleanupError) {
+          console.error('[WebRTCService] Error cleaning up signaling channel:', cleanupError);
+        }
         this.signalingChannel = null;
       }
       
@@ -288,31 +292,66 @@ export class WebRTCService {
       // Create unique channel name to avoid conflicts
       const channelName = `webrtc-${roomId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
+      console.log('[WebRTCService] Creating signaling channel:', channelName);
+      
       this.signalingChannel = supabase.channel(channelName)
         .on('broadcast', { event: 'offer' }, async (payload) => {
           console.log('[WebRTCService] Received offer:', payload);
-          await this.handleOffer(payload.payload);
+          try {
+            await this.handleOffer(payload.payload);
+          } catch (error) {
+            console.error('[WebRTCService] Error handling offer:', error);
+          }
         })
         .on('broadcast', { event: 'answer' }, async (payload) => {
           console.log('[WebRTCService] Received answer:', payload);
-          await this.handleAnswer(payload.payload);
+          try {
+            await this.handleAnswer(payload.payload);
+          } catch (error) {
+            console.error('[WebRTCService] Error handling answer:', error);
+          }
         })
         .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
           console.log('[WebRTCService] Received ICE candidate:', payload);
-          // Only handle ICE candidates if we have a remote description
-          if (this.peerConnection?.remoteDescription) {
-            await this.handleIceCandidate(payload.payload);
-          } else {
-            // Queue the candidate for later processing
-            this.queuedIceCandidates.push(payload.payload.candidate);
-            console.log('[WebRTCService] Queued ICE candidate (no remote description yet)');
+          try {
+            // Only handle ICE candidates if we have a remote description
+            if (this.peerConnection?.remoteDescription) {
+              await this.handleIceCandidate(payload.payload);
+            } else {
+              // Queue the candidate for later processing
+              this.queuedIceCandidates.push(payload.payload.candidate);
+              console.log('[WebRTCService] Queued ICE candidate (no remote description yet)');
+            }
+          } catch (error) {
+            console.error('[WebRTCService] Error handling ICE candidate:', error);
           }
         })
         .on('broadcast', { event: 'call-end' }, () => {
           console.log('[WebRTCService] Call ended by remote peer');
           this.cleanup();
         })
-        .subscribe();
+        .on('broadcast', { event: 'connection-test' }, (payload) => {
+          console.log('[WebRTCService] Connection test received:', payload);
+          // Send test response
+          if (this.signalingChannel) {
+            this.signalingChannel.send({
+              type: 'broadcast',
+              event: 'connection-test-response',
+              payload: { timestamp: Date.now(), roomId: this.roomId }
+            });
+          }
+        })
+        .on('broadcast', { event: 'connection-test-response' }, (payload) => {
+          console.log('[WebRTCService] Connection test response:', payload);
+        })
+        .subscribe((status) => {
+          console.log('[WebRTCService] Signaling channel status:', status);
+        });
+
+      // Test signaling connection
+      setTimeout(() => {
+        this.testSignalingConnection();
+      }, 1000);
 
       console.log('[WebRTCService] Signaling setup completed');
       
@@ -322,6 +361,17 @@ export class WebRTCService {
       if (this.onErrorCallback) {
         this.onErrorCallback(error as Error);
       }
+    }
+  }
+
+  private testSignalingConnection(): void {
+    if (this.signalingChannel) {
+      console.log('[WebRTCService] Testing signaling connection');
+      this.signalingChannel.send({
+        type: 'broadcast',
+        event: 'connection-test',
+        payload: { timestamp: Date.now(), roomId: this.roomId }
+      });
     }
   }
 

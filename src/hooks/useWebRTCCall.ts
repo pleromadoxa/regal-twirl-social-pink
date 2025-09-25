@@ -76,7 +76,14 @@ export const useWebRTCCall = ({
   }, []);
 
   const initializeCall = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('[useWebRTCCall] No authenticated user');
+      updateCallState({ 
+        status: 'failed', 
+        error: 'Authentication required for calls' 
+      });
+      return;
+    }
     
     // Prevent multiple initializations
     if (isInitializingRef.current || webrtcServiceRef.current) {
@@ -85,13 +92,18 @@ export const useWebRTCCall = ({
     }
 
     try {
-      console.log('[useWebRTCCall] Initializing call');
+      console.log('[useWebRTCCall] Initializing call for user:', user.id);
       isInitializingRef.current = true;
       updateCallState({ status: 'connecting', error: null });
 
+      // Test connection first
+      console.log('[useWebRTCCall] Testing connection prerequisites...');
+      
       // Initialize WebRTC service
       const { WebRTCService } = await import('@/services/webrtcService');
       webrtcServiceRef.current = new WebRTCService();
+
+      console.log('[useWebRTCCall] WebRTC service created successfully');
 
       const service = webrtcServiceRef.current;
 
