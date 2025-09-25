@@ -35,6 +35,7 @@ interface EnhancedMessageBubbleProps {
 
 const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: EnhancedMessageBubbleProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const { toast } = useToast();
 
   const handleEdit = () => {
@@ -102,7 +103,11 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
   const hasAttachments = (message as any).attachments && (message as any).attachments.length > 0;
 
   return (
-    <div className={`flex items-end gap-2 mb-4 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div 
+      className={`group flex items-end gap-2 mb-4 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
       {!isOwn && (
         <ChatBubbleAvatar
           src={message.sender_profile?.avatar_url}
@@ -110,7 +115,7 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
         />
       )}
       
-      <div className={`flex flex-col gap-1 ${isOwn ? 'items-end' : 'items-start'}`}>
+      <div className={`flex flex-col gap-1 ${isOwn ? 'items-end' : 'items-start'} max-w-[70%]`}>
         {isEditing ? (
           <MessageEditForm
             messageId={message.id}
@@ -121,20 +126,55 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
           />
         ) : (
           <>
-            {/* Voice Note Bubble */}
-            {isVoiceNote ? (
-              <VoiceBubble
-                variant={isOwn ? "sent" : "received"}
-                audioUrl={message.content.startsWith('http') ? message.content : ''}
-                duration={message.metadata?.duration}
-                onDownload={message.content.startsWith('http') ? () => handleDownload(message.content, `voice-note-${message.id}.webm`) : undefined}
-              />
-            ) : (
-              /* Regular Text Message */
-              <ChatBubbleMessage variant={isOwn ? "sent" : "received"}>
-                <MessageContent message={message} />
-              </ChatBubbleMessage>
-            )}
+            {/* Professional Message Bubble */}
+            <div className="relative">
+              {/* Voice Note Bubble */}
+              {isVoiceNote ? (
+                <VoiceBubble
+                  variant={isOwn ? "sent" : "received"}
+                  audioUrl={message.content.startsWith('http') ? message.content : ''}
+                  duration={message.metadata?.duration}
+                  onDownload={message.content.startsWith('http') ? () => handleDownload(message.content, `voice-note-${message.id}.webm`) : undefined}
+                />
+              ) : (
+                /* Professional Text Message Bubble */
+                <div className={`
+                  px-4 py-2 rounded-2xl max-w-full word-wrap shadow-sm
+                  ${isOwn 
+                    ? 'bg-blue-500 text-white rounded-br-sm' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-sm'
+                  }
+                `}>
+                  <MessageContent message={message} />
+                </div>
+              )}
+
+              {/* Action buttons - only visible on hover for own messages */}
+              {isOwn && showActions && !isVoiceNote && (
+                <div className={`
+                  absolute top-0 transition-opacity duration-200
+                  ${isOwn ? '-left-20' : '-right-20'}
+                  flex gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-1
+                `}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={handleEdit}
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                    onClick={handleDelete}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
 
             {/* Media Attachments */}
             {hasAttachments && (
@@ -142,7 +182,7 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
                 {(message as any).attachments?.map((attachment: any, index: number) => (
                   <div
                     key={index}
-                    className={`relative rounded-lg overflow-hidden border ${
+                    className={`relative rounded-xl overflow-hidden border shadow-sm ${
                       isOwn ? 'ml-auto' : 'mr-auto'
                     }`}
                   >
@@ -151,10 +191,10 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
                         <img
                           src={attachment.file_url}
                           alt={attachment.file_name}
-                          className="max-w-full h-auto rounded-lg"
+                          className="max-w-full h-auto rounded-xl"
                           style={{ maxHeight: '300px' }}
                         />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-xl flex items-center justify-center">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -172,7 +212,7 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
                         <video
                           src={attachment.file_url}
                           controls
-                          className="max-w-full h-auto rounded-lg"
+                          className="max-w-full h-auto rounded-xl"
                           style={{ maxHeight: '300px' }}
                         />
                         <Button
@@ -187,10 +227,10 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
                     )}
 
                     {attachment.attachment_type === 'document' && (
-                      <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                      <div className={`flex items-center gap-3 p-3 rounded-xl ${
                         isOwn 
-                          ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800' 
-                          : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'
+                          ? 'bg-blue-50 text-blue-800' 
+                          : 'bg-gray-50 dark:bg-slate-600 text-gray-800 dark:text-gray-200'
                       }`}>
                         <FileText className="w-8 h-8 text-blue-500" />
                         <div className="flex-1 min-w-0">
@@ -214,24 +254,10 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete }: Enha
               </div>
             )}
 
-            {/* Message Info and Actions */}
-            <div className={`flex items-center gap-2 text-xs text-muted-foreground ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-              <span>
-                {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                {message.edited_at && ' (edited)'}
-              </span>
-              {isOwn && !isVoiceNote && (
-                <div className="flex gap-1">
-                  <ChatBubbleAction
-                    icon={<Edit className="h-3 w-3" />}
-                    onClick={handleEdit}
-                  />
-                  <ChatBubbleAction
-                    icon={<Trash2 className="h-3 w-3" />}
-                    onClick={handleDelete}
-                  />
-                </div>
-              )}
+            {/* Timestamp - smaller and less intrusive */}
+            <div className={`text-xs text-gray-400 px-2 ${isOwn ? 'text-right' : 'text-left'}`}>
+              {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+              {message.edited_at && ' • edited'}
             </div>
           </>
         )}

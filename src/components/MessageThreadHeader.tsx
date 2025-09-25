@@ -50,19 +50,19 @@ const MessageThreadHeader = ({
     groupConversation.members?.some(m => m.id === user?.id && m.role === 'admin')
   );
   return (
-    <div className="border-b border-purple-200 dark:border-purple-800 p-4">
+    <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 flex-1">
           {isGroupConversation ? (
             <>
               <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-lg">#</span>
               </div>
-              <div>
-                <h2 className="font-semibold text-slate-900 dark:text-slate-100">
+              <div className="flex-1 text-center">
+                <h2 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
                   {groupConversation?.name || 'Group Chat'}
                 </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {groupConversation?.member_count} members
                 </p>
               </div>
@@ -78,14 +78,11 @@ const MessageThreadHeader = ({
                 </Avatar>
                 <PresenceIndicator userId={otherParticipant?.id} className="absolute -bottom-1 -right-1" />
               </div>
-              <div>
-                <h2 className="font-semibold text-slate-900 dark:text-slate-100">
+              <div className="flex-1 text-center">
+                <h2 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
                   {otherParticipant?.display_name || otherParticipant?.username}
                 </h2>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-500 dark:text-slate-400">
-                    @{otherParticipant?.username}
-                  </span>
+                <div className="flex items-center justify-center gap-2">
                   <PresenceIndicator userId={otherParticipant?.id} showText />
                 </div>
               </div>
@@ -93,64 +90,42 @@ const MessageThreadHeader = ({
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
-          {!isGroupConversation ? (
+        <div className="flex items-center space-x-1">
+          {!isGroupConversation && (
             <>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onAudioCall}
-                className="rounded-full hover:bg-primary/10 transition-colors"
+                className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                <Phone className="w-4 h-4" />
+                <Phone className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onVideoCall}
-                className="rounded-full hover:bg-primary/10 transition-colors"
+                className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                <Video className="w-4 h-4" />
+                <Video className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </Button>
             </>
-          ) : groupConversation ? (
-            <div className="flex items-center space-x-1">
-              <GroupCallDialog
-                groupId={groupConversation.id}
-                participants={groupConversation.members || []}
-                callType="audio"
-              />
-              <GroupCallDialog
-                groupId={groupConversation.id}
-                participants={groupConversation.members || []}
-                callType="video"
-              />
-              <GroupOptionsMenu
-                groupId={groupConversation.id}
-                groupName={groupConversation.name}
-                groupDescription={groupConversation.description}
-                groupSettings={groupConversation.settings}
-                inviteCode={groupConversation.invite_code}
-                isAdmin={!!isGroupAdmin}
-                members={groupConversation.members || []}
-                onGroupDissolved={onGroupUpdated}
-                onGroupUpdated={onGroupUpdated}
-              />
-            </div>
-          ) : null}
+          )}
+          
+          {isGroupConversation && groupConversation && (
+            <GroupOptionsMenu
+              groupId={groupConversation.id}
+              groupName={groupConversation.name}
+              groupDescription={groupConversation.description}
+              groupSettings={groupConversation.settings}
+              inviteCode={groupConversation.invite_code}
+              isAdmin={isGroupAdmin}
+              members={groupConversation.members || []}
+              onGroupDissolved={onGroupUpdated}
+              onGroupUpdated={onGroupUpdated}
+            />
+          )}
         </div>
-      </div>
-
-      <div className="mt-2">
-        {!isGroupConversation && conversation?.streak_count && conversation.streak_count > 0 ? (
-          <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
-            🔥 {conversation.streak_count} day streak
-          </Badge>
-        ) : !isGroupConversation ? (
-          <span className="text-xs text-slate-500 dark:text-slate-400">no streak</span>
-        ) : (
-          <span className="text-xs text-slate-500 dark:text-slate-400">{groupConversation?.description || ''}</span>
-        )}
       </div>
     </div>
   );

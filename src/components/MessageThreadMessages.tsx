@@ -47,7 +47,7 @@ const MessageThreadMessages = ({
   }, [messages]);
 
   return (
-    <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+    <ScrollArea className="flex-1 px-4 py-2 bg-white dark:bg-gray-900" ref={scrollAreaRef}>
       {messages.length > 0 ? (
         <div className="space-y-4">
           {messages.map((message) => (

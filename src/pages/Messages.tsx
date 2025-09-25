@@ -336,7 +336,7 @@ const Messages = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-purple-50/80 via-white to-pink-50/80 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900/20 overflow-hidden lg:ml-80">
+    <div className="flex h-screen bg-gradient-to-br from-purple-50/80 via-white to-pink-50/80 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900/20 overflow-hidden">
       {/* Left Sidebar - Navigation */}
       <div className="hidden lg:flex lg:w-64 xl:w-72 flex-shrink-0">
         <SidebarNav />
