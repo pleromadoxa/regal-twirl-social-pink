@@ -16,6 +16,8 @@ export const createCall = async (
   callType: 'audio' | 'video' | 'group',
   participants: string[] = []
 ): Promise<ActiveCall> => {
+  console.log('[callService] Creating call:', { callerId, callType, participants });
+  
   const roomId = `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   
   const { data, error } = await supabase
@@ -31,9 +33,11 @@ export const createCall = async (
     .single();
 
   if (error) {
-    console.error('Error creating call:', error);
+    console.error('[callService] Error creating call:', error);
     throw error;
   }
+
+  console.log('[callService] Call created successfully:', data);
 
   return {
     id: data.id,

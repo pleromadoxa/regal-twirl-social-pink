@@ -36,10 +36,11 @@ const WebRTCCallManager = () => {
     // Clean up any existing channel first
     if (channelRef.current) {
       try {
+        console.log('[WebRTCCallManager] Cleaning up existing channel');
         channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
       } catch (error) {
-        console.warn('Error cleaning up existing channel:', error);
+        console.warn('[WebRTCCallManager] Error cleaning up existing channel:', error);
       }
       channelRef.current = null;
     }
@@ -58,6 +59,7 @@ const WebRTCCallManager = () => {
         
         // Don't show incoming call popup for calls initiated by this user
         if (callData.caller_id === user.id) {
+          console.log('[WebRTCCallManager] Ignoring self-initiated call');
           return;
         }
 
@@ -86,6 +88,7 @@ const WebRTCCallManager = () => {
         const callData = payload.payload;
         
         if (callData.caller_id === user.id) {
+          console.log('[WebRTCCallManager] Ignoring self-initiated group call');
           return;
         }
 
@@ -139,6 +142,20 @@ const WebRTCCallManager = () => {
         console.log('[WebRTCCallManager] Channel subscription status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('[WebRTCCallManager] Successfully subscribed to channel:', channelName);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[WebRTCCallManager] Channel error on:', channelName);
+          toast({
+            title: "Connection Error",
+            description: "Unable to establish real-time connection for calls",
+            variant: "destructive"
+          });
+        } else if (status === 'TIMED_OUT') {
+          console.error('[WebRTCCallManager] Channel subscription timed out:', channelName);
+          toast({
+            title: "Connection Timeout",
+            description: "Call connection timed out. Please try again.",
+            variant: "destructive"
+          });
         }
       });
 
