@@ -7,7 +7,7 @@ import { GroupOptionsMenu } from './GroupOptionsMenu';
 import GroupCallDialog from './GroupCallDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import PresenceIndicator from './PresenceIndicator';
-import { useUserLocation } from '@/hooks/useUserLocation';
+import { useUserLocationContext } from '@/contexts/UserLocationContext';
 import { formatLocation } from '@/services/locationService';
 
 interface MessageThreadHeaderProps {
@@ -46,14 +46,24 @@ const MessageThreadHeader = ({
   onGroupUpdated 
 }: MessageThreadHeaderProps) => {
   const { user } = useAuth();
-  const { getUserLocation } = useUserLocation();
+  
+  // Safely get location context
+  let getUserLocation: ((userId: string) => any) | undefined;
+  try {
+    const locationContext = useUserLocationContext();
+    getUserLocation = locationContext.getUserLocation;
+  } catch (error) {
+    // Location context not available, continue without location features
+    console.log('Location context not available');
+  }
   
   const isGroupAdmin = groupConversation && (
     groupConversation.created_by === user?.id ||
     groupConversation.members?.some(m => m.id === user?.id && m.role === 'admin')
   );
 
-  const otherUserLocation = otherParticipant ? getUserLocation(otherParticipant.id) : null;
+  const otherUserLocation = otherParticipant && getUserLocation ? 
+    getUserLocation(otherParticipant.id) : null;
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3">
       <div className="flex items-center justify-between">

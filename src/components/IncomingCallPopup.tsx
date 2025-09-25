@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Phone, PhoneOff, Video, Mic, Users, MapPin } from 'lucide-react';
 import { useCallSounds } from '@/hooks/useCallSounds';
-import { useUserLocation } from '@/hooks/useUserLocation';
+import { useUserLocationContext } from '@/contexts/UserLocationContext';
 import { formatLocation } from '@/services/locationService';
 
 interface IncomingCallPopupProps {
@@ -26,9 +26,19 @@ const IncomingCallPopup = ({
   onDecline
 }: IncomingCallPopupProps) => {
   const { playRinging, stopRinging } = useCallSounds();
-  const { getUserLocation } = useUserLocation();
+  
+  // Safely get location context
+  let getUserLocation: ((userId: string) => any) | undefined;
+  try {
+    const locationContext = useUserLocationContext();
+    getUserLocation = locationContext.getUserLocation;
+  } catch (error) {
+    // Location context not available, continue without location features
+    console.log('Location context not available');
+  }
 
-  const callerLocation = callerId ? getUserLocation(callerId) : null;
+  const callerLocation = callerId && getUserLocation ? 
+    getUserLocation(callerId) : null;
 
   useEffect(() => {
     // Start playing ringing sound when popup appears

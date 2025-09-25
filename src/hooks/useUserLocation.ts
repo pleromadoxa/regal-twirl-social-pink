@@ -21,8 +21,9 @@ export const useUserLocation = () => {
       const location = await getCurrentLocation();
       setCurrentLocation(location);
 
-      // Track location in Supabase presence
-      const channel = supabase.channel(`user_location_${user.id}`);
+      // Track location in Supabase presence with unique channel name
+      const channelName = `user_location_${user.id}_${Date.now()}`;
+      const channel = supabase.channel(channelName);
       
       const locationState = {
         userId: user.id,
@@ -38,6 +39,7 @@ export const useUserLocation = () => {
 
       return () => {
         channel.unsubscribe();
+        supabase.removeChannel(channel);
       };
     } catch (err) {
       console.error('Error getting location:', err);
@@ -51,7 +53,9 @@ export const useUserLocation = () => {
   const subscribeToUserLocations = useCallback(() => {
     if (!user) return;
 
-    const channel = supabase.channel('user_locations_global')
+    // Use unique channel name to avoid conflicts
+    const channelName = `user_locations_global_${user.id}_${Date.now()}`;
+    const channel = supabase.channel(channelName)
       .on('presence', { event: 'sync' }, () => {
         const presenceState = channel.presenceState();
         const locations: Record<string, UserLocationState> = {};
@@ -91,6 +95,7 @@ export const useUserLocation = () => {
 
     return () => {
       channel.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [user]);
 
@@ -107,15 +112,25 @@ export const useUserLocation = () => {
       const location = await getCurrentLocation();
       setCurrentLocation(location);
 
-      // Update presence with new location
-      const channel = supabase.channel(`user_location_${user.id}`);
+      // Update presence with new location using unique channel
+      const channelName = `user_location_update_${user.id}_${Date.now()}`;
+      const channel = supabase.channel(channelName);
       const locationState = {
         userId: user.id,
         location,
         timestamp: new Date().toISOString()
       };
 
-      await channel.track(locationState);
+      await channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track(locationState);
+          // Clean up immediately after tracking
+          setTimeout(() => {
+            channel.unsubscribe();
+            supabase.removeChannel(channel);
+          }, 1000);
+        }
+      });
     } catch (err) {
       console.error('Error updating location:', err);
       setError('Failed to update location');

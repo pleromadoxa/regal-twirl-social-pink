@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, MapPin } from 'lucide-react';
 import VerificationBadge from '@/components/VerificationBadge';
-import { useUserLocation } from '@/hooks/useUserLocation';
+import { useUserLocationContext } from '@/contexts/UserLocationContext';
 import { formatLocation } from '@/services/locationService';
 
 interface CallPopupProps {
@@ -41,9 +41,19 @@ const CallPopup = ({
   status = 'ringing'
 }: CallPopupProps) => {
   const [currentDuration, setCurrentDuration] = useState(duration);
-  const { getUserLocation } = useUserLocation();
+  
+  // Safely get location context
+  let getUserLocation: ((userId: string) => any) | undefined;
+  try {
+    const locationContext = useUserLocationContext();
+    getUserLocation = locationContext.getUserLocation;
+  } catch (error) {
+    // Location context not available, continue without location features
+    console.log('Location context not available');
+  }
 
-  const otherUserLocation = getUserLocation(otherUser.id);
+  const otherUserLocation = getUserLocation ? 
+    getUserLocation(otherUser.id) : null;
 
   useEffect(() => {
     if (status === 'connected') {
