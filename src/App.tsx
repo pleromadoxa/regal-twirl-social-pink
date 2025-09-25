@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { UserPresenceProvider } from '@/contexts/UserPresenceContext';
+import { UserLocationProvider } from '@/contexts/UserLocationContext';
 import { Toaster } from '@/components/ui/toaster';
 import Landing from '@/pages/Landing';
 import Auth from '@/pages/Auth';
@@ -48,8 +49,9 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <UserPresenceProvider>
-            <NotificationsProvider>
-              <Router>
+            <UserLocationProvider>
+              <NotificationsProvider>
+                <Router>
                 <div className="App min-h-screen w-full overflow-x-hidden">
                   <Routes>
                     <Route path="/" element={<Landing />} />
@@ -90,8 +92,9 @@ function App() {
                   <Toaster />
                   <WebRTCCallManager />
                 </div>
-              </Router>
-            </NotificationsProvider>
+                </Router>
+              </NotificationsProvider>
+            </UserLocationProvider>
           </UserPresenceProvider>
         </AuthProvider>
       </ThemeProvider>

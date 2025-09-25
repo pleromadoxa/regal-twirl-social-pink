@@ -184,6 +184,7 @@ const WebRTCCallManager = () => {
           callerName={incomingCall.caller_profile.display_name || incomingCall.caller_profile.username || 'Unknown User'}
           callerAvatar={incomingCall.caller_profile.avatar_url}
           callType={incomingCall.call_type}
+          callerId={incomingCall.caller_id}
           onAccept={() => handleAcceptCall(incomingCall.id, incomingCall.call_type)}
           onDecline={() => handleDeclineCall(incomingCall.id)}
         />

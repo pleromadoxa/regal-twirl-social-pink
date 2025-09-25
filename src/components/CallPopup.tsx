@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff } from 'lucide-react';
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, MapPin } from 'lucide-react';
 import VerificationBadge from '@/components/VerificationBadge';
+import { useUserLocation } from '@/hooks/useUserLocation';
+import { formatLocation } from '@/services/locationService';
 
 interface CallPopupProps {
   isIncoming: boolean;
@@ -39,6 +41,9 @@ const CallPopup = ({
   status = 'ringing'
 }: CallPopupProps) => {
   const [currentDuration, setCurrentDuration] = useState(duration);
+  const { getUserLocation } = useUserLocation();
+
+  const otherUserLocation = getUserLocation(otherUser.id);
 
   useEffect(() => {
     if (status === 'connected') {
@@ -90,6 +95,12 @@ const CallPopup = ({
             <p className="text-sm text-gray-500 dark:text-gray-400">
               @{otherUser.username}
             </p>
+            {otherUserLocation && (
+              <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
+                <MapPin className="w-3 h-3" />
+                <span>{formatLocation(otherUserLocation)}</span>
+              </div>
+            )}
           </div>
           <Badge variant="outline" className="text-xs">
             {callType === 'video' ? <Video className="w-3 h-3 mr-1" /> : <Phone className="w-3 h-3 mr-1" />}

@@ -2,11 +2,13 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Video, Users } from 'lucide-react';
+import { Phone, Video, Users, MapPin } from 'lucide-react';
 import { GroupOptionsMenu } from './GroupOptionsMenu';
 import GroupCallDialog from './GroupCallDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import PresenceIndicator from './PresenceIndicator';
+import { useUserLocation } from '@/hooks/useUserLocation';
+import { formatLocation } from '@/services/locationService';
 
 interface MessageThreadHeaderProps {
   otherParticipant?: {
@@ -44,11 +46,14 @@ const MessageThreadHeader = ({
   onGroupUpdated 
 }: MessageThreadHeaderProps) => {
   const { user } = useAuth();
+  const { getUserLocation } = useUserLocation();
   
   const isGroupAdmin = groupConversation && (
     groupConversation.created_by === user?.id ||
     groupConversation.members?.some(m => m.id === user?.id && m.role === 'admin')
   );
+
+  const otherUserLocation = otherParticipant ? getUserLocation(otherParticipant.id) : null;
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3">
       <div className="flex items-center justify-between">
@@ -84,6 +89,12 @@ const MessageThreadHeader = ({
                 </h2>
                 <div className="flex items-center justify-center gap-2">
                   <PresenceIndicator userId={otherParticipant?.id} showText />
+                  {otherUserLocation && (
+                    <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                      <MapPin className="w-3 h-3" />
+                      <span>{formatLocation(otherUserLocation)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </>

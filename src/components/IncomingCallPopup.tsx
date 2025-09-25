@@ -1,14 +1,17 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Phone, PhoneOff, Video, Mic, Users } from 'lucide-react';
+import { Phone, PhoneOff, Video, Mic, Users, MapPin } from 'lucide-react';
 import { useCallSounds } from '@/hooks/useCallSounds';
+import { useUserLocation } from '@/hooks/useUserLocation';
+import { formatLocation } from '@/services/locationService';
 
 interface IncomingCallPopupProps {
   callId: string;
   callerName: string;
   callerAvatar?: string | null;
   callType: 'audio' | 'video' | 'group';
+  callerId?: string;
   onAccept: () => void;
   onDecline: () => void;
 }
@@ -18,10 +21,14 @@ const IncomingCallPopup = ({
   callerName,
   callerAvatar,
   callType,
+  callerId,
   onAccept,
   onDecline
 }: IncomingCallPopupProps) => {
   const { playRinging, stopRinging } = useCallSounds();
+  const { getUserLocation } = useUserLocation();
+
+  const callerLocation = callerId ? getUserLocation(callerId) : null;
 
   useEffect(() => {
     // Start playing ringing sound when popup appears
@@ -71,9 +78,15 @@ const IncomingCallPopup = ({
           </Avatar>
           
           <h2 className="text-xl font-bold mb-1">{callerName}</h2>
-          <p className="text-gray-300 text-sm">
+          <p className="text-gray-300 text-sm mb-2">
             {callType === 'group' ? 'Group call' : callType === 'video' ? 'Video call' : 'Voice call'}
           </p>
+          {callerLocation && (
+            <div className="flex items-center justify-center gap-1 text-sm text-gray-400">
+              <MapPin className="w-4 h-4" />
+              <span>Calling from {formatLocation(callerLocation)}</span>
+            </div>
+          )}
         </div>
 
         {/* Call Actions */}
