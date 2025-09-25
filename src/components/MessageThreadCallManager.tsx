@@ -113,28 +113,38 @@ const MessageThreadCallManager = ({
         // Create call in database and get call details
         const call = await createCall(currentUserId!, callType, [otherParticipant.id]);
         
-        // Broadcast call invitation directly to the other participant's channel
-        const recipientChannel = supabase.channel(`user-calls-${otherParticipant.id}-${Date.now()}`);
+        console.log('[CallManager] Created call:', call);
+        console.log('[CallManager] Sending call to recipient:', otherParticipant.id);
         
-        await recipientChannel.send({
+        // Broadcast call invitation to the other participant's dedicated channel
+        const recipientChannelName = `user-calls-${otherParticipant.id}`;
+        
+        const callPayload = {
+          call_id: call.id,
+          room_id: call.room_id,
+          caller_id: currentUserId,
+          call_type: callType,
+          caller_profile: {
+            display_name: callerProfile?.display_name || callerProfile?.username || 'Unknown User',
+            username: callerProfile?.username || 'unknown',
+            avatar_url: callerProfile?.avatar_url || null
+          },
+          mobile_optimized: browserInfo.isMobile // Flag for mobile optimization
+        };
+        
+        console.log('[CallManager] Sending call payload:', callPayload);
+        console.log('[CallManager] Target channel:', recipientChannelName);
+        
+        await supabase.channel(recipientChannelName).send({
           type: 'broadcast',
           event: 'incoming-call',
-          payload: {
-            call_id: call.id,
-            room_id: call.room_id,
-            caller_id: currentUserId,
-            call_type: callType,
-            caller_profile: {
-              display_name: callerProfile?.display_name || callerProfile?.username || 'Unknown User',
-              username: callerProfile?.username || 'unknown',
-              avatar_url: callerProfile?.avatar_url || null
-            },
-            mobile_optimized: browserInfo.isMobile // Flag for mobile optimization
-          }
+          payload: callPayload
         });
+        
+        console.log('[CallManager] Call invitation sent successfully');
 
         // Subscribe to channel to listen for call responses
-        recipientChannel.subscribe();
+        // Note: No need to subscribe to send messages
         
         // Start the call on our end
         onCallStart(callType);
@@ -148,14 +158,7 @@ const MessageThreadCallManager = ({
           description: callDescription
         });
         
-        // Clean up channel after some time
-        setTimeout(() => {
-          try {
-            supabase.removeChannel(recipientChannel);
-          } catch (error) {
-            console.error('Error cleaning up call channel:', error);
-          }
-        }, 60000); // Clean up after 1 minute
+        // No need to clean up channel since we're not subscribing
         
       } catch (permissionError) {
         console.error('Permission error:', permissionError);

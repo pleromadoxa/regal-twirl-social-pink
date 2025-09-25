@@ -41,8 +41,10 @@ const WebRTCCallManager = () => {
       channelRef.current = null;
     }
 
-    // Listen on user-specific channel for incoming calls with timestamp to avoid conflicts
-    const channelName = `user-calls-${user.id}-${Date.now()}`;
+    // Listen on user-specific channel for incoming calls (consistent naming)
+    const channelName = `user-calls-${user.id}`;
+    
+    console.log('[WebRTCCallManager] Listening on channel:', channelName);
     
     channelRef.current = supabase
       .channel(channelName)
@@ -114,7 +116,12 @@ const WebRTCCallManager = () => {
         console.log('[WebRTCCallManager] Call declined:', payload);
         setIncomingCall(null);
       })
-      .subscribe();
+      .subscribe(async (status) => {
+        console.log('[WebRTCCallManager] Channel subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[WebRTCCallManager] Successfully subscribed to channel:', channelName);
+        }
+      });
 
     return () => {
       console.log('[WebRTCCallManager] Cleaning up call manager');
