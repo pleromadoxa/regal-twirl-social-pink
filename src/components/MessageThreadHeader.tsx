@@ -45,13 +45,6 @@ const MessageThreadHeader = ({
 }: MessageThreadHeaderProps) => {
   const { user } = useAuth();
   
-  // Debug logging
-  console.log('[MessageThreadHeader] Render:', { 
-    isGroupConversation, 
-    hasOtherParticipant: !!otherParticipant,
-    otherParticipantId: otherParticipant?.id 
-  });
-  
   const isGroupAdmin = groupConversation && (
     groupConversation.created_by === user?.id ||
     groupConversation.members?.some(m => m.id === user?.id && m.role === 'admin')
@@ -103,10 +96,7 @@ const MessageThreadHeader = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  console.log('[MessageThreadHeader] Audio call clicked', { otherParticipant, isGroupConversation });
-                  onAudioCall();
-                }}
+                onClick={onAudioCall}
                 className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
                 title="Audio call"
               >
@@ -115,10 +105,7 @@ const MessageThreadHeader = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  console.log('[MessageThreadHeader] Video call clicked', { otherParticipant, isGroupConversation });
-                  onVideoCall();
-                }}
+                onClick={onVideoCall}
                 className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
                 title="Video call"
               >

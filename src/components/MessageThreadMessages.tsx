@@ -1,10 +1,8 @@
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import EnhancedMessageBubble from './EnhancedMessageBubble';
 import { TypingIndicator } from './TypingIndicator';
-import { Button } from '@/components/ui/button';
-import WebRTCDebugger from './WebRTCDebugger';
 
 interface Message {
   id: string;
@@ -41,7 +39,6 @@ const MessageThreadMessages = ({
 }: MessageThreadMessagesProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [showDebugger, setShowDebugger] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,21 +49,8 @@ const MessageThreadMessages = ({
   }, [messages]);
 
   return (
-    <>
-      <ScrollArea className="flex-1 px-4 py-2 bg-white dark:bg-gray-900" ref={scrollAreaRef}>
-        {/* Debug Button */}
-        <div className="fixed top-4 right-4 z-50">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowDebugger(true)}
-            className="bg-white/90 dark:bg-gray-800/90"
-          >
-            Debug WebRTC
-          </Button>
-        </div>
-
-        {messages.length > 0 ? (
+    <ScrollArea className="flex-1 px-4 py-2 bg-white dark:bg-gray-900" ref={scrollAreaRef}>
+      {messages.length > 0 ? (
           <div className="space-y-1">
             {messages.map((message, index) => {
               // Show username if it's the first message from this sender in a sequence
@@ -138,18 +122,12 @@ const MessageThreadMessages = ({
           </div>
         )}
         
-        {/* Typing Indicator */}
-        <TypingIndicator 
-          conversationId={conversationId} 
-          isGroup={isGroup} 
-        />
-      </ScrollArea>
-      
-      <WebRTCDebugger 
-        isOpen={showDebugger} 
-        onClose={() => setShowDebugger(false)} 
+      {/* Typing Indicator */}
+      <TypingIndicator 
+        conversationId={conversationId} 
+        isGroup={isGroup} 
       />
-    </>
+    </ScrollArea>
   );
 };
 
