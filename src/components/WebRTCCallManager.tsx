@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import IncomingCallPopup from '@/components/IncomingCallPopup';
 import { subscriptionManager } from '@/utils/subscriptionManager';
+import { useNavigate } from 'react-router-dom';
 
 interface IncomingCall {
   id: string;
@@ -20,6 +21,7 @@ interface IncomingCall {
 const WebRTCCallManager = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
@@ -134,14 +136,14 @@ const WebRTCCallManager = () => {
     
     console.log('[WebRTCCallManager] Accepting call:', callId, callType);
     
-    // Navigate to messages with call parameters
+    // Navigate using React Router instead of window.location.href to prevent page refresh
     const searchParams = new URLSearchParams({
       conversation: incomingCall.caller_id,
       call: callType,
       room: incomingCall.room_id
     });
     
-    window.location.href = `/messages?${searchParams.toString()}`;
+    navigate(`/messages?${searchParams.toString()}`);
     
     setIncomingCall(null);
   };
