@@ -289,16 +289,22 @@ export class WebRTCService {
       this.roomId = roomId;
       this.userId = userId || null;
 
-      // Create unique channel name to avoid conflicts
+      // Create unique channel name
       const channelName = `webrtc-signaling-${roomId}`;
       
       console.log('[WebRTCService] Creating signaling channel:', channelName);
       
-      this.signalingChannel = supabase.channel(channelName)
+      // Configure channel with broadcast self-reception enabled
+      this.signalingChannel = supabase.channel(channelName, {
+        config: {
+          broadcast: { self: false }, // Don't receive our own broadcasts
+          presence: { key: userId || 'anonymous' }
+        }
+      })
         .on('broadcast', { event: 'offer' }, async (payload) => {
           console.log('[WebRTCService] Received offer:', payload);
           try {
-            if (payload.payload.roomId === this.roomId) {
+            if (payload.payload?.roomId === this.roomId && payload.payload?.targetUserId === this.userId) {
               await this.handleOffer(payload.payload);
             }
           } catch (error) {
@@ -308,7 +314,7 @@ export class WebRTCService {
         .on('broadcast', { event: 'answer' }, async (payload) => {
           console.log('[WebRTCService] Received answer:', payload);
           try {
-            if (payload.payload.roomId === this.roomId) {
+            if (payload.payload?.roomId === this.roomId && payload.payload?.targetUserId === this.userId) {
               await this.handleAnswer(payload.payload);
             }
           } catch (error) {
@@ -318,7 +324,7 @@ export class WebRTCService {
         .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
           console.log('[WebRTCService] Received ICE candidate:', payload);
           try {
-            if (payload.payload.roomId === this.roomId) {
+            if (payload.payload?.roomId === this.roomId && payload.payload?.targetUserId === this.userId) {
               // Only handle ICE candidates if we have a remote description
               if (this.peerConnection?.remoteDescription) {
                 await this.handleIceCandidate(payload.payload);
@@ -334,7 +340,7 @@ export class WebRTCService {
         })
         .on('broadcast', { event: 'call-end' }, (payload) => {
           console.log('[WebRTCService] Call ended by remote peer');
-          if (payload.payload.roomId === this.roomId) {
+          if (payload.payload?.roomId === this.roomId) {
             this.cleanup();
           }
         })
@@ -342,14 +348,22 @@ export class WebRTCService {
           console.log('[WebRTCService] Signaling channel status:', status);
           if (err) {
             console.error('[WebRTCService] Signaling channel error:', err);
+            if (this.onErrorCallback) {
+              this.onErrorCallback(new Error(`Signaling channel error: ${err.message}`));
+            }
           }
           
           if (status === 'SUBSCRIBED') {
             console.log('[WebRTCService] Signaling channel connected successfully');
-            // Test signaling connection
+            // Test signaling connection after successful subscription
             setTimeout(() => {
               this.testSignalingConnection();
-            }, 1000);
+            }, 2000);
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.error('[WebRTCService] Signaling channel failed:', status);
+            if (this.onErrorCallback) {
+              this.onErrorCallback(new Error(`Signaling failed: ${status}`));
+            }
           }
         });
 
@@ -404,20 +418,23 @@ export class WebRTCService {
 
       await this.peerConnection.setLocalDescription(offer);
 
-      // Send offer through signaling channel
+      // Send offer through signaling channel with proper targeting
       this.signalingChannel.send({
         type: 'broadcast',
         event: 'offer',
         payload: {
           offer: offer,
-          roomId: this.roomId
+          roomId: this.roomId,
+          senderId: this.userId,
+          targetUserId: null, // Will be set by the calling code if needed
+          timestamp: Date.now()
         }
       });
 
       console.log('[WebRTCService] Offer created and sent');
       
     } catch (error) {
-      console.error('[WebRTCService] Failed to create offer:', error);
+      console.error('[WebRTC Service] Failed to create offer:', error);
       
       if (this.onErrorCallback) {
         this.onErrorCallback(error as Error);
@@ -440,13 +457,16 @@ export class WebRTCService {
       const answer = await this.peerConnection.createAnswer();
       await this.peerConnection.setLocalDescription(answer);
 
-      // Send answer through signaling channel
+      // Send answer through signaling channel with proper targeting
       this.signalingChannel.send({
         type: 'broadcast',
         event: 'answer',
         payload: {
           answer: answer,
-          roomId: this.roomId
+          roomId: this.roomId,
+          senderId: this.userId,
+          targetUserId: null, // Will be set by the calling code if needed
+          timestamp: Date.now()
         }
       });
 

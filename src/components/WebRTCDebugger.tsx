@@ -58,39 +58,64 @@ const WebRTCDebugger: React.FC<WebRTCDebuggerProps> = ({ isOpen, onClose }) => {
         info.getUserMedia = { success: false, error: (err as Error).message };
       }
 
-      // Test signaling
+      // Test signaling with improved approach
       try {
-        const testChannel = supabase.channel('webrtc-test-' + Date.now());
+        const testChannel = supabase.channel('webrtc-signaling-test', {
+          config: {
+            broadcast: { self: true }
+          }
+        });
+        
         let signalReceived = false;
         let subscriptionStatus = 'PENDING';
+        let testError = null;
         
         const testPromise = new Promise<boolean>((resolve) => {
           const timeout = setTimeout(() => {
+            console.log('Signaling test timeout after 8 seconds');
             resolve(false);
-          }, 5000);
+          }, 8000);
 
-          testChannel.on('broadcast', { event: 'test' }, (payload) => {
-            console.log('Test signal received:', payload);
-            signalReceived = true;
-            clearTimeout(timeout);
-            resolve(true);
+          // Listen for our own broadcast (self: true allows this)
+          testChannel.on('broadcast', { event: 'signaling-test' }, (payload) => {
+            console.log('Signaling test signal received:', payload);
+            if (payload.payload?.testId) {
+              signalReceived = true;
+              clearTimeout(timeout);
+              resolve(true);
+            }
           });
 
           testChannel.subscribe(async (status, err) => {
-            console.log('Test channel status:', status, err);
+            console.log('Signaling test channel status:', status, err);
             subscriptionStatus = status;
             
+            if (err) {
+              testError = err.message;
+              clearTimeout(timeout);
+              resolve(false);
+              return;
+            }
+            
             if (status === 'SUBSCRIBED') {
-              // Wait a bit for channel to be ready
+              console.log('Signaling test channel subscribed, sending test signal...');
+              // Wait a bit for channel to be fully ready
               setTimeout(() => {
-                console.log('Sending test signal...');
+                const testId = Math.random().toString(36).substr(2, 9);
+                console.log('Sending signaling test with ID:', testId);
+                
                 testChannel.send({
                   type: 'broadcast',
-                  event: 'test',
-                  payload: { test: true, timestamp: Date.now() }
+                  event: 'signaling-test',
+                  payload: { 
+                    testId, 
+                    timestamp: Date.now(),
+                    message: 'WebRTC signaling test'
+                  }
                 });
-              }, 500);
+              }, 1000);
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+              testError = `Channel status: ${status}`;
               clearTimeout(timeout);
               resolve(false);
             }
@@ -98,19 +123,31 @@ const WebRTCDebugger: React.FC<WebRTCDebuggerProps> = ({ isOpen, onClose }) => {
         });
 
         const success = await testPromise;
+        
         info.signaling = { 
           success, 
           subscriptionStatus,
-          details: success ? 'Signaling working correctly' : 'Failed to receive test signal'
+          error: testError,
+          details: success 
+            ? 'Signaling working - WebRTC calls should function properly' 
+            : testError 
+              ? `Failed: ${testError}` 
+              : 'Test signal was not received within timeout period'
         };
         
-        supabase.removeChannel(testChannel);
+        // Clean up
+        try {
+          supabase.removeChannel(testChannel);
+        } catch (cleanupErr) {
+          console.log('Channel cleanup error (non-critical):', cleanupErr);
+        }
+        
       } catch (err) {
-        console.error('Signaling test error:', err);
+        console.error('Signaling test exception:', err);
         info.signaling = { 
           success: false, 
           error: (err as Error).message,
-          details: 'Exception occurred during signaling test'
+          details: 'Exception occurred during signaling test - this indicates a serious connectivity issue'
         };
       }
 
