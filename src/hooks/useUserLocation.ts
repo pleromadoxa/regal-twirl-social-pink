@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getCurrentLocation, LocationData, UserLocationState } from '@/services/locationService';
+import { subscriptionManager } from '@/utils/subscriptionManager';
 
 export const useUserLocation = () => {
   const { user } = useAuth();
@@ -10,9 +11,9 @@ export const useUserLocation = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Use refs to store channel references to prevent multiple subscriptions
-  const locationChannelRef = useRef<any>(null);
-  const presenceChannelRef = useRef<any>(null);
+  // Use refs to store unsubscribe functions
+  const locationUnsubscribeRef = useRef<(() => void) | null>(null);
+  const presenceUnsubscribeRef = useRef<(() => void) | null>(null);
 
   // Get location for a specific user
   const getUserLocation = (userId: string): LocationData | null => {
@@ -27,15 +28,7 @@ export const useUserLocation = () => {
       const location = await getCurrentLocation();
       setCurrentLocation(location);
 
-      // Update presence with new location using existing channel
-      if (locationChannelRef.current) {
-        const locationState = {
-          userId: user.id,
-          location,
-          timestamp: new Date().toISOString()
-        };
-        await locationChannelRef.current.track(locationState);
-      }
+      // Location update will be handled automatically by the subscription
     } catch (err) {
       console.error('Error updating location:', err);
       setError('Failed to update location');
@@ -58,76 +51,80 @@ export const useUserLocation = () => {
         const location = await getCurrentLocation();
         setCurrentLocation(location);
 
-        // Clean up existing channels first
-        if (locationChannelRef.current) {
-          locationChannelRef.current.unsubscribe();
-          supabase.removeChannel(locationChannelRef.current);
+        // Clean up existing subscriptions first
+        if (locationUnsubscribeRef.current) {
+          locationUnsubscribeRef.current();
+          locationUnsubscribeRef.current = null;
         }
-        if (presenceChannelRef.current) {
-          presenceChannelRef.current.unsubscribe();
-          supabase.removeChannel(presenceChannelRef.current);
+        if (presenceUnsubscribeRef.current) {
+          presenceUnsubscribeRef.current();
+          presenceUnsubscribeRef.current = null;
         }
 
-        // Create location tracking channel
+        // Create location tracking subscription
         const locationChannelName = `user_location_${user.id}`;
-        locationChannelRef.current = supabase.channel(locationChannelName);
         
-        const locationState = {
-          userId: user.id,
-          location,
-          timestamp: new Date().toISOString()
-        };
-
-        locationChannelRef.current.subscribe(async (status: string) => {
-          if (status === 'SUBSCRIBED') {
-            console.log('[useUserLocation] Location channel subscribed');
-            await locationChannelRef.current.track(locationState);
+        locationUnsubscribeRef.current = subscriptionManager.subscribe(locationChannelName, {
+          presence: {
+            event: 'sync',
+            callback: () => {
+              console.log('[useUserLocation] Location channel subscribed');
+            }
           }
         });
 
-        // Create presence listening channel
+        // Create presence listening subscription
         const presenceChannelName = `user_locations_global`;
-        presenceChannelRef.current = supabase.channel(presenceChannelName)
-          .on('presence', { event: 'sync' }, () => {
-            const presenceState = presenceChannelRef.current.presenceState();
-            const locations: Record<string, UserLocationState> = {};
-            
-            Object.values(presenceState).forEach((presences: any) => {
-              presences.forEach((state: any) => {
-                if (state.userId && state.location && state.userId !== user.id) {
-                  locations[state.userId] = state as UserLocationState;
-                }
-              });
-            });
-            
-            setUserLocations(locations);
-          })
-          .on('presence', { event: 'join' }, ({ newPresences }) => {
-            newPresences.forEach((presence: any) => {
-              if (presence.userId && presence.location && presence.userId !== user.id) {
-                setUserLocations(prev => ({
-                  ...prev,
-                  [presence.userId]: presence as UserLocationState
-                }));
+        
+        presenceUnsubscribeRef.current = subscriptionManager.subscribe(presenceChannelName, {
+          presence: [
+            {
+              event: 'sync',
+              callback: (payload: any) => {
+                const presenceState = payload.presenceState || {};
+                const locations: Record<string, UserLocationState> = {};
+                
+                Object.values(presenceState).forEach((presences: any) => {
+                  if (Array.isArray(presences)) {
+                    presences.forEach((state: any) => {
+                      if (state.userId && state.location && state.userId !== user.id) {
+                        locations[state.userId] = state as UserLocationState;
+                      }
+                    });
+                  }
+                });
+                
+                setUserLocations(locations);
               }
-            });
-          })
-          .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-            leftPresences.forEach((presence: any) => {
-              if (presence.userId && presence.userId !== user.id) {
-                setUserLocations(prev => {
-                  const updated = { ...prev };
-                  delete updated[presence.userId];
-                  return updated;
+            },
+            {
+              event: 'join',
+              callback: ({ newPresences }: { newPresences: any[] }) => {
+                newPresences.forEach((presence: any) => {
+                  if (presence.userId && presence.location && presence.userId !== user.id) {
+                    setUserLocations(prev => ({
+                      ...prev,
+                      [presence.userId]: presence as UserLocationState
+                    }));
+                  }
                 });
               }
-            });
-          });
-
-        presenceChannelRef.current.subscribe((status: string) => {
-          if (status === 'SUBSCRIBED') {
-            console.log('[useUserLocation] Presence channel subscribed');
-          }
+            },
+            {
+              event: 'leave',
+              callback: ({ leftPresences }: { leftPresences: any[] }) => {
+                leftPresences.forEach((presence: any) => {
+                  if (presence.userId && presence.userId !== user.id) {
+                    setUserLocations(prev => {
+                      const updated = { ...prev };
+                      delete updated[presence.userId];
+                      return updated;
+                    });
+                  }
+                });
+              }
+            }
+          ]
         });
 
       } catch (err) {
@@ -143,15 +140,13 @@ export const useUserLocation = () => {
     // Cleanup on unmount or user change
     return () => {
       console.log('[useUserLocation] Cleaning up location tracking');
-      if (locationChannelRef.current) {
-        locationChannelRef.current.unsubscribe();
-        supabase.removeChannel(locationChannelRef.current);
-        locationChannelRef.current = null;
+      if (locationUnsubscribeRef.current) {
+        locationUnsubscribeRef.current();
+        locationUnsubscribeRef.current = null;
       }
-      if (presenceChannelRef.current) {
-        presenceChannelRef.current.unsubscribe();
-        supabase.removeChannel(presenceChannelRef.current);
-        presenceChannelRef.current = null;
+      if (presenceUnsubscribeRef.current) {
+        presenceUnsubscribeRef.current();
+        presenceUnsubscribeRef.current = null;
       }
     };
   }, [user?.id]); // Only depend on user.id, not user object

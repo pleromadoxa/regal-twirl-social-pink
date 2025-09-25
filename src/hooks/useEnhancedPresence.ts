@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/utils/subscriptionManager';
 
 interface EnhancedPresence {
   user_id: string;
@@ -13,6 +14,7 @@ interface EnhancedPresence {
 export const useEnhancedPresence = (currentUserId?: string) => {
   const [presenceData, setPresenceData] = useState<{ [userId: string]: EnhancedPresence }>({});
   const [typingUsers, setTypingUsers] = useState<{ [conversationId: string]: string[] }>({});
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   const updatePresence = useCallback(async (
     status: 'online' | 'offline' | 'away' | 'busy',
@@ -93,21 +95,19 @@ export const useEnhancedPresence = (currentUserId?: string) => {
 
     fetchPresence();
 
-    // Set up realtime subscription
-    const subscription = supabase
-      .channel('enhanced_user_presence')
-      .on(
-        'postgres_changes',
-        {
+    // Set up realtime subscription using SubscriptionManager
+    unsubscribeRef.current = subscriptionManager.subscribe('enhanced_user_presence', {
+      postgres_changes: {
+        config: {
           event: '*',
           schema: 'public',
           table: 'enhanced_user_presence'
         },
-        () => {
+        callback: () => {
           fetchPresence();
         }
-      )
-      .subscribe();
+      }
+    });
 
     // Set user as offline when they leave
     const handleBeforeUnload = () => {
@@ -122,7 +122,10 @@ export const useEnhancedPresence = (currentUserId?: string) => {
     }, 30000); // Update every 30 seconds
 
     return () => {
-      subscription.unsubscribe();
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
       window.removeEventListener('beforeunload', handleBeforeUnload);
       clearInterval(presenceInterval);
       goOffline();
