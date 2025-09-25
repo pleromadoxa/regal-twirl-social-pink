@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/utils/subscriptionManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -234,21 +235,25 @@ export const useStories = () => {
   useEffect(() => {
     fetchStories();
 
-    // Set up real-time subscription with proper cleanup
-    const channel = supabase
-      .channel(`stories-changes-${user.id}`) // Use stable channel name
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'stories'
-      }, () => {
-        fetchStories();
-      })
-      .subscribe();
+    // Set up real-time subscription using subscription manager
+    const channelName = `stories-changes-${user?.id}`;
+    
+    const unsubscribe = subscriptionManager.subscribe(channelName, {
+      postgres_changes: {
+        config: {
+          event: '*',
+          schema: 'public',
+          table: 'stories'
+        },
+        callback: () => {
+          fetchStories();
+        }
+      }
+    });
 
     return () => {
       // Proper cleanup
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [user?.id]); // Add user.id to dependencies
 

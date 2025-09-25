@@ -20,6 +20,7 @@ import { createCall, joinCall, endCall, subscribeToCallUpdates, ActiveCall } fro
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/utils/subscriptionManager';
 
 interface RealTimeCallManagerProps {
   conversationId?: string;
@@ -76,43 +77,44 @@ const RealTimeCallManager = ({
 
     cleanup();
     
-    // Use stable channel name without random components
-    const channelName = `incoming-calls-${user.id}`;
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'active_calls'
-      }, (payload) => {
-        const call = payload.new as any;
-        const callData: ActiveCall = {
-          ...call,
-          call_type: call.call_type as 'audio' | 'video' | 'group',
-          status: call.status as 'active' | 'ended',
-          participants: Array.isArray(call.participants) ? call.participants as string[] : []
-        };
-        
-        const isParticipant = callData.participants.includes(user.id) || 
-                            participants.some(p => p.id === callData.caller_id);
-        
-        if (isParticipant && callData.caller_id !== user.id) {
-          setIncomingCall(callData);
-          toast({
-            title: "Incoming call",
-            description: `${callData.call_type} call from ${participants.find(p => p.id === callData.caller_id)?.display_name || 'Unknown'}`,
-          });
+      // Use subscription manager to prevent duplicate subscriptions
+      const channelName = `incoming-calls-${user.id}`;
+      
+      const unsubscribe = subscriptionManager.subscribe(channelName, {
+        postgres_changes: {
+          config: {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'active_calls'
+          },
+          callback: (payload: any) => {
+            const call = payload.new as any;
+            const callData: ActiveCall = {
+              ...call,
+              call_type: call.call_type as 'audio' | 'video' | 'group',
+              status: call.status as 'active' | 'ended',
+              participants: Array.isArray(call.participants) ? call.participants as string[] : []
+            };
+            
+            const isParticipant = callData.participants.includes(user.id) || 
+                                participants.some(p => p.id === callData.caller_id);
+            
+            if (isParticipant && callData.caller_id !== user.id) {
+              setIncomingCall(callData);
+              toast({
+                title: "Incoming call",
+                description: `${callData.call_type} call from ${participants.find(p => p.id === callData.caller_id)?.display_name || 'Unknown'}`,
+              });
+            }
+          }
         }
-      })
-      .subscribe((status) => {
-        console.log('[RealTimeCallManager] Channel subscription status:', status);
       });
 
-    return () => {
-      console.log('[RealTimeCallManager] Cleaning up call manager subscription');
-      supabase.removeChannel(channel);
-      cleanup();
-    };
+      return () => {
+        console.log('[RealTimeCallManager] Cleaning up call manager subscription');
+        unsubscribe();
+        cleanup();
+      };
   }, [user?.id, toast]); // Stable dependencies
 
   const startCall = async (type: 'audio' | 'video' | 'group') => {
@@ -139,30 +141,41 @@ const RealTimeCallManager = ({
 
       // Use stable channel name without timestamps
       const inviteChannelName = `call-invitation-${call.room_id}`;
-      const channel = supabase.channel(inviteChannelName);
-      setCallInvitationChannel(channel);
       
-      // Subscribe once and send invitations after subscription
-      channel.subscribe((status) => {
-        console.log('[RealTimeCallManager] Invite channel status:', status);
-        if (status === 'SUBSCRIBED') {
-          // Send invitations after successful subscription
-          participantIds.forEach(participantId => {
-            channel.send({
-              type: 'broadcast',
-              event: 'call-invitation',
-              payload: {
-                call_id: call.id,
-                room_id: call.room_id,
-                caller_id: user.id,
-                caller_name: user.user_metadata?.display_name || user.email,
-                call_type: type,
-                recipient_id: participantId
-              }
+      // Use subscription manager to prevent duplicates
+      const unsubscribe = subscriptionManager.subscribe(inviteChannelName, {
+        broadcast: {
+          event: 'subscription-ready',
+          callback: () => {
+            console.log('[RealTimeCallManager] Invite channel ready, sending invitations');
+            // Send invitations after successful subscription
+            participantIds.forEach(participantId => {
+              const channel = supabase.channel(inviteChannelName);
+              channel.send({
+                type: 'broadcast',
+                event: 'call-invitation',
+                payload: {
+                  call_id: call.id,
+                  room_id: call.room_id,
+                  caller_id: user.id,
+                  caller_name: user.user_metadata?.display_name || user.email,
+                  call_type: type,
+                  recipient_id: participantId
+                }
+              });
             });
-          });
+          }
         }
       });
+
+      // Cleanup function for the invitation channel
+      const cleanupInvitation = () => {
+        unsubscribe();
+        setCallInvitationChannel(null);
+      };
+
+      // Store cleanup function
+      setCallInvitationChannel({ unsubscribe: cleanupInvitation } as any);
 
       toast({
         title: "Call started",
@@ -221,10 +234,9 @@ const RealTimeCallManager = ({
       setCallType('audio');
       
       // Clean up call invitation channel
-      if (callInvitationChannel) {
+      if (callInvitationChannel && typeof callInvitationChannel.unsubscribe === 'function') {
         try {
           callInvitationChannel.unsubscribe();
-          supabase.removeChannel(callInvitationChannel);
         } catch (error) {
           console.error('Error cleaning up call invitation channel:', error);
         }

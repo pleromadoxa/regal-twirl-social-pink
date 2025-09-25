@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscriptionManager } from '@/utils/subscriptionManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -89,49 +90,53 @@ export const usePostsData = (posts: any[], user: any, refetch?: () => void) => {
     fetchBusinessPages();
   }, [posts]);
 
-  // Real-time notification for new posts with auto-refresh
+  // Real-time notification for new posts using subscription manager
   useEffect(() => {
     if (!user || !posts) return;
 
-    const channel = supabase
-      .channel(`new-posts-notifications-${user.id}`) // Remove timestamp to prevent multiple channels
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'posts'
-      }, async (payload) => {
-        const newPost = payload.new;
-        
-        if (newPost.user_id === user.id) {
-          // If it's user's own post, refresh the feed immediately
-          setTimeout(() => {
-            if (refetch) refetch();
-          }, 500);
-          return;
-        }
-
-        // Fetch the author's profile for notification
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, display_name')
-          .eq('id', newPost.user_id)
-          .maybeSingle();
-
-        if (profile) {
-          const authorName = profile.display_name || profile.username || 'Someone';
-          setNewPostNotification(`${authorName} just posted!`);
+    const channelName = `new-posts-notifications-${user.id}`;
+    
+    const unsubscribe = subscriptionManager.subscribe(channelName, {
+      postgres_changes: {
+        config: {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'posts'
+        },
+        callback: async (payload: any) => {
+          const newPost = payload.new;
           
-          // Auto-hide notification and refresh after 3 seconds
-          setTimeout(() => {
-            setNewPostNotification(null);
-            if (refetch) refetch();
-          }, 3000);
+          if (newPost.user_id === user.id) {
+            // If it's user's own post, refresh the feed immediately
+            setTimeout(() => {
+              if (refetch) refetch();
+            }, 500);
+            return;
+          }
+
+          // Fetch the author's profile for notification
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username, display_name')
+            .eq('id', newPost.user_id)
+            .maybeSingle();
+
+          if (profile) {
+            const authorName = profile.display_name || profile.username || 'Someone';
+            setNewPostNotification(`${authorName} just posted!`);
+            
+            // Auto-hide notification and refresh after 3 seconds
+            setTimeout(() => {
+              setNewPostNotification(null);
+              if (refetch) refetch();
+            }, 3000);
+          }
         }
-      })
-      .subscribe();
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [user?.id]); // Stable dependency to prevent re-subscriptions
 

@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { fetchConversations, createConversation } from '@/services/conversationService';
 import { fetchUserGroupConversations, createGroupConversation, type GroupConversation } from '@/services/groupConversationService';
 import type { Conversation, Message } from '@/types/messages';
+import { subscriptionManager } from '@/utils/subscriptionManager';
 
 export const useEnhancedMessages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -50,87 +51,84 @@ export const useEnhancedMessages = () => {
     }
   };
 
-  // Set up real-time subscriptions
+  // Set up real-time subscriptions using subscription manager
   useEffect(() => {
     if (!user?.id) return;
 
     console.log('Setting up real-time subscriptions for user:', user.id);
     
-    // Use unique channel name with user ID to prevent conflicts
+    // Use subscription manager to prevent duplicate subscriptions
     const channelName = `conversations-changes-${user.id}`;
-    const conversationsChannel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
+    
+    const unsubscribe = subscriptionManager.subscribe(channelName, {
+      postgres_changes: [
         {
-          event: '*',
-          schema: 'public',
-          table: 'conversations'
+          config: {
+            event: '*',
+            schema: 'public',
+            table: 'conversations'
+          },
+          callback: () => {
+            console.log('Conversation change detected, refetching...');
+            fetchConversationsData();
+          }
         },
-        () => {
-          console.log('Conversation change detected, refetching...');
-          fetchConversationsData();
-        }
-      )
-      .on(
-        'postgres_changes',
         {
-          event: '*',
-          schema: 'public',
-          table: 'group_conversations'
+          config: {
+            event: '*',
+            schema: 'public',
+            table: 'group_conversations'
+          },
+          callback: () => {
+            console.log('Group conversation change detected, refetching...');
+            fetchConversationsData();
+          }
         },
-        () => {
-          console.log('Group conversation change detected, refetching...');
-          fetchConversationsData();
-        }
-      )
-      .on(
-        'postgres_changes',
         {
-          event: '*',
-          schema: 'public',
-          table: 'group_conversation_members',
-          filter: `user_id=eq.${user.id}`
+          config: {
+            event: '*',
+            schema: 'public',
+            table: 'group_conversation_members',
+            filter: `user_id=eq.${user.id}`
+          },
+          callback: () => {
+            console.log('Group membership change detected, refetching...');
+            fetchConversationsData();
+          }
         },
-        () => {
-          console.log('Group membership change detected, refetching...');
-          fetchConversationsData();
-        }
-      )
-      .on(
-        'postgres_changes',
         {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-          filter: `or(sender_id.eq.${user.id},recipient_id.eq.${user.id})`
+          config: {
+            event: '*',
+            schema: 'public',
+            table: 'messages',
+            filter: `or(sender_id.eq.${user.id},recipient_id.eq.${user.id})`
+          },
+          callback: () => {
+            console.log('Message change detected, refetching...');
+            if (selectedConversation) {
+              fetchMessages(selectedConversation);
+            }
+          }
         },
-        () => {
-          console.log('Message change detected, refetching...');
-          if (selectedConversation) {
-            fetchMessages(selectedConversation);
+        {
+          config: {
+            event: '*',
+            schema: 'public',
+            table: 'group_messages'
+          },
+          callback: (payload: any) => {
+            console.log('Group message change detected:', payload);
+            if (selectedConversation) {
+              fetchMessages(selectedConversation);
+            }
           }
         }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'group_messages'
-        },
-        (payload) => {
-          console.log('Group message change detected:', payload);
-          if (selectedConversation) {
-            fetchMessages(selectedConversation);
-          }
-        }
-      )
-      .subscribe();
+      ]
+    });
 
     return () => {
       console.log('Cleaning up real-time subscriptions for user:', user.id);
-      supabase.removeChannel(conversationsChannel);
+      unsubscribe();
     };
   }, [user?.id]); // Removed selectedConversation to prevent multiple subscriptions
 
