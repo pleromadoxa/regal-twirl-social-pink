@@ -2,9 +2,10 @@
 import { useState } from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { VoiceBubble } from '@/components/ui/voice-bubble';
-import { Edit, Trash2, Download, FileText, Reply, Forward, MoreHorizontal } from 'lucide-react';
+import { Edit, Trash2, Download, FileText, Reply, Forward, MoreHorizontal, Smile } from 'lucide-react';
 import MessageEditForm from './MessageEditForm';
 import MessageContent from './MessageContent';
+import MessageReactions from './MessageReactions';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
   const [isEditing, setIsEditing] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [showForwardDialog, setShowForwardDialog] = useState(false);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const { toast } = useToast();
 
   const handleReply = () => {
@@ -50,6 +52,10 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
 
   const handleForward = () => {
     setShowForwardDialog(true);
+  };
+
+  const handleReact = () => {
+    setShowReactionPicker(true);
   };
 
   const handleEdit = () => {
@@ -175,59 +181,72 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
                 </div>
               )}
 
-              {/* Action buttons - only visible on hover */}
-              {showActions && (
-                <div className={`
-                  absolute top-0 transition-opacity duration-200
-                  ${isOwn ? '-left-24' : '-right-24'}
-                  flex gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-1
-                `}>
-                  {!isOwn && (
+              {/* Action buttons - visible on hover */}
+              <div className={`
+                absolute top-0 transition-opacity duration-200 z-10
+                ${isOwn ? '-left-28' : '-right-28'}
+                ${showActions ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+                flex gap-1
+              `}>
+                {!isOwn && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 bg-white dark:bg-gray-800 border shadow-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={handleReply}
+                    title="Reply"
+                  >
+                    <Reply className="h-3 w-3" />
+                  </Button>
+                )}
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      onClick={handleReply}
-                      title="Reply"
+                      className="h-8 w-8 p-0 bg-white dark:bg-gray-800 border shadow-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                      title="More options"
                     >
-                      <Reply className="h-3 w-3" />
+                      <MoreHorizontal className="h-3 w-3" />
                     </Button>
-                  )}
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      >
-                        <MoreHorizontal className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleForward}>
-                        <Forward className="h-3 w-3 mr-2" />
-                        Forward
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    align="end" 
+                    className="bg-white dark:bg-gray-800 border shadow-lg z-50"
+                  >
+                    <DropdownMenuItem onClick={handleReact}>
+                      <Smile className="h-3 w-3 mr-2" />
+                      React
+                    </DropdownMenuItem>
+                    {!isOwn && (
+                      <DropdownMenuItem onClick={handleReply}>
+                        <Reply className="h-3 w-3 mr-2" />
+                        Reply
                       </DropdownMenuItem>
-                      {isOwn && (
-                        <>
-                          <DropdownMenuItem onClick={handleEdit}>
-                            <Edit className="h-3 w-3 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={handleDelete}
-                            className="text-red-600 dark:text-red-400"
-                          >
-                            <Trash2 className="h-3 w-3 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              )}
+                    )}
+                    <DropdownMenuItem onClick={handleForward}>
+                      <Forward className="h-3 w-3 mr-2" />
+                      Forward
+                    </DropdownMenuItem>
+                    {isOwn && (
+                      <>
+                        <DropdownMenuItem onClick={handleEdit}>
+                          <Edit className="h-3 w-3 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={handleDelete}
+                          className="text-red-600 dark:text-red-400"
+                        >
+                          <Trash2 className="h-3 w-3 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
             {/* Media Attachments */}
@@ -308,9 +327,12 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
               </div>
             )}
 
-            {/* Simple reactions placeholder */}
+            {/* Message Reactions */}
             <div className="mt-1">
-              {/* Reactions will be added later */}
+              <MessageReactions 
+                messageId={message.id} 
+                className="group"
+              />
             </div>
 
             {/* WhatsApp/Instagram style timestamp - only shown when showTimestamp is true */}

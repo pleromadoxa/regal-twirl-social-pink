@@ -38,10 +38,10 @@ const MessageReactions = ({ messageId, className = '' }: MessageReactionsProps) 
             <Badge
               key={emoji}
               variant={userReactions.includes(emoji) ? "default" : "secondary"}
-              className="cursor-pointer text-xs px-2 py-1 hover:scale-105 transition-transform"
+              className="cursor-pointer text-xs px-2 py-1 hover:scale-105 transition-transform bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
               onClick={() => handleReactionClick(emoji)}
             >
-              {emoji} {count}
+              <span className="text-sm">{emoji}</span> <span className="ml-1">{count}</span>
             </Badge>
           ))}
         </div>
@@ -53,23 +53,28 @@ const MessageReactions = ({ messageId, className = '' }: MessageReactionsProps) 
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 dark:hover:bg-gray-700"
+            title="Add reaction"
           >
             <span className="text-xs">😊</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-2" align="start">
+        <PopoverContent 
+          className="w-auto p-2 bg-white dark:bg-gray-800 border shadow-lg z-50" 
+          align="start"
+          sideOffset={5}
+        >
           <div className="grid grid-cols-4 gap-2">
             {REACTION_EMOJIS.map((emoji) => (
               <Button
                 key={emoji}
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 hover:scale-110 transition-transform"
+                className="h-8 w-8 p-0 hover:scale-110 transition-transform hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => handleReactionClick(emoji)}
                 disabled={isLoading}
               >
-                {emoji}
+                <span className="text-base">{emoji}</span>
               </Button>
             ))}
           </div>
