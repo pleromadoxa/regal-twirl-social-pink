@@ -8,6 +8,7 @@ import MessageThreadHeader from './MessageThreadHeader';
 import MessageThreadMessages from './MessageThreadMessages';
 import MessageThreadInput from './MessageThreadInput';
 import MessageThreadCallManager from './MessageThreadCallManager';
+import MessageReplyPreview from './MessageReplyPreview';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -34,6 +35,7 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
     setSelectedConversation 
   } = messagesData;
   const [localMessages, setLocalMessages] = useState(messages);
+  const [replyToMessageId, setReplyToMessageId] = useState<string | null>(null);
 
   // Get conversation details - check both regular and group conversations
   const conversation = conversations.find(c => c.id === conversationId);
@@ -149,6 +151,14 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
     setLocalMessages(prev => prev.filter(msg => msg.id !== messageId));
   };
 
+  const handleReply = (messageId: string) => {
+    setReplyToMessageId(messageId);
+  };
+
+  const handleCancelReply = () => {
+    setReplyToMessageId(null);
+  };
+
   if (!isConversationIdValid) {
     return (
       <div className="flex flex-col h-full items-center justify-center text-muted-foreground pt-16">
@@ -200,7 +210,17 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
             conversationId={conversationId || ''}
             isGroup={isGroupConversation}
             onDeleteMessage={handleDeleteMessage}
+            onReply={handleReply}
+            messagesData={messagesData}
           />
+
+          {/* Reply Preview */}
+          {replyToMessageId && (
+            <MessageReplyPreview
+              replyToMessageId={replyToMessageId}
+              onCancel={handleCancelReply}
+            />
+          )}
 
           {/* Message Input */}
           <MessageThreadInput

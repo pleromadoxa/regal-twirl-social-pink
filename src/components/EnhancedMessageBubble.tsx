@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import MessageForwardDialog from './MessageForwardDialog';
 
 interface Message {
   id: string;
@@ -35,9 +36,10 @@ interface EnhancedMessageBubbleProps {
   showUsername?: boolean;
   showTimestamp?: boolean;
   onReply?: (messageId: string) => void;
+  messagesData?: any;
 }
 
-const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUsername = false, showTimestamp = false, onReply }: EnhancedMessageBubbleProps) => {
+const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUsername = false, showTimestamp = false, onReply, messagesData }: EnhancedMessageBubbleProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [showForwardDialog, setShowForwardDialog] = useState(false);
@@ -334,20 +336,14 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
         )}
       </div>
 
-      {/* Simple Forward Dialog placeholder */}
-      {showForwardDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Forward Message</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-              Forward: "{message.content.substring(0, 50)}..."
-            </p>
-            <div className="flex gap-2">
-              <Button onClick={() => setShowForwardDialog(false)} variant="outline">Cancel</Button>
-              <Button onClick={() => setShowForwardDialog(false)}>Forward</Button>
-            </div>
-          </div>
-        </div>
+      {/* Forward Dialog */}
+      {messagesData && (
+        <MessageForwardDialog
+          messageContent={message.content}
+          isOpen={showForwardDialog}
+          onClose={() => setShowForwardDialog(false)}
+          messagesData={messagesData}
+        />
       )}
     </div>
   );
