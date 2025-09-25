@@ -8,7 +8,6 @@ import AudioCall from '@/components/AudioCall';
 import VideoCall from '@/components/VideoCall';
 import CallPopup from '@/components/CallPopup';
 import CallTestManager from '@/components/CallTestManager';
-import WebRTCCallManager from '@/components/WebRTCCallManager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -518,9 +517,6 @@ const Messages = () => {
           messagesData.refetch();
         }}
       />
-
-      {/* WebRTC Call Manager for handling incoming calls */}
-      <WebRTCCallManager />
 
       {/* Active Call Components */}
       {activeCall && (
