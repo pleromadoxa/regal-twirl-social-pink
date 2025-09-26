@@ -23,7 +23,15 @@ serve(async (req) => {
       'tech+stocks+nasdaq+sp500'
     ];
     
-    const allArticles = [];
+    const allArticles: Array<{
+      title: string;
+      link: string;
+      pubDate: string;
+      description: string;
+      source: string;
+      sentiment: string;
+      category: string;
+    }> = [];
     
     for (const query of queries) {
       try {

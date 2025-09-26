@@ -84,7 +84,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'An unexpected error occurred', 
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
