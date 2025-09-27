@@ -63,13 +63,48 @@ const EnhancedShoppingCart = () => {
   }, [user, isOpen]);
 
   const fetchCartItems = async () => {
-    // Temporarily disabled - cart table not available
-    console.log('Cart functionality temporarily disabled');
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('cart_items')
+        .select(`
+          *,
+          business_products!inner(
+            id,
+            name,
+            description,
+            price,
+            currency,
+            images,
+            business_page_id,
+            business_pages(
+              page_name,
+              page_avatar_url
+            )
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      const formattedItems = (data || []).map(item => ({
+        ...item,
+        business_pages: {
+          page_name: item.business_products.business_pages?.page_name || 'Unknown Store',
+          avatar_url: item.business_products.business_pages?.page_avatar_url
+        }
+      }));
+      
+      setCartItems(formattedItems);
+    } catch (error) {
+      console.error('Error fetching cart items:', error);
+    }
   };
 
   const fetchWishlistItems = async () => {
-    // Temporarily disabled - wishlists table not available
-    console.log('Wishlist functionality temporarily disabled');
+    // Simplified wishlist without complex relations
+    setWishlistItems([]);
   };
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {
@@ -79,15 +114,14 @@ const EnhancedShoppingCart = () => {
     }
 
     try {
-      // Update cart item quantity
-      setCartItems(prev => 
-        prev.map(item => 
-          item.id === itemId 
-            ? { ...item, quantity: newQuantity }
-            : item
-        )
-      );
+      const { error } = await supabase
+        .from('cart_items')
+        .update({ quantity: newQuantity })
+        .eq('id', itemId);
+
+      if (error) throw error;
       
+      await fetchCartItems();
       toast({
         title: "Quantity updated",
         description: "Cart has been updated"
@@ -104,8 +138,14 @@ const EnhancedShoppingCart = () => {
 
   const removeFromCart = async (itemId: string) => {
     try {
-      setCartItems(prev => prev.filter(item => item.id !== itemId));
+      const { error } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) throw error;
       
+      await fetchCartItems();
       toast({
         title: "Item removed",
         description: "Item has been removed from cart"
@@ -120,18 +160,55 @@ const EnhancedShoppingCart = () => {
     }
   };
 
-  const addToWishlist = async (productId: string, businessPageId: string) => {
-    // Temporarily disabled - wishlists table not available
-    toast({
-      title: "Feature coming soon",
-      description: "Wishlist functionality will be available soon"
-    });
+  const moveToWishlist = async (productId: string) => {
+    if (!user) return;
+    
+    try {
+      // Add to wishlist
+      const { error: wishlistError } = await supabase
+        .from('wishlists')
+        .insert({
+          user_id: user.id,
+          product_id: productId
+        });
+
+      if (wishlistError && wishlistError.code !== '23505') throw wishlistError;
+
+      // Remove from cart
+      const { error: cartError } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('product_id', productId);
+
+      if (cartError) throw cartError;
+
+      await Promise.all([fetchCartItems(), fetchWishlistItems()]);
+      
+      toast({
+        title: "Moved to wishlist",
+        description: "Item has been moved to your wishlist"
+      });
+    } catch (error) {
+      console.error('Error moving to wishlist:', error);
+      toast({
+        title: "Error",
+        description: "Failed to move item to wishlist",
+        variant: "destructive"
+      });
+    }
   };
 
   const removeFromWishlist = async (itemId: string) => {
     try {
-      setWishlistItems(prev => prev.filter(item => item.id !== itemId));
+      const { error } = await supabase
+        .from('wishlists')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) throw error;
       
+      await fetchWishlistItems();
       toast({
         title: "Removed from wishlist",
         description: "Item has been removed from your wishlist"
@@ -147,11 +224,81 @@ const EnhancedShoppingCart = () => {
   };
 
   const checkout = async () => {
-    // Temporarily disabled - user_orders table not available
-    toast({
-      title: "Feature coming soon",
-      description: "Checkout functionality will be available soon"
-    });
+    if (!user || cartItems.length === 0) return;
+    
+    try {
+      setCheckingOut(true);
+      
+      // Generate order number
+      const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Group items by business page
+      const itemsByBusiness = cartItems.reduce((acc, item) => {
+        const businessId = item.business_products.business_page_id;
+        if (!acc[businessId]) {
+          acc[businessId] = [];
+        }
+        acc[businessId].push(item);
+        return acc;
+      }, {} as Record<string, typeof cartItems>);
+      
+      // Create separate orders for each business
+      for (const [businessPageId, items] of Object.entries(itemsByBusiness)) {
+        const orderSubtotal = items.reduce((sum, item) => sum + (item.business_products.price * item.quantity), 0);
+        const orderTax = orderSubtotal * 0.1;
+        const orderTotal = orderSubtotal + orderTax;
+        
+        const orderItems = items.map(item => ({
+          product_id: item.product_id,
+          name: item.business_products.name,
+          price: item.business_products.price,
+          quantity: item.quantity,
+          total: item.business_products.price * item.quantity
+        }));
+
+        const { error } = await supabase
+          .from('user_orders')
+          .insert({
+            user_id: user.id,
+            business_page_id: businessPageId,
+            order_number: `${orderNumber}-${businessPageId.slice(0, 8)}`,
+            items: orderItems,
+            subtotal: orderSubtotal,
+            tax_amount: orderTax,
+            total_amount: orderTotal,
+            currency: items[0].business_products.currency || 'USD',
+            status: 'pending',
+            payment_status: 'pending'
+          });
+
+        if (error) throw error;
+      }
+      
+      // Clear cart after successful order creation
+      const { error: clearError } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (clearError) throw clearError;
+      
+      setCartItems([]);
+      toast({
+        title: "Order placed successfully!",
+        description: `Order ${orderNumber} has been placed. You will receive an email confirmation shortly.`
+      });
+      
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error during checkout:', error);
+      toast({
+        title: "Checkout failed",
+        description: "There was an error processing your order. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setCheckingOut(false);
+    }
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.business_products.price * item.quantity), 0);

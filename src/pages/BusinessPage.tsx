@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, MapPin, Globe, Phone, Mail, Users, Star, Share2, Copy } from 'lucide-react';
 import SidebarNav from '@/components/SidebarNav';
+import ProfessionalStorefront from '@/components/ProfessionalStorefront';
 
 interface BusinessPageData {
   id: string;
@@ -235,8 +236,13 @@ const BusinessPage = () => {
                 )}
               </div>
               
+              {/* Professional Storefront */}
+              <div className="mt-6">
+                <ProfessionalStorefront businessPage={businessPage} />
+              </div>
+              
               {/* Share URL */}
-              <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 mt-6">
                 <h4 className="font-semibold text-sm mb-2">Share this page</h4>
                 <div className="flex items-center space-x-2">
                   <code className="flex-1 text-sm bg-gray-100 dark:bg-slate-600 px-3 py-1 rounded">

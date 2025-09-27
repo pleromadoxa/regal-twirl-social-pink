@@ -665,6 +665,8 @@ export type Database = {
           is_active: boolean | null
           name: string
           price: number
+          rating: number | null
+          review_count: number | null
           sku: string | null
           stock_quantity: number | null
           updated_at: string | null
@@ -680,6 +682,8 @@ export type Database = {
           is_active?: boolean | null
           name: string
           price: number
+          rating?: number | null
+          review_count?: number | null
           sku?: string | null
           stock_quantity?: number | null
           updated_at?: string | null
@@ -695,6 +699,8 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           price?: number
+          rating?: number | null
+          review_count?: number | null
           sku?: string | null
           stock_quantity?: number | null
           updated_at?: string | null
@@ -1090,6 +1096,57 @@ export type Database = {
           participant_1?: string
           participant_2?: string
           streak_count?: number | null
+        }
+        Relationships: []
+      }
+      coupons: {
+        Row: {
+          business_page_id: string
+          code: string
+          created_at: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          maximum_discount_amount: number | null
+          minimum_order_amount: number | null
+          name: string
+          usage_limit: number | null
+          used_count: number | null
+        }
+        Insert: {
+          business_page_id: string
+          code: string
+          created_at?: string
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          maximum_discount_amount?: number | null
+          minimum_order_amount?: number | null
+          name: string
+          usage_limit?: number | null
+          used_count?: number | null
+        }
+        Update: {
+          business_page_id?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          maximum_discount_amount?: number | null
+          minimum_order_amount?: number | null
+          name?: string
+          usage_limit?: number | null
+          used_count?: number | null
         }
         Relationships: []
       }
@@ -1793,6 +1850,41 @@ export type Database = {
           },
         ]
       }
+      order_status_history: {
+        Row: {
+          changed_by: string | null
+          comment: string | null
+          created_at: string
+          id: string
+          order_id: string
+          status: string
+        }
+        Insert: {
+          changed_by?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          status: string
+        }
+        Update: {
+          changed_by?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "user_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pinned_posts: {
         Row: {
           created_at: string | null
@@ -2125,6 +2217,93 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           tier?: string
+        }
+        Relationships: []
+      }
+      product_categories: {
+        Row: {
+          business_page_id: string
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          business_page_id: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          business_page_id?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
+      product_likes: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      product_reviews: {
+        Row: {
+          business_page_id: string
+          created_at: string
+          id: string
+          is_verified_purchase: boolean | null
+          product_id: string
+          rating: number
+          review_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_page_id: string
+          created_at?: string
+          id?: string
+          is_verified_purchase?: boolean | null
+          product_id: string
+          rating: number
+          review_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_page_id?: string
+          created_at?: string
+          id?: string
+          is_verified_purchase?: boolean | null
+          product_id?: string
+          rating?: number
+          review_text?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -2765,6 +2944,75 @@ export type Database = {
         }
         Relationships: []
       }
+      user_orders: {
+        Row: {
+          billing_address: Json | null
+          business_page_id: string
+          created_at: string
+          currency: string
+          discount_amount: number | null
+          id: string
+          items: Json
+          notes: string | null
+          order_number: string
+          payment_method: string | null
+          payment_status: string
+          shipping_address: Json | null
+          shipping_amount: number | null
+          status: string
+          subtotal: number
+          tax_amount: number | null
+          total_amount: number
+          tracking_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_address?: Json | null
+          business_page_id: string
+          created_at?: string
+          currency?: string
+          discount_amount?: number | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          order_number: string
+          payment_method?: string | null
+          payment_status?: string
+          shipping_address?: Json | null
+          shipping_amount?: number | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number | null
+          total_amount?: number
+          tracking_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_address?: Json | null
+          business_page_id?: string
+          created_at?: string
+          currency?: string
+          discount_amount?: number | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          order_number?: string
+          payment_method?: string | null
+          payment_status?: string
+          shipping_address?: Json | null
+          shipping_amount?: number | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number | null
+          total_amount?: number
+          tracking_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_presence: {
         Row: {
           id: string
@@ -2861,6 +3109,27 @@ export type Database = {
         }
         Relationships: []
       }
+      wishlists: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -2903,6 +3172,10 @@ export type Database = {
         Returns: undefined
       }
       generate_invite_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_order_number: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

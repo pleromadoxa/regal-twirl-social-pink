@@ -70,8 +70,21 @@ const ProductCard = ({
   }, [user, product.id]);
 
   const checkIfLiked = async () => {
-    // Temporarily disabled - product_likes table not available
-    setLiked(false);
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('product_likes')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('product_id', product.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setLiked(!!data);
+    } catch (error) {
+      console.error('Error checking like status:', error);
+    }
   };
 
   const handleLike = async () => {
@@ -87,11 +100,36 @@ const ProductCard = ({
     try {
       setLoading(true);
       
-      // Temporarily disabled - product_likes table not available
-      toast({
-        title: "Feature coming soon",
-        description: "Product likes will be available soon"
-      });
+      if (liked) {
+        // Remove like
+        const { error } = await supabase
+          .from('product_likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', product.id);
+
+        if (error) throw error;
+        setLiked(false);
+        toast({
+          title: "Removed from favorites",
+          description: "Product removed from your favorites"
+        });
+      } else {
+        // Add like
+        const { error } = await supabase
+          .from('product_likes')
+          .insert({
+            user_id: user.id,
+            product_id: product.id
+          });
+
+        if (error) throw error;
+        setLiked(true);
+        toast({
+          title: "Added to favorites",
+          description: "Product added to your favorites"
+        });
+      }
 
       onLikeToggle?.(product.id, !liked);
     } catch (error) {
@@ -133,11 +171,37 @@ const ProductCard = ({
       return;
     }
 
-    // Temporarily disabled - wishlists table not available
-    toast({
-      title: "Feature coming soon",
-      description: "Wishlist functionality will be available soon"
-    });
+    try {
+      const { error } = await supabase
+        .from('wishlists')
+        .insert({
+          user_id: user.id,
+          product_id: product.id
+        });
+
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          toast({
+            title: "Already in wishlist",
+            description: "This product is already in your wishlist"
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({
+          title: "Added to wishlist",
+          description: "Product added to your wishlist"
+        });
+      }
+    } catch (error) {
+      console.error('Error adding to wishlist:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add to wishlist",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleShare = () => {
@@ -331,6 +395,13 @@ const ProductCard = ({
           variant="outline"
           size="sm"
           className="gap-2"
+          onClick={() => {
+            // This could trigger a detail view modal
+            toast({
+              title: "Feature coming soon",
+              description: "Product detail view will be available soon"
+            });
+          }}
         >
           <Eye className="w-4 h-4" />
           View
