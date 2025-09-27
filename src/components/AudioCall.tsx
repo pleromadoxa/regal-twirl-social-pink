@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { PhoneOff, Mic, MicOff, Volume2, VolumeX, Settings, Signal } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Volume2, VolumeX, Settings, Signal, RefreshCw } from 'lucide-react';
 import { useWebRTCCall } from '@/hooks/useWebRTCCall';
 import { useCallSounds } from '@/hooks/useCallSounds';
 import { EnhancedCallControls } from './EnhancedCallControls';
@@ -38,7 +38,8 @@ const AudioCall = ({
     endCall,
     toggleAudio,
     toggleVideo,
-    initializeCall
+    initializeCall,
+    forceReconnect
   } = useWebRTCCall({
     conversationId,
     otherUserId,
@@ -125,6 +126,9 @@ const AudioCall = ({
             <CallQualityIndicator
               connectionState={callState.connectionState}
               iceConnectionState={callState.iceConnectionState}
+              networkQuality={callState.networkQuality}
+              bitrate={callState.networkStats?.bitrate}
+              packetLoss={callState.networkStats?.packetLoss}
               className="animate-fade-in"
             />
           </div>
@@ -219,6 +223,19 @@ const AudioCall = ({
               <Settings className="w-4 h-4 mr-2" />
               {showDiagnostics ? 'Hide' : 'Show'} Diagnostics
             </Button>
+
+            {/* Manual reconnection button for poor connections */}
+            {(callState.error || callState.networkQuality === 'poor' || callState.networkQuality === 'disconnected') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={forceReconnect}
+                className="text-white/70 hover:text-white hover:bg-orange-500/20 rounded-full px-4 py-2 transition-all duration-200 backdrop-blur-sm border border-orange-500/30"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Reconnect
+              </Button>
+            )}
           </div>
 
           {/* Connection Status */}
@@ -237,7 +254,11 @@ const AudioCall = ({
         {showDiagnostics && (
           <div className="animate-slide-in-right">
             <CallDiagnostics 
-              callState={callState}
+              callState={{
+                ...callState,
+                networkQuality: callState.networkQuality,
+                networkStats: callState.networkStats
+              }}
               onRefresh={refreshDiagnostics}
             />
           </div>

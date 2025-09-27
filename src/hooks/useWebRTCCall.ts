@@ -17,6 +17,12 @@ export interface CallState {
   error: string | null;
   enhancedCall: EnhancedCall | null;
   participantCount: number;
+  networkQuality?: 'excellent' | 'good' | 'fair' | 'poor' | 'disconnected';
+  networkStats?: {
+    bitrate?: number;
+    packetLoss?: number;
+    rtt?: number;
+  };
 }
 
 export interface UseWebRTCCallOptions {
@@ -53,7 +59,9 @@ export const useWebRTCCall = ({
     remoteStream: null,
     error: null,
     enhancedCall: null,
-    participantCount: 0
+    participantCount: 0,
+    networkQuality: 'disconnected',
+    networkStats: {}
   });
 
   const updateCallState = useCallback((updates: Partial<CallState>) => {
@@ -134,6 +142,37 @@ export const useWebRTCCall = ({
 
       service.onRemoteStream((stream) => {
         updateCallState({ remoteStream: stream });
+      });
+
+      // Enhanced network quality monitoring
+      service.onNetworkQuality((quality) => {
+        console.log('[useWebRTCCall] Network quality update:', quality);
+        // Update call state with network quality for UI feedback
+        updateCallState({ 
+          error: quality === 'poor' || quality === 'disconnected' ? 
+            'Poor network connection detected. Call quality may be affected.' : null 
+        });
+      });
+
+      // Enhanced reconnection feedback
+      service.onReconnection((status, attempt) => {
+        console.log('[useWebRTCCall] Reconnection status:', status, 'attempt:', attempt);
+        if (status === 'attempting') {
+          updateCallState({ 
+            error: `Connection lost. Attempting to reconnect... (${attempt}/5)` 
+          });
+        } else if (status === 'success') {
+          updateCallState({ error: null });
+          toast({
+            title: "Connection Restored",
+            description: "Call connection has been successfully restored.",
+          });
+        } else if (status === 'failed') {
+          updateCallState({ 
+            status: 'failed',
+            error: 'Unable to restore connection after multiple attempts.' 
+          });
+        }
       });
 
       service.onConnectionStateChange((state) => {
@@ -409,6 +448,29 @@ export const useWebRTCCall = ({
     }
   }, [callState.isVideoEnabled, callState.localStream, callType, updateCallState, toast]);
 
+  const forceReconnect = useCallback(async () => {
+    if (webrtcServiceRef.current) {
+      try {
+        console.log('[useWebRTCCall] Forcing reconnection...');
+        updateCallState({ error: 'Attempting to restore connection...' });
+        
+        await webrtcServiceRef.current.forceReconnection();
+        
+        toast({
+          title: "Reconnection Initiated",
+          description: "Attempting to restore call connection",
+        });
+      } catch (error) {
+        console.error('[useWebRTCCall] Failed to force reconnection:', error);
+        toast({
+          title: "Reconnection Failed", 
+          description: "Unable to restore connection. Please try calling again.",
+          variant: "destructive"
+        });
+      }
+    }
+  }, [updateCallState, toast]);
+
   useEffect(() => {
     // Only setup tracking, don't auto-initialize
     if (user && conversationId && otherUserId) {
@@ -450,6 +512,7 @@ export const useWebRTCCall = ({
     toggleAudio,
     toggleVideo,
     initializeCall,
+    forceReconnect,
     joinCall: useCallback(async (callId: string) => {
       if (!user || !profile) return;
       

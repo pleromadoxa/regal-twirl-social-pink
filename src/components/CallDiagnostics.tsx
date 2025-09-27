@@ -20,6 +20,12 @@ interface CallDiagnosticsProps {
     connectionState: RTCPeerConnectionState | null;
     iceConnectionState: RTCIceConnectionState | null;
     error: string | null;
+    networkQuality?: 'excellent' | 'good' | 'fair' | 'poor' | 'disconnected';
+    networkStats?: {
+      bitrate?: number;
+      packetLoss?: number;
+      rtt?: number;
+    };
   };
   onRefresh?: () => void;
 }
@@ -27,6 +33,12 @@ interface CallDiagnosticsProps {
 export const CallDiagnostics = ({ callState, onRefresh }: CallDiagnosticsProps) => {
   const [networkQuality, setNetworkQuality] = useState<'good' | 'fair' | 'poor'>('good');
   const [latency, setLatency] = useState<number | null>(null);
+
+  // Use real network stats from callState if available, otherwise fallback to ping test
+  const actualNetworkQuality = callState?.networkQuality || 'unknown';
+  const actualBitrate = callState?.networkStats?.bitrate;
+  const actualPacketLoss = callState?.networkStats?.packetLoss;
+  const actualRTT = callState?.networkStats?.rtt;
 
   useEffect(() => {
     // Simulate network quality check
@@ -164,18 +176,56 @@ export const CallDiagnostics = ({ callState, onRefresh }: CallDiagnosticsProps) 
               Network Quality
             </span>
             <Badge variant={
-              networkQuality === 'good' ? 'default' : 
-              networkQuality === 'fair' ? 'secondary' : 'destructive'
+              actualNetworkQuality === 'excellent' || actualNetworkQuality === 'good' ? 'default' : 
+              actualNetworkQuality === 'fair' ? 'secondary' : 'destructive'
             }>
-              {networkQuality}
+              {actualNetworkQuality}
             </Badge>
           </div>
 
-          {latency !== null && (
+          {/* Real-time network statistics */}
+          <div className="space-y-2">
+            {actualRTT !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Signal className="w-3 h-3" />
+                  Round Trip Time
+                </span>
+                <span className="text-sm font-mono">
+                  {Math.round(actualRTT)}ms
+                </span>
+              </div>
+            )}
+
+            {actualBitrate !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Bitrate
+                </span>
+                <span className="text-sm font-mono">
+                  {(actualBitrate / 1000).toFixed(1)} kbps
+                </span>
+              </div>
+            )}
+
+            {actualPacketLoss !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Packet Loss
+                </span>
+                <span className={`text-sm font-mono ${actualPacketLoss > 5 ? 'text-destructive' : 'text-success'}`}>
+                  {actualPacketLoss.toFixed(1)}%
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Fallback to ping test if no real stats available */}
+          {!callState?.networkStats && latency !== null && (
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground flex items-center gap-1">
                 <Signal className="w-3 h-3" />
-                Latency
+                Ping (Fallback)
               </span>
               <span className="text-sm font-mono">
                 {latency}ms

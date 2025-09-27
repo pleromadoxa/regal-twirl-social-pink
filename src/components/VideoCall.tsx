@@ -135,6 +135,9 @@ const VideoCall = ({
           <CallQualityIndicator
             connectionState={callState.connectionState}
             iceConnectionState={callState.iceConnectionState}
+            networkQuality={callState.networkQuality}
+            bitrate={callState.networkStats?.bitrate}
+            packetLoss={callState.networkStats?.packetLoss}
             className="animate-fade-in"
           />
         </div>
