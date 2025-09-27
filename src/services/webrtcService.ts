@@ -8,6 +8,9 @@ import {
   optimizeCallForMobile
 } from '@/utils/mobileWebRTC';
 import { mediaPermissionManager } from '@/utils/mediaPermissionManager';
+import { networkQualityMonitor } from './networkQualityMonitor';
+import { connectionResilienceManager } from './connectionResilienceManager';
+import { adaptiveQualityManager } from './adaptiveQualityManager';
 
 export interface WebRTCConfig {
   iceServers: RTCIceServer[];
@@ -30,6 +33,8 @@ export class WebRTCService {
   private onIceConnectionStateChangeCallback?: (state: RTCIceConnectionState) => void;
   private onErrorCallback?: (error: Error) => void;
   private onDataChannelMessageCallback?: (data: any) => void;
+  private onNetworkQualityCallback?: (quality: 'excellent' | 'good' | 'fair' | 'poor' | 'disconnected') => void;
+  private onReconnectionCallback?: (status: 'attempting' | 'success' | 'failed', attempt?: number) => void;
 
   constructor(config?: Partial<WebRTCConfig>) {
     const browserInfo = getMobileBrowserInfo();
@@ -88,6 +93,14 @@ export class WebRTCService {
 
   onDataChannelMessage(callback: (data: any) => void) {
     this.onDataChannelMessageCallback = callback;
+  }
+
+  onNetworkQuality(callback: (quality: 'excellent' | 'good' | 'fair' | 'poor' | 'disconnected') => void) {
+    this.onNetworkQualityCallback = callback;
+  }
+
+  onReconnection(callback: (status: 'attempting' | 'success' | 'failed', attempt?: number) => void) {
+    this.onReconnectionCallback = callback;
   }
 
   async initializeMedia(constraints: MediaStreamConstraints): Promise<MediaStream> {
@@ -179,11 +192,14 @@ export class WebRTCService {
     try {
       console.log('[WebRTCService] Creating peer connection with config:', this.config);
       
-      // Use mobile-optimized peer connection
+      // Use mobile-optimized peer connection with enhanced configuration
       this.peerConnection = createMobileOptimizedPeerConnection(this.config.iceServers);
 
       // Set up all event handlers
       this.setupPeerConnectionHandlers();
+
+      // Initialize enhanced call management services
+      this.initializeCallManagement();
 
       console.log('[WebRTCService] Peer connection initialized successfully');
       
@@ -820,4 +836,83 @@ export class WebRTCService {
   getIceConnectionState(): RTCIceConnectionState | null {
     return this.peerConnection?.iceConnectionState || null;
   }
+
+  private initializeCallManagement(): void {
+    if (!this.peerConnection) return;
+
+    try {
+      console.log('[WebRTCService] Initializing enhanced call management');
+
+      // Initialize network quality monitoring
+      networkQualityMonitor.startMonitoring(this.peerConnection);
+      networkQualityMonitor.onQualityUpdate((metrics) => {
+        if (this.onNetworkQualityCallback) {
+          this.onNetworkQualityCallback(metrics.overall);
+        }
+      });
+
+      // Initialize connection resilience
+      connectionResilienceManager.initialize(this.peerConnection);
+      connectionResilienceManager.onReconnectionAttempt((attempt, maxAttempts) => {
+        console.log(`[WebRTCService] Reconnection attempt ${attempt}/${maxAttempts}`);
+        if (this.onReconnectionCallback) {
+          this.onReconnectionCallback('attempting', attempt);
+        }
+      });
+
+      connectionResilienceManager.onReconnectionSuccess(() => {
+        console.log('[WebRTCService] Reconnection successful');
+        if (this.onReconnectionCallback) {
+          this.onReconnectionCallback('success');
+        }
+      });
+
+      connectionResilienceManager.onReconnectionFailed(() => {
+        console.log('[WebRTCService] Reconnection failed');
+        if (this.onReconnectionCallback) {
+          this.onReconnectionCallback('failed');
+        }
+      });
+
+      // Initialize adaptive quality management
+      const callType = this.localStream?.getVideoTracks().length ? 'video' : 'audio';
+      adaptiveQualityManager.initialize(this.peerConnection, callType);
+
+      console.log('[WebRTCService] Enhanced call management initialized');
+    } catch (error) {
+      console.error('[WebRTCService] Failed to initialize call management:', error);
+    }
+  }
+
+  private enhancedCleanup(): void {
+    console.log('[WebRTCService] Performing enhanced cleanup');
+    
+    try {
+      networkQualityMonitor.stopMonitoring();
+      connectionResilienceManager.cleanup();
+      adaptiveQualityManager.cleanup();
+      
+      console.log('[WebRTCService] Enhanced cleanup completed');
+    } catch (error) {
+      console.error('[WebRTCService] Error during enhanced cleanup:', error);
+    }
+  }
+
+  async forceReconnection(): Promise<void> {
+    console.log('[WebRTCService] Forcing connection recovery');
+    
+    try {
+      if (this.peerConnection && this.peerConnection.restartIce) {
+        this.peerConnection.restartIce();
+      }
+      
+      connectionResilienceManager.forceReconnect();
+      adaptiveQualityManager.setQualityProfile('low');
+      
+    } catch (error) {
+      console.error('[WebRTCService] Error during forced reconnection:', error);
+      throw error;
+    }
+  }
+}
 }
