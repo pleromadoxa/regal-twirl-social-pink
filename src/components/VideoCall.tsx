@@ -127,7 +127,13 @@ const VideoCall = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col z-50 overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col z-50 overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-info/10 rounded-full blur-3xl animate-pulse animation-delay-1000" />
+      </div>
+
       {/* Video Streams */}
       <div className="relative flex-1">
         {/* Connection Status Indicator */}
@@ -152,25 +158,33 @@ const VideoCall = ({
         
         {/* Remote User Placeholder (when no video) */}
         {(!callState.remoteStream || callState.status !== 'connected') && (
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-gray-900 to-black flex items-center justify-center">
             {/* Animated background elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-purple-500/10 rounded-full animate-pulse blur-xl" />
-              <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-blue-500/10 rounded-full animate-pulse blur-xl animation-delay-1000" />
+              <div className="absolute top-1/4 left-1/4 w-40 h-40 bg-primary/10 rounded-full animate-pulse blur-3xl" />
+              <div className="absolute bottom-1/3 right-1/4 w-32 h-32 bg-info/10 rounded-full animate-pulse blur-3xl animation-delay-1000" />
+              <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-primary/5 rounded-full animate-pulse blur-3xl animation-delay-2000" />
             </div>
             
-            <div className="text-center text-white space-y-6 relative z-10">
-              <Avatar className="w-40 h-40 mx-auto ring-4 ring-white/30 shadow-2xl">
+            <div className="text-center text-foreground space-y-6 relative z-10 animate-fade-in">
+              <Avatar className="w-40 h-40 mx-auto ring-4 ring-primary/30 shadow-2xl shadow-primary/20 transition-all duration-500 hover:scale-105">
                 <AvatarImage src={otherUserAvatar} />
-                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-5xl">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground text-5xl font-bold">
                   {otherUserName[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+              <div className="space-y-3">
+                <h2 className="text-4xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
                   {otherUserName}
                 </h2>
-                <p className="text-xl opacity-90">{getStatusText()}</p>
+                <p className="text-xl text-muted-foreground font-medium">{getStatusText()}</p>
+                {callState.status === 'connecting' && (
+                  <div className="flex items-center justify-center gap-2 mt-4">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse animation-delay-1000" />
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse animation-delay-2000" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -178,7 +192,7 @@ const VideoCall = ({
 
         {/* Local Video (Picture-in-Picture) */}
         <div 
-          className={`absolute ${isLocalVideoExpanded ? 'top-4 left-4 w-80 h-60' : 'top-4 right-4 w-32 h-40'} bg-gray-900 rounded-xl overflow-hidden shadow-2xl transition-all duration-300 z-20 border-2 border-white/20`}
+          className={`absolute ${isLocalVideoExpanded ? 'top-4 left-4 w-80 h-60' : 'top-4 right-4 w-32 h-40'} bg-card rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 transition-all duration-300 z-20 border-2 border-primary/20 backdrop-blur-sm`}
         >
           <video
             ref={localVideoRef}
@@ -244,8 +258,8 @@ const VideoCall = ({
 
       {/* Connection Status */}
       {callState.error && (
-        <div className="absolute top-4 left-4 right-4 bg-red-500/20 border border-red-500/30 rounded-lg p-4 text-center">
-          <p className="text-red-200">Connection error: {callState.error}</p>
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 max-w-md bg-destructive/20 border border-destructive/40 rounded-xl p-4 text-center backdrop-blur-md shadow-xl shadow-destructive/10 animate-fade-in z-30">
+          <p className="text-destructive-foreground font-medium">Connection error: {callState.error}</p>
         </div>
       )}
     </div>

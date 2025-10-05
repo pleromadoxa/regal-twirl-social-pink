@@ -83,7 +83,7 @@ export const EnhancedCallControls = ({
   };
 
   return (
-    <div className="flex items-center justify-center gap-3 sm:gap-4 bg-gradient-to-r from-black/60 to-gray-900/60 backdrop-blur-lg rounded-2xl px-6 sm:px-8 py-4 sm:py-5 max-w-fit mx-auto shadow-2xl border border-white/10 animate-fade-in">
+    <div className="flex items-center justify-center gap-3 sm:gap-4 bg-gradient-to-r from-black/80 via-gray-900/80 to-black/80 backdrop-blur-xl rounded-2xl px-6 sm:px-8 py-4 sm:py-5 max-w-fit mx-auto shadow-2xl border border-primary/10 animate-fade-in">
       {/* Audio Control */}
       <Button
         variant={isAudioEnabled ? "secondary" : "destructive"}
@@ -93,16 +93,16 @@ export const EnhancedCallControls = ({
           buttonStates.audioPressed ? 'scale-95' : ''
         } ${
           isAudioEnabled 
-            ? 'bg-white/20 hover:bg-white/30 border-2 border-green-400/50 shadow-lg shadow-green-400/25' 
-            : 'bg-red-500/80 hover:bg-red-500 border-2 border-red-500 shadow-lg shadow-red-500/50'
+            ? 'bg-card/40 hover:bg-card/60 border-2 border-call-excellent/50 shadow-xl shadow-call-excellent/20 backdrop-blur-sm' 
+            : 'bg-destructive/80 hover:bg-destructive border-2 border-destructive shadow-xl shadow-destructive/30'
         } ${!canUseControls ? 'opacity-50 cursor-not-allowed' : ''}`}
         disabled={!canUseControls}
         title={isAudioEnabled ? "Mute microphone" : "Unmute microphone"}
       >
         {isAudioEnabled ? (
-          <Mic className="w-7 h-7 text-green-400 transition-all duration-200" />
+          <Mic className="w-7 h-7 text-call-excellent transition-all duration-200" />
         ) : (
-          <MicOff className="w-7 h-7 text-white transition-all duration-200" />
+          <MicOff className="w-7 h-7 text-destructive-foreground transition-all duration-200" />
         )}
       </Button>
 
@@ -116,16 +116,16 @@ export const EnhancedCallControls = ({
             buttonStates.videoPressed ? 'scale-95' : ''
           } ${
             isVideoEnabled 
-              ? 'bg-white/20 hover:bg-white/30 border-2 border-blue-400/50 shadow-lg shadow-blue-400/25' 
-              : 'bg-red-500/80 hover:bg-red-500 border-2 border-red-500 shadow-lg shadow-red-500/50'
+              ? 'bg-card/40 hover:bg-card/60 border-2 border-call-good/50 shadow-xl shadow-call-good/20 backdrop-blur-sm' 
+              : 'bg-destructive/80 hover:bg-destructive border-2 border-destructive shadow-xl shadow-destructive/30'
           } ${!canUseControls ? 'opacity-50 cursor-not-allowed' : ''}`}
           disabled={!canUseControls}
           title={isVideoEnabled ? "Turn off camera" : "Turn on camera"}
         >
           {isVideoEnabled ? (
-            <Video className="w-7 h-7 text-blue-400 transition-all duration-200" />
+            <Video className="w-7 h-7 text-call-good transition-all duration-200" />
           ) : (
-            <VideoOff className="w-7 h-7 text-white transition-all duration-200" />
+            <VideoOff className="w-7 h-7 text-destructive-foreground transition-all duration-200" />
           )}
         </Button>
       )}
@@ -137,23 +137,23 @@ export const EnhancedCallControls = ({
             variant="default"
             size="lg"
             onClick={onAnswer}
-            className="rounded-full w-20 h-20 p-0 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 transition-all duration-300 hover:scale-110 active:scale-95 animate-pulse shadow-2xl shadow-green-500/50 border-2 border-green-400/50"
+            className="rounded-full w-20 h-20 p-0 bg-gradient-to-r from-success to-call-excellent hover:from-success/90 hover:to-call-excellent/90 transition-all duration-300 hover:scale-110 active:scale-95 animate-pulse shadow-2xl shadow-success/40 border-2 border-success/60"
             title="Answer call"
           >
             {callType === 'video' ? (
-              <Video className="w-8 h-8 text-white transition-transform duration-200" />
+              <Video className="w-8 h-8 text-success-foreground transition-transform duration-200" />
             ) : (
-              <Volume2 className="w-8 h-8 text-white transition-transform duration-200" />
+              <Volume2 className="w-8 h-8 text-success-foreground transition-transform duration-200" />
             )}
           </Button>
           <Button
             variant="destructive"
             size="lg"
             onClick={onEndCall}
-            className="rounded-full w-20 h-20 p-0 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 transition-all duration-300 hover:scale-110 active:scale-95 shadow-2xl shadow-red-500/50 border-2 border-red-400/50"
+            className="rounded-full w-20 h-20 p-0 bg-gradient-to-r from-destructive to-call-poor hover:from-destructive/90 hover:to-call-poor/90 transition-all duration-300 hover:scale-110 active:scale-95 shadow-2xl shadow-destructive/40 border-2 border-destructive/60"
             title="Decline call"
           >
-            <PhoneOff className="w-8 h-8 text-white transition-transform duration-200" />
+            <PhoneOff className="w-8 h-8 text-destructive-foreground transition-transform duration-200" />
           </Button>
         </div>
       ) : (
@@ -161,10 +161,10 @@ export const EnhancedCallControls = ({
           variant="destructive"
           size="lg"
           onClick={onEndCall}
-          className="rounded-full w-16 h-16 p-0 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 transition-all duration-300 hover:scale-105 active:scale-95 shadow-2xl shadow-red-500/50 border-2 border-red-400/50"
+          className="rounded-full w-16 h-16 p-0 bg-gradient-to-r from-destructive to-call-poor hover:from-destructive/90 hover:to-call-poor/90 transition-all duration-300 hover:scale-105 active:scale-95 shadow-2xl shadow-destructive/40 border-2 border-destructive/60"
           title="End call"
         >
-          <PhoneOff className="w-7 h-7 text-white transition-transform duration-200" />
+          <PhoneOff className="w-7 h-7 text-destructive-foreground transition-transform duration-200" />
         </Button>
       )}
 
@@ -177,16 +177,16 @@ export const EnhancedCallControls = ({
           buttonStates.speakerPressed ? 'scale-95' : ''
         } ${
           isSpeakerEnabled 
-            ? 'bg-white/20 hover:bg-white/30 border-2 border-orange-400/50 shadow-lg shadow-orange-400/25' 
-            : 'bg-gray-600/60 hover:bg-gray-500/60 border-2 border-gray-500/50 shadow-lg'
+            ? 'bg-card/40 hover:bg-card/60 border-2 border-warning/50 shadow-xl shadow-warning/20 backdrop-blur-sm' 
+            : 'bg-muted/40 hover:bg-muted/60 border-2 border-muted shadow-xl backdrop-blur-sm'
         } ${!canUseControls ? 'opacity-50 cursor-not-allowed' : ''}`}
         disabled={!canUseControls}
         title={isSpeakerEnabled ? "Turn off speaker" : "Turn on speaker"}
       >
         {isSpeakerEnabled ? (
-          <Volume2 className="w-7 h-7 text-orange-400 transition-transform duration-200" />
+          <Volume2 className="w-7 h-7 text-warning transition-transform duration-200" />
         ) : (
-          <VolumeX className="w-7 h-7 text-gray-300 transition-transform duration-200" />
+          <VolumeX className="w-7 h-7 text-muted-foreground transition-transform duration-200" />
         )}
       </Button>
 
@@ -196,34 +196,34 @@ export const EnhancedCallControls = ({
           <Button
             variant="outline"
             size="lg"
-            className="rounded-full w-16 h-16 p-0 transition-all duration-300 hover:scale-105 active:scale-95 bg-white/10 hover:bg-white/20 border-2 border-white/20 shadow-lg"
+            className="rounded-full w-16 h-16 p-0 transition-all duration-300 hover:scale-105 active:scale-95 bg-card/30 hover:bg-card/50 border-2 border-primary/20 shadow-xl backdrop-blur-sm"
             disabled={!canUseControls}
             title="More options"
           >
-            <MoreVertical className="w-7 h-7 text-white transition-transform duration-200" />
+            <MoreVertical className="w-7 h-7 text-foreground transition-transform duration-200" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent 
           align="center" 
           side="top" 
-          className="mb-4 bg-black/90 border-white/20 backdrop-blur-md animate-fade-in shadow-2xl"
+          className="mb-4 bg-popover/95 border-border backdrop-blur-xl animate-fade-in shadow-2xl z-50"
         >
           {callType === 'video' && onScreenShare && (
             <DropdownMenuItem 
               onClick={onScreenShare} 
-              className="text-white hover:bg-white/10 transition-colors duration-150"
+              className="text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors duration-150"
             >
-              <Monitor className="w-4 h-4 mr-2 text-blue-400" />
+              <Monitor className="w-4 h-4 mr-2 text-call-good" />
               {isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem className="text-white hover:bg-white/10 transition-colors duration-150">
-            <Settings className="w-4 h-4 mr-2 text-gray-400" />
+          <DropdownMenuItem className="text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors duration-150">
+            <Settings className="w-4 h-4 mr-2 text-muted-foreground" />
             Call Settings
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-white/20" />
+          <DropdownMenuSeparator className="bg-border" />
           <DropdownMenuItem 
-            className="text-red-400 hover:bg-red-500/20 focus:text-red-400 transition-colors duration-150"
+            className="text-destructive hover:bg-destructive/20 focus:text-destructive transition-colors duration-150"
             onClick={onEndCall}
           >
             <PhoneOff className="w-4 h-4 mr-2" />

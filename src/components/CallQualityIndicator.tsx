@@ -72,40 +72,40 @@ export const CallQualityIndicator = ({
         return {
           icon: CheckCircle,
           label: 'Excellent',
-          color: 'bg-success/20 text-success border-success/30',
-          iconColor: 'text-success',
+          color: 'bg-call-excellent/20 text-call-excellent border-call-excellent/40 shadow-lg shadow-call-excellent/10',
+          iconColor: 'text-call-excellent',
           description: bitrate ? `${Math.round(bitrate / 1000)}kbps` : 'HD Quality'
         };
       case 'good':
         return {
           icon: Signal,
           label: 'Good',
-          color: 'bg-primary/20 text-primary border-primary/30',
-          iconColor: 'text-primary',
+          color: 'bg-call-good/20 text-call-good border-call-good/40 shadow-lg shadow-call-good/10',
+          iconColor: 'text-call-good',
           description: bitrate ? `${Math.round(bitrate / 1000)}kbps` : 'Good Quality'
         };
       case 'fair':
         return {
           icon: Router,
           label: 'Fair',
-          color: 'bg-warning/20 text-warning border-warning/30',
-          iconColor: 'text-warning',
+          color: 'bg-call-fair/20 text-call-fair border-call-fair/40 shadow-lg shadow-call-fair/10',
+          iconColor: 'text-call-fair',
           description: packetLoss ? `${packetLoss.toFixed(1)}% loss` : 'Connecting...'
         };
       case 'poor':
         return {
           icon: AlertTriangle,
           label: 'Poor',
-          color: 'bg-destructive/20 text-destructive border-destructive/30',
-          iconColor: 'text-destructive',
+          color: 'bg-call-poor/20 text-call-poor border-call-poor/40 shadow-lg shadow-call-poor/10',
+          iconColor: 'text-call-poor',
           description: 'Network Issues'
         };
       case 'disconnected':
         return {
           icon: WifiOff,
           label: 'Disconnected',
-          color: 'bg-muted/20 text-muted-foreground border-muted/30',
-          iconColor: 'text-muted-foreground',
+          color: 'bg-call-disconnected/20 text-call-disconnected border-call-disconnected/40',
+          iconColor: 'text-call-disconnected',
           description: 'Connection Lost'
         };
     }
