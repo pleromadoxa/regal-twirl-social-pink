@@ -147,10 +147,17 @@ export const useWebRTCCall = ({
       // Enhanced network quality monitoring
       service.onNetworkQuality((quality) => {
         console.log('[useWebRTCCall] Network quality update:', quality);
-        // Update call state with network quality for UI feedback
-        updateCallState({ 
-          error: quality === 'poor' || quality === 'disconnected' ? 
-            'Poor network connection detected. Call quality may be affected.' : null 
+        // Only update error if call is still active (not ended or idle)
+        setCallState(prev => {
+          // Don't show errors if call is ended or idle
+          if (prev.status === 'ended' || prev.status === 'idle') {
+            return prev;
+          }
+          return {
+            ...prev,
+            error: quality === 'poor' || quality === 'disconnected' ? 
+              'Poor network connection detected. Call quality may be affected.' : null
+          };
         });
       });
 
@@ -317,6 +324,17 @@ export const useWebRTCCall = ({
     stopDurationTimer();
     isInitializingRef.current = false;
     
+    // Cleanup WebRTC service and stop monitoring FIRST
+    if (webrtcServiceRef.current) {
+      try {
+        console.log('[useWebRTCCall] Cleaning up WebRTC service');
+        webrtcServiceRef.current.cleanup();
+        webrtcServiceRef.current = null;
+      } catch (error) {
+        console.error('[useWebRTCCall] Error cleaning up WebRTC service:', error);
+      }
+    }
+    
     // End enhanced call
     if (user?.id && profile) {
       await enhancedCallService.endCall(
@@ -333,7 +351,9 @@ export const useWebRTCCall = ({
       localStream: null,
       remoteStream: null,
       enhancedCall: null,
-      participantCount: 0
+      participantCount: 0,
+      error: null, // Clear any error messages
+      networkQuality: 'disconnected'
     });
 
     if (onCallEnd) {
@@ -503,6 +523,13 @@ export const useWebRTCCall = ({
         mediaPermissionManager.cleanupAllStreams();
       }
       stopDurationTimer();
+      
+      // Clear state on cleanup
+      updateCallState({ 
+        status: 'idle',
+        error: null,
+        networkQuality: 'disconnected'
+      });
     };
   }, [user, conversationId, otherUserId, stopDurationTimer, callState.enhancedCall, updateCallState]);
 

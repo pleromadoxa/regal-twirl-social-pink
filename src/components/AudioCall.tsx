@@ -224,8 +224,8 @@ const AudioCall = ({
               {showDiagnostics ? 'Hide' : 'Show'} Diagnostics
             </Button>
 
-            {/* Manual reconnection button for poor connections */}
-            {(callState.error || callState.networkQuality === 'poor' || callState.networkQuality === 'disconnected') && (
+            {/* Manual reconnection button for poor connections - only during active calls */}
+            {callState.status !== 'ended' && callState.status !== 'idle' && (callState.error || callState.networkQuality === 'poor' || callState.networkQuality === 'disconnected') && (
               <Button
                 variant="outline"
                 size="sm"
@@ -238,8 +238,8 @@ const AudioCall = ({
             )}
           </div>
 
-          {/* Connection Status */}
-          {callState.error && (
+          {/* Connection Status - only show during active calls */}
+          {callState.error && callState.status !== 'ended' && callState.status !== 'idle' && (
             <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 text-center animate-fade-in backdrop-blur-sm">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />

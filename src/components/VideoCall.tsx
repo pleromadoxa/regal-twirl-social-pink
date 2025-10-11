@@ -257,9 +257,10 @@ const VideoCall = ({
       </div>
 
       {/* Connection Status */}
-      {callState.error && (
+      {/* Connection Status - only show during active calls */}
+      {callState.error && callState.status !== 'ended' && callState.status !== 'idle' && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 max-w-md bg-destructive/20 border border-destructive/40 rounded-xl p-4 text-center backdrop-blur-md shadow-xl shadow-destructive/10 animate-fade-in z-30">
-          <p className="text-destructive-foreground font-medium">Connection error: {callState.error}</p>
+          <p className="text-destructive-foreground font-medium">{callState.error}</p>
         </div>
       )}
     </div>

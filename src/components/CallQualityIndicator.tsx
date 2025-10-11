@@ -47,7 +47,7 @@ export const CallQualityIndicator = ({
         return 'fair';
       }
       
-      // Handle connection issues
+      // Handle connection issues - only show if connection exists
       if (connectionState === 'connecting' || iceConnectionState === 'checking') {
         return 'fair';
       }
@@ -60,11 +60,17 @@ export const CallQualityIndicator = ({
         return 'disconnected';
       }
       
-      return 'fair';
+      // Don't show anything if no connection (prevents blinking after call ends)
+      return 'disconnected';
     };
 
     setQuality(determineQuality());
   }, [connectionState, iceConnectionState, networkQuality, bitrate, packetLoss]);
+  
+  // Don't render if quality is disconnected and no active connection
+  if (quality === 'disconnected' && !connectionState) {
+    return null;
+  }
 
   const getQualityConfig = () => {
     switch (quality) {
