@@ -135,13 +135,34 @@ const MessageThreadCallManager = ({
         console.log('[CallManager] Sending call payload:', callPayload);
         console.log('[CallManager] Target channel:', recipientChannelName);
         
-        await supabase.channel(recipientChannelName).send({
-          type: 'broadcast',
-          event: 'incoming-call',
-          payload: callPayload
-        });
+        // Create a temporary channel to send the call invitation
+        const callChannel = supabase.channel(`call-invite-${call.id}-${Date.now()}`);
         
-        console.log('[CallManager] Call invitation sent successfully');
+        // Subscribe first, then send
+        await new Promise<void>((resolve, reject) => {
+          callChannel
+            .subscribe(async (status) => {
+              if (status === 'SUBSCRIBED') {
+                try {
+                  // Now send the call invitation on the recipient's channel
+                  const recipientChannel = supabase.channel(recipientChannelName);
+                  await recipientChannel.send({
+                    type: 'broadcast',
+                    event: 'incoming-call',
+                    payload: callPayload
+                  });
+                  
+                  console.log('[CallManager] Call invitation sent successfully');
+                  resolve();
+                } catch (err) {
+                  console.error('[CallManager] Failed to send call invitation:', err);
+                  reject(err);
+                }
+              } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                reject(new Error(`Channel failed: ${status}`));
+              }
+            });
+        });
 
         // Subscribe to channel to listen for call responses
         // Note: No need to subscribe to send messages

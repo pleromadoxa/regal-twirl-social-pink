@@ -199,18 +199,39 @@ const WebRTCCallManager = () => {
       const callerChannelName = `user-calls-${incomingCall.caller_id}`;
       const acceptChannel = supabase.channel(`call-accept-${Date.now()}`);
       
-      await acceptChannel.send({
-        type: 'broadcast',
-        event: 'call-accepted',
-        payload: {
-          call_id: callId,
-          room_id: incomingCall.room_id,
-          accepted_by: user?.id,
-          accepted_by_name: profile?.display_name || profile?.username || 'Unknown User'
-        }
+      // Subscribe and send
+      await new Promise<void>((resolve) => {
+        acceptChannel.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await acceptChannel.send({
+              type: 'broadcast',
+              event: 'call-accepted',
+              payload: {
+                call_id: callId,
+                room_id: incomingCall.room_id,
+                accepted_by: user?.id,
+                accepted_by_name: profile?.display_name || profile?.username || 'Unknown User'
+              }
+            });
+            
+            // Also send to caller's channel
+            const callerChannel = supabase.channel(callerChannelName);
+            await callerChannel.send({
+              type: 'broadcast',
+              event: 'call-accepted',
+              payload: {
+                call_id: callId,
+                room_id: incomingCall.room_id,
+                accepted_by: user?.id,
+                accepted_by_name: profile?.display_name || profile?.username || 'Unknown User'
+              }
+            });
+            
+            console.log('[WebRTCCallManager] Call accept notification sent');
+            resolve();
+          }
+        });
       });
-
-      console.log('[WebRTCCallManager] Call accept notification sent');
     } catch (error) {
       console.error('[WebRTCCallManager] Error sending accept notification:', error);
     }
@@ -240,31 +261,39 @@ const WebRTCCallManager = () => {
         const callerChannelName = `user-calls-${incomingCall.caller_id}`;
         const declineChannel = supabase.channel(`call-decline-${Date.now()}`);
         
-        await declineChannel.send({
-          type: 'broadcast',
-          event: 'call-declined',
-          payload: {
-            call_id: callId,
-            room_id: incomingCall.room_id,
-            declined_by: user?.id,
-            declined_by_name: profile?.display_name || profile?.username || 'Unknown User'
-          }
-        });
+        // Subscribe and send decline notification
+        await new Promise<void>((resolve) => {
+          declineChannel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+              await declineChannel.send({
+                type: 'broadcast',
+                event: 'call-declined',
+                payload: {
+                  call_id: callId,
+                  room_id: incomingCall.room_id,
+                  declined_by: user?.id,
+                  declined_by_name: profile?.display_name || profile?.username || 'Unknown User'
+                }
+              });
 
-        // Also notify on the caller's dedicated channel
-        const callerNotificationChannel = supabase.channel(callerChannelName);
-        await callerNotificationChannel.send({
-          type: 'broadcast',
-          event: 'call-declined',
-          payload: {
-            call_id: callId,
-            room_id: incomingCall.room_id,
-            declined_by: user?.id,
-            declined_by_name: profile?.display_name || profile?.username || 'Unknown User'
-          }
-        });
+              // Also notify on the caller's dedicated channel
+              const callerNotificationChannel = supabase.channel(callerChannelName);
+              await callerNotificationChannel.send({
+                type: 'broadcast',
+                event: 'call-declined',
+                payload: {
+                  call_id: callId,
+                  room_id: incomingCall.room_id,
+                  declined_by: user?.id,
+                  declined_by_name: profile?.display_name || profile?.username || 'Unknown User'
+                }
+              });
 
-        console.log('[WebRTCCallManager] Call decline notification sent');
+              console.log('[WebRTCCallManager] Call decline notification sent');
+              resolve();
+            }
+          });
+        });
 
         // Create missed call notification in the conversation
         await createMissedCallNotification({

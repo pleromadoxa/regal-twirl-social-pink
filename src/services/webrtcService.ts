@@ -312,18 +312,24 @@ export class WebRTCService {
       
       console.log('[WebRTCService] Creating signaling channel:', channelName);
       
-      // Configure channel with broadcast self-reception enabled
+      // Configure channel with broadcast enabled
       this.signalingChannel = supabase.channel(channelName, {
         config: {
-          broadcast: { self: false }, // Don't receive our own broadcasts
+          broadcast: { 
+            self: false,  // Don't receive our own broadcasts
+            ack: true     // Wait for server acknowledgment
+          },
           presence: { key: userId || 'anonymous' }
         }
       })
         .on('broadcast', { event: 'offer' }, async (payload) => {
           console.log('[WebRTCService] Received offer:', payload);
           try {
-            if (payload.payload?.roomId === this.roomId && payload.payload?.targetUserId === this.userId) {
-              await this.handleOffer(payload.payload);
+            const offerPayload = payload.payload;
+            // Accept offers for our room, ignore targetUserId filter if not set
+            if (offerPayload?.roomId === this.roomId && 
+                (!offerPayload?.targetUserId || offerPayload?.targetUserId === this.userId)) {
+              await this.handleOffer(offerPayload);
             }
           } catch (error) {
             console.error('[WebRTCService] Error handling offer:', error);
@@ -332,8 +338,11 @@ export class WebRTCService {
         .on('broadcast', { event: 'answer' }, async (payload) => {
           console.log('[WebRTCService] Received answer:', payload);
           try {
-            if (payload.payload?.roomId === this.roomId && payload.payload?.targetUserId === this.userId) {
-              await this.handleAnswer(payload.payload);
+            const answerPayload = payload.payload;
+            // Accept answers for our room, ignore targetUserId filter if not set
+            if (answerPayload?.roomId === this.roomId && 
+                (!answerPayload?.targetUserId || answerPayload?.targetUserId === this.userId)) {
+              await this.handleAnswer(answerPayload);
             }
           } catch (error) {
             console.error('[WebRTCService] Error handling answer:', error);
@@ -342,13 +351,16 @@ export class WebRTCService {
         .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
           console.log('[WebRTCService] Received ICE candidate:', payload);
           try {
-            if (payload.payload?.roomId === this.roomId && payload.payload?.targetUserId === this.userId) {
+            const candidatePayload = payload.payload;
+            // Accept ICE candidates for our room, ignore targetUserId filter if not set
+            if (candidatePayload?.roomId === this.roomId && 
+                (!candidatePayload?.targetUserId || candidatePayload?.targetUserId === this.userId)) {
               // Only handle ICE candidates if we have a remote description
               if (this.peerConnection?.remoteDescription) {
-                await this.handleIceCandidate(payload.payload);
+                await this.handleIceCandidate(candidatePayload);
               } else {
                 // Queue the candidate for later processing
-                this.queuedIceCandidates.push(payload.payload.candidate);
+                this.queuedIceCandidates.push(candidatePayload.candidate);
                 console.log('[WebRTCService] Queued ICE candidate (no remote description yet)');
               }
             }
@@ -437,7 +449,7 @@ export class WebRTCService {
       await this.peerConnection.setLocalDescription(offer);
 
       // Send offer through signaling channel with proper targeting
-      this.signalingChannel.send({
+      const sendResult = await this.signalingChannel.send({
         type: 'broadcast',
         event: 'offer',
         payload: {
@@ -448,6 +460,8 @@ export class WebRTCService {
           timestamp: Date.now()
         }
       });
+      
+      console.log('[WebRTCService] Offer send result:', sendResult);
 
       console.log('[WebRTCService] Offer created and sent');
       
@@ -476,7 +490,7 @@ export class WebRTCService {
       await this.peerConnection.setLocalDescription(answer);
 
       // Send answer through signaling channel with proper targeting
-      this.signalingChannel.send({
+      const sendResult = await this.signalingChannel.send({
         type: 'broadcast',
         event: 'answer',
         payload: {
@@ -488,7 +502,7 @@ export class WebRTCService {
         }
       });
 
-      console.log('[WebRTCService] Answer created and sent');
+      console.log('[WebRTCService] Answer created and sent, result:', sendResult);
       
     } catch (error) {
       console.error('[WebRTCService] Failed to create answer:', error);
@@ -641,18 +655,26 @@ export class WebRTCService {
     };
 
     // Handle ICE candidates
-    this.peerConnection.onicecandidate = (event) => {
+    this.peerConnection.onicecandidate = async (event) => {
       if (event.candidate && this.signalingChannel) {
         console.log('[WebRTCService] Sending ICE candidate');
         
-        this.signalingChannel.send({
-          type: 'broadcast',
-          event: 'ice-candidate',
-          payload: {
-            candidate: event.candidate,
-            roomId: this.roomId
-          }
-        });
+        try {
+          const sendResult = await this.signalingChannel.send({
+            type: 'broadcast',
+            event: 'ice-candidate',
+            payload: {
+              candidate: event.candidate,
+              roomId: this.roomId,
+              senderId: this.userId,
+              timestamp: Date.now()
+            }
+          });
+          
+          console.log('[WebRTCService] ICE candidate sent, result:', sendResult);
+        } catch (error) {
+          console.error('[WebRTCService] Failed to send ICE candidate:', error);
+        }
       }
     };
 
