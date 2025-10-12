@@ -2719,6 +2719,7 @@ export type Database = {
       }
       stories: {
         Row: {
+          business_page_id: string | null
           caption: string | null
           content_type: string
           content_url: string
@@ -2731,6 +2732,7 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          business_page_id?: string | null
           caption?: string | null
           content_type: string
           content_url: string
@@ -2743,6 +2745,7 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          business_page_id?: string | null
           caption?: string | null
           content_type?: string
           content_url?: string
@@ -2754,7 +2757,15 @@ export type Database = {
           user_id?: string
           view_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stories_business_page_id_fkey"
+            columns: ["business_page_id"]
+            isOneToOne: false
+            referencedRelation: "business_pages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       story_views: {
         Row: {
