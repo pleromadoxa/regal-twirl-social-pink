@@ -2,9 +2,11 @@ import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, Image, Video, X, Type, Palette } from 'lucide-react';
+import { Upload, Image, Video, X, Type, Palette, Radio } from 'lucide-react';
 import { useStories } from '@/hooks/useStories';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 
 interface StoryUploadProps {
   onClose: () => void;
@@ -26,11 +28,14 @@ const gradientOptions = [
 ];
 
 export const StoryUpload = ({ onClose }: StoryUploadProps) => {
-  const [mode, setMode] = useState<'media' | 'text'>('media');
+  const [mode, setMode] = useState<'media' | 'text' | 'live'>('media');
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  
+  // Live stream state
+  const [liveStreamUrl, setLiveStreamUrl] = useState('');
   
   // Text story states
   const [textContent, setTextContent] = useState('');
@@ -42,6 +47,7 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bgImageInputRef = useRef<HTMLInputElement>(null);
   const { createStory } = useStories();
+  const { toast } = useToast();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -63,10 +69,23 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
   const handleUpload = async () => {
     if (mode === 'media' && !file) return;
     if (mode === 'text' && !textContent.trim()) return;
+    if (mode === 'live' && !liveStreamUrl.trim()) return;
 
     setUploading(true);
     try {
-      if (mode === 'media') {
+      if (mode === 'live') {
+        // Validate .m3u8 URL
+        if (!liveStreamUrl.endsWith('.m3u8')) {
+          toast({
+            title: "Error",
+            description: "Please enter a valid .m3u8 stream URL",
+            variant: "destructive",
+          });
+          setUploading(false);
+          return;
+        }
+        await createStory(liveStreamUrl, caption, true);
+      } else if (mode === 'media') {
         await createStory(file!, caption);
       } else {
         // Create a canvas to render the text story
@@ -169,8 +188,8 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
           <DialogTitle>Create Story</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={mode} onValueChange={(v) => setMode(v as 'media' | 'text')} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={mode} onValueChange={(v) => setMode(v as 'media' | 'text' | 'live')} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="media" className="flex items-center gap-2">
               <Image className="w-4 h-4" />
               Media
@@ -178,6 +197,10 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
             <TabsTrigger value="text" className="flex items-center gap-2">
               <Type className="w-4 h-4" />
               Text
+            </TabsTrigger>
+            <TabsTrigger value="live" className="flex items-center gap-2">
+              <Radio className="w-4 h-4" />
+              Live
             </TabsTrigger>
           </TabsList>
 
@@ -362,6 +385,48 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
               </div>
             </div>
           </TabsContent>
+
+          <TabsContent value="live" className="space-y-4">
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Live Stream URL (.m3u8)</label>
+                <Input
+                  type="url"
+                  placeholder="https://example.com/stream.m3u8"
+                  value={liveStreamUrl}
+                  onChange={(e) => setLiveStreamUrl(e.target.value)}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter a valid HLS stream URL ending with .m3u8
+                </p>
+              </div>
+
+              <Textarea
+                placeholder="Add a caption for your live stream..."
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                className="resize-none"
+                rows={3}
+              />
+
+              {liveStreamUrl && (
+                <div className="aspect-[9/16] rounded-lg overflow-hidden bg-black relative">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <Radio className="w-16 h-16 text-red-500 mx-auto mb-4 animate-pulse" />
+                      <p className="text-white font-medium">Live Stream Ready</p>
+                      <p className="text-white/70 text-sm mt-2">Preview will show when published</p>
+                    </div>
+                  </div>
+                  <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-md flex items-center gap-2 font-bold">
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                    LIVE
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
 
         {/* Actions */}
@@ -371,10 +436,15 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
           </Button>
           <Button 
             onClick={handleUpload}
-            disabled={(mode === 'media' && !file) || (mode === 'text' && !textContent.trim()) || uploading}
+            disabled={
+              (mode === 'media' && !file) || 
+              (mode === 'text' && !textContent.trim()) || 
+              (mode === 'live' && !liveStreamUrl.trim()) || 
+              uploading
+            }
             className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
-            {uploading ? 'Uploading...' : 'Share Story'}
+            {uploading ? 'Publishing...' : mode === 'live' ? 'Go Live' : 'Share Story'}
           </Button>
         </div>
       </DialogContent>

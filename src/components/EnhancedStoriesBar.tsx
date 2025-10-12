@@ -101,8 +101,10 @@ const EnhancedStoriesBar = () => {
 
         {/* User Stories */}
         {userStoriesData.map((userData, index) => {
+          const hasLiveStory = userData.stories.some((s: any) => s.is_live);
+          
           return (
-            <div key={userData.userId} className="flex-shrink-0 text-center cursor-pointer">
+            <div key={userData.userId} className="flex-shrink-0 text-center cursor-pointer relative">
               <div
                 className={`relative w-16 h-16 rounded-full p-0.5 ${
                   userData.hasUnviewed
@@ -123,13 +125,20 @@ const EnhancedStoriesBar = () => {
                   </AvatarFallback>
                 </Avatar>
                 
-                {userData.stories.length > 1 && (
+                {userData.stories.length > 1 && !hasLiveStory && (
                   <Badge 
                     variant="secondary" 
                     className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs"
                   >
                     {userData.stories.length}
                   </Badge>
+                )}
+                
+                {hasLiveStory && (
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1 text-xs font-bold shadow-lg">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                    LIVE
+                  </div>
                 )}
               </div>
               <p className="text-xs mt-1 text-muted-foreground truncate max-w-[64px]">

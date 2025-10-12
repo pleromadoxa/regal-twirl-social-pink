@@ -1,12 +1,13 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ChevronLeft, ChevronRight, X, Eye, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Eye, Trash2, Radio } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useStories, Story } from '@/hooks/useStories';
 import { useAuth } from '@/contexts/AuthContext';
+import Hls from 'hls.js';
 
 interface StoryViewerProps {
   userStories: Array<{
@@ -27,11 +28,40 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
   const [currentUserIndex, setCurrentUserIndex] = useState(initialUserIndex);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const { viewStory, deleteStory } = useStories();
   const { user } = useAuth();
 
   const currentUserStories = userStories[currentUserIndex];
   const currentStory = currentUserStories?.stories[currentStoryIndex];
+
+  // Handle HLS live streams
+  useEffect(() => {
+    if (!currentStory || !videoRef.current) return;
+    
+    if (currentStory.content_type === 'live_stream' && currentStory.content_url.endsWith('.m3u8')) {
+      const video = videoRef.current;
+      
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(currentStory.content_url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play();
+        });
+        
+        return () => {
+          hls.destroy();
+        };
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (Safari)
+        video.src = currentStory.content_url;
+        video.addEventListener('loadedmetadata', () => {
+          video.play();
+        });
+      }
+    }
+  }, [currentStory]);
 
   useEffect(() => {
     if (!currentStory) return;
@@ -39,6 +69,12 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
     // Mark story as viewed
     if (currentStory.user_id !== user?.id && !currentStory.user_viewed) {
       viewStory(currentStory.id);
+    }
+
+    // Don't auto-advance for live streams
+    if (currentStory.is_live) {
+      setProgress(100);
+      return;
     }
 
     // Auto-advance progress
@@ -149,7 +185,21 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
 
           {/* Content */}
           <div className="flex-1 relative">
-            {currentStory.content_type === 'image' ? (
+            {currentStory.is_live || currentStory.content_type === 'live_stream' ? (
+              <>
+                <video 
+                  ref={videoRef}
+                  className="w-full h-full object-contain"
+                  autoPlay
+                  playsInline
+                  controls
+                />
+                <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-md flex items-center gap-2 font-bold z-10">
+                  <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                  LIVE
+                </div>
+              </>
+            ) : currentStory.content_type === 'image' ? (
               <img 
                 src={currentStory.content_url} 
                 alt="Story"
@@ -157,6 +207,7 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
               />
             ) : (
               <video 
+                ref={videoRef}
                 src={currentStory.content_url}
                 className="w-full h-full object-contain"
                 autoPlay
@@ -166,10 +217,12 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
             )}
 
             {/* Navigation areas */}
-            <div className="absolute inset-0 flex">
-              <div className="flex-1" onClick={prevStory} />
-              <div className="flex-1" onClick={nextStory} />
-            </div>
+            {!currentStory.is_live && (
+              <div className="absolute inset-0 flex">
+                <div className="flex-1" onClick={prevStory} />
+                <div className="flex-1" onClick={nextStory} />
+              </div>
+            )}
           </div>
 
           {/* Caption */}

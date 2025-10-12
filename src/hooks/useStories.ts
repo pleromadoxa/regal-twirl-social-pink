@@ -9,13 +9,14 @@ export interface Story {
   id: string;
   user_id: string;
   content_url: string;
-  content_type: 'image' | 'video';
+  content_type: 'image' | 'video' | 'live_stream';
   caption?: string;
   created_at: string;
   expires_at: string;
   view_count: number;
   file_size?: number;
   duration?: number;
+  is_live?: boolean;
   profiles: {
     username: string;
     display_name: string;
@@ -84,8 +85,9 @@ export const useStories = () => {
           const profile = profilesMap.get(story.user_id);
           return {
             ...story,
-            content_type: story.content_type as 'image' | 'video',
+            content_type: story.content_type as 'image' | 'video' | 'live_stream',
             user_viewed: viewedStoryIds.has(story.id),
+            is_live: story.content_url?.endsWith('.m3u8') || story.content_type === 'live_stream',
             profiles: {
               username: profile?.username || 'Unknown',
               display_name: profile?.display_name || 'Unknown User',
@@ -98,8 +100,9 @@ export const useStories = () => {
           const profile = profilesMap.get(story.user_id);
           return {
             ...story,
-            content_type: story.content_type as 'image' | 'video',
+            content_type: story.content_type as 'image' | 'video' | 'live_stream',
             user_viewed: false,
+            is_live: story.content_url?.endsWith('.m3u8') || story.content_type === 'live_stream',
             profiles: {
               username: profile?.username || 'Unknown',
               display_name: profile?.display_name || 'Unknown User',
@@ -129,42 +132,58 @@ export const useStories = () => {
     }
   };
 
-  const createStory = async (file: File, caption?: string) => {
+  const createStory = async (file: File | string, caption?: string, isLiveStream = false) => {
     if (!user) return;
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      
-      // Upload file to storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('stories')
-        .upload(fileName, file);
+      let contentUrl: string;
+      let contentType: 'image' | 'video' | 'live_stream';
+      let fileSize: number | undefined;
 
-      if (uploadError) throw uploadError;
+      if (typeof file === 'string') {
+        // Live stream URL (.m3u8)
+        contentUrl = file;
+        contentType = 'live_stream';
+        fileSize = undefined;
+      } else {
+        // Regular file upload
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        // Upload file to storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('stories')
+          .upload(fileName, file);
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('stories')
-        .getPublicUrl(fileName);
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('stories')
+          .getPublicUrl(fileName);
+
+        contentUrl = publicUrl;
+        contentType = file.type.startsWith('video/') ? 'video' : 'image';
+        fileSize = file.size;
+      }
 
       // Create story record
       const { error: insertError } = await supabase
         .from('stories')
         .insert({
           user_id: user.id,
-          content_url: publicUrl,
-          content_type: file.type.startsWith('video/') ? 'video' : 'image',
+          content_url: contentUrl,
+          content_type: contentType,
           caption,
-          file_size: file.size,
-          duration: file.type.startsWith('video/') ? undefined : null
+          file_size: fileSize,
+          duration: contentType === 'video' ? undefined : null
         });
 
       if (insertError) throw insertError;
 
       toast({
         title: "Success",
-        description: "Story uploaded successfully",
+        description: isLiveStream ? "Live story started successfully" : "Story uploaded successfully",
       });
 
       fetchStories();
