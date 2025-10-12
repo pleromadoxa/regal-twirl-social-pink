@@ -50,8 +50,6 @@ const EnhancedStoriesBar = () => {
 
   // Separate and group stories by personal vs business pages
   const userStoriesData = stories?.reduce((acc: any[], story: any) => {
-    console.log('Processing story:', story); // Debug log
-    
     // If story is from a business page, group by business page
     if (story.business_page_id && story.business_page) {
       const existingPage = acc.find(u => u.userId === `business_${story.business_page_id}`);
@@ -98,8 +96,6 @@ const EnhancedStoriesBar = () => {
     }
     return acc;
   }, []) || [];
-
-  console.log('Grouped stories data:', userStoriesData); // Debug log
 
 
   if (loading) {

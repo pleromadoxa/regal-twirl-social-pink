@@ -149,13 +149,23 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
           <div className="flex items-center justify-between p-4 text-white">
             <div className="flex items-center gap-3">
               <Avatar className="w-10 h-10">
-                <AvatarImage src={currentUserStories.profile.avatar_url} />
+                <AvatarImage src={
+                  currentStory.business_page_id && currentStory.business_page
+                    ? currentStory.business_page.avatar_url 
+                    : currentUserStories.profile.avatar_url
+                } />
                 <AvatarFallback>
-                  {currentUserStories.profile.display_name?.[0] || 'U'}
+                  {currentStory.business_page_id && currentStory.business_page
+                    ? currentStory.business_page.page_name?.[0] || 'B'
+                    : currentUserStories.profile.display_name?.[0] || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium">{currentUserStories.profile.display_name}</p>
+                <p className="font-medium">
+                  {currentStory.business_page_id && currentStory.business_page
+                    ? currentStory.business_page.page_name
+                    : currentUserStories.profile.display_name}
+                </p>
                 <p className="text-sm text-white/70">
                   {formatDistanceToNow(new Date(currentStory.created_at), { addSuffix: true })}
                 </p>

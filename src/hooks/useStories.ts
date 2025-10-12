@@ -76,13 +76,11 @@ export const useStories = () => {
       // Fetch business pages if any
       let businessPagesData: any[] = [];
       if (businessPageIds.length > 0) {
-        console.log('Fetching business pages for IDs:', businessPageIds);
         const { data: pagesData, error: pagesError } = await supabase
           .from('business_pages')
           .select('id, page_name, avatar_url, page_avatar_url')
           .in('id', businessPageIds);
 
-        console.log('Business pages fetched:', pagesData);
         if (pagesError) {
           console.error('Error fetching business pages:', pagesError);
         }
@@ -105,8 +103,6 @@ export const useStories = () => {
       businessPagesData.forEach(page => {
         businessPagesMap.set(page.id, page);
       });
-      
-      console.log('Business pages map:', Array.from(businessPagesMap.entries()));
 
       // Check which stories the current user has viewed
       let storiesWithViews: Story[] = [];
@@ -122,13 +118,6 @@ export const useStories = () => {
         storiesWithViews = storiesData.map(story => {
           const profile = profilesMap.get(story.user_id);
           const businessPage = story.business_page_id ? businessPagesMap.get(story.business_page_id) : null;
-          
-          console.log('Story mapping:', {
-            storyId: story.id,
-            hasBusinessPageId: !!story.business_page_id,
-            businessPageId: story.business_page_id,
-            businessPage: businessPage,
-          });
           
           return {
             ...story,
@@ -171,7 +160,6 @@ export const useStories = () => {
         }) as Story[];
       }
 
-      console.log('Final stories with views:', storiesWithViews);
       setStories(storiesWithViews);
     } catch (error) {
       console.error('Error fetching stories:', error);
