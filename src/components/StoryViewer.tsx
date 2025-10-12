@@ -35,19 +35,52 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
   const currentUserStories = userStories[currentUserIndex];
   const currentStory = currentUserStories?.stories[currentStoryIndex];
 
-  // Handle HLS live streams
+  // Handle HLS streams (.m3u8 files)
   useEffect(() => {
     if (!currentStory || !videoRef.current) return;
     
-    if (currentStory.content_type === 'live_stream' && currentStory.content_url.endsWith('.m3u8')) {
+    // Check if the URL is an HLS stream (.m3u8)
+    const isHlsStream = currentStory.content_url.endsWith('.m3u8');
+    const isVideoContent = currentStory.content_type === 'video' || 
+                          currentStory.content_type === 'live_stream' || 
+                          currentStory.is_live;
+    
+    if (isHlsStream && isVideoContent) {
       const video = videoRef.current;
       
       if (Hls.isSupported()) {
-        const hls = new Hls();
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 90
+        });
         hls.loadSource(currentStory.content_url);
         hls.attachMedia(video);
+        
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play();
+          video.play().catch(err => {
+            console.error('HLS playback error:', err);
+          });
+        });
+        
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('HLS error:', data);
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.log('Network error, trying to recover...');
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.log('Media error, trying to recover...');
+                hls.recoverMediaError();
+                break;
+              default:
+                console.log('Fatal error, destroying HLS instance');
+                hls.destroy();
+                break;
+            }
+          }
         });
         
         return () => {
@@ -57,7 +90,9 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
         // Native HLS support (Safari)
         video.src = currentStory.content_url;
         video.addEventListener('loadedmetadata', () => {
-          video.play();
+          video.play().catch(err => {
+            console.error('Native HLS playback error:', err);
+          });
         });
       }
     }
@@ -219,10 +254,11 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
             ) : (
               <video 
                 ref={videoRef}
-                src={currentStory.content_url}
+                src={!currentStory.content_url.endsWith('.m3u8') ? currentStory.content_url : undefined}
                 className="w-full h-full object-contain"
                 autoPlay
                 muted
+                playsInline
                 onEnded={nextStory}
               />
             )}
