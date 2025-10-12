@@ -25,6 +25,8 @@ export class WebRTCService {
   private roomId: string | null = null;
   private userId: string | null = null;
   private queuedIceCandidates: RTCIceCandidateInit[] = [];
+  private signalingRetryCount: number = 0;
+  private maxSignalingRetries: number = 3;
 
   // Event callbacks
   private onLocalStreamCallback?: (stream: MediaStream) => void;
@@ -290,7 +292,7 @@ export class WebRTCService {
 
   setupSignaling(roomId: string, userId?: string): void {
     try {
-      console.log('[WebRTCService] Setting up signaling for room:', roomId);
+      console.log('[WebRTCService] Setting up signaling for room:', roomId, 'attempt:', this.signalingRetryCount + 1);
       
       // Cleanup existing channel to avoid subscription conflicts
       if (this.signalingChannel) {
@@ -312,13 +314,10 @@ export class WebRTCService {
       
       console.log('[WebRTCService] Creating signaling channel:', channelName);
       
-      // Configure channel with broadcast enabled
+      // Configure channel with broadcast enabled and simplified config
       this.signalingChannel = supabase.channel(channelName, {
         config: {
-          broadcast: { 
-            self: false,  // Don't receive our own broadcasts
-            ack: true     // Wait for server acknowledgment
-          },
+          broadcast: { self: false },
           presence: { key: userId || 'anonymous' }
         }
       })
@@ -374,30 +373,46 @@ export class WebRTCService {
             this.cleanup();
           }
         })
-        .subscribe((status, err) => {
-          console.log('[WebRTCService] Signaling channel status:', status);
-          if (err) {
-            console.error('[WebRTCService] Signaling channel error:', err);
-            if (this.onErrorCallback) {
-              this.onErrorCallback(new Error(`Signaling channel error: ${err.message}`));
-            }
-          }
+        .subscribe(async (status, err) => {
+          console.log('[WebRTCService] Signaling channel status:', status, err);
           
           if (status === 'SUBSCRIBED') {
             console.log('[WebRTCService] Signaling channel connected successfully');
+            // Reset retry count on successful connection
+            this.signalingRetryCount = 0;
             // Test signaling connection after successful subscription
             setTimeout(() => {
               this.testSignalingConnection();
-            }, 2000);
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.error('[WebRTCService] Signaling channel failed:', status);
-            if (this.onErrorCallback) {
-              this.onErrorCallback(new Error(`Signaling failed: ${status}`));
+            }, 1000);
+          } else if (status === 'TIMED_OUT') {
+            console.error('[WebRTCService] Signaling channel timed out');
+            
+            // Retry with exponential backoff if within retry limit
+            if (this.signalingRetryCount < this.maxSignalingRetries) {
+              this.signalingRetryCount++;
+              const retryDelay = Math.min(1000 * Math.pow(2, this.signalingRetryCount), 8000);
+              console.log(`[WebRTCService] Retrying in ${retryDelay}ms (attempt ${this.signalingRetryCount}/${this.maxSignalingRetries})`);
+              
+              setTimeout(() => {
+                this.setupSignaling(roomId, userId);
+              }, retryDelay);
+            } else {
+              console.error('[WebRTCService] Max retry attempts reached');
+              if (this.onErrorCallback) {
+                this.onErrorCallback(new Error('Unable to establish signaling connection after multiple attempts. Please check your internet connection and try again.'));
+              }
             }
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('[WebRTCService] Signaling channel error:', err);
+            if (this.onErrorCallback) {
+              this.onErrorCallback(new Error(`Signaling channel error: ${err?.message || 'Unknown error'}. Please try again.`));
+            }
+          } else if (status === 'CLOSED') {
+            console.log('[WebRTCService] Signaling channel closed');
           }
         });
 
-      console.log('[WebRTCService] Signaling setup completed');
+      console.log('[WebRTCService] Signaling setup initiated');
       
     } catch (error) {
       console.error('[WebRTCService] Failed to setup signaling:', error);
@@ -790,6 +805,9 @@ export class WebRTCService {
 
   cleanup(): void {
     console.log('[WebRTCService] Cleaning up WebRTC resources');
+    
+    // Reset retry counter
+    this.signalingRetryCount = 0;
 
     // Close data channel
     if (this.dataChannel) {
