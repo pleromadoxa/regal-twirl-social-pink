@@ -26,7 +26,7 @@ const VerificationBadge = ({ level, className = "", showText = true }: Verificat
         return {
           icon: Crown,
           text: 'VIP',
-          className: 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 animate-pulse'
+          className: 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0'
         };
       case 'business':
         return {
