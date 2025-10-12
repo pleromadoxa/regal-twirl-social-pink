@@ -2,11 +2,13 @@ import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, Image, Video, X, Type, Palette, Radio } from 'lucide-react';
+import { Upload, Image, Video, X, Type, Palette, Radio, Building2 } from 'lucide-react';
 import { useStories } from '@/hooks/useStories';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { useBusinessPages } from '@/hooks/useBusinessPages';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface StoryUploadProps {
   onClose: () => void;
@@ -34,6 +36,9 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   
+  // Professional account selection
+  const [selectedBusinessPageId, setSelectedBusinessPageId] = useState<string | null>(null);
+  
   // Live stream state
   const [liveStreamUrl, setLiveStreamUrl] = useState('');
   
@@ -47,6 +52,7 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bgImageInputRef = useRef<HTMLInputElement>(null);
   const { createStory } = useStories();
+  const { myPages } = useBusinessPages();
   const { toast } = useToast();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,6 +76,14 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
     if (mode === 'media' && !file) return;
     if (mode === 'text' && !textContent.trim()) return;
     if (mode === 'live' && !liveStreamUrl.trim()) return;
+    if (mode === 'live' && !selectedBusinessPageId) {
+      toast({
+        title: "Error",
+        description: "Please select a professional account for live stories",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setUploading(true);
     try {
@@ -84,9 +98,9 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
           setUploading(false);
           return;
         }
-        await createStory(liveStreamUrl, caption, true);
+        await createStory(liveStreamUrl, caption, true, selectedBusinessPageId);
       } else if (mode === 'media') {
-        await createStory(file!, caption);
+        await createStory(file!, caption, false, selectedBusinessPageId);
       } else {
         // Create a canvas to render the text story
         const canvas = document.createElement('canvas');
@@ -163,7 +177,7 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
 
         // Create file from blob
         const file = new File([blob], 'text-story.png', { type: 'image/png' });
-        await createStory(file, '');
+        await createStory(file, '', false, selectedBusinessPageId);
       }
       onClose();
     } catch (error) {
@@ -188,8 +202,31 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
           <DialogTitle>Create Story</DialogTitle>
         </DialogHeader>
 
+        {/* Professional Account Selector */}
+        {myPages.length > 0 && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Post as (Optional)
+            </label>
+            <Select value={selectedBusinessPageId || 'personal'} onValueChange={(v) => setSelectedBusinessPageId(v === 'personal' ? null : v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select account" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="personal">Personal Account</SelectItem>
+                {myPages.map((page) => (
+                  <SelectItem key={page.id} value={page.id}>
+                    {page.page_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <Tabs value={mode} onValueChange={(v) => setMode(v as 'media' | 'text' | 'live')} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={`grid w-full ${selectedBusinessPageId ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="media" className="flex items-center gap-2">
               <Image className="w-4 h-4" />
               Media
@@ -198,10 +235,12 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
               <Type className="w-4 h-4" />
               Text
             </TabsTrigger>
-            <TabsTrigger value="live" className="flex items-center gap-2">
-              <Radio className="w-4 h-4" />
-              Live
-            </TabsTrigger>
+            {selectedBusinessPageId && (
+              <TabsTrigger value="live" className="flex items-center gap-2">
+                <Radio className="w-4 h-4" />
+                Live
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="media" className="space-y-4">
@@ -386,21 +425,28 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
             </div>
           </TabsContent>
 
-          <TabsContent value="live" className="space-y-4">
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Live Stream URL (.m3u8)</label>
-                <Input
-                  type="url"
-                  placeholder="https://example.com/stream.m3u8"
-                  value={liveStreamUrl}
-                  onChange={(e) => setLiveStreamUrl(e.target.value)}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Enter a valid HLS stream URL ending with .m3u8
-                </p>
-              </div>
+          {selectedBusinessPageId && (
+            <TabsContent value="live" className="space-y-4">
+              <div className="space-y-3">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-900 dark:text-blue-100 flex items-center gap-2">
+                    <Radio className="w-4 h-4" />
+                    Live stories are exclusive to professional accounts
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Live Stream URL (.m3u8)</label>
+                  <Input
+                    type="url"
+                    placeholder="https://example.com/stream.m3u8"
+                    value={liveStreamUrl}
+                    onChange={(e) => setLiveStreamUrl(e.target.value)}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Enter a valid HLS stream URL ending with .m3u8
+                  </p>
+                </div>
 
               <Textarea
                 placeholder="Add a caption for your live stream..."
@@ -410,23 +456,24 @@ export const StoryUpload = ({ onClose }: StoryUploadProps) => {
                 rows={3}
               />
 
-              {liveStreamUrl && (
-                <div className="aspect-[9/16] rounded-lg overflow-hidden bg-black relative">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <Radio className="w-16 h-16 text-red-500 mx-auto mb-4 animate-pulse" />
-                      <p className="text-white font-medium">Live Stream Ready</p>
-                      <p className="text-white/70 text-sm mt-2">Preview will show when published</p>
+                {liveStreamUrl && (
+                  <div className="aspect-[9/16] rounded-lg overflow-hidden bg-black relative">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <Radio className="w-16 h-16 text-red-500 mx-auto mb-4 animate-pulse" />
+                        <p className="text-white font-medium">Live Stream Ready</p>
+                        <p className="text-white/70 text-sm mt-2">Preview will show when published</p>
+                      </div>
+                    </div>
+                    <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-md flex items-center gap-2 font-bold">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                      LIVE
                     </div>
                   </div>
-                  <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-md flex items-center gap-2 font-bold">
-                    <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                    LIVE
-                  </div>
-                </div>
-              )}
-            </div>
-          </TabsContent>
+                )}
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Actions */}

@@ -132,7 +132,7 @@ export const useStories = () => {
     }
   };
 
-  const createStory = async (file: File | string, caption?: string, isLiveStream = false) => {
+  const createStory = async (file: File | string, caption?: string, isLiveStream = false, businessPageId?: string | null) => {
     if (!user) return;
 
     try {
@@ -168,16 +168,23 @@ export const useStories = () => {
       }
 
       // Create story record
+      const insertData: any = {
+        user_id: user.id,
+        content_url: contentUrl,
+        content_type: contentType,
+        caption,
+        file_size: fileSize,
+        duration: contentType === 'video' ? undefined : null
+      };
+
+      // Add business_page_id if provided
+      if (businessPageId) {
+        insertData.business_page_id = businessPageId;
+      }
+
       const { error: insertError } = await supabase
         .from('stories')
-        .insert({
-          user_id: user.id,
-          content_url: contentUrl,
-          content_type: contentType,
-          caption,
-          file_size: fileSize,
-          duration: contentType === 'video' ? undefined : null
-        });
+        .insert(insertData);
 
       if (insertError) throw insertError;
 

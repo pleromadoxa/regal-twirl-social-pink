@@ -191,6 +191,7 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
                   ref={videoRef}
                   className="w-full h-full object-contain"
                   autoPlay
+                  muted
                   playsInline
                   controls
                 />
