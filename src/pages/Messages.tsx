@@ -8,7 +8,6 @@ import AudioCall from '@/components/AudioCall';
 import VideoCall from '@/components/VideoCall';
 import GroupCall from '@/components/GroupCall';
 import CallPopup from '@/components/CallPopup';
-import CallTestManager from '@/components/CallTestManager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -40,7 +39,6 @@ const Messages = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showJoinGroupDialog, setShowJoinGroupDialog] = useState(false);
-  const [showCallTest, setShowCallTest] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeCall, setActiveCall] = useState<{
     type: 'audio' | 'video' | 'group';
@@ -400,16 +398,6 @@ const Messages = () => {
               <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Messages
               </h1>
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  variant="ghost"
-                  onClick={() => setShowCallTest(true)}
-                  className="hover:bg-purple-100 dark:hover:bg-purple-900/30"
-                >
-                  <PhoneCall className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
 
             {/* Tabs */}
@@ -527,32 +515,6 @@ const Messages = () => {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
         <MobileBottomNav />
       </div>
-
-      {/* Modals and Overlays */}
-      {showCallTest && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute -top-2 -right-2 z-10 bg-white rounded-full"
-              onClick={() => setShowCallTest(false)}
-            >
-              ✕
-            </Button>
-            <CallTestManager
-              onTestComplete={(success) => {
-                if (success) {
-                  toast({
-                    title: "Connection Test Passed!",
-                    description: "Your device is ready for calls."
-                  });
-                }
-              }}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Join Group Dialog */}
       <JoinGroupDialog 
