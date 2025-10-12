@@ -14,22 +14,40 @@ export const StoriesBar = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState<number | null>(null);
 
-  // Group stories by user
+  // Group stories by user AND business page separately
+  // This creates separate story circles for personal stories and business page stories
   const groupedStories = stories.reduce((acc, story) => {
-    const userId = story.user_id;
-    if (!acc[userId]) {
-      acc[userId] = [];
+    // Create a unique key: if business page exists, use "business-{pageId}", otherwise use "user-{userId}"
+    const groupKey = story.business_page_id 
+      ? `business-${story.business_page_id}` 
+      : `user-${story.user_id}`;
+    
+    if (!acc[groupKey]) {
+      acc[groupKey] = [];
     }
-    acc[userId].push(story);
+    acc[groupKey].push(story);
     return acc;
   }, {} as Record<string, typeof stories>);
 
-  const userStories = Object.entries(groupedStories).map(([userId, userStoryList]) => ({
-    userId,
-    stories: userStoryList,
-    profile: userStoryList[0].profiles,
-    hasUnviewed: userStoryList.some(s => !s.user_viewed)
-  }));
+  const userStories = Object.entries(groupedStories).map(([groupKey, userStoryList]) => {
+    const firstStory = userStoryList[0];
+    const isBusinessPage = groupKey.startsWith('business-');
+    
+    return {
+      userId: firstStory.user_id,
+      businessPageId: firstStory.business_page_id,
+      stories: userStoryList,
+      profile: isBusinessPage && firstStory.business_page 
+        ? {
+            username: firstStory.business_page.page_name,
+            display_name: firstStory.business_page.page_name,
+            avatar_url: firstStory.business_page.avatar_url || ''
+          }
+        : firstStory.profiles,
+      isBusinessPage,
+      hasUnviewed: userStoryList.some(s => !s.user_viewed)
+    };
+  });
 
   if (loading) {
     return (
@@ -62,7 +80,7 @@ export const StoriesBar = () => {
         {/* User Stories */}
         {userStories.map((userStory, index) => (
           <div 
-            key={userStory.userId} 
+            key={`${userStory.userId}-${userStory.businessPageId || 'personal'}`}
             className="flex-shrink-0 text-center cursor-pointer"
             onClick={() => setSelectedStoryIndex(index)}
           >
@@ -84,7 +102,11 @@ export const StoriesBar = () => {
               </div>
             </div>
             <p className="text-xs mt-1 text-slate-600 dark:text-slate-400 truncate w-16">
-              {userStory.userId === user?.id ? 'Your Story' : userStory.profile.username}
+              {userStory.userId === user?.id && !userStory.isBusinessPage 
+                ? 'Your Story' 
+                : userStory.isBusinessPage && userStory.userId === user?.id
+                ? userStory.profile.display_name
+                : userStory.profile.username}
             </p>
             {userStory.stories[0].content_type === 'video' && (
               <Play className="w-3 h-3 absolute top-1 right-1 text-white" />
