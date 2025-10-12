@@ -35,47 +35,42 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
   const currentUserStories = userStories[currentUserIndex];
   const currentStory = currentUserStories?.stories[currentStoryIndex];
 
-  // Handle HLS streams (.m3u8 files)
+  // Handle HLS streams (.m3u8 files) and regular videos
   useEffect(() => {
     if (!currentStory || !videoRef.current) return;
     
-    // Check if the URL is an HLS stream (.m3u8)
+    const video = videoRef.current;
     const isHlsStream = currentStory.content_url.endsWith('.m3u8');
-    const isVideoContent = currentStory.content_type === 'video' || 
-                          currentStory.content_type === 'live_stream' || 
-                          currentStory.is_live;
     
-    console.log('Story HLS check:', { 
+    console.log('Story video check:', { 
       isHlsStream, 
-      isVideoContent, 
       url: currentStory.content_url,
       contentType: currentStory.content_type 
     });
     
-    if (isHlsStream && isVideoContent) {
-      const video = videoRef.current;
-      
+    if (isHlsStream) {
+      // Handle HLS streams
       if (Hls.isSupported()) {
         console.log('HLS.js is supported, initializing...');
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
           backBufferLength: 90,
-          debug: true
+          debug: false
         });
         
         hls.loadSource(currentStory.content_url);
         hls.attachMedia(video);
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log('HLS manifest parsed, attempting playback');
+          console.log('HLS manifest parsed, starting playback');
           video.play().catch(err => {
             console.error('HLS playback error:', err);
           });
         });
         
         hls.on(Hls.Events.ERROR, (event, data) => {
-          console.error('HLS error:', { event, data });
+          console.error('HLS error:', { type: data.type, details: data.details, fatal: data.fatal });
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
@@ -102,14 +97,23 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
         // Native HLS support (Safari)
         console.log('Using native HLS support (Safari)');
         video.src = currentStory.content_url;
-        video.addEventListener('loadedmetadata', () => {
-          console.log('Native HLS metadata loaded, attempting playback');
-          video.play().catch(err => {
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(err => {
             console.error('Native HLS playback error:', err);
           });
-        });
+        }
       } else {
         console.error('HLS is not supported in this browser');
+      }
+    } else {
+      // Handle regular video files
+      console.log('Regular video file, ensuring autoplay');
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.error('Video autoplay error:', err);
+        });
       }
     }
   }, [currentStory]);
@@ -256,14 +260,17 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
               <>
                 <video 
                   ref={videoRef}
-                  src={!currentStory.content_url.endsWith('.m3u8') ? currentStory.content_url : undefined}
                   className="w-full h-full object-contain"
                   autoPlay
                   muted
                   playsInline
-                  controls={currentStory.is_live || currentStory.content_url.endsWith('.m3u8')}
-                  onEnded={nextStory}
-                />
+                  controls
+                  onEnded={!currentStory.content_url.endsWith('.m3u8') ? nextStory : undefined}
+                >
+                  {!currentStory.content_url.endsWith('.m3u8') && (
+                    <source src={currentStory.content_url} type="video/mp4" />
+                  )}
+                </video>
                 {(currentStory.is_live || currentStory.content_type === 'live_stream') && (
                   <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-md flex items-center gap-2 font-bold z-10">
                     <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
