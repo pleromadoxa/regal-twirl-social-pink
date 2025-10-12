@@ -17,11 +17,17 @@ export interface Story {
   file_size?: number;
   duration?: number;
   is_live?: boolean;
+  business_page_id?: string | null;
   profiles: {
     username: string;
     display_name: string;
     avatar_url: string;
   };
+  business_page?: {
+    id: string;
+    page_name: string;
+    avatar_url?: string;
+  } | null;
   user_viewed?: boolean;
 }
 
@@ -51,6 +57,11 @@ export const useStories = () => {
 
       // Get unique user IDs from stories
       const userIds = [...new Set(storiesData.map(story => story.user_id))];
+      
+      // Get unique business page IDs from stories (filter out nulls)
+      const businessPageIds = [...new Set(storiesData
+        .filter(story => story.business_page_id)
+        .map(story => story.business_page_id))];
 
       // Fetch profiles for these users
       const { data: profilesData, error: profilesError } = await supabase
@@ -62,6 +73,19 @@ export const useStories = () => {
         console.error('Error fetching profiles:', profilesError);
       }
 
+      // Fetch business pages if any
+      let businessPagesData: any[] = [];
+      if (businessPageIds.length > 0) {
+        const { data: pagesData, error: pagesError } = await supabase
+          .from('business_pages')
+          .select('id, page_name, page_avatar_url')
+          .in('id', businessPageIds);
+
+        if (!pagesError && pagesData) {
+          businessPagesData = pagesData;
+        }
+      }
+
       // Create a map of user_id to profile
       const profilesMap = new Map();
       if (profilesData) {
@@ -69,6 +93,12 @@ export const useStories = () => {
           profilesMap.set(profile.id, profile);
         });
       }
+
+      // Create a map of business_page_id to page
+      const businessPagesMap = new Map();
+      businessPagesData.forEach(page => {
+        businessPagesMap.set(page.id, page);
+      });
 
       // Check which stories the current user has viewed
       let storiesWithViews: Story[] = [];
@@ -83,6 +113,8 @@ export const useStories = () => {
         
         storiesWithViews = storiesData.map(story => {
           const profile = profilesMap.get(story.user_id);
+          const businessPage = story.business_page_id ? businessPagesMap.get(story.business_page_id) : null;
+          
           return {
             ...story,
             content_type: story.content_type as 'image' | 'video' | 'live_stream',
@@ -92,12 +124,19 @@ export const useStories = () => {
               username: profile?.username || 'Unknown',
               display_name: profile?.display_name || 'Unknown User',
               avatar_url: profile?.avatar_url || ''
-            }
+            },
+            business_page: businessPage ? {
+              id: businessPage.id,
+              page_name: businessPage.page_name,
+              avatar_url: businessPage.page_avatar_url
+            } : null
           };
         }) as Story[];
       } else if (storiesData) {
         storiesWithViews = storiesData.map(story => {
           const profile = profilesMap.get(story.user_id);
+          const businessPage = story.business_page_id ? businessPagesMap.get(story.business_page_id) : null;
+          
           return {
             ...story,
             content_type: story.content_type as 'image' | 'video' | 'live_stream',
@@ -107,7 +146,12 @@ export const useStories = () => {
               username: profile?.username || 'Unknown',
               display_name: profile?.display_name || 'Unknown User',
               avatar_url: profile?.avatar_url || ''
-            }
+            },
+            business_page: businessPage ? {
+              id: businessPage.id,
+              page_name: businessPage.page_name,
+              avatar_url: businessPage.page_avatar_url
+            } : null
           };
         }) as Story[];
       }

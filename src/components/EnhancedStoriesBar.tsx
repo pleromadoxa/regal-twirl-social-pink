@@ -48,22 +48,51 @@ const EnhancedStoriesBar = () => {
   const { user } = useAuth();
   const { stories, loading } = useStories();
 
-  // Filter stories to get unique users with their stories
+  // Separate and group stories by personal vs business pages
   const userStoriesData = stories?.reduce((acc: any[], story: any) => {
-    const existingUser = acc.find(u => u.userId === story.user_id);
-    if (existingUser) {
-      existingUser.stories.push(story);
+    // If story is from a business page, group by business page
+    if (story.business_page_id && story.business_page) {
+      const existingPage = acc.find(u => u.userId === `business_${story.business_page_id}`);
+      if (existingPage) {
+        existingPage.stories.push(story);
+        if (!story.user_viewed) {
+          existingPage.hasUnviewed = true;
+        }
+      } else {
+        acc.push({
+          userId: `business_${story.business_page_id}`,
+          isBusinessPage: true,
+          businessPageId: story.business_page_id,
+          stories: [story],
+          profile: {
+            username: story.business_page.page_name,
+            display_name: story.business_page.page_name,
+            avatar_url: story.business_page.avatar_url || '/placeholder.svg',
+          },
+          hasUnviewed: !story.user_viewed,
+        });
+      }
     } else {
-      acc.push({
-        userId: story.user_id,
-        stories: [story],
-        profile: {
-          username: story.profile?.username || 'user',
-          display_name: story.profile?.display_name || 'User',
-          avatar_url: story.profile?.avatar_url || '/placeholder.svg',
-        },
-        hasUnviewed: true,
-      });
+      // Personal stories grouped by user
+      const existingUser = acc.find(u => u.userId === story.user_id && !u.isBusinessPage);
+      if (existingUser) {
+        existingUser.stories.push(story);
+        if (!story.user_viewed) {
+          existingUser.hasUnviewed = true;
+        }
+      } else {
+        acc.push({
+          userId: story.user_id,
+          isBusinessPage: false,
+          stories: [story],
+          profile: {
+            username: story.profiles?.username || 'user',
+            display_name: story.profiles?.display_name || 'User',
+            avatar_url: story.profiles?.avatar_url || '/placeholder.svg',
+          },
+          hasUnviewed: !story.user_viewed,
+        });
+      }
     }
     return acc;
   }, []) || [];
