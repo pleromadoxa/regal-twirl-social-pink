@@ -45,26 +45,37 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
                           currentStory.content_type === 'live_stream' || 
                           currentStory.is_live;
     
+    console.log('Story HLS check:', { 
+      isHlsStream, 
+      isVideoContent, 
+      url: currentStory.content_url,
+      contentType: currentStory.content_type 
+    });
+    
     if (isHlsStream && isVideoContent) {
       const video = videoRef.current;
       
       if (Hls.isSupported()) {
+        console.log('HLS.js is supported, initializing...');
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
-          backBufferLength: 90
+          backBufferLength: 90,
+          debug: true
         });
+        
         hls.loadSource(currentStory.content_url);
         hls.attachMedia(video);
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          console.log('HLS manifest parsed, attempting playback');
           video.play().catch(err => {
             console.error('HLS playback error:', err);
           });
         });
         
         hls.on(Hls.Events.ERROR, (event, data) => {
-          console.error('HLS error:', data);
+          console.error('HLS error:', { event, data });
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
@@ -84,16 +95,21 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
         });
         
         return () => {
+          console.log('Cleaning up HLS instance');
           hls.destroy();
         };
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         // Native HLS support (Safari)
+        console.log('Using native HLS support (Safari)');
         video.src = currentStory.content_url;
         video.addEventListener('loadedmetadata', () => {
+          console.log('Native HLS metadata loaded, attempting playback');
           video.play().catch(err => {
             console.error('Native HLS playback error:', err);
           });
         });
+      } else {
+        console.error('HLS is not supported in this browser');
       }
     }
   }, [currentStory]);
@@ -230,37 +246,31 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
 
           {/* Content */}
           <div className="flex-1 relative">
-            {currentStory.is_live || currentStory.content_type === 'live_stream' ? (
-              <>
-                <video 
-                  ref={videoRef}
-                  className="w-full h-full object-contain"
-                  autoPlay
-                  muted
-                  playsInline
-                  controls
-                />
-                <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-md flex items-center gap-2 font-bold z-10">
-                  <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                  LIVE
-                </div>
-              </>
-            ) : currentStory.content_type === 'image' ? (
+            {currentStory.content_type === 'image' ? (
               <img 
                 src={currentStory.content_url} 
                 alt="Story"
                 className="w-full h-full object-contain"
               />
             ) : (
-              <video 
-                ref={videoRef}
-                src={!currentStory.content_url.endsWith('.m3u8') ? currentStory.content_url : undefined}
-                className="w-full h-full object-contain"
-                autoPlay
-                muted
-                playsInline
-                onEnded={nextStory}
-              />
+              <>
+                <video 
+                  ref={videoRef}
+                  src={!currentStory.content_url.endsWith('.m3u8') ? currentStory.content_url : undefined}
+                  className="w-full h-full object-contain"
+                  autoPlay
+                  muted
+                  playsInline
+                  controls={currentStory.is_live || currentStory.content_url.endsWith('.m3u8')}
+                  onEnded={nextStory}
+                />
+                {(currentStory.is_live || currentStory.content_type === 'live_stream') && (
+                  <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-md flex items-center gap-2 font-bold z-10">
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                    LIVE
+                  </div>
+                )}
+              </>
             )}
 
             {/* Navigation areas */}
