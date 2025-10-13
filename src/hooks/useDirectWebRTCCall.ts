@@ -24,6 +24,8 @@ export const useDirectWebRTCCall = ({ conversationId, callType, onCallEnd }: Use
   const signalingClientRef = useRef<CallWebRTCSignalingClient | null>(null);
   const peerConnectionRef = useRef<WebRTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const isStartingRef = useRef(false);
+  const hasStartedRef = useRef(false);
 
   const createPeerConnection = useCallback(async (peerId: string, isInitiator: boolean) => {
     if (!user) return;
@@ -149,8 +151,16 @@ export const useDirectWebRTCCall = ({ conversationId, callType, onCallEnd }: Use
   const startCall = useCallback(async () => {
     if (!user) return;
 
+    // Prevent multiple simultaneous starts
+    if (isStartingRef.current || hasStartedRef.current) {
+      console.log('[DirectWebRTC] Call already starting or started, skipping');
+      return;
+    }
+
     try {
       console.log('[DirectWebRTC] Starting call');
+      isStartingRef.current = true;
+      hasStartedRef.current = true;
       setIsInCall(true);
 
       // Get user media
@@ -174,8 +184,11 @@ export const useDirectWebRTCCall = ({ conversationId, callType, onCallEnd }: Use
       await signalingClient.connect();
 
       console.log('[DirectWebRTC] Call started successfully');
+      isStartingRef.current = false;
     } catch (error) {
       console.error('[DirectWebRTC] Error starting call:', error);
+      isStartingRef.current = false;
+      hasStartedRef.current = false;
       setIsInCall(false);
       
       let errorMessage = 'Failed to start call';
@@ -197,6 +210,10 @@ export const useDirectWebRTCCall = ({ conversationId, callType, onCallEnd }: Use
 
   const endCall = useCallback(() => {
     console.log('[DirectWebRTC] Ending call');
+
+    // Reset start guards
+    isStartingRef.current = false;
+    hasStartedRef.current = false;
 
     // Close peer connection
     if (peerConnectionRef.current) {

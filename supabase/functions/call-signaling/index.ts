@@ -24,7 +24,10 @@ serve(async (req) => {
 
   const upgrade = req.headers.get("upgrade") || "";
   if (upgrade.toLowerCase() !== "websocket") {
-    return new Response("Expected WebSocket", { status: 426 });
+    return new Response("Expected WebSocket", { 
+      status: 426,
+      headers: corsHeaders 
+    });
   }
 
   const url = new URL(req.url);
@@ -32,99 +35,110 @@ serve(async (req) => {
   const userId = url.searchParams.get("userId");
 
   if (!conversationId || !userId) {
-    return new Response("Missing conversationId or userId", { status: 400 });
+    return new Response("Missing conversationId or userId", { 
+      status: 400,
+      headers: corsHeaders 
+    });
   }
 
-  const { socket, response } = Deno.upgradeWebSocket(req);
+  try {
+    const { socket, response } = Deno.upgradeWebSocket(req);
 
-  socket.onopen = () => {
-    console.log(`[Signaling] User ${userId} connected to conversation ${conversationId}`);
-    
-    // Initialize conversation map if it doesn't exist
-    if (!conversationConnections.has(conversationId)) {
-      conversationConnections.set(conversationId, new Map());
-    }
-    
-    const conversationUsers = conversationConnections.get(conversationId)!;
-    conversationUsers.set(userId, socket);
+    socket.onopen = () => {
+      console.log(`[Signaling] User ${userId} connected to conversation ${conversationId}`);
+      
+      // Initialize conversation map if it doesn't exist
+      if (!conversationConnections.has(conversationId)) {
+        conversationConnections.set(conversationId, new Map());
+      }
+      
+      const conversationUsers = conversationConnections.get(conversationId)!;
+      conversationUsers.set(userId, socket);
 
-    // Notify about existing peer
-    const existingPeers = Array.from(conversationUsers.keys()).filter(id => id !== userId);
-    if (existingPeers.length > 0) {
-      socket.send(JSON.stringify({
-        type: 'peer-joined',
-        conversationId,
-        userId: existingPeers[0],
-        peerId: existingPeers[0]
-      }));
-    }
-
-    // Notify other user about new peer
-    conversationUsers.forEach((ws, otherUserId) => {
-      if (otherUserId !== userId && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
+      // Notify about existing peer
+      const existingPeers = Array.from(conversationUsers.keys()).filter(id => id !== userId);
+      if (existingPeers.length > 0) {
+        socket.send(JSON.stringify({
           type: 'peer-joined',
           conversationId,
-          userId,
-          peerId: userId
+          userId: existingPeers[0],
+          peerId: existingPeers[0]
         }));
       }
-    });
-  };
 
-  socket.onmessage = (event) => {
-    try {
-      const message: SignalingMessage = JSON.parse(event.data);
-      console.log(`[Signaling] Message from ${userId}:`, message.type);
-
-      const conversationUsers = conversationConnections.get(conversationId);
-      if (!conversationUsers) return;
-
-      // Forward signaling messages to the other peer
-      if (message.type === 'offer' || message.type === 'answer' || message.type === 'ice-candidate') {
-        conversationUsers.forEach((ws, otherUserId) => {
-          if (otherUserId !== userId && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-              ...message,
-              peerId: userId
-            }));
-          }
-        });
-      }
-    } catch (error) {
-      console.error('[Signaling] Error processing message:', error);
-    }
-  };
-
-  socket.onclose = () => {
-    console.log(`[Signaling] User ${userId} disconnected from conversation ${conversationId}`);
-    
-    const conversationUsers = conversationConnections.get(conversationId);
-    if (conversationUsers) {
-      conversationUsers.delete(userId);
-
-      // Notify other user about peer leaving
+      // Notify other user about new peer
       conversationUsers.forEach((ws, otherUserId) => {
-        if (ws.readyState === WebSocket.OPEN) {
+        if (otherUserId !== userId && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
-            type: 'peer-left',
+            type: 'peer-joined',
             conversationId,
             userId,
             peerId: userId
           }));
         }
       });
+    };
 
-      // Clean up empty conversations
-      if (conversationUsers.size === 0) {
-        conversationConnections.delete(conversationId);
+    socket.onmessage = (event) => {
+      try {
+        const message: SignalingMessage = JSON.parse(event.data);
+        console.log(`[Signaling] Message from ${userId}:`, message.type);
+
+        const conversationUsers = conversationConnections.get(conversationId);
+        if (!conversationUsers) return;
+
+        // Forward signaling messages to the other peer
+        if (message.type === 'offer' || message.type === 'answer' || message.type === 'ice-candidate') {
+          conversationUsers.forEach((ws, otherUserId) => {
+            if (otherUserId !== userId && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                ...message,
+                peerId: userId
+              }));
+            }
+          });
+        }
+      } catch (error) {
+        console.error('[Signaling] Error processing message:', error);
       }
-    }
-  };
+    };
 
-  socket.onerror = (error) => {
-    console.error('[Signaling] WebSocket error:', error);
-  };
+    socket.onclose = () => {
+      console.log(`[Signaling] User ${userId} disconnected from conversation ${conversationId}`);
+      
+      const conversationUsers = conversationConnections.get(conversationId);
+      if (conversationUsers) {
+        conversationUsers.delete(userId);
 
-  return response;
+        // Notify other user about peer leaving
+        conversationUsers.forEach((ws, otherUserId) => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'peer-left',
+              conversationId,
+              userId,
+              peerId: userId
+            }));
+          }
+        });
+
+        // Clean up empty conversations
+        if (conversationUsers.size === 0) {
+          conversationConnections.delete(conversationId);
+        }
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error('[Signaling] WebSocket error for user', userId, ':', error);
+    };
+
+    return response;
+  } catch (error) {
+    console.error('[Signaling] Error upgrading to WebSocket:', error);
+    return new Response("WebSocket upgrade failed", { 
+      status: 500,
+      headers: corsHeaders 
+    });
+  }
 });

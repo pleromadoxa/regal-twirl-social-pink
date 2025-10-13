@@ -16,6 +16,8 @@ export class CallWebRTCSignalingClient {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
+  private isConnecting = false;
+  private reconnectTimeoutId: number | null = null;
 
   constructor(conversationId: string, userId: string) {
     this.conversationId = conversationId;
@@ -23,15 +25,45 @@ export class CallWebRTCSignalingClient {
   }
 
   async connect(): Promise<void> {
+    // Prevent multiple simultaneous connection attempts
+    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.CONNECTING)) {
+      console.log('[Call Signaling] Already connecting, skipping duplicate attempt');
+      return;
+    }
+
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log('[Call Signaling] Already connected');
+      return;
+    }
+
+    // Clear any pending reconnect attempts
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
+    }
+
     return new Promise((resolve, reject) => {
       try {
+        this.isConnecting = true;
+        // Use same format as circle-call-signaling
         const wsUrl = `wss://cingbjinmazwnemmmtip.supabase.co/functions/v1/call-signaling?conversationId=${this.conversationId}&userId=${this.userId}`;
         
         console.log('[Call Signaling] Connecting to:', wsUrl);
         this.ws = new WebSocket(wsUrl);
 
+        const connectionTimeout = setTimeout(() => {
+          if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
+            console.error('[Call Signaling] Connection timeout');
+            this.ws.close();
+            this.isConnecting = false;
+            reject(new Error('Connection timeout'));
+          }
+        }, 10000);
+
         this.ws.onopen = () => {
+          clearTimeout(connectionTimeout);
           console.log('[Call Signaling] Connected to signaling server');
+          this.isConnecting = false;
           this.reconnectAttempts = 0;
           resolve();
         };
@@ -50,31 +82,41 @@ export class CallWebRTCSignalingClient {
         };
 
         this.ws.onerror = (error) => {
+          clearTimeout(connectionTimeout);
           console.error('[Call Signaling] WebSocket error:', error);
+          this.isConnecting = false;
           reject(error);
         };
 
-        this.ws.onclose = () => {
-          console.log('[Call Signaling] Disconnected from signaling server');
+        this.ws.onclose = (event) => {
+          clearTimeout(connectionTimeout);
+          console.log('[Call Signaling] Disconnected from signaling server. Code:', event.code, 'Reason:', event.reason);
+          this.isConnecting = false;
           this.attemptReconnect();
         };
       } catch (error) {
         console.error('[Call Signaling] Connection error:', error);
+        this.isConnecting = false;
         reject(error);
       }
     });
   }
 
   private attemptReconnect(): void {
+    if (this.reconnectTimeoutId) {
+      return; // Already have a reconnect scheduled
+    }
+
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
       
       console.log(`[Call Signaling] Attempting reconnect ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
       
-      setTimeout(() => {
+      this.reconnectTimeoutId = setTimeout(() => {
+        this.reconnectTimeoutId = null;
         this.connect().catch(console.error);
-      }, delay);
+      }, delay) as unknown as number;
     } else {
       console.error('[Call Signaling] Max reconnection attempts reached');
     }
@@ -101,10 +143,30 @@ export class CallWebRTCSignalingClient {
 
   disconnect(): void {
     console.log('[Call Signaling] Disconnecting...');
+    
+    // Clear any pending reconnect
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
+    }
+    
+    // Reset reconnect attempts
+    this.reconnectAttempts = this.maxReconnectAttempts;
+    
     if (this.ws) {
-      this.ws.close();
+      // Remove event handlers before closing
+      this.ws.onclose = null;
+      this.ws.onerror = null;
+      this.ws.onmessage = null;
+      this.ws.onopen = null;
+      
+      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+        this.ws.close();
+      }
       this.ws = null;
     }
+    
+    this.isConnecting = false;
   }
 
   isConnected(): boolean {
