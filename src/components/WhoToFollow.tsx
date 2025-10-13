@@ -24,36 +24,34 @@ const UserSuggestionItem = ({ user, onFollow }: { user: User; onFollow: (userId:
   const { verificationLevel } = useVerifiedStatus(user);
   
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-      <div className="flex items-center space-x-3 flex-1">
-        <Link to={`/profile/${user.id}`} className="flex items-center space-x-3 flex-1">
-          <Avatar className="w-10 h-10">
-            <AvatarImage src={user.avatar_url} />
-            <AvatarFallback>
-              {user.display_name?.[0] || user.username?.[0] || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                {user.display_name || user.username}
-              </p>
-              <VerificationBadge 
-                level={verificationLevel} 
-                showText={false}
-                className="ml-1"
-              />
-            </div>
-            <p className="text-xs text-gray-500 truncate">@{user.username}</p>
-            <p className="text-xs text-gray-400">{user.followers_count} followers</p>
+    <div className="flex items-center justify-between gap-2 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+      <Link to={`/profile/${user.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+        <Avatar className="w-10 h-10 flex-shrink-0">
+          <AvatarImage src={user.avatar_url} />
+          <AvatarFallback>
+            {user.display_name?.[0] || user.username?.[0] || 'U'}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              {user.display_name || user.username}
+            </p>
+            <VerificationBadge 
+              level={verificationLevel} 
+              showText={false}
+              className="flex-shrink-0"
+            />
           </div>
-        </Link>
-      </div>
+          <p className="text-xs text-gray-500 truncate">@{user.username}</p>
+          <p className="text-xs text-gray-400">{user.followers_count} followers</p>
+        </div>
+      </Link>
       <Button
         size="sm"
         variant="outline"
         onClick={() => onFollow(user.id)}
-        className="text-xs px-3 py-1 h-8"
+        className="text-xs px-3 py-1 h-8 flex-shrink-0"
       >
         <UserPlus className="w-3 h-3 mr-1" />
         Follow
