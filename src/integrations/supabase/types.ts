@@ -886,6 +886,56 @@ export type Database = {
           },
         ]
       }
+      challenge_analytics: {
+        Row: {
+          abandons_count: number | null
+          average_progress: number | null
+          challenge_id: string
+          completions_count: number | null
+          created_at: string | null
+          date: string
+          engagement_score: number | null
+          id: string
+          joins_count: number | null
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          abandons_count?: number | null
+          average_progress?: number | null
+          challenge_id: string
+          completions_count?: number | null
+          created_at?: string | null
+          date?: string
+          engagement_score?: number | null
+          id?: string
+          joins_count?: number | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          abandons_count?: number | null
+          average_progress?: number | null
+          challenge_id?: string
+          completions_count?: number | null
+          created_at?: string | null
+          date?: string
+          engagement_score?: number | null
+          id?: string
+          joins_count?: number | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_analytics_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "social_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_participants: {
         Row: {
           challenge_id: string
@@ -4026,6 +4076,10 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      has_role: {
+        Args: { _role: string; _user_id: string }
+        Returns: boolean
       }
       is_circle_member: {
         Args: { _circle_id: string; _user_id: string }

@@ -10,13 +10,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Trophy, Target, Users, TrendingUp, Calendar, PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Trophy, Target, Users, TrendingUp, Calendar, PlusCircle, MoreVertical, Edit, Trash2, BarChart3 } from 'lucide-react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { ChallengeAnalytics } from '@/components/ChallengeAnalytics';
 
 const Challenges = () => {
   const { challenges, myParticipations, loading, createChallenge, updateChallenge, deleteChallenge, joinChallenge, updateProgress } = useSocialChallenges();
@@ -31,6 +32,7 @@ const Challenges = () => {
   const [goalType, setGoalType] = useState<SocialChallenge['goal_type']>('count');
   const [goalValue, setGoalValue] = useState('');
   const [durationDays, setDurationDays] = useState('7');
+  const [viewingAnalytics, setViewingAnalytics] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
   const resetForm = () => {
@@ -115,13 +117,13 @@ const Challenges = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/40 via-pink-50/40 to-blue-50/40 dark:from-slate-900 dark:via-purple-900/30 dark:to-slate-900 flex relative">
       {!isMobile && <SidebarNav />}
       
       <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
-        <main className={`w-full ${isMobile ? '' : 'max-w-2xl border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto`}>
+        <main className={`w-full ${isMobile ? '' : 'max-w-2xl border-x border-primary/10 dark:border-primary/20'} bg-background/40 dark:bg-background/40 backdrop-blur-2xl mx-auto shadow-2xl`}>
           {/* Header */}
-          <div className={`sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl ${isMobile ? '' : 'border-b border-purple-200 dark:border-purple-800'} p-4 z-10 space-y-3`}>
+          <div className={`sticky top-0 bg-background/80 dark:bg-background/80 backdrop-blur-xl ${isMobile ? '' : 'border-b border-primary/10 dark:border-primary/20'} p-4 z-10 space-y-3 shadow-lg`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <Trophy className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-primary`} />
@@ -203,7 +205,7 @@ const Challenges = () => {
                   : 0;
                 
                 return (
-                  <Card key={challenge.id} className="transition-all hover:shadow-lg duration-fast">
+                  <Card key={challenge.id} className="transition-all hover:shadow-2xl duration-fast bg-card/60 backdrop-blur-xl border-primary/10 hover:border-primary/30 shadow-xl hover:scale-[1.02]">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -219,11 +221,15 @@ const Challenges = () => {
                         {challenge.creator_id === user?.id && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
+                              <Button variant="ghost" size="icon" className="glass">
                                 <MoreVertical className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="glass-dark backdrop-blur-xl">
+                              <DropdownMenuItem onClick={() => setViewingAnalytics(challenge.id)}>
+                                <BarChart3 className="w-4 h-4 mr-2" />
+                                Analytics
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEdit(challenge)}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit
@@ -311,6 +317,24 @@ const Challenges = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          {/* Analytics Dialog */}
+          <Dialog open={!!viewingAnalytics} onOpenChange={() => setViewingAnalytics(null)}>
+            <DialogContent className="max-w-3xl glass-dark backdrop-blur-2xl border-primary/20">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Challenge Analytics
+                </DialogTitle>
+              </DialogHeader>
+              {viewingAnalytics && (
+                <ChallengeAnalytics 
+                  challengeId={viewingAnalytics} 
+                  isCreator={challenges.find(c => c.id === viewingAnalytics)?.creator_id === user?.id}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </main>
       </div>
       

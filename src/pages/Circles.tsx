@@ -142,13 +142,13 @@ const Circles = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/40 via-pink-50/40 to-blue-50/40 dark:from-slate-900 dark:via-purple-900/30 dark:to-slate-900 flex relative">
       {!isMobile && <SidebarNav />}
       
       <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
-        <main className={`w-full ${isMobile ? '' : 'max-w-2xl border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto`}>
+        <main className={`w-full ${isMobile ? '' : 'max-w-2xl border-x border-primary/10 dark:border-primary/20'} bg-background/40 dark:bg-background/40 backdrop-blur-2xl mx-auto shadow-2xl`}>
           {/* Header */}
-          <div className={`sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl ${isMobile ? '' : 'border-b border-purple-200 dark:border-purple-800'} p-4 z-10 space-y-3`}>
+          <div className={`sticky top-0 bg-background/80 dark:bg-background/80 backdrop-blur-xl ${isMobile ? '' : 'border-b border-primary/10 dark:border-primary/20'} p-4 z-10 space-y-3 shadow-lg`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <Users className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-primary`} />
@@ -243,7 +243,7 @@ const Circles = () => {
           {/* Circles List */}
           <div className="p-4 space-y-4">
             {circles.length === 0 ? (
-              <Card>
+              <Card className="glass backdrop-blur-xl border-primary/10">
                 <CardContent className="py-12 text-center">
                   <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">No circles yet</h3>
@@ -254,7 +254,7 @@ const Circles = () => {
               </Card>
             ) : (
               circles.map((circle) => (
-                <Card key={circle.id} className="transition-all hover:shadow-lg duration-fast cursor-pointer" onClick={() => handleViewCircle(circle)}>
+                <Card key={circle.id} className="transition-all hover:shadow-2xl duration-fast cursor-pointer bg-card/60 backdrop-blur-xl border-primary/10 hover:border-primary/30 shadow-xl hover:scale-[1.02]" onClick={() => handleViewCircle(circle)}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
@@ -333,7 +333,7 @@ const Circles = () => {
 
       {/* Circle Detail Dialog */}
       <Dialog open={!!selectedCircle} onOpenChange={() => setSelectedCircle(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="max-w-4xl max-h-[80vh] glass-dark backdrop-blur-2xl border-primary/20">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-3">
               <div
@@ -369,7 +369,7 @@ const Circles = () => {
 
             <TabsContent value="overview" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <Card>
+                <Card className="glass backdrop-blur-xl border-primary/20">
                   <CardHeader>
                     <CardTitle className="text-sm">Members</CardTitle>
                   </CardHeader>
@@ -377,7 +377,7 @@ const Circles = () => {
                     <p className="text-2xl font-bold">{selectedCircle?.member_count}</p>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="glass backdrop-blur-xl border-primary/20">
                   <CardHeader>
                     <CardTitle className="text-sm">Category</CardTitle>
                   </CardHeader>
@@ -387,7 +387,7 @@ const Circles = () => {
                 </Card>
               </div>
               {selectedCircle && selectedCircle.member_count > 0 && (
-                <Card>
+                <Card className="glass backdrop-blur-xl border-primary/20">
                   <CardHeader>
                     <CardTitle className="text-sm">Quick Actions</CardTitle>
                   </CardHeader>
@@ -421,20 +421,22 @@ const Circles = () => {
 
             <TabsContent value="members" className="space-y-4">
               {canAddMembers && (
-                <CollaboratorSearch 
-                  onUserSelect={handleAddMember}
-                  placeholder="Add member to circle..."
-                />
+                <div className="glass backdrop-blur-xl border-primary/10 p-4 rounded-lg">
+                  <CollaboratorSearch 
+                    onUserSelect={handleAddMember}
+                    placeholder="Add member to circle..."
+                  />
+                </div>
               )}
               {!canAddMembers && (
-                <div className="p-3 bg-muted/50 rounded-lg border border-muted text-sm text-muted-foreground">
+                <div className="p-3 glass backdrop-blur-xl border-primary/10 rounded-lg text-sm text-muted-foreground">
                   Only admins and authorized members can add new members to this circle.
                 </div>
               )}
               <ScrollArea className="h-64">
                 <div className="space-y-2">
                   {circleMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 hover:bg-accent rounded-lg border border-muted">
+                    <div key={member.id} className="flex items-center justify-between p-3 hover:bg-accent/50 rounded-lg border border-primary/10 glass backdrop-blur-xl transition-all hover:shadow-lg">
                       <div className="flex items-center space-x-3">
                         <Avatar className="w-10 h-10">
                           <AvatarImage src={member.profiles.avatar_url} />
