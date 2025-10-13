@@ -2,6 +2,8 @@
 import { useAuth } from "@/contexts/AuthContext";
 import SidebarNav from "@/components/SidebarNav";
 import RightSidebar from "@/components/RightSidebar";
+import MobileBottomNav from "@/components/MobileBottomNav";
+import { useIsMobile } from "@/hooks/use-mobile";
 import UserSearch from "@/components/UserSearch";
 import TrendingWidget from "@/components/TrendingWidget";
 import { useState, useEffect } from "react";
@@ -23,6 +25,7 @@ const Search = () => {
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{
     posts: Post[];
@@ -130,9 +133,9 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
       
-      <main className="flex-1 lg:mr-96">
+      <main className={`flex-1 ${isMobile ? 'px-4 pb-20' : 'lg:mr-96'}`}>
         <div className="max-w-2xl mx-auto p-4">
           <div className="mb-6">
             <div className="relative">
@@ -282,9 +285,8 @@ const Search = () => {
         </div>
       </main>
       
-      <div className="hidden lg:block">
-        <RightSidebar />
-      </div>
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };
