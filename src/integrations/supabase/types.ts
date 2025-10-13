@@ -115,6 +115,42 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_users: {
+        Row: {
+          blocked_user_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          blocked_user_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          blocked_user_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_users_blocked_user_id_fkey"
+            columns: ["blocked_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocked_users_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookmarks: {
         Row: {
           created_at: string
@@ -850,6 +886,123 @@ export type Database = {
           },
         ]
       }
+      challenge_participants: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          id: string
+          joined_at: string
+          progress: number | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          id?: string
+          joined_at?: string
+          progress?: number | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          id?: string
+          joined_at?: string
+          progress?: number | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participants_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "social_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_members: {
+        Row: {
+          added_at: string
+          circle_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          circle_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          circle_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_members_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "user_circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      close_friends: {
+        Row: {
+          added_at: string
+          friend_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          friend_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          friend_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "close_friends_friend_id_fkey"
+            columns: ["friend_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "close_friends_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collaboration_invites: {
         Row: {
           created_at: string
@@ -1301,6 +1454,60 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      friendship_milestones: {
+        Row: {
+          created_at: string
+          date: string
+          description: string | null
+          friend_id: string
+          id: string
+          is_recurring: boolean | null
+          milestone_type: string
+          reminder_enabled: boolean | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description?: string | null
+          friend_id: string
+          id?: string
+          is_recurring?: boolean | null
+          milestone_type: string
+          reminder_enabled?: boolean | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          friend_id?: string
+          id?: string
+          is_recurring?: boolean | null
+          milestone_type?: string
+          reminder_enabled?: boolean | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friendship_milestones_friend_id_fkey"
+            columns: ["friend_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friendship_milestones_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gallery_items: {
         Row: {
@@ -1780,6 +1987,48 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "music_tracks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      muted_users: {
+        Row: {
+          created_at: string
+          id: string
+          mute_duration: string | null
+          muted_until: string | null
+          muted_user_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mute_duration?: string | null
+          muted_until?: string | null
+          muted_user_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mute_duration?: string | null
+          muted_until?: string | null
+          muted_user_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "muted_users_muted_user_id_fkey"
+            columns: ["muted_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muted_users_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -2635,6 +2884,68 @@ export type Database = {
           },
         ]
       }
+      social_challenges: {
+        Row: {
+          category: string
+          cover_image_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          duration_days: number | null
+          end_date: string
+          goal_type: string
+          goal_value: number | null
+          id: string
+          is_public: boolean | null
+          participants_count: number | null
+          start_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          duration_days?: number | null
+          end_date: string
+          goal_type: string
+          goal_value?: number | null
+          id?: string
+          is_public?: boolean | null
+          participants_count?: number | null
+          start_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          duration_days?: number | null
+          end_date?: string
+          goal_type?: string
+          goal_value?: number | null
+          id?: string
+          is_public?: boolean | null
+          participants_count?: number | null
+          start_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_challenges_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sponsored_posts: {
         Row: {
           ad_id: string | null
@@ -2871,6 +3182,56 @@ export type Database = {
         }
         Relationships: []
       }
+      time_capsules: {
+        Row: {
+          content: string
+          created_at: string
+          creator_id: string
+          id: string
+          is_revealed: boolean | null
+          media_urls: Json | null
+          recipients: Json | null
+          reveal_date: string
+          revealed_at: string | null
+          title: string
+          visibility: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          creator_id: string
+          id?: string
+          is_revealed?: boolean | null
+          media_urls?: Json | null
+          recipients?: Json | null
+          reveal_date: string
+          revealed_at?: string | null
+          title: string
+          visibility?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          creator_id?: string
+          id?: string
+          is_revealed?: boolean | null
+          media_urls?: Json | null
+          recipients?: Json | null
+          reveal_date?: string
+          revealed_at?: string | null
+          title?: string
+          visibility?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_capsules_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -2933,6 +3294,97 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      user_circles: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          member_count: number | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          member_count?: number | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          member_count?: number | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_circles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_moods: {
+        Row: {
+          activity: string | null
+          color_theme: string | null
+          created_at: string
+          custom_message: string | null
+          emoji: string | null
+          expires_at: string | null
+          id: string
+          mood: string
+          music_track: string | null
+          user_id: string
+        }
+        Insert: {
+          activity?: string | null
+          color_theme?: string | null
+          created_at?: string
+          custom_message?: string | null
+          emoji?: string | null
+          expires_at?: string | null
+          id?: string
+          mood: string
+          music_track?: string | null
+          user_id: string
+        }
+        Update: {
+          activity?: string | null
+          color_theme?: string | null
+          created_at?: string
+          custom_message?: string | null
+          emoji?: string | null
+          expires_at?: string | null
+          id?: string
+          mood?: string
+          music_track?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_moods_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_mutes: {
         Row: {
@@ -3080,11 +3532,20 @@ export type Database = {
           likes_notifications: boolean | null
           mentions_notifications: boolean | null
           messages_notifications: boolean | null
+          post_visibility: string | null
           private_account: boolean | null
           push_notifications: boolean | null
+          read_receipts_enabled: boolean | null
+          show_followers_list: boolean | null
+          show_following_list: boolean | null
           show_online_status: boolean | null
+          story_replies_enabled: boolean | null
+          two_factor_enabled: boolean | null
           updated_at: string
           user_id: string
+          who_can_comment: string | null
+          who_can_message: string | null
+          who_can_tag: string | null
         }
         Insert: {
           allow_messages?: boolean | null
@@ -3096,11 +3557,20 @@ export type Database = {
           likes_notifications?: boolean | null
           mentions_notifications?: boolean | null
           messages_notifications?: boolean | null
+          post_visibility?: string | null
           private_account?: boolean | null
           push_notifications?: boolean | null
+          read_receipts_enabled?: boolean | null
+          show_followers_list?: boolean | null
+          show_following_list?: boolean | null
           show_online_status?: boolean | null
+          story_replies_enabled?: boolean | null
+          two_factor_enabled?: boolean | null
           updated_at?: string
           user_id: string
+          who_can_comment?: string | null
+          who_can_message?: string | null
+          who_can_tag?: string | null
         }
         Update: {
           allow_messages?: boolean | null
@@ -3112,11 +3582,20 @@ export type Database = {
           likes_notifications?: boolean | null
           mentions_notifications?: boolean | null
           messages_notifications?: boolean | null
+          post_visibility?: string | null
           private_account?: boolean | null
           push_notifications?: boolean | null
+          read_receipts_enabled?: boolean | null
+          show_followers_list?: boolean | null
+          show_following_list?: boolean | null
           show_online_status?: boolean | null
+          story_replies_enabled?: boolean | null
+          two_factor_enabled?: boolean | null
           updated_at?: string
           user_id?: string
+          who_can_comment?: string | null
+          who_can_message?: string | null
+          who_can_tag?: string | null
         }
         Relationships: []
       }
