@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Home, Search, MessageCircle, Bell, User, Play } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const MobileBottomNav = () => {
   const location = useLocation();
@@ -36,6 +37,11 @@ const MobileBottomNav = () => {
             </Link>
           );
         })}
+        
+        {/* Theme Toggle for Mobile */}
+        <div className="flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-200 min-w-0 flex-1">
+          <ThemeToggle />
+        </div>
       </div>
     </div>
   );

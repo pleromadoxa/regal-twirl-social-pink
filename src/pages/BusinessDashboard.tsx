@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
+import { useIsMobile } from '@/hooks/use-mobile';
 import SidebarNav from '@/components/SidebarNav';
+import RightSidebar from '@/components/RightSidebar';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import BusinessDashboardHeader from '@/components/business/BusinessDashboardHeader';
 import BusinessDashboardTabs from '@/components/business/BusinessDashboardTabs';
 import BusinessDashboardLoading from '@/components/business/BusinessDashboardLoading';
@@ -13,6 +16,7 @@ const BusinessDashboard = () => {
   const { user } = useAuth();
   const { myPages, loading, refetch } = useBusinessPages();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [currentPage, setCurrentPage] = useState<any>(null);
 
   useEffect(() => {
@@ -79,16 +83,21 @@ const BusinessDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-      <SidebarNav />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 ml-80 mr-96 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
-        <BusinessDashboardHeader businessPage={currentPage} />
-        
-        <div className="p-6">
-          <BusinessDashboardTabs businessPage={currentPage} onPageUpdate={handlePageUpdate} />
-        </div>
+      <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
+        <main className={`w-full ${isMobile ? '' : 'max-w-6xl border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto`}>
+          <BusinessDashboardHeader businessPage={currentPage} />
+          
+          <div className={isMobile ? 'p-3' : 'p-6'}>
+            <BusinessDashboardTabs businessPage={currentPage} onPageUpdate={handlePageUpdate} />
+          </div>
+        </main>
       </div>
+
+      {!isMobile && <RightSidebar />}
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

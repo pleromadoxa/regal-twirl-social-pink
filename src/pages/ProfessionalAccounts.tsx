@@ -51,8 +51,8 @@ const ProfessionalAccounts = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-        <SidebarNav />
-        <div className="flex-1 ml-80 mr-96 flex items-center justify-center">
+        {!isMobile && <SidebarNav />}
+        <div className={`flex-1 ${isMobile ? '' : 'ml-80 mr-96'} flex items-center justify-center`}>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
         </div>
         {!isMobile && <RightSidebar />}
@@ -62,25 +62,25 @@ const ProfessionalAccounts = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-      <SidebarNav />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 ml-80 mr-96 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-8">
+      <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
+        <main className={`w-full ${isMobile ? '' : 'max-w-6xl border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto ${isMobile ? 'p-3' : 'p-6'}`}>
+          <div className={`flex items-center justify-between ${isMobile ? 'mb-4' : 'mb-8'}`}>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h1 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent`}>
                 Professional Accounts
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
+              <p className={`text-gray-600 dark:text-gray-400 ${isMobile ? 'text-sm mt-1' : 'mt-2'}`}>
                 Manage your business pages and professional presence
               </p>
             </div>
             <BusinessPageDialog
               trigger={
-                <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Business Page
+                <Button className={`bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg ${isMobile ? 'text-xs px-3 py-2' : ''}`}>
+                  <Plus className={`${isMobile ? 'w-3 h-3 mr-1' : 'w-4 h-4 mr-2'}`} />
+                  {isMobile ? 'Create' : 'Create Business Page'}
                 </Button>
               }
             />
@@ -89,9 +89,9 @@ const ProfessionalAccounts = () => {
           {myPages.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
-                <Building2 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <h3 className="text-xl font-semibold text-gray-600 mb-2">No Business Pages Yet</h3>
-                <p className="text-gray-500 mb-6">
+                <Building2 className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} mx-auto mb-4 text-gray-300`} />
+                <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-gray-600 mb-2`}>No Business Pages Yet</h3>
+                <p className={`text-gray-500 ${isMobile ? 'text-sm mb-4' : 'mb-6'}`}>
                   Create your first business page to start building your professional presence
                 </p>
                 <BusinessPageDialog
@@ -105,12 +105,12 @@ const ProfessionalAccounts = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
               {myPages.map((page) => (
                 <Card key={page.id} className="group hover:shadow-xl transition-all duration-300 border-purple-200/50 dark:border-purple-800/50 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-                  <CardHeader className="pb-3">
+                  <CardHeader className={isMobile ? 'pb-2' : 'pb-3'}>
                     <div className="flex items-start gap-4">
-                      <Avatar className="w-16 h-16 border-2 border-purple-200">
+                      <Avatar className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} border-2 border-purple-200`}>
                         <AvatarImage src={page.avatar_url} />
                         <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-lg">
                           {page.page_name?.charAt(0)?.toUpperCase()}
@@ -118,7 +118,7 @@ const ProfessionalAccounts = () => {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <CardTitle className="text-lg truncate">{page.page_name}</CardTitle>
+                          <CardTitle className={`${isMobile ? 'text-base' : 'text-lg'} truncate`}>{page.page_name}</CardTitle>
                           {page.is_verified && (
                             <Badge variant="secondary" className="text-xs">
                               <Star className="w-3 h-3 mr-1" />
@@ -143,7 +143,7 @@ const ProfessionalAccounts = () => {
                     </div>
                   </CardHeader>
                   
-                  <CardContent className="pt-0">
+                  <CardContent className={isMobile ? 'pt-0 pb-3' : 'pt-0'}>
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                       {page.description || 'No description available'}
                     </p>
@@ -186,7 +186,7 @@ const ProfessionalAccounts = () => {
               ))}
             </div>
           )}
-        </div>
+        </main>
       </div>
 
       {!isMobile && <RightSidebar />}
