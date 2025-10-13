@@ -1128,6 +1128,41 @@ export type Database = {
           },
         ]
       }
+      circle_post_replies: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_post_replies_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "circle_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circle_posts: {
         Row: {
           author_id: string
@@ -1138,6 +1173,7 @@ export type Database = {
           id: string
           likes_count: number | null
           media_urls: Json | null
+          replies_count: number
           updated_at: string | null
         }
         Insert: {
@@ -1149,6 +1185,7 @@ export type Database = {
           id?: string
           likes_count?: number | null
           media_urls?: Json | null
+          replies_count?: number
           updated_at?: string | null
         }
         Update: {
@@ -1160,6 +1197,7 @@ export type Database = {
           id?: string
           likes_count?: number | null
           media_urls?: Json | null
+          replies_count?: number
           updated_at?: string | null
         }
         Relationships: [

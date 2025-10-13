@@ -10,6 +10,7 @@ export interface CirclePost {
   media_urls: string[];
   likes_count: number;
   comments_count: number;
+  replies_count: number;
   created_at: string;
   updated_at: string;
   profiles?: {

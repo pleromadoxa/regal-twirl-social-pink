@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle, Send } from 'lucide-react';
+import { Heart, MessageCircle, Send, Image as ImageIcon } from 'lucide-react';
 import { useCirclePosts } from '@/hooks/useCirclePosts';
 import { formatDistanceToNow } from 'date-fns';
+import CirclePostReplies from './CirclePostReplies';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CircleFeedProps {
   circleId: string;
@@ -15,7 +17,9 @@ interface CircleFeedProps {
 const CircleFeed = ({ circleId, circleName }: CircleFeedProps) => {
   const [newPost, setNewPost] = useState('');
   const [isPosting, setIsPosting] = useState(false);
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
   const { posts, loading, createPost, likePost } = useCirclePosts(circleId);
+  const { user } = useAuth();
 
   const handleCreatePost = async () => {
     if (!newPost.trim()) return;
@@ -26,25 +30,49 @@ const CircleFeed = ({ circleId, circleName }: CircleFeedProps) => {
     setIsPosting(false);
   };
 
+  const toggleReplies = (postId: string) => {
+    setExpandedPostId(expandedPostId === postId ? null : postId);
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Create Post */}
-      <Card>
-        <CardHeader>
-          <h3 className="font-semibold">Share with {circleName}</h3>
+    <div className="space-y-6">
+      {/* Create Post Card */}
+      <Card className="border-primary/10 shadow-sm hover:shadow-md transition-shadow">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 ring-2 ring-primary/10">
+              <AvatarImage src={user?.user_metadata?.avatar_url} />
+              <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10">
+                {user?.user_metadata?.display_name?.[0] || user?.email?.[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold text-lg">Share with {circleName}</h3>
+              <p className="text-xs text-muted-foreground">What's on your mind?</p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <Textarea
-            placeholder="What's on your mind?"
+            placeholder="Share your thoughts, updates, or memories with the circle..."
             value={newPost}
             onChange={(e) => setNewPost(e.target.value)}
-            className="min-h-[100px]"
+            className="min-h-[120px] resize-none border-muted-foreground/20 focus:border-primary"
           />
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+            >
+              <ImageIcon className="w-4 h-4 mr-2" />
+              Add Image
+            </Button>
             <Button
               onClick={handleCreatePost}
               disabled={!newPost.trim() || isPosting}
               size="sm"
+              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
             >
               <Send className="w-4 h-4 mr-2" />
               {isPosting ? 'Posting...' : 'Post'}
@@ -55,66 +83,84 @@ const CircleFeed = ({ circleId, circleName }: CircleFeedProps) => {
 
       {/* Posts Feed */}
       {loading ? (
-        <div className="text-center py-8 text-muted-foreground">
-          Loading posts...
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading posts...</p>
         </div>
       ) : posts.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No posts yet</h3>
-            <p className="text-muted-foreground">
-              Be the first to share something with this circle!
+        <Card className="border-dashed">
+          <CardContent className="py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">No posts yet</h3>
+            <p className="text-muted-foreground max-w-sm mx-auto">
+              Be the first to share something with this circle! Start a conversation, share an update, or post a memory.
             </p>
           </CardContent>
         </Card>
       ) : (
-        posts.map((post) => (
-          <Card key={post.id}>
-            <CardHeader>
-              <div className="flex items-center space-x-3">
-                <Avatar>
-                  <AvatarImage src={post.profiles?.avatar_url} />
-                  <AvatarFallback>
-                    {post.profiles?.display_name?.[0] || post.profiles?.username?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">
-                    {post.profiles?.display_name || post.profiles?.username}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                  </p>
+        <div className="space-y-4">
+          {posts.map((post) => (
+            <Card key={post.id} className="border-muted-foreground/10 hover:shadow-lg transition-all">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 ring-2 ring-primary/10">
+                      <AvatarImage src={post.profiles?.avatar_url} />
+                      <AvatarFallback className="bg-gradient-to-br from-purple-500/20 to-pink-500/20">
+                        {post.profiles?.display_name?.[0] || post.profiles?.username?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold">
+                        {post.profiles?.display_name || post.profiles?.username}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="whitespace-pre-wrap">{post.content}</p>
-              
-              {/* Actions */}
-              <div className="flex items-center space-x-4 pt-2 border-t">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => likePost(post.id)}
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  <Heart className="w-4 h-4 mr-1" />
-                  {post.likes_count}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  <MessageCircle className="w-4 h-4 mr-1" />
-                  {post.comments_count}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-foreground leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                
+                {/* Actions Bar */}
+                <div className="flex items-center gap-2 pt-3 border-t border-muted-foreground/10">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => likePost(post.id)}
+                    className="text-muted-foreground hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-950/20 transition-colors"
+                  >
+                    <Heart className="w-4 h-4 mr-1.5" />
+                    <span className="text-sm font-medium">{post.likes_count}</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleReplies(post.id)}
+                    className={`text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors ${
+                      expandedPostId === post.id ? 'bg-primary/10 text-primary' : ''
+                    }`}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1.5" />
+                    <span className="text-sm font-medium">
+                      {post.replies_count || 0} {post.replies_count === 1 ? 'reply' : 'replies'}
+                    </span>
+                  </Button>
+                </div>
+
+                {/* Replies Thread */}
+                <CirclePostReplies 
+                  postId={post.id} 
+                  isOpen={expandedPostId === post.id}
+                />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );
