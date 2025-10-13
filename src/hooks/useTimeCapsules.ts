@@ -5,17 +5,16 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface TimeCapsule {
   id: string;
-  user_id: string;
+  creator_id: string;
   title: string;
   content: string;
-  media_urls: string[];
-  unlock_date: string;
-  is_unlocked: boolean;
-  recipients: string[];
-  is_public: boolean;
-  category: string;
+  media_urls: any;
+  reveal_date: string;
+  is_revealed: boolean;
+  recipients: any;
+  visibility: string;
   created_at: string;
-  unlocked_at: string | null;
+  revealed_at: string | null;
 }
 
 export const useTimeCapsules = () => {
@@ -28,9 +27,9 @@ export const useTimeCapsules = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('time_capsules').select('*').order('unlock_date', { ascending: true });
+      const { data, error } = await supabase.from('time_capsules').select('*').order('reveal_date', { ascending: true });
       if (error) throw error;
-      setCapsules(data || []);
+      setCapsules((data as any) || []);
     } catch (error: any) {
       console.error('Error fetching time capsules:', error);
     } finally {
@@ -38,10 +37,10 @@ export const useTimeCapsules = () => {
     }
   };
 
-  const createCapsule = async (capsule: Omit<TimeCapsule, 'id' | 'user_id' | 'created_at' | 'is_unlocked' | 'unlocked_at'>) => {
+  const createCapsule = async (capsule: Partial<TimeCapsule>) => {
     if (!user) return;
     try {
-      const { data, error } = await supabase.from('time_capsules').insert({ ...capsule, user_id: user.id }).select().single();
+      const { data, error } = await supabase.from('time_capsules').insert({ ...capsule, creator_id: user.id } as any).select().single();
       if (error) throw error;
       toast({ title: "Time capsule created!" });
       await fetchCapsules();
@@ -51,11 +50,11 @@ export const useTimeCapsules = () => {
     }
   };
 
-  const unlockCapsule = async (capsuleId: string) => {
+  const revealCapsule = async (capsuleId: string) => {
     try {
-      const { error } = await supabase.from('time_capsules').update({ is_unlocked: true, unlocked_at: new Date().toISOString() }).eq('id', capsuleId);
+      const { error } = await supabase.from('time_capsules').update({ is_revealed: true, revealed_at: new Date().toISOString() } as any).eq('id', capsuleId);
       if (error) throw error;
-      toast({ title: "Unlocked!" });
+      toast({ title: "Revealed!" });
       await fetchCapsules();
     } catch (error: any) {
       toast({ title: "Failed", variant: "destructive" });
@@ -73,9 +72,7 @@ export const useTimeCapsules = () => {
     }
   };
 
-  useEffect(() => {
-    fetchCapsules();
-  }, [user]);
+  useEffect(() => { fetchCapsules(); }, [user]);
 
-  return { capsules, loading, createCapsule, unlockCapsule, deleteCapsule, refetch: fetchCapsules };
+  return { capsules, loading, createCapsule, revealCapsule, deleteCapsule, refetch: fetchCapsules };
 };

@@ -35,6 +35,8 @@ const FriendshipMilestones = () => {
     anniversary: Heart,
     achievement: Trophy,
     memory: Star,
+    streak: Trophy,
+    custom: Sparkles,
     other: Sparkles
   };
 
@@ -43,6 +45,8 @@ const FriendshipMilestones = () => {
     anniversary: '#f43f5e',
     achievement: '#f97316',
     memory: '#a855f7',
+    streak: '#10b981',
+    custom: '#6366f1',
     other: '#6366f1'
   };
 
@@ -137,6 +141,8 @@ const FriendshipMilestones = () => {
                         <SelectItem value="anniversary">❤️ Anniversary</SelectItem>
                         <SelectItem value="achievement">🏆 Achievement</SelectItem>
                         <SelectItem value="memory">⭐ Memory</SelectItem>
+                        <SelectItem value="streak">🔥 Streak</SelectItem>
+                        <SelectItem value="custom">💫 Custom</SelectItem>
                         <SelectItem value="other">✨ Other</SelectItem>
                       </SelectContent>
                     </Select>

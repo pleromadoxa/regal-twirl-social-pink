@@ -3,61 +3,83 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-export interface MoodBoard {
+export interface UserMood {
   id: string;
   user_id: string;
-  title: string;
-  description: string | null;
-  is_public: boolean;
-  is_collaborative: boolean;
-  background_color: string;
+  mood: string;
+  activity: string | null;
+  music_track: string | null;
+  emoji: string;
+  custom_message: string | null;
+  color_theme: string;
+  expires_at: string;
   created_at: string;
-  updated_at: string;
 }
 
 export const useMoodBoard = () => {
-  const [boards, setBoards] = useState<MoodBoard[]>([]);
+  const [myMood, setMyMoodState] = useState<UserMood | null>(null);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchBoards = async () => {
+  const fetchMood = async () => {
     if (!user) return;
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('mood_boards').select('*').order('updated_at', { ascending: false });
-      if (error) throw error;
-      setBoards(data || []);
+      const { data, error } = await supabase
+        .from('user_moods')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      setMyMoodState((data as any) || null);
+    } catch (error: any) {
+      console.error('Error fetching mood:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const createBoard = async (board: Omit<MoodBoard, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+  const setMood = async (mood: Partial<UserMood>) => {
     if (!user) return;
     try {
-      const { data, error } = await supabase.from('mood_boards').insert({ ...board, user_id: user.id }).select().single();
+      setLoading(true);
+      // Delete existing mood first
+      await supabase.from('user_moods').delete().eq('user_id', user.id);
+      
+      // Insert new mood
+      const { data, error } = await supabase.from('user_moods').insert({ ...mood, user_id: user.id } as any).select().single();
       if (error) throw error;
-      toast({ title: "Board created!" });
-      await fetchBoards();
+      toast({ title: "Mood updated!" });
+      await fetchMood();
       return data;
     } catch (error: any) {
-      toast({ title: "Failed", variant: "destructive" });
+      toast({ title: "Failed to set mood", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const deleteBoard = async (boardId: string) => {
+  const clearMood = async () => {
+    if (!user) return;
     try {
-      const { error } = await supabase.from('mood_boards').delete().eq('id', boardId);
+      setLoading(true);
+      const { error } = await supabase.from('user_moods').delete().eq('user_id', user.id);
       if (error) throw error;
-      toast({ title: "Deleted" });
-      await fetchBoards();
+      toast({ title: "Mood cleared" });
+      setMyMoodState(null);
     } catch (error: any) {
       toast({ title: "Failed", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => { fetchBoards(); }, [user]);
+  useEffect(() => { fetchMood(); }, [user]);
 
-  return { boards, loading, createBoard, deleteBoard, refetch: fetchBoards };
+  return { myMood, loading, setMood, clearMood, refetch: fetchMood };
 };
