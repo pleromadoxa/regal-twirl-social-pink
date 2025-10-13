@@ -55,10 +55,25 @@ export const useCircles = () => {
   }, [user]);
 
   const createCircle = async (name: string, description?: string, color?: string, icon?: string) => {
-    if (!user) return null;
+    if (!user) {
+      toast({ 
+        title: "Authentication required", 
+        description: "Please log in to create circles",
+        variant: "destructive" 
+      });
+      return null;
+    }
 
     try {
       setLoading(true);
+      console.log('[useCircles] Creating circle with:', { 
+        user_id: user.id, 
+        name, 
+        description, 
+        color: color || '#6366f1', 
+        icon: icon || 'users' 
+      });
+
       const { data, error } = await supabase
         .from('user_circles')
         .insert({
@@ -71,14 +86,22 @@ export const useCircles = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useCircles] Error creating circle:', error);
+        throw error;
+      }
 
+      console.log('[useCircles] Circle created successfully:', data);
       toast({ title: "Circle created successfully" });
       await fetchCircles();
       return data;
     } catch (error: any) {
-      console.error('Error creating circle:', error);
-      toast({ title: "Failed to create circle", description: error.message, variant: "destructive" });
+      console.error('[useCircles] Failed to create circle:', error);
+      toast({ 
+        title: "Failed to create circle", 
+        description: error.message || "An unknown error occurred",
+        variant: "destructive" 
+      });
       return null;
     } finally {
       setLoading(false);
