@@ -87,6 +87,46 @@ export const useSocialChallenges = () => {
     if (user) {
       fetchMyParticipations();
     }
+
+    // Set up real-time subscription for challenges
+    const challengesChannel = supabase
+      .channel('challenges-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'social_challenges'
+        },
+        () => {
+          fetchChallenges();
+        }
+      )
+      .subscribe();
+
+    // Set up real-time subscription for participant changes
+    const participantsChannel = supabase
+      .channel('participants-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'challenge_participants'
+        },
+        () => {
+          fetchChallenges();
+          if (user) {
+            fetchMyParticipations();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(challengesChannel);
+      supabase.removeChannel(participantsChannel);
+    };
   }, [user]);
 
   const createChallenge = async (challenge: Omit<SocialChallenge, 'id' | 'creator_id' | 'participants_count' | 'created_at' | 'updated_at'>) => {
@@ -109,6 +149,58 @@ export const useSocialChallenges = () => {
       console.error('Error creating challenge:', error);
       toast({ title: "Failed to create challenge", description: error.message, variant: "destructive" });
       return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateChallenge = async (challengeId: string, updates: Partial<SocialChallenge>) => {
+    if (!user) return null;
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('social_challenges')
+        .update(updates)
+        .eq('id', challengeId)
+        .eq('creator_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({ title: "Challenge updated successfully" });
+      await fetchChallenges();
+      return data;
+    } catch (error: any) {
+      console.error('Error updating challenge:', error);
+      toast({ title: "Failed to update challenge", description: error.message, variant: "destructive" });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteChallenge = async (challengeId: string) => {
+    if (!user) return false;
+
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('social_challenges')
+        .delete()
+        .eq('id', challengeId)
+        .eq('creator_id', user.id);
+
+      if (error) throw error;
+
+      toast({ title: "Challenge deleted successfully" });
+      await fetchChallenges();
+      return true;
+    } catch (error: any) {
+      console.error('Error deleting challenge:', error);
+      toast({ title: "Failed to delete challenge", description: error.message, variant: "destructive" });
+      return false;
     } finally {
       setLoading(false);
     }
@@ -203,6 +295,8 @@ export const useSocialChallenges = () => {
     myParticipations,
     loading,
     createChallenge,
+    updateChallenge,
+    deleteChallenge,
     joinChallenge,
     updateProgress,
     leaveChallenge,

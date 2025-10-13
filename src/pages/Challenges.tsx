@@ -3,12 +3,14 @@ import { useSocialChallenges, SocialChallenge } from '@/hooks/useSocialChallenge
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Trophy, Target, Users, TrendingUp, Calendar, PlusCircle } from 'lucide-react';
+import { Trophy, Target, Users, TrendingUp, Calendar, PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,9 +19,12 @@ import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Challenges = () => {
-  const { challenges, myParticipations, loading, createChallenge, joinChallenge, updateProgress } = useSocialChallenges();
+  const { challenges, myParticipations, loading, createChallenge, updateChallenge, deleteChallenge, joinChallenge, updateProgress } = useSocialChallenges();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [editingChallenge, setEditingChallenge] = useState<SocialChallenge | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [challengeToDelete, setChallengeToDelete] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<SocialChallenge['category']>('fitness');
@@ -28,27 +33,65 @@ const Challenges = () => {
   const [durationDays, setDurationDays] = useState('7');
   const isMobile = useIsMobile();
 
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setCategory('fitness');
+    setGoalType('count');
+    setGoalValue('');
+    setDurationDays('7');
+    setEditingChallenge(null);
+  };
+
+  const handleEdit = (challenge: SocialChallenge) => {
+    setEditingChallenge(challenge);
+    setTitle(challenge.title);
+    setDescription(challenge.description || '');
+    setCategory(challenge.category);
+    setGoalType(challenge.goal_type);
+    setGoalValue(challenge.goal_value?.toString() || '');
+    setDurationDays(challenge.duration_days.toString());
+    setOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!challengeToDelete) return;
+    await deleteChallenge(challengeToDelete);
+    setDeleteDialogOpen(false);
+    setChallengeToDelete(null);
+  };
+
   const handleCreate = async () => {
     if (!title.trim()) return;
     
-    const startDate = new Date().toISOString().split('T')[0];
-    const endDate = new Date(Date.now() + parseInt(durationDays) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    if (editingChallenge) {
+      await updateChallenge(editingChallenge.id, {
+        title,
+        description,
+        category,
+        goal_type: goalType,
+        goal_value: goalValue ? parseInt(goalValue) : null,
+        duration_days: parseInt(durationDays),
+      });
+    } else {
+      const startDate = new Date().toISOString().split('T')[0];
+      const endDate = new Date(Date.now() + parseInt(durationDays) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
+      await createChallenge({
+        title,
+        description,
+        category,
+        goal_type: goalType,
+        goal_value: goalValue ? parseInt(goalValue) : null,
+        duration_days: parseInt(durationDays),
+        start_date: startDate,
+        end_date: endDate,
+        cover_image_url: null,
+        is_public: true
+      });
+    }
     
-    await createChallenge({
-      title,
-      description,
-      category,
-      goal_type: goalType,
-      goal_value: goalValue ? parseInt(goalValue) : null,
-      duration_days: parseInt(durationDays),
-      start_date: startDate,
-      end_date: endDate,
-      cover_image_url: null,
-      is_public: true
-    });
-    
-    setTitle('');
-    setDescription('');
+    resetForm();
     setOpen(false);
   };
 
@@ -84,7 +127,10 @@ const Challenges = () => {
                 <Trophy className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-primary`} />
                 <h1 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-foreground`}>Challenges</h1>
               </div>
-              <Dialog open={open} onOpenChange={setOpen}>
+              <Dialog open={open} onOpenChange={(isOpen) => {
+                setOpen(isOpen);
+                if (!isOpen) resetForm();
+              }}>
                 <DialogTrigger asChild>
                   <Button size={isMobile ? "sm" : "default"}>
                     <PlusCircle className="w-4 h-4 mr-2" />
@@ -93,7 +139,7 @@ const Challenges = () => {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Create Challenge</DialogTitle>
+                    <DialogTitle>{editingChallenge ? 'Edit Challenge' : 'Create Challenge'}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <Input placeholder="Challenge title" value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -124,9 +170,11 @@ const Challenges = () => {
                     {goalType !== 'completion' && (
                       <Input type="number" placeholder="Goal value" value={goalValue} onChange={(e) => setGoalValue(e.target.value)} />
                     )}
-                    <Input type="number" placeholder="Duration (days)" value={durationDays} onChange={(e) => setDurationDays(e.target.value)} />
+                    {!editingChallenge && (
+                      <Input type="number" placeholder="Duration (days)" value={durationDays} onChange={(e) => setDurationDays(e.target.value)} />
+                    )}
                     <Button onClick={handleCreate} disabled={loading} className="w-full">
-                      Create Challenge
+                      {editingChallenge ? 'Update Challenge' : 'Create Challenge'}
                     </Button>
                   </div>
                 </DialogContent>
@@ -168,6 +216,31 @@ const Challenges = () => {
                             <p className="text-sm text-muted-foreground mt-2">{challenge.description}</p>
                           )}
                         </div>
+                        {challenge.creator_id === user?.id && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEdit(challenge)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setChallengeToDelete(challenge.id);
+                                  setDeleteDialogOpen(true);
+                                }}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -220,6 +293,24 @@ const Challenges = () => {
               })
             )}
           </div>
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Challenge</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this challenge? This action cannot be undone and all participant data will be lost.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </main>
       </div>
       
