@@ -116,12 +116,12 @@ const RightSidebar = () => {
                   placeholder="Search users, posts, and more..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-white/80 dark:bg-slate-800/80 border-purple-200 dark:border-purple-700"
+                  className="pl-10 bg-white/80 dark:bg-slate-800/80 border-purple-200 dark:border-purple-700 transition-all duration-faster"
                 />
               </div>
               
               {searchQuery && (
-                <div className="max-h-60 overflow-y-auto">
+                <div className="max-h-60 overflow-y-auto animate-in fade-in duration-fast">
                   <UserSearch searchQuery={searchQuery} showMessageButton />
                 </div>
               )}

@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom animations for call UI */
+/* Custom animations for call UI - optimized for speed */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -18,7 +18,7 @@
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.8);
+    transform: scale(0.95);
   }
   to {
     opacity: 1;
@@ -55,25 +55,25 @@
   }
 }
 
-/* Animation utility classes */
+/* Animation utility classes - faster durations */
 .animate-fade-in {
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.3s ease-out;
+  animation: scaleIn 0.15s ease-out;
 }
 
 .animate-slide-in-right {
-  animation: slideInRight 0.4s ease-out;
+  animation: slideInRight 0.25s ease-out;
 }
 
 .animate-audio-wave {
-  animation: audioWave 0.8s ease-in-out infinite;
+  animation: audioWave 0.6s ease-in-out infinite;
 }
 
 .animate-pulse-glow {
-  animation: pulseGlow 2s infinite;
+  animation: pulseGlow 1.5s infinite;
 }
 
 .animation-delay-1000 {

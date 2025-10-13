@@ -143,13 +143,17 @@ export default {
 				},
 			},
 			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
-				first: "moveVertical 30s ease infinite",
-				second: "moveInCircle 20s reverse infinite",
-				third: "moveInCircle 40s linear infinite",
-				fourth: "moveHorizontal 40s ease infinite",
-				fifth: "moveInCircle 20s ease infinite",
+				'accordion-down': 'accordion-down 0.15s ease-out',
+				'accordion-up': 'accordion-up 0.15s ease-out',
+				first: "moveVertical 20s ease infinite",
+				second: "moveInCircle 15s reverse infinite",
+				third: "moveInCircle 30s linear infinite",
+				fourth: "moveHorizontal 30s ease infinite",
+				fifth: "moveInCircle 15s ease infinite",
+			},
+			transitionDuration: {
+				'fast': '150ms',
+				'faster': '100ms',
 			}
 		}
 	},

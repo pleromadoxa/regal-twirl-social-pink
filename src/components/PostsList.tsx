@@ -8,7 +8,7 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 import { useAuth } from '@/contexts/AuthContext';
 import RepliesSection from './RepliesSection';
-import { useState } from 'react';
+import { useState, memo } from 'react';
 
 const PostsList = () => {
   const { user } = useAuth();
@@ -82,7 +82,7 @@ const PostsList = () => {
   return (
     <div className="space-y-4">
       {posts.map((post) => (
-        <div key={post.id}>
+        <div key={post.id} className="transition-opacity duration-fast">
           <PostCard
             post={post}
             isLiked={post.user_liked}
@@ -99,7 +99,7 @@ const PostsList = () => {
             onTrackView={() => trackPostView(post.id)}
           />
           {showRepliesFor === post.id && (
-            <div className="mt-4 border-l-2 border-purple-200 dark:border-purple-800 pl-4">
+            <div className="mt-4 border-l-2 border-purple-200 dark:border-purple-800 pl-4 animate-in fade-in duration-fast">
               <RepliesSection postId={post.id} />
             </div>
           )}
@@ -109,4 +109,4 @@ const PostsList = () => {
   );
 };
 
-export default PostsList;
+export default memo(PostsList);
