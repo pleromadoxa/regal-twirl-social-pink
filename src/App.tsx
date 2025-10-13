@@ -44,6 +44,8 @@ const Support = lazy(() => import('@/pages/Support'));
 const JoinGroup = lazy(() => import('@/pages/JoinGroup'));
 const Events = lazy(() => import('@/pages/Events'));
 const Collaboration = lazy(() => import('@/pages/Collaboration'));
+const Circles = lazy(() => import('@/pages/Circles'));
+const Challenges = lazy(() => import('@/pages/Challenges'));
 const BusinessPage = lazy(() => import('@/pages/BusinessPage'));
 
 const queryClient = new QueryClient();
@@ -101,6 +103,8 @@ function App() {
                       <Route path="/ai-studio" element={<AuthWrapper><AIStudio /></AuthWrapper>} />
                       <Route path="/events" element={<AuthWrapper><Events /></AuthWrapper>} />
                       <Route path="/collaboration" element={<AuthWrapper><Collaboration /></AuthWrapper>} />
+                      <Route path="/circles" element={<AuthWrapper><Circles /></AuthWrapper>} />
+                      <Route path="/challenges" element={<AuthWrapper><Challenges /></AuthWrapper>} />
                     </Routes>
                   </Suspense>
                   <Toaster />

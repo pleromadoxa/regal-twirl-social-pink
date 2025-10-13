@@ -17,6 +17,15 @@ export type UserSettings = {
   messages_notifications?: boolean | null;
   allow_messages?: boolean | null;
   discoverable?: boolean | null;
+  post_visibility?: string | null;
+  who_can_comment?: string | null;
+  who_can_message?: string | null;
+  who_can_tag?: string | null;
+  show_followers_list?: boolean | null;
+  show_following_list?: boolean | null;
+  two_factor_enabled?: boolean | null;
+  read_receipts_enabled?: boolean | null;
+  story_replies_enabled?: boolean | null;
 };
 
 export const useUserSettings = () => {
@@ -124,7 +133,7 @@ export const useUserSettings = () => {
   }, [fetchSettings]);
 
   // Update any field and sync to supabase
-  const updateSetting = async (key: keyof UserSettings, value: boolean) => {
+  const updateSetting = async (key: keyof UserSettings, value: boolean | string) => {
     if (!user || !settings) {
       toast({
         title: "Error",
