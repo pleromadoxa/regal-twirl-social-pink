@@ -8,9 +8,10 @@ import { PriceAlertsWidget } from '@/components/PriceAlertsWidget';
 
 interface HomeFeedNavProps {
   onFilterChange?: (filter: 'all' | 'professional' | 'trending') => void;
+  onContentTypeChange?: (showFeed: boolean) => void;
 }
 
-const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
+const HomeFeedNav = ({ onFilterChange, onContentTypeChange }: HomeFeedNavProps) => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'professional' | 'trending' | 'news' | 'stocks' | 'alerts'>('all');
 
   const allTabs = [
@@ -31,8 +32,11 @@ const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
     
     setActiveFilter(newFilter);
     
-    // Only call onFilterChange for the main feed filters
-    if (['all', 'professional', 'trending'].includes(newFilter)) {
+    const shouldShowFeed = ['all', 'professional', 'trending'].includes(newFilter);
+    onContentTypeChange?.(shouldShowFeed);
+    
+    // Call onFilterChange with the selected filter
+    if (shouldShowFeed) {
       onFilterChange?.(newFilter as 'all' | 'professional' | 'trending');
     }
   };
@@ -50,6 +54,8 @@ const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
     }
   };
 
+  const shouldShowFeed = ['all', 'professional', 'trending'].includes(activeFilter);
+
   return (
     <div>
       <div className="px-6 py-4 border-b border-purple-200 dark:border-purple-800">
@@ -61,9 +67,11 @@ const HomeFeedNav = ({ onFilterChange }: HomeFeedNavProps) => {
         />
       </div>
       
-      {renderContent()}
+      {!shouldShowFeed && renderContent()}
     </div>
   );
 };
 
 export default HomeFeedNav;
+
+export { type HomeFeedNavProps };

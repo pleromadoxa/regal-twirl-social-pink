@@ -17,6 +17,7 @@ const Home = () => {
   const { user, loading } = useAuth();
   console.log('Home: Auth state - user:', !!user, 'loading:', loading);
   const [feedFilter, setFeedFilter] = useState<'all' | 'professional' | 'trending'>('all');
+  const [showFeed, setShowFeed] = useState(true);
   const isMobile = useIsMobile();
 
   // Test Supabase connection on mount
@@ -85,17 +86,24 @@ const Home = () => {
                 
                 <TabsContent value="feed" className="mt-0">
                   {/* Home Feed Navigation */}
-                  <HomeFeedNav onFilterChange={setFeedFilter} />
+                  <HomeFeedNav 
+                    onFilterChange={setFeedFilter} 
+                    onContentTypeChange={setShowFeed}
+                  />
 
                   {/* Enhanced Post Composer */}
-                  <div className="border-b border-purple-200 dark:border-purple-800">
-                    <EnhancedPostComposer />
-                  </div>
+                  {showFeed && (
+                    <div className="border-b border-purple-200 dark:border-purple-800">
+                      <EnhancedPostComposer />
+                    </div>
+                  )}
 
                   {/* Posts Feed */}
-                  <div className="min-h-[200px]">
-                    <PostsList />
-                  </div>
+                  {showFeed && (
+                    <div className="min-h-[200px]">
+                      <PostsList filter={feedFilter} />
+                    </div>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="discussions" className="mt-0">
@@ -134,17 +142,24 @@ const Home = () => {
               
               <TabsContent value="feed" className="mt-0">
                 {/* Home Feed Navigation */}
-                <HomeFeedNav onFilterChange={setFeedFilter} />
+                <HomeFeedNav 
+                  onFilterChange={setFeedFilter} 
+                  onContentTypeChange={setShowFeed}
+                />
 
                 {/* Enhanced Post Composer */}
-                <div className="border-b border-purple-200 dark:border-purple-800">
-                  <EnhancedPostComposer />
-                </div>
+                {showFeed && (
+                  <div className="border-b border-purple-200 dark:border-purple-800">
+                    <EnhancedPostComposer />
+                  </div>
+                )}
 
                 {/* Posts Feed */}
-                <div className="min-h-[200px]">
-                  <PostsList />
-                </div>
+                {showFeed && (
+                  <div className="min-h-[200px]">
+                    <PostsList filter={feedFilter} />
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="discussions" className="mt-0">
