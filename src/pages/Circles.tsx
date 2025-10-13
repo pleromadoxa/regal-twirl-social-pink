@@ -6,6 +6,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -48,6 +58,8 @@ const Circles = () => {
   const [selectedCircle, setSelectedCircle] = useState<Circle | null>(null);
   const [settingsCircle, setSettingsCircle] = useState<Circle | null>(null);
   const [circleMembers, setCircleMembers] = useState<CircleMember[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [circleToDelete, setCircleToDelete] = useState<Circle | null>(null);
   const [canAddMembers, setCanAddMembers] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<string>('member');
   const [name, setName] = useState('');
@@ -328,7 +340,8 @@ const Circles = () => {
                           size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteCircle(circle.id);
+                            setCircleToDelete(circle);
+                            setDeleteDialogOpen(true);
                           }}
                         >
                           <Trash className="w-4 h-4 text-destructive" />
@@ -538,6 +551,33 @@ const Circles = () => {
           circleName={selectedCircle.name}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Circle</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{circleToDelete?.name}"? This action cannot be undone. 
+              All posts and data within this circle will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (circleToDelete) {
+                  await deleteCircle(circleToDelete.id);
+                  setCircleToDelete(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Circle
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       {!isMobile && <RightSidebar />}
       {isMobile && <MobileBottomNav />}
