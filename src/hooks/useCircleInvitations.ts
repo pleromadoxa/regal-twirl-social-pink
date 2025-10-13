@@ -139,24 +139,49 @@ export const useCircleInvitations = () => {
   };
 
   useEffect(() => {
-    fetchInvitations();
+    const setupSubscription = async () => {
+      await fetchInvitations();
 
-    // Subscribe to new invitations
-    const channel = supabase
-      .channel('circle_invitations')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'circle_invitations',
-        },
-        () => fetchInvitations()
-      )
-      .subscribe();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Use unique channel name per user to avoid conflicts
+      const channelName = `circle_invitations:${user.id}`;
+      
+      console.log('[useCircleInvitations] Setting up subscription:', channelName);
+
+      const channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'circle_invitations',
+            filter: `invitee_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('[useCircleInvitations] New invitation received:', payload);
+            fetchInvitations();
+          }
+        )
+        .subscribe((status) => {
+          console.log('[useCircleInvitations] Subscription status:', status);
+        });
+
+      return channel;
+    };
+
+    let channel: any;
+    setupSubscription().then(ch => {
+      channel = ch;
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        console.log('[useCircleInvitations] Cleaning up subscription');
+        supabase.removeChannel(channel);
+      }
     };
   }, []);
 
