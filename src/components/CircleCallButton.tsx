@@ -13,7 +13,6 @@ import { useCircles } from '@/hooks/useCircles';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { createCall } from '@/services/callService';
 
 interface CircleCallButtonProps {
   circleId: string;
@@ -86,9 +85,24 @@ const CircleCallButton = ({ circleId, circleName }: CircleCallButtonProps) => {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       stream.getTracks().forEach(track => track.stop()); // Stop test stream
       
-      // Create group call in database
+      // Generate unique room ID
+      const roomId = `circle-${circleId}-${Date.now()}`;
+      
+      // Create circle-specific call in database
       const participantIds = participants.map(p => p.id);
-      const call = await createCall(user.id, 'group', participantIds);
+      const { data: call, error: callError } = await supabase
+        .from('circle_calls')
+        .insert({
+          circle_id: circleId,
+          caller_id: user.id,
+          room_id: roomId,
+          call_type: 'audio',
+          participants: participantIds,
+        })
+        .select()
+        .single();
+
+      if (callError) throw callError;
       
       // Get caller profile
       const { data: callerProfile } = await supabase
@@ -99,15 +113,16 @@ const CircleCallButton = ({ circleId, circleName }: CircleCallButtonProps) => {
       
       // Broadcast to all participants
       const broadcastPromises = participants.map(participant => {
-        const channel = supabase.channel(`user-calls-${participant.id}`);
+        const channel = supabase.channel(`user-circle-calls-${participant.id}`);
         return channel.send({
           type: 'broadcast',
-          event: 'incoming-group-call',
+          event: 'incoming-circle-call',
           payload: {
             call_id: call.id,
-            room_id: call.room_id,
+            room_id: roomId,
             caller_id: user.id,
-            group_id: circleId,
+            circle_id: circleId,
+            circle_name: circleName,
             call_type: 'audio',
             participants: participantIds,
             caller_profile: {
@@ -128,14 +143,15 @@ const CircleCallButton = ({ circleId, circleName }: CircleCallButtonProps) => {
       
       setIsOpen(false);
       
-      // Navigate to group call room
+      // Navigate to circle call room (independent from messages)
       const params = new URLSearchParams({
         call: 'audio',
-        room: call.room_id,
-        type: 'group'
+        room: roomId,
+        type: 'circle',
+        circleId: circleId
       });
       
-      window.location.href = `/messages?${params.toString()}`;
+      window.location.href = `/circles/call?${params.toString()}`;
       
     } catch (error) {
       console.error('Error starting circle call:', error);

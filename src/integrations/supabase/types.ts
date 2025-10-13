@@ -931,23 +931,120 @@ export type Database = {
           },
         ]
       }
+      circle_calls: {
+        Row: {
+          call_type: string
+          caller_id: string
+          circle_id: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          participants: Json
+          room_id: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          call_type?: string
+          caller_id: string
+          circle_id: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          participants?: Json
+          room_id: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string
+          circle_id?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          participants?: Json
+          room_id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_calls_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "user_circles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_invitations: {
+        Row: {
+          circle_id: string
+          created_at: string | null
+          id: string
+          invitee_id: string
+          inviter_id: string
+          message: string | null
+          responded_at: string | null
+          status: string | null
+        }
+        Insert: {
+          circle_id: string
+          created_at?: string | null
+          id?: string
+          invitee_id: string
+          inviter_id: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          circle_id?: string
+          created_at?: string | null
+          id?: string
+          invitee_id?: string
+          inviter_id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_invitations_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "user_circles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circle_members: {
         Row: {
           added_at: string
           circle_id: string
           id: string
+          invited_by: string | null
+          joined_at: string | null
+          role: string | null
           user_id: string
         }
         Insert: {
           added_at?: string
           circle_id: string
           id?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          role?: string | null
           user_id: string
         }
         Update: {
           added_at?: string
           circle_id?: string
           id?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          role?: string | null
           user_id?: string
         }
         Relationships: [
@@ -963,6 +1060,114 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_post_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          post_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          post_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "circle_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_post_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "circle_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_posts: {
+        Row: {
+          author_id: string
+          circle_id: string
+          comments_count: number | null
+          content: string
+          created_at: string | null
+          id: string
+          likes_count: number | null
+          media_urls: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          circle_id: string
+          comments_count?: number | null
+          content: string
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          media_urls?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          circle_id?: string
+          comments_count?: number | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          media_urls?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_posts_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "user_circles"
             referencedColumns: ["id"]
           },
         ]
@@ -3297,35 +3502,47 @@ export type Database = {
       }
       user_circles: {
         Row: {
+          category: string | null
           color: string | null
+          cover_image_url: string | null
           created_at: string
           description: string | null
           icon: string | null
           id: string
+          is_private: boolean | null
           member_count: number | null
           name: string
+          settings: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          category?: string | null
           color?: string | null
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           icon?: string | null
           id?: string
+          is_private?: boolean | null
           member_count?: number | null
           name: string
+          settings?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          category?: string | null
           color?: string | null
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           icon?: string | null
           id?: string
+          is_private?: boolean | null
           member_count?: number | null
           name?: string
+          settings?: Json | null
           updated_at?: string
           user_id?: string
         }

@@ -10,6 +10,10 @@ export interface Circle {
   color: string;
   icon: string;
   member_count: number;
+  is_private: boolean;
+  category: string;
+  settings?: any;
+  cover_image_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -17,7 +21,10 @@ export interface Circle {
 export interface CircleMember {
   id: string;
   user_id: string;
+  role: string;
+  joined_at: string;
   added_at: string;
+  invited_by?: string;
   profiles: {
     username: string;
     display_name: string;
