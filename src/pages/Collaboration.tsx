@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Users, PlusCircle } from 'lucide-react';
 import { useCollaboration } from '@/hooks/useCollaboration';
 import CollaborationInvites from '@/components/CollaborationInvites';
@@ -9,10 +9,23 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 const Collaboration = () => {
-  const { invites, drafts, refetchInvites, refetchDrafts } = useCollaboration();
+  const { invites, drafts, createDraft, loading, refetchInvites, refetchDrafts } = useCollaboration();
   const isMobile = useIsMobile();
+  const [isCreateDraftOpen, setIsCreateDraftOpen] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftContent, setDraftContent] = useState('');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
@@ -75,10 +88,65 @@ const Collaboration = () => {
                         <p className="text-muted-foreground mb-4">
                           Create or join collaborative drafts to work together on posts.
                         </p>
-                        <Button variant="outline">
-                          <PlusCircle className="w-4 h-4 mr-2" />
-                          Create Draft
-                        </Button>
+                        <Dialog open={isCreateDraftOpen} onOpenChange={setIsCreateDraftOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline">
+                              <PlusCircle className="w-4 h-4 mr-2" />
+                              Create Draft
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[500px]">
+                            <DialogHeader>
+                              <DialogTitle>Create Collaborative Draft</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="title">Title</Label>
+                                <Input
+                                  id="title"
+                                  placeholder="Enter draft title..."
+                                  value={draftTitle}
+                                  onChange={(e) => setDraftTitle(e.target.value)}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="content">Content (optional)</Label>
+                                <Textarea
+                                  id="content"
+                                  placeholder="Start writing your draft..."
+                                  value={draftContent}
+                                  onChange={(e) => setDraftContent(e.target.value)}
+                                  rows={5}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setIsCreateDraftOpen(false);
+                                  setDraftTitle('');
+                                  setDraftContent('');
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={async () => {
+                                  if (draftTitle.trim()) {
+                                    await createDraft(draftTitle, draftContent);
+                                    setIsCreateDraftOpen(false);
+                                    setDraftTitle('');
+                                    setDraftContent('');
+                                  }
+                                }}
+                                disabled={!draftTitle.trim() || loading}
+                              >
+                                {loading ? 'Creating...' : 'Create Draft'}
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     ) : (
                       <div className="space-y-4">
