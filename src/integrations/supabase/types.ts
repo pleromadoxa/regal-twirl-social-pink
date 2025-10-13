@@ -3677,6 +3677,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      is_circle_member: {
+        Args: { _circle_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_group_admin: {
         Args: { group_id: string; user_id: string }
         Returns: boolean
