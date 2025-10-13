@@ -10,6 +10,7 @@ import { UserLocationProvider } from '@/contexts/UserLocationContext';
 import { Toaster } from '@/components/ui/toaster';
 import AuthWrapper from '@/components/AuthWrapper';
 import WebRTCCallManager from '@/components/WebRTCCallManager';
+import FeatureIntroPopup from '@/components/FeatureIntroPopup';
 
 // Eager load critical routes
 import Landing from '@/pages/Landing';
@@ -123,6 +124,7 @@ function App() {
                   </Suspense>
                   <Toaster />
                   <WebRTCCallManager />
+                  <FeatureIntroPopup />
                 </div>
                 </Router>
               </NotificationsProvider>
