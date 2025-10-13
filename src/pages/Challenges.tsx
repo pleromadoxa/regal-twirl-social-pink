@@ -205,7 +205,11 @@ const Challenges = () => {
                   : 0;
                 
                 return (
-                  <Card key={challenge.id} className="transition-all hover:shadow-2xl duration-fast bg-card/60 backdrop-blur-xl border-primary/10 hover:border-primary/30 shadow-xl hover:scale-[1.02]">
+                  <Card 
+                    key={challenge.id} 
+                    className="transition-all hover:shadow-2xl duration-fast bg-card/60 backdrop-blur-xl border-primary/10 hover:border-primary/30 shadow-xl hover:scale-[1.02] cursor-pointer"
+                    onClick={() => setViewingAnalytics(challenge.id)}
+                  >
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -221,21 +225,33 @@ const Challenges = () => {
                         {challenge.creator_id === user?.id && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="glass">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="glass"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <MoreVertical className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="glass-dark backdrop-blur-xl">
-                              <DropdownMenuItem onClick={() => setViewingAnalytics(challenge.id)}>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                setViewingAnalytics(challenge.id);
+                              }}>
                                 <BarChart3 className="w-4 h-4 mr-2" />
                                 Analytics
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(challenge)}>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(challenge);
+                              }}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem 
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setChallengeToDelete(challenge.id);
                                   setDeleteDialogOpen(true);
                                 }}
@@ -286,7 +302,10 @@ const Challenges = () => {
                         </Badge>
                       ) : (
                         <Button 
-                          onClick={() => joinChallenge(challenge.id)} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            joinChallenge(challenge.id);
+                          }} 
                           disabled={loading}
                           className="w-full"
                         >
