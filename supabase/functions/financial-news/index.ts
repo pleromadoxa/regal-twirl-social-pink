@@ -1,6 +1,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,10 +16,10 @@ serve(async (req) => {
   try {
     console.log('Starting financial news fetch...');
     
-    // Use Google News RSS feed for financial news with better parameters
+    // Use Google News RSS feed for financial news
     const queries = [
       'finance+stocks+market+trading',
-      'cryptocurrency+bitcoin+ethereum',
+      'cryptocurrency+bitcoin+ethereum', 
       'economy+federal+reserve+inflation',
       'tech+stocks+nasdaq+sp500'
     ];
@@ -33,6 +34,8 @@ serve(async (req) => {
       category: string;
     }> = [];
     
+    const parser = new DOMParser();
+    
     for (const query of queries) {
       try {
         const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=en-US&gl=US&ceid=US:en`;
@@ -40,7 +43,7 @@ serve(async (req) => {
         
         const response = await fetch(rssUrl, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; NewsBot/1.0)',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
           },
         });
         
@@ -52,41 +55,46 @@ serve(async (req) => {
         const xmlText = await response.text();
         console.log(`Received XML length: ${xmlText.length} for query: ${query}`);
         
-        // Parse RSS XML to extract news items
-        const itemRegex = /<item[^>]*>(.*?)<\/item>/gs;
-        const titleRegex = /<title><!\[CDATA\[(.*?)\]\]><\/title>/s;
-        const linkRegex = /<link[^>]*>(.*?)<\/link>/s;
-        const pubDateRegex = /<pubDate[^>]*>(.*?)<\/pubDate>/s;
-        const descriptionRegex = /<description><!\[CDATA\[(.*?)\]\]><\/description>/s;
+        // Parse XML using DOMParser
+        const doc = parser.parseFromString(xmlText, "text/xml");
         
-        let match;
+        if (!doc) {
+          console.error('Failed to parse XML for query:', query);
+          continue;
+        }
+        
+        const items = doc.querySelectorAll("item");
+        console.log(`Found ${items.length} items for query: ${query}`);
+        
         let itemCount = 0;
         
-        while ((match = itemRegex.exec(xmlText)) !== null && itemCount < 3) {
-          const itemContent = match[1];
+        for (const item of items) {
+          if (itemCount >= 3) break;
           
-          const titleMatch = titleRegex.exec(itemContent);
-          const linkMatch = linkRegex.exec(itemContent);
-          const pubDateMatch = pubDateRegex.exec(itemContent);
-          const descriptionMatch = descriptionRegex.exec(itemContent);
+          const titleEl = item.querySelector("title");
+          const linkEl = item.querySelector("link");
+          const pubDateEl = item.querySelector("pubDate");
+          const descriptionEl = item.querySelector("description");
           
-          if (titleMatch && linkMatch) {
-            const title = titleMatch[1].trim();
-            const link = linkMatch[1].trim();
-            const description = descriptionMatch ? descriptionMatch[1].trim() : title;
+          if (titleEl && linkEl) {
+            const title = titleEl.textContent?.trim() || '';
+            const link = linkEl.textContent?.trim() || '';
+            const description = descriptionEl?.textContent?.trim() || title;
+            const pubDate = pubDateEl?.textContent?.trim() || new Date().toISOString();
             
             // Skip duplicate titles
-            if (!allArticles.some(article => article.title === title)) {
+            if (title && !allArticles.some(article => article.title === title)) {
               allArticles.push({
                 title,
                 link,
-                pubDate: pubDateMatch ? pubDateMatch[1].trim() : new Date().toISOString(),
+                pubDate,
                 description: description.length > 200 ? description.substring(0, 200) + '...' : description,
                 source: 'Google News',
                 sentiment: determineSentiment(title + ' ' + description),
                 category: determineCategory(query)
               });
               itemCount++;
+              console.log(`Added article: ${title.substring(0, 50)}...`);
             }
           }
         }
