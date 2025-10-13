@@ -1096,6 +1096,7 @@ export type Database = {
       circle_members: {
         Row: {
           added_at: string
+          can_add_members: boolean | null
           circle_id: string
           id: string
           invited_by: string | null
@@ -1106,6 +1107,7 @@ export type Database = {
         }
         Insert: {
           added_at?: string
+          can_add_members?: boolean | null
           circle_id: string
           id?: string
           invited_by?: string | null
@@ -1116,6 +1118,7 @@ export type Database = {
         }
         Update: {
           added_at?: string
+          can_add_members?: boolean | null
           circle_id?: string
           id?: string
           invited_by?: string | null

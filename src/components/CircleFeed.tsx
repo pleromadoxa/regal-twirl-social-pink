@@ -3,11 +3,28 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle, Send, Image as ImageIcon } from 'lucide-react';
+import { Heart, MessageCircle, Send, Image as ImageIcon, MoreVertical, Edit, Trash } from 'lucide-react';
 import { useCirclePosts } from '@/hooks/useCirclePosts';
 import { formatDistanceToNow } from 'date-fns';
 import CirclePostReplies from './CirclePostReplies';
 import { useAuth } from '@/contexts/AuthContext';
+import ParsedText from './ParsedText';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface CircleFeedProps {
   circleId: string;
@@ -18,8 +35,34 @@ const CircleFeed = ({ circleId, circleName }: CircleFeedProps) => {
   const [newPost, setNewPost] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
-  const { posts, loading, createPost, likePost } = useCirclePosts(circleId);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [deletePostId, setDeletePostId] = useState<string | null>(null);
+  const { posts, loading, createPost, likePost, updatePost, deletePost } = useCirclePosts(circleId);
   const { user } = useAuth();
+
+  const handleEditPost = (postId: string, currentContent: string) => {
+    setEditingPostId(postId);
+    setEditContent(currentContent);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPostId || !editContent.trim()) return;
+    await updatePost(editingPostId, editContent);
+    setEditingPostId(null);
+    setEditContent('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPostId(null);
+    setEditContent('');
+  };
+
+  const handleDeletePost = async () => {
+    if (!deletePostId) return;
+    await deletePost(deletePostId);
+    setDeletePostId(null);
+  };
 
   const handleCreatePost = async () => {
     if (!newPost.trim()) return;
@@ -54,7 +97,7 @@ const CircleFeed = ({ circleId, circleName }: CircleFeedProps) => {
         </CardHeader>
         <CardContent className="space-y-3">
           <Textarea
-            placeholder="Share your thoughts, updates, or memories with the circle..."
+            placeholder="Share your thoughts, updates, or memories with the circle... Use @username to mention someone or #hashtag to tag topics"
             value={newPost}
             onChange={(e) => setNewPost(e.target.value)}
             className="min-h-[120px] resize-none border-muted-foreground/20 focus:border-primary"
@@ -118,13 +161,58 @@ const CircleFeed = ({ circleId, circleName }: CircleFeedProps) => {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                        {post.updated_at !== post.created_at && ' (edited)'}
                       </p>
                     </div>
                   </div>
+
+                  {/* Post Actions Menu - Only for post author */}
+                  {user?.id === post.author_id && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditPost(post.id, post.content)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit post
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setDeletePostId(post.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash className="w-4 h-4 mr-2" />
+                          Delete post
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-foreground leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                {editingPostId === post.id ? (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="min-h-[100px]"
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleSaveEdit}>
+                        Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-foreground leading-relaxed whitespace-pre-wrap">
+                    <ParsedText text={post.content} />
+                  </div>
+                )}
                 
                 {/* Actions Bar */}
                 <div className="flex items-center gap-2 pt-3 border-t border-muted-foreground/10">
@@ -162,6 +250,24 @@ const CircleFeed = ({ circleId, circleName }: CircleFeedProps) => {
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletePostId} onOpenChange={(open) => !open && setDeletePostId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePost} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

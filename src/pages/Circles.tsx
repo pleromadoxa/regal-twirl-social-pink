@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useCircles, Circle, CircleMember } from '@/hooks/useCircles';
 import { useCircleInvitations } from '@/hooks/useCircleInvitations';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -26,7 +28,19 @@ import CircleSettingsDialog from '@/components/CircleSettingsDialog';
 import CircleCallHistoryDialog from '@/components/CircleCallHistoryDialog';
 
 const Circles = () => {
-  const { circles, loading, createCircle, updateCircle, deleteCircle, addMemberToCircle, getCircleMembers } = useCircles();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { 
+    circles, 
+    loading, 
+    createCircle, 
+    updateCircle, 
+    deleteCircle, 
+    addMemberToCircle, 
+    getCircleMembers,
+    updateMemberPermissions,
+    checkCanAddMembers 
+  } = useCircles();
   const { invitations } = useCircleInvitations();
   const [open, setOpen] = useState(false);
   const [invitationsOpen, setInvitationsOpen] = useState(false);
@@ -34,6 +48,8 @@ const Circles = () => {
   const [selectedCircle, setSelectedCircle] = useState<Circle | null>(null);
   const [settingsCircle, setSettingsCircle] = useState<Circle | null>(null);
   const [circleMembers, setCircleMembers] = useState<CircleMember[]>([]);
+  const [canAddMembers, setCanAddMembers] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('member');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState('#6366f1');
@@ -80,13 +96,49 @@ const Circles = () => {
     setCircleMembers(members);
     setSelectedCircle(circle);
     setActiveTab('overview');
+    
+    // Check if current user can add members
+    const canAdd = await checkCanAddMembers(circle.id);
+    setCanAddMembers(canAdd);
+    
+    // Get current user's role
+    const currentMember = members.find(m => m.user_id === user?.id);
+    setCurrentUserRole(currentMember?.role || 'member');
   };
 
   const handleAddMember = async (user: any) => {
     if (!selectedCircle) return;
+    
+    // Check permission first
+    if (!canAddMembers) {
+      toast({
+        title: "Permission denied",
+        description: "Only admins or authorized members can add new members",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     await addMemberToCircle(selectedCircle.id, user.id);
     const members = await getCircleMembers(selectedCircle.id);
     setCircleMembers(members);
+  };
+
+  const handleToggleMemberPermission = async (memberId: string, currentPermission: boolean) => {
+    if (currentUserRole !== 'admin') {
+      toast({
+        title: "Permission denied",
+        description: "Only admins can manage member permissions",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const success = await updateMemberPermissions(memberId, !currentPermission);
+    if (success && selectedCircle) {
+      const members = await getCircleMembers(selectedCircle.id);
+      setCircleMembers(members);
+    }
   };
 
   return (
@@ -368,16 +420,23 @@ const Circles = () => {
             </TabsContent>
 
             <TabsContent value="members" className="space-y-4">
-              <CollaboratorSearch 
-                onUserSelect={handleAddMember}
-                placeholder="Add member to circle..."
-              />
+              {canAddMembers && (
+                <CollaboratorSearch 
+                  onUserSelect={handleAddMember}
+                  placeholder="Add member to circle..."
+                />
+              )}
+              {!canAddMembers && (
+                <div className="p-3 bg-muted/50 rounded-lg border border-muted text-sm text-muted-foreground">
+                  Only admins and authorized members can add new members to this circle.
+                </div>
+              )}
               <ScrollArea className="h-64">
                 <div className="space-y-2">
                   {circleMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-2 hover:bg-accent rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <Avatar className="w-8 h-8">
+                    <div key={member.id} className="flex items-center justify-between p-3 hover:bg-accent rounded-lg border border-muted">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-10 h-10">
                           <AvatarImage src={member.profiles.avatar_url} />
                           <AvatarFallback>
                             {member.profiles.display_name?.[0] || member.profiles.username?.[0]}
@@ -388,7 +447,23 @@ const Circles = () => {
                           <p className="text-xs text-muted-foreground">@{member.profiles.username}</p>
                         </div>
                       </div>
-                      <Badge variant="outline">{member.role}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={member.role === 'admin' ? 'default' : 'outline'}>
+                          {member.role}
+                        </Badge>
+                        {currentUserRole === 'admin' && member.role !== 'admin' && member.user_id !== user?.id && (
+                          <div className="flex items-center gap-2 ml-2">
+                            <Label htmlFor={`can-add-${member.id}`} className="text-xs cursor-pointer">
+                              Can add members
+                            </Label>
+                            <Switch
+                              id={`can-add-${member.id}`}
+                              checked={member.can_add_members || false}
+                              onCheckedChange={() => handleToggleMemberPermission(member.id, member.can_add_members || false)}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

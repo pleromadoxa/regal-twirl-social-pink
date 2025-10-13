@@ -154,6 +154,64 @@ export const useCirclePosts = (circleId?: string) => {
     }
   };
 
+  const updatePost = async (postId: string, content: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('circle_posts')
+        .update({ content, updated_at: new Date().toISOString() })
+        .eq('id', postId)
+        .eq('author_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Post updated successfully',
+      });
+
+      fetchPosts();
+    } catch (error) {
+      console.error('Error updating post:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update post',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const deletePost = async (postId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('circle_posts')
+        .delete()
+        .eq('id', postId)
+        .eq('author_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Post deleted successfully',
+      });
+
+      fetchPosts();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete post',
+        variant: 'destructive',
+      });
+    }
+  };
+
   useEffect(() => {
     if (circleId) {
       fetchPosts();
@@ -166,6 +224,8 @@ export const useCirclePosts = (circleId?: string) => {
     createPost,
     likePost,
     unlikePost,
+    updatePost,
+    deletePost,
     refetch: fetchPosts,
   };
 };

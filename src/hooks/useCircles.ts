@@ -30,6 +30,7 @@ export interface CircleMember {
   joined_at: string;
   added_at: string;
   invited_by?: string;
+  can_add_members?: boolean;
   profiles: {
     username: string;
     display_name: string;
@@ -246,6 +247,52 @@ export const useCircles = () => {
     }
   };
 
+  const updateMemberPermissions = async (memberId: string, canAddMembers: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('circle_members')
+        .update({ can_add_members: canAddMembers })
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      toast({ 
+        title: "Permissions updated", 
+        description: canAddMembers ? "Member can now add others" : "Member can no longer add others"
+      });
+      
+      return true;
+    } catch (error: any) {
+      console.error('Error updating member permissions:', error);
+      toast({ 
+        title: "Failed to update permissions", 
+        description: error.message, 
+        variant: "destructive" 
+      });
+      return false;
+    }
+  };
+
+  const checkCanAddMembers = async (circleId: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from('circle_members')
+        .select('role, can_add_members')
+        .eq('circle_id', circleId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+      
+      return data.role === 'admin' || data.can_add_members === true;
+    } catch (error) {
+      console.error('Error checking add member permission:', error);
+      return false;
+    }
+  };
+
   return {
     circles,
     loading,
@@ -255,6 +302,8 @@ export const useCircles = () => {
     addMemberToCircle,
     removeMemberFromCircle,
     getCircleMembers,
+    updateMemberPermissions,
+    checkCanAddMembers,
     refetch: fetchCircles
   };
 };
