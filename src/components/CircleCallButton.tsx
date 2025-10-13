@@ -128,62 +128,63 @@ const CircleCallButton = ({ circleId, circleName }: CircleCallButtonProps) => {
         .eq('id', user.id)
         .single();
       
-      // Broadcast to all participants with unique channel names
-      const timestamp = Date.now();
-      const channels: any[] = [];
+      // Broadcast to all participants on their listening channels
+      console.log('[CircleCall] Broadcasting to participants:', participantIds);
       
-      const broadcastPromises = participants.map((participant, index) => {
-        const channelName = `user-calls-${participant.id}-${timestamp}-${index}`;
-        const channel = supabase.channel(channelName);
-        channels.push(channel);
+      for (const participant of participants) {
+        // Skip the caller
+        if (participant.id === user.id) continue;
         
-        return new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            reject(new Error('Channel subscription timeout'));
-          }, 5000);
+        try {
+          // Use the same channel name that WebRTCCallManager is listening to
+          const channelName = `user-calls-${participant.id}`;
+          console.log(`[CircleCall] Sending to channel: ${channelName}`);
           
-          channel.subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-              clearTimeout(timeout);
-              try {
-                await channel.send({
-                  type: 'broadcast',
-                  event: 'incoming-circle-call',
-                  payload: {
-                    call_id: call.id,
-                    room_id: roomId,
-                    caller_id: user.id,
-                    circle_id: circleId,
-                    circle_name: circleName,
-                    call_type: 'audio',
-                    participants: participantIds,
-                    caller_profile: {
-                      display_name: callerProfile?.display_name || callerProfile?.username || 'Unknown User',
-                      username: callerProfile?.username || 'unknown',
-                      avatar_url: callerProfile?.avatar_url || null
-                    }
-                  }
-                });
-                console.log(`Sent incoming-circle-call to ${participant.id}`);
-                resolve();
-              } catch (error) {
-                console.error(`Error sending to ${participant.id}:`, error);
-                reject(error);
+          // Get or create the channel
+          let channel = supabase.getChannels().find(ch => ch.topic === channelName);
+          
+          if (!channel) {
+            channel = supabase.channel(channelName);
+            await new Promise<void>((resolve, reject) => {
+              const timeout = setTimeout(() => reject(new Error('Timeout')), 3000);
+              
+              channel!.subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                  clearTimeout(timeout);
+                  resolve();
+                } else if (status === 'CHANNEL_ERROR') {
+                  clearTimeout(timeout);
+                  reject(new Error('Channel error'));
+                }
+              });
+            });
+          }
+          
+          // Send the broadcast
+          await channel.send({
+            type: 'broadcast',
+            event: 'incoming-circle-call',
+            payload: {
+              call_id: call.id,
+              room_id: roomId,
+              caller_id: user.id,
+              circle_id: circleId,
+              circle_name: circleName,
+              call_type: 'audio',
+              participants: participantIds,
+              caller_profile: {
+                display_name: callerProfile?.display_name || callerProfile?.username || 'Unknown User',
+                username: callerProfile?.username || 'unknown',
+                avatar_url: callerProfile?.avatar_url || null
               }
-            } else if (status === 'CHANNEL_ERROR') {
-              clearTimeout(timeout);
-              reject(new Error('Channel subscription failed'));
             }
           });
-        });
-      });
-      
-      await Promise.all(broadcastPromises);
-      
-      // Clean up all channels immediately
-      channels.forEach(channel => {
-        supabase.removeChannel(channel);
-      });
+          
+          console.log(`[CircleCall] Successfully sent to ${participant.id}`);
+        } catch (error) {
+          console.error(`[CircleCall] Error sending to ${participant.id}:`, error);
+        }
+      }
       
       toast({
         title: "Circle call started",
