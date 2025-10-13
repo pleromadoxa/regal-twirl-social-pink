@@ -523,6 +523,81 @@ export class WebRTCService {
       }
     }
   }
+
+  private async handleAnswer(payload: any): Promise<void> {
+    if (!this.peerConnection) {
+      console.error('[WebRTCService] No peer connection available to handle answer');
+      return;
+    }
+
+    try {
+      console.log('[WebRTCService] Handling answer from:', payload.senderId);
+      
+      // Ignore answers not meant for us
+      if (payload.targetUserId && payload.targetUserId !== this.userId) {
+        console.log('[WebRTCService] Ignoring answer meant for another user');
+        return;
+      }
+
+      const answer = new RTCSessionDescription(payload.answer);
+      await this.peerConnection.setRemoteDescription(answer);
+      console.log('[WebRTCService] Remote description set from answer');
+
+      // Process queued ICE candidates
+      await this.processQueuedIceCandidates();
+    } catch (error) {
+      console.error('[WebRTCService] Error handling answer:', error);
+      if (this.onErrorCallback) {
+        this.onErrorCallback(error as Error);
+      }
+    }
+  }
+
+  private async handleIceCandidate(payload: any): Promise<void> {
+    if (!this.peerConnection) {
+      console.error('[WebRTCService] No peer connection available to handle ICE candidate');
+      return;
+    }
+
+    try {
+      // Ignore our own ICE candidates
+      if (payload.senderId === this.userId) {
+        return;
+      }
+
+      console.log('[WebRTCService] Handling ICE candidate from:', payload.senderId);
+      
+      const candidate = new RTCIceCandidate(payload.candidate);
+      
+      // Queue candidate if remote description not set yet
+      if (!this.peerConnection.remoteDescription) {
+        console.log('[WebRTCService] Queueing ICE candidate (no remote description yet)');
+        this.queuedIceCandidates.push(candidate);
+        return;
+      }
+
+      await this.peerConnection.addIceCandidate(candidate);
+      console.log('[WebRTCService] ICE candidate added successfully');
+    } catch (error) {
+      console.error('[WebRTCService] Error handling ICE candidate:', error);
+    }
+  }
+
+  private setupPeerConnectionHandlers(): void {
+    if (!this.peerConnection) return;
+
+    // Handle incoming tracks
+    this.peerConnection.ontrack = (event) => {
+      console.log('[WebRTCService] Received remote track:', event.track.kind);
+      
+      if (!this.remoteStream) {
+        this.remoteStream = new MediaStream();
+        if (this.onRemoteStreamCallback) {
+          this.onRemoteStreamCallback(this.remoteStream);
+        }
+      }
+      
+      this.remoteStream.addTrack(event.track);
     };
 
     // Handle ICE candidates
@@ -531,7 +606,7 @@ export class WebRTCService {
         console.log('[WebRTCService] Sending ICE candidate');
         
         try {
-          const sendResult = await this.signalingChannel.send({
+          await this.signalingChannel.send({
             type: 'broadcast',
             event: 'ice-candidate',
             payload: {
@@ -542,10 +617,30 @@ export class WebRTCService {
             }
           });
           
-          console.log('[WebRTCService] ICE candidate sent, result:', sendResult);
+          console.log('[WebRTCService] ICE candidate sent');
         } catch (error) {
           console.error('[WebRTCService] Failed to send ICE candidate:', error);
         }
+      }
+    };
+
+    // Handle connection state changes
+    this.peerConnection.onconnectionstatechange = () => {
+      const state = this.peerConnection?.connectionState;
+      console.log('[WebRTCService] Connection state changed:', state);
+      
+      if (this.onConnectionStateChangeCallback && state) {
+        this.onConnectionStateChangeCallback(state);
+      }
+    };
+
+    // Handle ICE connection state changes
+    this.peerConnection.oniceconnectionstatechange = () => {
+      const state = this.peerConnection?.iceConnectionState;
+      console.log('[WebRTCService] ICE connection state changed:', state);
+      
+      if (this.onIceConnectionStateChangeCallback && state) {
+        this.onIceConnectionStateChangeCallback(state);
       }
     };
 
@@ -565,6 +660,15 @@ export class WebRTCService {
         }
       };
     };
+  }
+
+  toggleAudio(enabled: boolean): void {
+    if (this.localStream) {
+      this.localStream.getAudioTracks().forEach(track => {
+        track.enabled = enabled;
+      });
+      console.log('[WebRTCService] Audio toggled:', enabled);
+    }
   }
 
   async switchCamera(): Promise<void> {
