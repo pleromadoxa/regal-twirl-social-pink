@@ -1,1 +1,4 @@
 project_id = "cingbjinmazwnemmmtip"
+
+[functions.circle-call-signaling]
+verify_jwt = false

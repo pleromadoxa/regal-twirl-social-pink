@@ -175,15 +175,13 @@ const CircleCallButton = ({ circleId, circleName }: CircleCallButtonProps) => {
       
       setIsOpen(false);
       
-      // Navigate to circle call room (independent from messages)
+      // Navigate to WebRTC call page
       const params = new URLSearchParams({
-        call: 'audio',
-        room: roomId,
-        type: 'circle',
-        circleId: circleId
+        circleId: circleId,
+        circleName: circleName
       });
       
-      window.location.href = `/circles/call?${params.toString()}`;
+      window.location.href = `/circles/call-webrtc?${params.toString()}`;
       
     } catch (error) {
       console.error('Error starting circle call:', error);
