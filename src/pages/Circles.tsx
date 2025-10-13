@@ -142,13 +142,13 @@ const Circles = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 dark:from-slate-900 dark:via-purple-900/50 dark:to-slate-900 flex relative">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-gray-100 to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex relative">
       {!isMobile && <SidebarNav />}
       
       <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
-        <main className={`w-full ${isMobile ? '' : 'max-w-2xl border-x border-purple-200 dark:border-purple-500/30'} bg-background mx-auto`}>
+        <main className={`w-full ${isMobile ? '' : 'max-w-2xl border-x border-border'} bg-background mx-auto`}>
           {/* Header */}
-          <div className={`sticky top-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 dark:from-purple-500/20 dark:via-pink-500/20 dark:to-blue-500/20 ${isMobile ? '' : 'border-b border-purple-200 dark:border-purple-500/30'} p-4 z-10 space-y-3`}>
+          <div className={`sticky top-0 bg-muted/30 dark:bg-muted/20 ${isMobile ? '' : 'border-b border-border'} p-4 z-10 space-y-3`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <Users className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-primary`} />
@@ -243,9 +243,9 @@ const Circles = () => {
           {/* Circles List */}
           <div className="p-4 space-y-4">
             {circles.length === 0 ? (
-              <Card className="border-2 border-dashed border-purple-300 dark:border-purple-500/30 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10">
+              <Card className="border-2 border-dashed border-border bg-muted/30">
                 <CardContent className="py-12 text-center">
-                  <Users className="w-12 h-12 text-purple-500 mx-auto mb-4" />
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">No circles yet</h3>
                   <p className="text-muted-foreground mb-4">
                     Create circles to organize your friends and share content selectively
@@ -254,7 +254,7 @@ const Circles = () => {
               </Card>
             ) : (
               circles.map((circle) => (
-                <Card key={circle.id} className="transition-all hover:shadow-2xl duration-fast cursor-pointer bg-gradient-to-br from-card via-card to-card border-2 hover:border-primary/50 shadow-lg hover:scale-[1.02] relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-primary/5 before:to-transparent before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-700" onClick={() => handleViewCircle(circle)} style={{ borderColor: circle.color + '40' }}>
+                <Card key={circle.id} className="transition-all hover:shadow-lg duration-fast cursor-pointer bg-card border hover:border-muted-foreground/30 shadow-sm hover:scale-[1.01]" onClick={() => handleViewCircle(circle)} style={{ borderLeftColor: circle.color, borderLeftWidth: '4px' }}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
@@ -333,7 +333,7 @@ const Circles = () => {
 
       {/* Circle Detail Dialog */}
       <Dialog open={!!selectedCircle} onOpenChange={() => setSelectedCircle(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh] bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900/30 dark:to-slate-900 border-2" style={{ borderColor: selectedCircle?.color || '#6366f1' }}>
+        <DialogContent className="max-w-4xl max-h-[80vh] bg-background border" style={{ borderLeftColor: selectedCircle?.color || '#6366f1', borderLeftWidth: '4px' }}>
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-3">
               <div
@@ -369,7 +369,7 @@ const Circles = () => {
 
             <TabsContent value="overview" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <Card className="bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-300 dark:border-purple-500/30">
+                <Card className="bg-muted/30 border">
                   <CardHeader>
                     <CardTitle className="text-sm">Members</CardTitle>
                   </CardHeader>
@@ -377,7 +377,7 @@ const Circles = () => {
                     <p className="text-2xl font-bold">{selectedCircle?.member_count}</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/20 dark:to-cyan-900/20 border-2 border-blue-300 dark:border-blue-500/30">
+                <Card className="bg-muted/30 border">
                   <CardHeader>
                     <CardTitle className="text-sm">Category</CardTitle>
                   </CardHeader>
@@ -387,7 +387,7 @@ const Circles = () => {
                 </Card>
               </div>
               {selectedCircle && selectedCircle.member_count > 0 && (
-                <Card className="bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/20 dark:to-teal-900/20 border-2 border-emerald-300 dark:border-emerald-500/30">
+                <Card className="bg-muted/30 border">
                   <CardHeader>
                     <CardTitle className="text-sm">Quick Actions</CardTitle>
                   </CardHeader>
@@ -421,7 +421,7 @@ const Circles = () => {
 
             <TabsContent value="members" className="space-y-4">
               {canAddMembers && (
-                <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-300 dark:border-purple-500/30 p-4 rounded-lg">
+                <div className="bg-muted/30 border p-4 rounded-lg">
                   <CollaboratorSearch 
                     onUserSelect={handleAddMember}
                     placeholder="Add member to circle..."
@@ -429,14 +429,14 @@ const Circles = () => {
                 </div>
               )}
               {!canAddMembers && (
-                <div className="p-3 bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 border-2 border-amber-300 dark:border-amber-500/30 rounded-lg text-sm text-muted-foreground">
+                <div className="p-3 bg-muted/50 border rounded-lg text-sm text-muted-foreground">
                   Only admins and authorized members can add new members to this circle.
                 </div>
               )}
               <ScrollArea className="h-64">
                 <div className="space-y-2">
                   {circleMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 hover:bg-accent/50 rounded-lg border-2 border-primary/20 bg-gradient-to-r from-card via-card to-card hover:from-primary/5 hover:via-primary/10 hover:to-primary/5 transition-all hover:shadow-lg hover:border-primary/40">
+                    <div key={member.id} className="flex items-center justify-between p-3 hover:bg-accent/50 rounded-lg border bg-card transition-all hover:shadow-md">
                       <div className="flex items-center space-x-3">
                         <Avatar className="w-10 h-10">
                           <AvatarImage src={member.profiles.avatar_url} />
