@@ -56,15 +56,20 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
           enableWorker: true,
           lowLatencyMode: true,
           backBufferLength: 90,
-          debug: false
+          debug: true // Enable debug to see what's happening
         });
         
-        hls.loadSource(currentStory.content_url);
-        hls.attachMedia(video);
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+          console.log('HLS media attached, loading source...');
+          hls.loadSource(currentStory.content_url);
+        });
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log('HLS manifest parsed, starting playback');
-          video.play().catch(err => {
+          console.log('HLS manifest parsed successfully, attempting autoplay');
+          video.muted = true; // Ensure muted for autoplay
+          video.play().then(() => {
+            console.log('HLS playback started successfully');
+          }).catch(err => {
             console.error('HLS playback error:', err);
           });
         });
@@ -89,6 +94,8 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
           }
         });
         
+        hls.attachMedia(video);
+        
         return () => {
           console.log('Cleaning up HLS instance');
           hls.destroy();
@@ -97,6 +104,7 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
         // Native HLS support (Safari)
         console.log('Using native HLS support (Safari)');
         video.src = currentStory.content_url;
+        video.muted = true;
         const playPromise = video.play();
         if (playPromise !== undefined) {
           playPromise.catch(err => {
@@ -109,6 +117,7 @@ export const StoryViewer = ({ userStories, initialUserIndex, onClose }: StoryVie
     } else {
       // Handle regular video files
       console.log('Regular video file, ensuring autoplay');
+      video.muted = true;
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.catch(err => {
