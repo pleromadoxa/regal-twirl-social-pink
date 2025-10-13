@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Users, Trash, UserPlus, Lock, Globe, MessageSquare, Bell } from 'lucide-react';
+import { PlusCircle, Users, Trash, UserPlus, Lock, Globe, MessageSquare, Bell, Settings as SettingsIcon } from 'lucide-react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -22,6 +22,7 @@ import CollaboratorSearch from '@/components/CollaboratorSearch';
 import CircleCallButton from '@/components/CircleCallButton';
 import CircleFeed from '@/components/CircleFeed';
 import CircleInvitationsDialog from '@/components/CircleInvitationsDialog';
+import CircleSettingsDialog from '@/components/CircleSettingsDialog';
 
 const Circles = () => {
   const { circles, loading, createCircle, updateCircle, deleteCircle, addMemberToCircle, getCircleMembers } = useCircles();
@@ -29,6 +30,7 @@ const Circles = () => {
   const [open, setOpen] = useState(false);
   const [invitationsOpen, setInvitationsOpen] = useState(false);
   const [selectedCircle, setSelectedCircle] = useState<Circle | null>(null);
+  const [settingsCircle, setSettingsCircle] = useState<Circle | null>(null);
   const [circleMembers, setCircleMembers] = useState<CircleMember[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -202,15 +204,18 @@ const Circles = () => {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
-                        <div
-                          className="w-12 h-12 rounded-full flex items-center justify-center relative"
-                          style={{ backgroundColor: circle.color }}
-                        >
-                          <Users className="w-6 h-6 text-white" />
-                          {circle.is_private && (
-                            <Lock className="w-3 h-3 text-white absolute -top-1 -right-1 bg-slate-800 rounded-full p-0.5" />
-                          )}
-                        </div>
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={circle.avatar_url} />
+                          <AvatarFallback 
+                            className="text-white relative"
+                            style={{ backgroundColor: circle.color }}
+                          >
+                            <Users className="w-6 h-6" />
+                            {circle.is_private && (
+                              <Lock className="w-3 h-3 text-white absolute -top-1 -right-1 bg-slate-800 rounded-full p-0.5" />
+                            )}
+                          </AvatarFallback>
+                        </Avatar>
                         <div>
                           <div className="flex items-center space-x-2">
                             <CardTitle>{circle.name}</CardTitle>
@@ -229,6 +234,16 @@ const Circles = () => {
                         </div>
                       </div>
                       <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSettingsCircle(circle);
+                          }}
+                        >
+                          <SettingsIcon className="w-4 h-4" />
+                        </Button>
                         {circle.member_count > 0 && (
                           <CircleCallButton 
                             circleId={circle.id} 
@@ -377,6 +392,18 @@ const Circles = () => {
         open={invitationsOpen} 
         onOpenChange={setInvitationsOpen}
       />
+
+      {settingsCircle && (
+        <CircleSettingsDialog
+          circle={settingsCircle as any}
+          isOpen={!!settingsCircle}
+          onClose={() => setSettingsCircle(null)}
+          onUpdate={() => {
+            // Refresh circles list
+            window.location.reload();
+          }}
+        />
+      )}
       
       {!isMobile && <RightSidebar />}
       {isMobile && <MobileBottomNav />}

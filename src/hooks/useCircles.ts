@@ -14,6 +14,11 @@ export interface Circle {
   category: string;
   settings?: any;
   cover_image_url?: string;
+  avatar_url?: string;
+  allow_posts?: boolean;
+  allow_calls?: boolean;
+  require_approval?: boolean;
+  visibility?: string;
   created_at: string;
   updated_at: string;
 }

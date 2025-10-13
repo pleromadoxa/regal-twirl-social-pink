@@ -1026,6 +1026,7 @@ export type Database = {
           id: string
           invited_by: string | null
           joined_at: string | null
+          permissions: Json | null
           role: string | null
           user_id: string
         }
@@ -1035,6 +1036,7 @@ export type Database = {
           id?: string
           invited_by?: string | null
           joined_at?: string | null
+          permissions?: Json | null
           role?: string | null
           user_id: string
         }
@@ -1044,6 +1046,7 @@ export type Database = {
           id?: string
           invited_by?: string | null
           joined_at?: string | null
+          permissions?: Json | null
           role?: string | null
           user_id?: string
         }
@@ -3540,6 +3543,9 @@ export type Database = {
       }
       user_circles: {
         Row: {
+          allow_calls: boolean | null
+          allow_posts: boolean | null
+          avatar_url: string | null
           category: string | null
           color: string | null
           cover_image_url: string | null
@@ -3550,11 +3556,16 @@ export type Database = {
           is_private: boolean | null
           member_count: number | null
           name: string
+          require_approval: boolean | null
           settings: Json | null
           updated_at: string
           user_id: string
+          visibility: string | null
         }
         Insert: {
+          allow_calls?: boolean | null
+          allow_posts?: boolean | null
+          avatar_url?: string | null
           category?: string | null
           color?: string | null
           cover_image_url?: string | null
@@ -3565,11 +3576,16 @@ export type Database = {
           is_private?: boolean | null
           member_count?: number | null
           name: string
+          require_approval?: boolean | null
           settings?: Json | null
           updated_at?: string
           user_id: string
+          visibility?: string | null
         }
         Update: {
+          allow_calls?: boolean | null
+          allow_posts?: boolean | null
+          avatar_url?: string | null
           category?: string | null
           color?: string | null
           cover_image_url?: string | null
@@ -3580,9 +3596,11 @@ export type Database = {
           is_private?: boolean | null
           member_count?: number | null
           name?: string
+          require_approval?: boolean | null
           settings?: Json | null
           updated_at?: string
           user_id?: string
+          visibility?: string | null
         }
         Relationships: [
           {
