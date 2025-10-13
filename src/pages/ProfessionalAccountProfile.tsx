@@ -131,21 +131,21 @@ const ProfessionalAccountProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-      <SidebarNav />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-4xl mx-auto">
+      <div className={`flex-1 ${isMobile ? 'px-0 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '420px' }}>
+        <main className={`w-full ${isMobile ? '' : 'max-w-4xl border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto`}>
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
             </div>
           ) : !page ? (
-            <div className="p-6 text-center">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            <div className={`${isMobile ? 'p-4' : 'p-6'} text-center`}>
+              <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900 dark:text-gray-100 mb-4`}>
                 Professional Account Not Found
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className={`text-gray-600 dark:text-gray-400 ${isMobile ? 'text-sm mb-4' : 'mb-6'}`}>
                 This professional account doesn't exist or has been removed.
               </p>
               <Button onClick={() => navigate('/professional')}>
@@ -160,36 +160,36 @@ const ProfessionalAccountProfile = () => {
                   <img 
                     src={page.page_banner_url || page.banner_url} 
                     alt="Banner" 
-                    className="w-full h-64 object-cover"
+                    className={`w-full ${isMobile ? 'h-48' : 'h-64'} object-cover`}
                   />
                 ) : (
-                  <div className="w-full h-64 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-600"></div>
+                  <div className={`w-full ${isMobile ? 'h-48' : 'h-64'} bg-gradient-to-r from-purple-400 via-pink-400 to-purple-600`}></div>
                 )}
                 
                 {/* Profile Info Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
-                  <div className="flex items-end gap-6">
-                    <Avatar className="w-32 h-32 border-4 border-white">
+                <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent ${isMobile ? 'p-3' : 'p-6'}`}>
+                  <div className={`flex ${isMobile ? 'flex-col gap-3' : 'items-end gap-6'}`}>
+                    <Avatar className={`${isMobile ? 'w-20 h-20' : 'w-32 h-32'} border-4 border-white`}>
                       <AvatarImage src={page.page_avatar_url || page.avatar_url} />
-                      <AvatarFallback className="text-2xl">
+                      <AvatarFallback className={isMobile ? 'text-xl' : 'text-2xl'}>
                         {page.page_name?.charAt(0)?.toUpperCase() || 'B'}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1 text-white mb-4">
                       <div className="flex items-center gap-3 mb-2">
-                        <h1 className="text-3xl font-bold">{page.page_name}</h1>
+                        <h1 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold`}>{page.page_name}</h1>
                         <VerificationBadge level={verificationLevel} />
                         <Badge variant="secondary" className="bg-white/20 text-white">
                           {page.page_type?.charAt(0).toUpperCase() + page.page_type?.slice(1)}
                         </Badge>
                       </div>
                       {page.description && (
-                        <p className="text-lg text-white/90 mb-2">{page.description}</p>
+                        <p className={`${isMobile ? 'text-sm' : 'text-lg'} text-white/90 mb-2`}>{page.description}</p>
                       )}
-                      <div className="flex items-center gap-4 text-sm text-white/80">
+                      <div className={`flex items-center gap-4 ${isMobile ? 'text-xs' : 'text-sm'} text-white/80`}>
                         <span className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
+                          <Users className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                           {page.followers_count || 0} followers
                         </span>
                         <span>•</span>
@@ -198,14 +198,15 @@ const ProfessionalAccountProfile = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-3 mb-4">
+                    <div className={`flex gap-3 ${isMobile ? 'w-full' : 'mb-4'}`}>
                       {user?.id !== page.owner_id ? (
                         <>
                           <Button 
                             onClick={handleFollow}
                             disabled={followLoading}
                             variant={isFollowing ? "outline" : "default"}
-                            className="bg-white text-gray-900 hover:bg-gray-100"
+                            className={`bg-white text-gray-900 hover:bg-gray-100 ${isMobile ? 'flex-1 text-sm' : ''}`}
+                            size={isMobile ? "sm" : "default"}
                           >
                             {followLoading ? (
                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2" />
@@ -217,7 +218,8 @@ const ProfessionalAccountProfile = () => {
                           <Button 
                             onClick={handleMessage}
                             variant="outline"
-                            className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                            className={`bg-white/20 border-white/30 text-white hover:bg-white/30 ${isMobile ? 'flex-1 text-sm' : ''}`}
+                            size={isMobile ? "sm" : "default"}
                           >
                             <MessageCircle className="w-4 h-4 mr-2" />
                             Message
@@ -226,7 +228,8 @@ const ProfessionalAccountProfile = () => {
                       ) : (
                         <Button 
                           onClick={() => navigate(`/edit-professional/${page.id}`)}
-                          className="bg-white text-gray-900 hover:bg-gray-100"
+                          className={`bg-white text-gray-900 hover:bg-gray-100 ${isMobile ? 'w-full text-sm' : ''}`}
+                          size={isMobile ? "sm" : "default"}
                         >
                           <Edit className="w-4 h-4 mr-2" />
                           Edit Profile
@@ -238,18 +241,18 @@ const ProfessionalAccountProfile = () => {
               </div>
 
               {/* Content Sections */}
-              <div className="p-6 space-y-8">
+              <div className={`${isMobile ? 'p-3' : 'p-6'} space-y-8`}>
                 {/* Contact Information */}
                 {(page.email || page.phone || page.website || page.address) && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Contact Information</CardTitle>
+                      <CardTitle className={isMobile ? 'text-base' : ''}>Contact Information</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {page.email && (
                         <div className="flex items-center gap-3">
                           <Mail className="w-5 h-5 text-purple-600" />
-                          <a href={`mailto:${page.email}`} className="text-purple-600 hover:underline">
+                          <a href={`mailto:${page.email}`} className={`text-purple-600 hover:underline ${isMobile ? 'text-sm' : ''}`}>
                             {page.email}
                           </a>
                         </div>
@@ -257,7 +260,7 @@ const ProfessionalAccountProfile = () => {
                       {page.phone && (
                         <div className="flex items-center gap-3">
                           <Phone className="w-5 h-5 text-purple-600" />
-                          <a href={`tel:${page.phone}`} className="text-purple-600 hover:underline">
+                          <a href={`tel:${page.phone}`} className={`text-purple-600 hover:underline ${isMobile ? 'text-sm' : ''}`}>
                             {page.phone}
                           </a>
                         </div>
@@ -269,7 +272,7 @@ const ProfessionalAccountProfile = () => {
                             href={page.website.startsWith('http') ? page.website : `https://${page.website}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-purple-600 hover:underline"
+                            className={`text-purple-600 hover:underline ${isMobile ? 'text-sm' : ''}`}
                           >
                             {page.website}
                           </a>
@@ -278,7 +281,7 @@ const ProfessionalAccountProfile = () => {
                       {page.address && (
                         <div className="flex items-start gap-3">
                           <MapPin className="w-5 h-5 text-purple-600 mt-0.5" />
-                          <span className="text-gray-700 dark:text-gray-300">
+                          <span className={`text-gray-700 dark:text-gray-300 ${isMobile ? 'text-sm' : ''}`}>
                             {page.address}
                           </span>
                         </div>
@@ -293,10 +296,10 @@ const ProfessionalAccountProfile = () => {
                 {/* About Section */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>About</CardTitle>
+                    <CardTitle className={isMobile ? 'text-base' : ''}>About</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                    <p className={`text-gray-700 dark:text-gray-300 leading-relaxed ${isMobile ? 'text-sm' : ''}`}>
                       {page.description || 'No description provided.'}
                     </p>
                   </CardContent>

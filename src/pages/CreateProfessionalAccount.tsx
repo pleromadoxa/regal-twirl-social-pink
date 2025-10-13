@@ -84,91 +84,89 @@ const CreateProfessionalAccount = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 flex gap-8 pl-80 pr-[400px] max-w-full overflow-hidden">
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-4xl mx-auto min-w-0">
-          <div className="p-6">
-            <Card className="max-w-2xl mx-auto bg-white/80 dark:bg-slate-800/80">
-              <CardHeader>
-                <CardTitle>Create Professional Account</CardTitle>
-                <CardDescription>
-                  Set up your business or professional page
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
+      <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
+        <main className={`w-full ${isMobile ? '' : 'max-w-4xl border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto ${isMobile ? 'p-3' : 'p-6'}`}>
+          <Card className={`${isMobile ? 'max-w-full' : 'max-w-2xl'} mx-auto bg-white/80 dark:bg-slate-800/80`}>
+            <CardHeader>
+              <CardTitle className={isMobile ? 'text-lg' : ''}>Create Professional Account</CardTitle>
+              <CardDescription className={isMobile ? 'text-sm' : ''}>
+                Set up your business or professional page
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="pageName">Page Name *</Label>
+                  <Input
+                    id="pageName"
+                    value={formData.pageName}
+                    onChange={(e) => setFormData({...formData, pageName: e.target.value})}
+                    placeholder="Your business name"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    placeholder="Tell people about your business"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="pageName">Page Name *</Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input
-                      id="pageName"
-                      value={formData.pageName}
-                      onChange={(e) => setFormData({...formData, pageName: e.target.value})}
-                      placeholder="Your business name"
-                      required
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      placeholder="business@example.com"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({...formData, description: e.target.value})}
-                      placeholder="Tell people about your business"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        placeholder="business@example.com"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                        placeholder="+1 (555) 123-4567"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="website">Website</Label>
+                    <Label htmlFor="phone">Phone</Label>
                     <Input
-                      id="website"
-                      value={formData.website}
-                      onChange={(e) => setFormData({...formData, website: e.target.value})}
-                      placeholder="https://www.yourwebsite.com"
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      placeholder="+1 (555) 123-4567"
                     />
                   </div>
+                </div>
 
-                  <div>
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => setFormData({...formData, address: e.target.value})}
-                      placeholder="123 Business St, City, State 12345"
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="website">Website</Label>
+                  <Input
+                    id="website"
+                    value={formData.website}
+                    onChange={(e) => setFormData({...formData, website: e.target.value})}
+                    placeholder="https://www.yourwebsite.com"
+                  />
+                </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Creating...' : 'Create Professional Account'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
+                <div>
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    placeholder="123 Business St, City, State 12345"
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Creating...' : 'Create Professional Account'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </main>
       </div>
       

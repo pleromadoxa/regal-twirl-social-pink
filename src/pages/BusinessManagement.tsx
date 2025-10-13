@@ -61,44 +61,44 @@ const BusinessManagement = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      <SidebarNav />
+      {!isMobile && <SidebarNav />}
       
-      <div className="flex-1 flex gap-8 pl-80 pr-[420px]">
-        <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">
+      <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '420px' }}>
+        <main className={`w-full ${isMobile ? '' : 'max-w-3xl border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto`}>
           {/* Header */}
-          <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 p-6 z-10">
+          <div className={`sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 ${isMobile ? 'p-3' : 'p-6'} z-10`}>
             <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                <h1 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent`}>
                   Business Management
                 </h1>
-                <p className="text-slate-600 dark:text-slate-400 mt-2">
+                <p className={`text-slate-600 dark:text-slate-400 ${isMobile ? 'text-sm mt-1' : 'mt-2'}`}>
                   Manage your professional accounts and business operations
                 </p>
               </div>
               <BusinessPageDialog
                 trigger={
-                  <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create New Account
+                  <Button className={`bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl ${isMobile ? 'text-sm px-3 py-2' : ''}`}>
+                    <Plus className={`${isMobile ? 'w-3 h-3 mr-1' : 'w-4 h-4 mr-2'}`} />
+                    {isMobile ? 'Create' : 'Create New Account'}
                   </Button>
                 }
               />
             </div>
           </div>
 
-          <div className="p-6">
+          <div className={isMobile ? 'p-3' : 'p-6'}>
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
               </div>
             ) : myPages.length === 0 ? (
               <div className="text-center py-12">
-                <Building className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-slate-600 dark:text-slate-400 mb-2">
+                <Building className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} text-slate-400 mx-auto mb-4`} />
+                <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-slate-600 dark:text-slate-400 mb-2`}>
                   No Professional Accounts
                 </h3>
-                <p className="text-slate-500 dark:text-slate-500 mb-6">
+                <p className={`text-slate-500 dark:text-slate-500 ${isMobile ? 'text-sm mb-4' : 'mb-6'}`}>
                   Create your first professional account to start managing your business
                 </p>
                 <BusinessPageDialog
@@ -112,16 +112,16 @@ const BusinessManagement = () => {
               </div>
             ) : (
               <div>
-                <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-slate-100">
+                <h2 className={`${isMobile ? 'text-base' : 'text-xl'} font-bold mb-6 text-slate-900 dark:text-slate-100`}>
                   Your Professional Accounts ({myPages.length})
                 </h2>
                 <div className="grid grid-cols-1 gap-6">
                   {myPages.map((page) => (
                     <Card key={page.id} className="border-purple-200 dark:border-purple-800 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm hover:shadow-lg transition-all duration-300">
-                      <CardHeader className="pb-3">
+                      <CardHeader className={isMobile ? 'pb-2' : 'pb-3'}>
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
-                            <Avatar className="w-12 h-12">
+                            <Avatar className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'}`}>
                               <AvatarImage src={page.avatar_url || undefined} />
                               <AvatarFallback className="bg-gradient-to-r from-purple-400 to-pink-400 text-white">
                                 {page.page_name[0]}
@@ -129,7 +129,7 @@ const BusinessManagement = () => {
                             </Avatar>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                                <h3 className={`${isMobile ? 'text-sm' : 'font-semibold'} text-slate-900 dark:text-slate-100 truncate`}>
                                   {page.page_name}
                                 </h3>
                                 {page.is_verified && (
@@ -151,13 +151,13 @@ const BusinessManagement = () => {
                           </div>
                         </div>
                         {page.description && (
-                          <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mt-2">
+                          <p className={`text-sm text-slate-600 dark:text-slate-400 line-clamp-2 ${isMobile ? 'mt-1' : 'mt-2'}`}>
                             {page.description}
                           </p>
                         )}
                       </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400 mb-4">
+                      <CardContent className={isMobile ? 'pt-0 pb-3' : 'pt-0'}>
+                        <div className={`flex items-center justify-between text-sm text-slate-600 dark:text-slate-400 ${isMobile ? 'mb-2' : 'mb-4'}`}>
                           <span>{page.followers_count} followers</span>
                           {page.default_currency && (
                             <span>Currency: {page.default_currency}</span>
