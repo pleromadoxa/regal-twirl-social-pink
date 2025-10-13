@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import IncomingCallPopup from '@/components/IncomingCallPopup';
+import IncomingCircleCallPopup from '@/components/IncomingCircleCallPopup';
 import { useNavigate } from 'react-router-dom';
 import { createMissedCallNotification } from '@/services/missedCallNotificationService';
 import { mediaPermissionManager } from '@/utils/mediaPermissionManager';
@@ -19,11 +20,27 @@ interface IncomingCall {
   };
 }
 
+interface IncomingCircleCall {
+  id: string;
+  caller_id: string;
+  circle_id: string;
+  circle_name: string;
+  call_type: 'audio' | 'video';
+  room_id: string;
+  member_count: number;
+  caller_profile: {
+    display_name: string;
+    username: string;
+    avatar_url: string | null;
+  };
+}
+
 const WebRTCCallManager = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
+  const [incomingCircleCall, setIncomingCircleCall] = useState<IncomingCircleCall | null>(null);
   const channelRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
 
@@ -107,6 +124,37 @@ const WebRTCCallManager = () => {
         toast({
           title: "Incoming group call",
           description: `${callData.caller_profile?.display_name || 'Unknown'} invited you to a group call`,
+          duration: 10000
+        });
+      })
+      .on('broadcast', { event: 'incoming-circle-call' }, (payload) => {
+        console.log('[WebRTCCallManager] Received incoming circle call:', payload);
+        
+        const callData = payload.payload;
+        
+        if (callData.caller_id === user.id) {
+          console.log('[WebRTCCallManager] Ignoring self-initiated circle call');
+          return;
+        }
+
+        setIncomingCircleCall({
+          id: callData.call_id || callData.room_id,
+          caller_id: callData.caller_id,
+          circle_id: callData.circle_id,
+          circle_name: callData.circle_name || 'Circle',
+          call_type: callData.call_type || 'audio',
+          room_id: callData.room_id,
+          member_count: callData.participants?.length || 0,
+          caller_profile: callData.caller_profile || {
+            display_name: 'Unknown User',
+            username: 'unknown',
+            avatar_url: null
+          }
+        });
+
+        toast({
+          title: `Incoming ${callData.circle_name} call`,
+          description: `${callData.caller_profile?.display_name || 'Unknown'} is calling the circle`,
           duration: 10000
         });
       })
@@ -315,18 +363,76 @@ const WebRTCCallManager = () => {
     setIncomingCall(null);
   };
 
-  if (!incomingCall) return null;
+  const handleAcceptCircleCall = () => {
+    console.log('[WebRTCCallManager] Accepting circle call');
+    setIncomingCircleCall(null);
+  };
+
+  const handleDeclineCircleCall = async () => {
+    console.log('[WebRTCCallManager] Declining circle call');
+    
+    if (incomingCircleCall) {
+      try {
+        // Notify caller
+        const callerChannelName = `user-calls-${incomingCircleCall.caller_id}`;
+        const declineChannel = supabase.channel(`circle-call-decline-${Date.now()}`);
+        
+        await new Promise<void>((resolve) => {
+          declineChannel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+              await declineChannel.send({
+                type: 'broadcast',
+                event: 'circle-call-declined',
+                payload: {
+                  call_id: incomingCircleCall.id,
+                  room_id: incomingCircleCall.room_id,
+                  declined_by: user?.id,
+                  declined_by_name: profile?.display_name || profile?.username || 'Unknown User'
+                }
+              });
+              resolve();
+            }
+          });
+        });
+      } catch (error) {
+        console.error('[WebRTCCallManager] Error declining circle call:', error);
+      }
+    }
+    
+    setIncomingCircleCall(null);
+  };
+
+  if (!incomingCall && !incomingCircleCall) return null;
 
   return (
-    <IncomingCallPopup
-      callId={incomingCall.id}
-      callerName={incomingCall.caller_profile?.display_name || incomingCall.caller_profile?.username || 'Unknown User'}
-      callerAvatar={incomingCall.caller_profile?.avatar_url}
-      callType={incomingCall.call_type}
-      callerId={incomingCall.caller_id}
-      onAccept={() => handleAcceptCall(incomingCall.id, incomingCall.call_type)}
-      onDecline={() => handleDeclineCall(incomingCall.id)}
-    />
+    <>
+      {incomingCall && (
+        <IncomingCallPopup
+          callId={incomingCall.id}
+          callerName={incomingCall.caller_profile?.display_name || incomingCall.caller_profile?.username || 'Unknown User'}
+          callerAvatar={incomingCall.caller_profile?.avatar_url}
+          callType={incomingCall.call_type}
+          callerId={incomingCall.caller_id}
+          onAccept={() => handleAcceptCall(incomingCall.id, incomingCall.call_type)}
+          onDecline={() => handleDeclineCall(incomingCall.id)}
+        />
+      )}
+      
+      {incomingCircleCall && (
+        <IncomingCircleCallPopup
+          callId={incomingCircleCall.id}
+          callerId={incomingCircleCall.caller_id}
+          circleName={incomingCircleCall.circle_name}
+          circleId={incomingCircleCall.circle_id}
+          roomId={incomingCircleCall.room_id}
+          callType={incomingCircleCall.call_type}
+          callerProfile={incomingCircleCall.caller_profile}
+          memberCount={incomingCircleCall.member_count}
+          onAccept={handleAcceptCircleCall}
+          onDecline={handleDeclineCircleCall}
+        />
+      )}
+    </>
   );
 };
 

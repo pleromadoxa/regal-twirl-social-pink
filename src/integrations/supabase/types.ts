@@ -970,6 +970,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "circle_calls_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "circle_calls_circle_id_fkey"
             columns: ["circle_id"]
             isOneToOne: false

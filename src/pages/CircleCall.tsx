@@ -36,6 +36,7 @@ const CircleCall = () => {
     conversationId: roomId || '',
     otherUserId: '', // For group calls, this isn't used the same way
     callType: callType || 'audio',
+    isIncoming: false,
     onCallEnd: () => {
       toast({
         title: "Call ended",
@@ -283,11 +284,32 @@ const CircleCall = () => {
         </div>
 
         {/* Connection Quality Indicator */}
-        {callState.networkQuality && (
+        {callState.networkQuality && callState.networkQuality !== 'disconnected' && (
           <div className="text-center mt-4">
-            <p className="text-white/60 text-xs">
-              Network: {callState.networkQuality}
-            </p>
+            <div className="flex items-center justify-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                callState.networkQuality === 'excellent' ? 'bg-green-400' :
+                callState.networkQuality === 'good' ? 'bg-green-300' :
+                callState.networkQuality === 'fair' ? 'bg-yellow-400' :
+                'bg-red-400'
+              } animate-pulse`} />
+              <p className="text-white/60 text-xs capitalize">
+                Network: {callState.networkQuality}
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {callState.networkQuality === 'disconnected' && (
+          <div className="text-center mt-4">
+            <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3">
+              <p className="text-red-400 text-sm font-medium">
+                Connection lost - Attempting to reconnect...
+              </p>
+              <p className="text-red-300/60 text-xs mt-1">
+                Checking network stability
+              </p>
+            </div>
           </div>
         )}
       </div>

@@ -113,28 +113,43 @@ const CircleCallButton = ({ circleId, circleName }: CircleCallButtonProps) => {
       
       // Broadcast to all participants
       const broadcastPromises = participants.map(participant => {
-        const channel = supabase.channel(`user-circle-calls-${participant.id}`);
-        return channel.send({
-          type: 'broadcast',
-          event: 'incoming-circle-call',
-          payload: {
-            call_id: call.id,
-            room_id: roomId,
-            caller_id: user.id,
-            circle_id: circleId,
-            circle_name: circleName,
-            call_type: 'audio',
-            participants: participantIds,
-            caller_profile: {
-              display_name: callerProfile?.display_name || callerProfile?.username || 'Unknown User',
-              username: callerProfile?.username || 'unknown',
-              avatar_url: callerProfile?.avatar_url || null
+        const channel = supabase.channel(`user-calls-${participant.id}`);
+        return channel
+          .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+              await channel.send({
+                type: 'broadcast',
+                event: 'incoming-circle-call',
+                payload: {
+                  call_id: call.id,
+                  room_id: roomId,
+                  caller_id: user.id,
+                  circle_id: circleId,
+                  circle_name: circleName,
+                  call_type: 'audio',
+                  participants: participantIds,
+                  caller_profile: {
+                    display_name: callerProfile?.display_name || callerProfile?.username || 'Unknown User',
+                    username: callerProfile?.username || 'unknown',
+                    avatar_url: callerProfile?.avatar_url || null
+                  }
+                }
+              });
+              console.log(`Sent incoming-circle-call to ${participant.id}`);
             }
-          }
-        });
+          });
       });
       
       await Promise.all(broadcastPromises);
+      
+      // Clean up channels after sending
+      setTimeout(() => {
+        broadcastPromises.forEach((promise, index) => {
+          const channelName = `user-calls-${participants[index].id}`;
+          const channel = supabase.getChannels().find(ch => ch.topic === channelName);
+          if (channel) supabase.removeChannel(channel);
+        });
+      }, 2000);
       
       toast({
         title: "Circle call started",
