@@ -14,6 +14,7 @@ import RightSidebar from '@/components/RightSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import CollaboratorSearch from '@/components/CollaboratorSearch';
+import CircleCallButton from '@/components/CircleCallButton';
 
 const Circles = () => {
   const { circles, loading, createCircle, updateCircle, deleteCircle, addMemberToCircle, getCircleMembers } = useCircles();
@@ -176,13 +177,21 @@ const Circles = () => {
                       <Badge variant="secondary">
                         {circle.member_count} member{circle.member_count !== 1 ? 's' : ''}
                       </Badge>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewMembers(circle)}
-                      >
-                        View Members
-                      </Button>
+                      <div className="flex space-x-2">
+                        {circle.member_count > 0 && (
+                          <CircleCallButton 
+                            circleId={circle.id} 
+                            circleName={circle.name}
+                          />
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewMembers(circle)}
+                        >
+                          View Members
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
