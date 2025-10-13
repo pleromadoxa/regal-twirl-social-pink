@@ -47,10 +47,26 @@ export const useCircles = () => {
     if (!user) return;
 
     try {
+      // Fetch circles where the user is a member
+      const { data: memberData, error: memberError } = await supabase
+        .from('circle_members')
+        .select('circle_id')
+        .eq('user_id', user.id);
+
+      if (memberError) throw memberError;
+
+      const circleIds = memberData?.map(m => m.circle_id) || [];
+
+      if (circleIds.length === 0) {
+        setCircles([]);
+        return;
+      }
+
+      // Fetch the actual circle data
       const { data, error } = await supabase
         .from('user_circles')
         .select('*')
-        .eq('user_id', user.id)
+        .in('id', circleIds)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
