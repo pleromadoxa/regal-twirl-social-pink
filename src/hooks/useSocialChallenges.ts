@@ -48,7 +48,7 @@ export const useSocialChallenges = () => {
         .from('social_challenges')
         .select(`
           *,
-          creator_profile:profiles!social_challenges_creator_id_fkey (
+          creator_profile:profiles!creator_id (
             username,
             display_name,
             avatar_url

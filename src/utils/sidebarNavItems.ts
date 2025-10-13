@@ -18,7 +18,9 @@ import {
   Calendar,
   Users,
   HelpCircle,
-  UserPlus
+  UserPlus,
+  Trophy,
+  Heart
 } from 'lucide-react';
 
 interface NavItem {
@@ -50,6 +52,8 @@ export const getSidebarNavItems = ({
     { name: 'Explore', path: '/explore', icon: Search },
     { name: 'Events', path: '/events', icon: Calendar },
     { name: 'Collaboration', path: '/collaboration', icon: UserPlus },
+    { name: 'Circles', path: '/circles', icon: Users },
+    { name: 'Challenges', path: '/challenges', icon: Trophy },
     { name: 'Chat', path: '/messages', icon: MessageCircle },
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Reels', path: '/reels', icon: Play },

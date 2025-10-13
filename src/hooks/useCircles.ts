@@ -178,7 +178,7 @@ export const useCircles = () => {
         .from('circle_members')
         .select(`
           *,
-          profiles!circle_members_user_id_fkey (
+          profiles!user_id (
             username,
             display_name,
             avatar_url

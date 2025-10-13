@@ -34,6 +34,11 @@ const BusinessDashboard = lazy(() => import('@/pages/BusinessDashboard'));
 const BusinessAnalytics = lazy(() => import('@/pages/BusinessAnalytics'));
 const AdsManager = lazy(() => import('@/pages/AdsManager'));
 const CreateAd = lazy(() => import('@/pages/CreateAd'));
+const TimeCapsules = lazy(() => import('@/pages/TimeCapsules'));
+const MoodBoard = lazy(() => import('@/pages/MoodBoard'));
+const CloseFriends = lazy(() => import('@/pages/CloseFriends'));
+const BlockedUsers = lazy(() => import('@/pages/BlockedUsers'));
+const MutedUsers = lazy(() => import('@/pages/MutedUsers'));
 const AIStudio = lazy(() => import('@/pages/AIStudio'));
 const Explore = lazy(() => import('@/pages/Explore'));
 const Hashtag = lazy(() => import('@/pages/Hashtag'));
@@ -105,6 +110,11 @@ function App() {
                       <Route path="/collaboration" element={<AuthWrapper><Collaboration /></AuthWrapper>} />
                       <Route path="/circles" element={<AuthWrapper><Circles /></AuthWrapper>} />
                       <Route path="/challenges" element={<AuthWrapper><Challenges /></AuthWrapper>} />
+                      <Route path="/time-capsules" element={<AuthWrapper><TimeCapsules /></AuthWrapper>} />
+                      <Route path="/mood" element={<AuthWrapper><MoodBoard /></AuthWrapper>} />
+                      <Route path="/settings/close-friends" element={<AuthWrapper><CloseFriends /></AuthWrapper>} />
+                      <Route path="/settings/blocked-users" element={<AuthWrapper><BlockedUsers /></AuthWrapper>} />
+                      <Route path="/settings/muted-users" element={<AuthWrapper><MutedUsers /></AuthWrapper>} />
                     </Routes>
                   </Suspense>
                   <Toaster />

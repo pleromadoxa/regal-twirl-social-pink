@@ -62,7 +62,7 @@ export const useCollaboration = () => {
         .from('collaboration_invites')
         .select(`
           *,
-          inviter_profile:profiles!collaboration_invites_inviter_id_fkey (
+          inviter_profile:profiles!inviter_id (
             username,
             display_name,
             avatar_url
@@ -221,7 +221,7 @@ export const useCollaboration = () => {
         .from('post_collaborators')
         .select(`
           *,
-          profiles!post_collaborators_user_id_fkey (
+          profiles!user_id (
             username,
             display_name,
             avatar_url

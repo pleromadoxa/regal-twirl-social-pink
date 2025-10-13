@@ -11,6 +11,8 @@ import NotificationDropdown from "./NotificationDropdown";
 import EnhancedShoppingCart from "./EnhancedShoppingCart";
 import UserSearch from "./UserSearch";
 import WhoToFollow from "./WhoToFollow";
+import MoodBoardWidget from "./MoodBoardWidget";
+import ChallengesWidget from "./ChallengesWidget";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -130,6 +132,12 @@ const RightSidebar = () => {
 
           {/* Who to Follow */}
           <WhoToFollow />
+
+          {/* Mood Board Widget */}
+          <MoodBoardWidget />
+
+          {/* Challenges Widget */}
+          <ChallengesWidget />
 
           {/* Trending */}
           <TrendingWidget onHashtagClick={handleHashtagClick} />
