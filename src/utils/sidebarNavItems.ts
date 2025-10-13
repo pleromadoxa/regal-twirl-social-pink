@@ -20,7 +20,9 @@ import {
   HelpCircle,
   UserPlus,
   Trophy,
-  Heart
+  Heart,
+  Lock,
+  Palette
 } from 'lucide-react';
 
 interface NavItem {
@@ -54,6 +56,9 @@ export const getSidebarNavItems = ({
     { name: 'Collaboration', path: '/collaboration', icon: UserPlus },
     { name: 'Circles', path: '/circles', icon: Users },
     { name: 'Challenges', path: '/challenges', icon: Trophy },
+    { name: 'Time Capsules', path: '/time-capsules', icon: Lock },
+    { name: 'Mood Boards', path: '/mood', icon: Palette },
+    { name: 'Milestones', path: '/friendship-milestones', icon: Heart },
     { name: 'Chat', path: '/messages', icon: MessageCircle },
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Reels', path: '/reels', icon: Play },

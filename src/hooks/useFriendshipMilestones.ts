@@ -7,19 +7,13 @@ export interface FriendshipMilestone {
   id: string;
   user_id: string;
   friend_id: string;
-  milestone_type: 'birthday' | 'anniversary' | 'achievement' | 'memory' | 'other';
+  milestone_type: 'anniversary' | 'birthday' | 'custom' | 'streak';
   title: string;
-  description?: string;
+  description: string | null;
   date: string;
   is_recurring: boolean;
   reminder_enabled: boolean;
   created_at: string;
-  profiles?: {
-    id: string;
-    username: string;
-    display_name: string;
-    avatar_url: string;
-  };
 }
 
 export const useFriendshipMilestones = () => {
@@ -28,40 +22,13 @@ export const useFriendshipMilestones = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      fetchMilestones();
-    }
-  }, [user]);
-
   const fetchMilestones = async () => {
     if (!user) return;
-
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('friendship_milestones')
-        .select(`
-          *,
-          profiles!friend_id (
-            id,
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('date', { ascending: true });
-
+      const { data, error } = await supabase.from('friendship_milestones').select('*').order('date');
       if (error) throw error;
-      setMilestones((data || []) as FriendshipMilestone[]);
-    } catch (error: any) {
-      console.error('Error fetching milestones:', error);
-      toast({ 
-        title: "Failed to fetch milestones", 
-        description: error.message,
-        variant: "destructive" 
-      });
+      setMilestones(data || []);
     } finally {
       setLoading(false);
     }
@@ -69,88 +36,29 @@ export const useFriendshipMilestones = () => {
 
   const createMilestone = async (milestone: Omit<FriendshipMilestone, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return;
-
     try {
-      setLoading(true);
-      const { error } = await supabase
-        .from('friendship_milestones')
-        .insert({
-          user_id: user.id,
-          ...milestone
-        });
-
+      const { data, error } = await supabase.from('friendship_milestones').insert({ ...milestone, user_id: user.id }).select().single();
       if (error) throw error;
-
-      toast({ title: "Milestone created successfully" });
+      toast({ title: "Milestone created!" });
       await fetchMilestones();
+      return data;
     } catch (error: any) {
-      console.error('Error creating milestone:', error);
-      toast({ 
-        title: "Failed to create milestone", 
-        description: error.message,
-        variant: "destructive" 
-      });
-    } finally {
-      setLoading(false);
+      toast({ title: "Failed", variant: "destructive" });
     }
   };
 
-  const updateMilestone = async (milestoneId: string, updates: Partial<FriendshipMilestone>) => {
+  const deleteMilestone = async (id: string) => {
     try {
-      setLoading(true);
-      const { error } = await supabase
-        .from('friendship_milestones')
-        .update(updates)
-        .eq('id', milestoneId)
-        .eq('user_id', user?.id);
-
+      const { error } = await supabase.from('friendship_milestones').delete().eq('id', id);
       if (error) throw error;
-
-      toast({ title: "Milestone updated successfully" });
+      toast({ title: "Deleted" });
       await fetchMilestones();
     } catch (error: any) {
-      console.error('Error updating milestone:', error);
-      toast({ 
-        title: "Failed to update milestone", 
-        description: error.message,
-        variant: "destructive" 
-      });
-    } finally {
-      setLoading(false);
+      toast({ title: "Failed", variant: "destructive" });
     }
   };
 
-  const deleteMilestone = async (milestoneId: string) => {
-    try {
-      setLoading(true);
-      const { error } = await supabase
-        .from('friendship_milestones')
-        .delete()
-        .eq('id', milestoneId)
-        .eq('user_id', user?.id);
+  useEffect(() => { fetchMilestones(); }, [user]);
 
-      if (error) throw error;
-
-      toast({ title: "Milestone deleted successfully" });
-      await fetchMilestones();
-    } catch (error: any) {
-      console.error('Error deleting milestone:', error);
-      toast({ 
-        title: "Failed to delete milestone", 
-        description: error.message,
-        variant: "destructive" 
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return {
-    milestones,
-    loading,
-    createMilestone,
-    updateMilestone,
-    deleteMilestone,
-    refetch: fetchMilestones
-  };
+  return { milestones, loading, createMilestone, deleteMilestone, refetch: fetchMilestones };
 };
