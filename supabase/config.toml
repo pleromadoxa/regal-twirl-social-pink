@@ -2,3 +2,6 @@ project_id = "cingbjinmazwnemmmtip"
 
 [functions.circle-call-signaling]
 verify_jwt = false
+
+[functions.call-signaling]
+verify_jwt = false
