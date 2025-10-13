@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useFollow } from "@/hooks/useFollow";
+import { useTrendingHashtags } from "@/hooks/useTrendingHashtags";
 
 interface TrendingWidgetProps {
   onHashtagClick?: (hashtag: string) => void;
@@ -13,20 +14,21 @@ interface TrendingWidgetProps {
 const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
   const navigate = useNavigate();
   const { followUser, loading: followLoading } = useFollow();
+  const { hashtags, loading: hashtagsLoading } = useTrendingHashtags();
 
-  // Fixed hashtags for Christian social network
-  const trends = [
-    { topic: "#PraiseReport", tweets: "15.2K", growth: "+32%", category: "Testimony" },
-    { topic: "#PrayerRequest", tweets: "28.5K", growth: "+18%", category: "Prayer" },
-    { topic: "#BibleStudy", tweets: "12.8K", growth: "+25%", category: "Study" },
-    { topic: "#ChristianLife", tweets: "34.1K", growth: "+15%", category: "Faith" },
-    { topic: "#SundayService", tweets: "9.7K", growth: "+40%", category: "Worship" },
-    { topic: "#ChristianMusic", tweets: "19.3K", growth: "+22%", category: "Music" },
-    { topic: "#GodsLove", tweets: "26.4K", growth: "+28%", category: "Love" },
-    { topic: "#ChristianCommunity", tweets: "11.6K", growth: "+35%", category: "Community" },
-    { topic: "#FaithJourney", tweets: "8.9K", growth: "+20%", category: "Journey" },
-    { topic: "#ChristianFamily", tweets: "14.2K", growth: "+16%", category: "Family" },
-  ];
+  const formatCount = (count: number) => {
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}K`;
+    }
+    return count.toString();
+  };
+
+  const trends = hashtags.map(h => ({
+    topic: h.hashtag,
+    tweets: formatCount(h.count),
+    growth: h.growth || '+0%',
+    category: h.category || 'Faith'
+  }));
 
   const handleTrendClick = (trend: string) => {
     console.log('Trending hashtag clicked:', trend);
@@ -81,7 +83,21 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {trends.slice(0, 5).map((trend, index) => (
+          {hashtagsLoading ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-3 p-4 animate-pulse">
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : trends.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-4">No trending hashtags yet</p>
+          ) : (
+            trends.slice(0, 5).map((trend, index) => (
             <div 
               key={index} 
               className="hover:bg-slate-50 dark:hover:bg-slate-700 p-4 rounded-xl cursor-pointer transition-all duration-200 group"
@@ -102,9 +118,10 @@ const TrendingWidget = ({ onHashtagClick }: TrendingWidgetProps) => {
                 </div>
               </div>
             </div>
-          ))}
+            ))
+          )}
           
-          <Button 
+          <Button
             variant="ghost" 
             className="w-full text-purple-600 dark:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => navigate('/explore')}

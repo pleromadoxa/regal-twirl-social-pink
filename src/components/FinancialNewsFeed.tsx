@@ -168,7 +168,7 @@ export const FinancialNewsFeed = () => {
       {news.length > 0 && (
         <div className="text-center pt-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            News updates every 15 minutes • Powered by Google News
+            News updates every 5 hours • Powered by Google News
           </p>
         </div>
       )}

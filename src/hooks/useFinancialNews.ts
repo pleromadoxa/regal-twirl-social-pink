@@ -91,10 +91,10 @@ export const useFinancialNews = () => {
   useEffect(() => {
     fetchNews(false);
     
-    // Set up auto-refresh every 15 minutes
+    // Set up auto-refresh every 5 hours
     const interval = setInterval(() => {
       fetchNews(false);
-    }, 15 * 60 * 1000);
+    }, 5 * 60 * 60 * 1000);
     
     return () => clearInterval(interval);
   }, [fetchNews]);

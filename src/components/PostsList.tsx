@@ -8,15 +8,25 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 import { useAuth } from '@/contexts/AuthContext';
 import RepliesSection from './RepliesSection';
-import { useState, memo } from 'react';
+import { useState, memo, useEffect } from 'react';
 
-const PostsList = () => {
+interface PostsListProps {
+  filter?: 'all' | 'professional' | 'trending';
+}
+
+const PostsList = ({ filter = 'all' }: PostsListProps) => {
   const { user } = useAuth();
   const { posts, loading, toggleLike, toggleRetweet, togglePin, deletePost, trackPostView, refetch } = usePosts();
   const { toast } = useToast();
   const { retweetUsers } = usePostsData(posts, user, refetch);
   const { toggleBookmark, isPostBookmarked } = useBookmarks();
   const [showRepliesFor, setShowRepliesFor] = useState<string | null>(null);
+
+  // Refetch posts when filter changes
+  useEffect(() => {
+    const fetchMode = filter === 'all' ? 'recent' : filter;
+    refetch(fetchMode as 'recent' | 'trending' | 'professional');
+  }, [filter]);
 
   const handleShare = async (postId: string) => {
     const post = posts.find(p => p.id === postId);

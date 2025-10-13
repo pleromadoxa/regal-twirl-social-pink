@@ -49,7 +49,7 @@ const Index = () => {
               </div>
 
               {/* Posts Feed */}
-              <PostsList />
+              <PostsList filter={feedFilter} />
             </>
           )}
         </main>

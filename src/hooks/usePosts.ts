@@ -45,16 +45,20 @@ export const usePosts = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchPosts = async (sortBy: 'recent' | 'trending' = 'recent') => {
+  const fetchPosts = async (sortBy: 'recent' | 'trending' | 'professional' = 'recent') => {
     try {
-      console.log('Fetching posts...');
+      console.log('Fetching posts with filter:', sortBy);
       
-      // Build the query with proper sorting
+      // Build the query with proper sorting and filtering
       let query = supabase
         .from('posts')
         .select('*');
 
-      if (sortBy === 'trending') {
+      // Filter by professional accounts if requested
+      if (sortBy === 'professional') {
+        query = query.not('posted_as_page', 'is', null);
+        query = query.order('created_at', { ascending: false });
+      } else if (sortBy === 'trending') {
         query = query.order('trending_score', { ascending: false });
       } else {
         query = query.order('created_at', { ascending: false });
