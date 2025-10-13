@@ -39,6 +39,7 @@ const MoodBoard = lazy(() => import('@/pages/MoodBoard'));
 const CloseFriends = lazy(() => import('@/pages/CloseFriends'));
 const BlockedUsers = lazy(() => import('@/pages/BlockedUsers'));
 const MutedUsers = lazy(() => import('@/pages/MutedUsers'));
+const FriendshipMilestones = lazy(() => import('@/pages/FriendshipMilestones'));
 const AIStudio = lazy(() => import('@/pages/AIStudio'));
 const Explore = lazy(() => import('@/pages/Explore'));
 const Hashtag = lazy(() => import('@/pages/Hashtag'));
@@ -115,6 +116,7 @@ function App() {
                       <Route path="/settings/close-friends" element={<AuthWrapper><CloseFriends /></AuthWrapper>} />
                       <Route path="/settings/blocked-users" element={<AuthWrapper><BlockedUsers /></AuthWrapper>} />
                       <Route path="/settings/muted-users" element={<AuthWrapper><MutedUsers /></AuthWrapper>} />
+                      <Route path="/friendship-milestones" element={<AuthWrapper><FriendshipMilestones /></AuthWrapper>} />
                     </Routes>
                   </Suspense>
                   <Toaster />

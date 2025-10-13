@@ -53,7 +53,7 @@ const TimeCapsules = () => {
       <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
         <main className={`w-full ${isMobile ? '' : 'max-w-2xl border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl mx-auto`}>
           {/* Header */}
-          <div className={`sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl ${isMobile ? '' : 'border-b border-purple-200 dark:border-purple-800'} p-4 z-10`}>
+          <div className={`sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl ${isMobile ? '' : 'border-b border-purple-200 dark:border-purple-800'} p-4 z-10 space-y-3`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <Archive className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-primary`} />
@@ -104,6 +104,9 @@ const TimeCapsules = () => {
                 </DialogContent>
               </Dialog>
             </div>
+            <p className="text-sm text-muted-foreground">
+              Create time-locked memories and messages to be revealed in the future to yourself or friends.
+            </p>
           </div>
 
           {/* Capsules List */}
