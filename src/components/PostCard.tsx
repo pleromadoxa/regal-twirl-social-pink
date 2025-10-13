@@ -212,20 +212,13 @@ const PostCard = ({
                 )}
               </div>
               
-               <div className="flex items-center space-x-1">
-                {!isOwnPost && (
-                  <UserBlockMuteMenu 
-                    userId={post.user_id}
-                    username={post.profiles?.username}
-                  />
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
                   {user && (
                     <>
                       <DropdownMenuItem onClick={handlePin}>
@@ -244,14 +237,20 @@ const PostCard = ({
                       Delete Post
                     </DropdownMenuItem>
                   ) : (
+                    <UserBlockMuteMenu 
+                      userId={post.user_id}
+                      username={post.profiles?.username}
+                      asMenuItems
+                    />
+                  )}
+                  {!isOwnPost && (
                     <DropdownMenuItem onClick={handleReport}>
                       <Flag className="w-4 h-4 mr-2" />
                       Report Post
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              </DropdownMenu>
             </div>
             
             <div className="mt-2">

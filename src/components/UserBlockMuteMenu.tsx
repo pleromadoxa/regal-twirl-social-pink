@@ -12,9 +12,10 @@ import { useBlockMute } from '@/hooks/useBlockMute';
 interface UserBlockMuteMenuProps {
   userId: string;
   username?: string;
+  asMenuItems?: boolean;
 }
 
-const UserBlockMuteMenu = ({ userId, username }: UserBlockMuteMenuProps) => {
+const UserBlockMuteMenu = ({ userId, username, asMenuItems = false }: UserBlockMuteMenuProps) => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const { blockUser, unblockUser, muteUser, unmuteUser, checkBlockStatus, checkMuteStatus, loading } = useBlockMute();
@@ -51,6 +52,40 @@ const UserBlockMuteMenu = ({ userId, username }: UserBlockMuteMenuProps) => {
       if (success) setIsMuted(true);
     }
   };
+
+  if (asMenuItems) {
+    return (
+      <>
+        <DropdownMenuItem onClick={handleBlock} disabled={loading}>
+          {isBlocked ? (
+            <>
+              <UserCheck className="mr-2 h-4 w-4" />
+              Unblock {username || 'user'}
+            </>
+          ) : (
+            <>
+              <UserX className="mr-2 h-4 w-4" />
+              Block {username || 'user'}
+            </>
+          )}
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem onClick={handleMute} disabled={loading}>
+          {isMuted ? (
+            <>
+              <Volume2 className="mr-2 h-4 w-4" />
+              Unmute {username || 'user'}
+            </>
+          ) : (
+            <>
+              <VolumeX className="mr-2 h-4 w-4" />
+              Mute {username || 'user'}
+            </>
+          )}
+        </DropdownMenuItem>
+      </>
+    );
+  }
 
   return (
     <DropdownMenu>
