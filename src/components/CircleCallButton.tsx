@@ -128,45 +128,62 @@ const CircleCallButton = ({ circleId, circleName }: CircleCallButtonProps) => {
         .eq('id', user.id)
         .single();
       
-      // Broadcast to all participants
-      const broadcastPromises = participants.map(participant => {
-        const channel = supabase.channel(`user-calls-${participant.id}`);
-        return channel
-          .subscribe(async (status) => {
+      // Broadcast to all participants with unique channel names
+      const timestamp = Date.now();
+      const channels: any[] = [];
+      
+      const broadcastPromises = participants.map((participant, index) => {
+        const channelName = `user-calls-${participant.id}-${timestamp}-${index}`;
+        const channel = supabase.channel(channelName);
+        channels.push(channel);
+        
+        return new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Channel subscription timeout'));
+          }, 5000);
+          
+          channel.subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
-              await channel.send({
-                type: 'broadcast',
-                event: 'incoming-circle-call',
-                payload: {
-                  call_id: call.id,
-                  room_id: roomId,
-                  caller_id: user.id,
-                  circle_id: circleId,
-                  circle_name: circleName,
-                  call_type: 'audio',
-                  participants: participantIds,
-                  caller_profile: {
-                    display_name: callerProfile?.display_name || callerProfile?.username || 'Unknown User',
-                    username: callerProfile?.username || 'unknown',
-                    avatar_url: callerProfile?.avatar_url || null
+              clearTimeout(timeout);
+              try {
+                await channel.send({
+                  type: 'broadcast',
+                  event: 'incoming-circle-call',
+                  payload: {
+                    call_id: call.id,
+                    room_id: roomId,
+                    caller_id: user.id,
+                    circle_id: circleId,
+                    circle_name: circleName,
+                    call_type: 'audio',
+                    participants: participantIds,
+                    caller_profile: {
+                      display_name: callerProfile?.display_name || callerProfile?.username || 'Unknown User',
+                      username: callerProfile?.username || 'unknown',
+                      avatar_url: callerProfile?.avatar_url || null
+                    }
                   }
-                }
-              });
-              console.log(`Sent incoming-circle-call to ${participant.id}`);
+                });
+                console.log(`Sent incoming-circle-call to ${participant.id}`);
+                resolve();
+              } catch (error) {
+                console.error(`Error sending to ${participant.id}:`, error);
+                reject(error);
+              }
+            } else if (status === 'CHANNEL_ERROR') {
+              clearTimeout(timeout);
+              reject(new Error('Channel subscription failed'));
             }
           });
+        });
       });
       
       await Promise.all(broadcastPromises);
       
-      // Clean up channels after sending
-      setTimeout(() => {
-        broadcastPromises.forEach((promise, index) => {
-          const channelName = `user-calls-${participants[index].id}`;
-          const channel = supabase.getChannels().find(ch => ch.topic === channelName);
-          if (channel) supabase.removeChannel(channel);
-        });
-      }, 2000);
+      // Clean up all channels immediately
+      channels.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
       
       toast({
         title: "Circle call started",
