@@ -51,6 +51,7 @@ const JoinGroup = lazy(() => import('@/pages/JoinGroup'));
 const Events = lazy(() => import('@/pages/Events'));
 const Collaboration = lazy(() => import('@/pages/Collaboration'));
 const Circles = lazy(() => import('@/pages/Circles'));
+const CircleCall = lazy(() => import('@/pages/CircleCall'));
 const Challenges = lazy(() => import('@/pages/Challenges'));
 const BusinessPage = lazy(() => import('@/pages/BusinessPage'));
 
@@ -110,6 +111,7 @@ function App() {
                       <Route path="/events" element={<AuthWrapper><Events /></AuthWrapper>} />
                       <Route path="/collaboration" element={<AuthWrapper><Collaboration /></AuthWrapper>} />
                       <Route path="/circles" element={<AuthWrapper><Circles /></AuthWrapper>} />
+                      <Route path="/circles/call" element={<AuthWrapper><CircleCall /></AuthWrapper>} />
                       <Route path="/challenges" element={<AuthWrapper><Challenges /></AuthWrapper>} />
                       <Route path="/time-capsules" element={<AuthWrapper><TimeCapsules /></AuthWrapper>} />
                       <Route path="/mood" element={<AuthWrapper><MoodBoard /></AuthWrapper>} />
