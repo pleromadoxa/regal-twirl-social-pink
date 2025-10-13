@@ -156,12 +156,39 @@ const CircleCall = () => {
   const handleEndCall = async () => {
     await endCall();
     
-    // Update call status in database
+    // Update call status and history in database
     if (roomId) {
-      await supabase
-        .from('circle_calls')
-        .update({ status: 'ended', ended_at: new Date().toISOString() })
-        .eq('room_id', roomId);
+      try {
+        // First, get the call history ID
+        const { data: callData } = await supabase
+          .from('circle_calls')
+          .select('call_history_id')
+          .eq('room_id', roomId)
+          .single();
+
+        // Update circle call status
+        await supabase
+          .from('circle_calls')
+          .update({ 
+            status: 'ended',
+            ended_at: new Date().toISOString()
+          })
+          .eq('room_id', roomId);
+
+        // Update call history with duration
+        if (callData?.call_history_id) {
+          await supabase
+            .from('circle_call_history')
+            .update({
+              ended_at: new Date().toISOString(),
+              duration_seconds: callDuration,
+              status: 'ended'
+            })
+            .eq('id', callData.call_history_id);
+        }
+      } catch (error) {
+        console.error('Error updating call status:', error);
+      }
     }
     
     navigate('/circles');

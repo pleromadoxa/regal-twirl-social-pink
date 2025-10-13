@@ -373,6 +373,20 @@ const WebRTCCallManager = () => {
     
     if (incomingCircleCall) {
       try {
+        // Create missed call notification
+        await supabase.from('notifications').insert({
+          user_id: incomingCircleCall.caller_id,
+          type: 'missed_circle_call',
+          actor_id: user?.id,
+          message: `${profile?.display_name || profile?.username || 'Someone'} declined the ${incomingCircleCall.circle_name} call`,
+          data: {
+            circle_id: incomingCircleCall.circle_id,
+            circle_name: incomingCircleCall.circle_name,
+            call_type: incomingCircleCall.call_type,
+            room_id: incomingCircleCall.room_id,
+          }
+        });
+
         // Notify caller
         const callerChannelName = `user-calls-${incomingCircleCall.caller_id}`;
         const declineChannel = supabase.channel(`circle-call-decline-${Date.now()}`);

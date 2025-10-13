@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Users, Trash, UserPlus, Lock, Globe, MessageSquare, Bell, Settings as SettingsIcon } from 'lucide-react';
+import { PlusCircle, Users, Trash, UserPlus, Lock, Globe, MessageSquare, Bell, Settings as SettingsIcon, History } from 'lucide-react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -23,12 +23,14 @@ import CircleCallButton from '@/components/CircleCallButton';
 import CircleFeed from '@/components/CircleFeed';
 import CircleInvitationsDialog from '@/components/CircleInvitationsDialog';
 import CircleSettingsDialog from '@/components/CircleSettingsDialog';
+import CircleCallHistoryDialog from '@/components/CircleCallHistoryDialog';
 
 const Circles = () => {
   const { circles, loading, createCircle, updateCircle, deleteCircle, addMemberToCircle, getCircleMembers } = useCircles();
   const { invitations } = useCircleInvitations();
   const [open, setOpen] = useState(false);
   const [invitationsOpen, setInvitationsOpen] = useState(false);
+  const [callHistoryOpen, setCallHistoryOpen] = useState(false);
   const [selectedCircle, setSelectedCircle] = useState<Circle | null>(null);
   const [settingsCircle, setSettingsCircle] = useState<Circle | null>(null);
   const [circleMembers, setCircleMembers] = useState<CircleMember[]>([]);
@@ -342,6 +344,14 @@ const Circles = () => {
                       circleId={selectedCircle.id} 
                       circleName={selectedCircle.name}
                     />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setCallHistoryOpen(true)}
+                    >
+                      <History className="w-4 h-4 mr-2" />
+                      Call History
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setActiveTab('feed')}>
                       <MessageSquare className="w-4 h-4 mr-2" />
                       View Feed
@@ -402,6 +412,15 @@ const Circles = () => {
             // Refresh circles list
             window.location.reload();
           }}
+        />
+      )}
+
+      {selectedCircle && (
+        <CircleCallHistoryDialog
+          open={callHistoryOpen}
+          onOpenChange={setCallHistoryOpen}
+          circleId={selectedCircle.id}
+          circleName={selectedCircle.name}
         />
       )}
       

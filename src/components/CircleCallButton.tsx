@@ -88,8 +88,24 @@ const CircleCallButton = ({ circleId, circleName }: CircleCallButtonProps) => {
       // Generate unique room ID
       const roomId = `circle-${circleId}-${Date.now()}`;
       
-      // Create circle-specific call in database
+      // Create circle call history first
       const participantIds = participants.map(p => p.id);
+      const { data: callHistory, error: historyError } = await supabase
+        .from('circle_call_history')
+        .insert({
+          circle_id: circleId,
+          caller_id: user.id,
+          room_id: roomId,
+          call_type: 'audio',
+          participants: participantIds,
+          status: 'active',
+        })
+        .select()
+        .single();
+
+      if (historyError) throw historyError;
+
+      // Create circle-specific call in database linked to history
       const { data: call, error: callError } = await supabase
         .from('circle_calls')
         .insert({
@@ -98,6 +114,7 @@ const CircleCallButton = ({ circleId, circleName }: CircleCallButtonProps) => {
           room_id: roomId,
           call_type: 'audio',
           participants: participantIds,
+          call_history_id: callHistory.id,
         })
         .select()
         .single();

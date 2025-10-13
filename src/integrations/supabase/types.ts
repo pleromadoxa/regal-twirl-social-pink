@@ -931,8 +931,66 @@ export type Database = {
           },
         ]
       }
+      circle_call_history: {
+        Row: {
+          call_type: string
+          caller_id: string
+          circle_id: string
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          participants: string[]
+          room_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          call_type?: string
+          caller_id: string
+          circle_id: string
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          participants?: string[]
+          room_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string
+          circle_id?: string
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          participants?: string[]
+          room_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_call_history_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_call_history_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "user_circles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circle_calls: {
         Row: {
+          call_history_id: string | null
           call_type: string
           caller_id: string
           circle_id: string
@@ -945,6 +1003,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          call_history_id?: string | null
           call_type?: string
           caller_id: string
           circle_id: string
@@ -957,6 +1016,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          call_history_id?: string | null
           call_type?: string
           caller_id?: string
           circle_id?: string
@@ -969,6 +1029,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "circle_calls_call_history_id_fkey"
+            columns: ["call_history_id"]
+            isOneToOne: false
+            referencedRelation: "circle_call_history"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "circle_calls_caller_id_fkey"
             columns: ["caller_id"]
