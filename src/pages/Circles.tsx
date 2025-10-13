@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCircles, Circle, CircleMember } from '@/hooks/useCircles';
 import { useCircleInvitations } from '@/hooks/useCircleInvitations';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,7 +56,26 @@ const Circles = () => {
   const [category, setCategory] = useState('general');
   const [isPrivate, setIsPrivate] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [circleMembersPreview, setCircleMembersPreview] = useState<Record<string, CircleMember[]>>({});
   const isMobile = useIsMobile();
+
+  // Fetch member previews for all circles
+  useEffect(() => {
+    const fetchMemberPreviews = async () => {
+      if (circles.length === 0) return;
+      
+      const previews: Record<string, CircleMember[]> = {};
+      
+      for (const circle of circles) {
+        const members = await getCircleMembers(circle.id);
+        previews[circle.id] = members.slice(0, 5);
+      }
+      
+      setCircleMembersPreview(previews);
+    };
+    
+    fetchMemberPreviews();
+  }, [circles]);
 
   const colors = [
     { name: 'Indigo', value: '#6366f1' },
@@ -318,7 +337,26 @@ const Circles = () => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      {/* Stacked Member Avatars */}
+                      {circleMembersPreview[circle.id] && circleMembersPreview[circle.id].length > 0 && (
+                        <div className="flex -space-x-2">
+                          {circleMembersPreview[circle.id].map((member, index) => (
+                            <Avatar 
+                              key={member.id} 
+                              className="w-8 h-8 border-2 border-background"
+                              style={{ zIndex: 5 - index }}
+                            >
+                              <AvatarImage src={member.profiles.avatar_url} />
+                              <AvatarFallback className="text-xs">
+                                {member.profiles.display_name?.[0]?.toUpperCase() || 
+                                 member.profiles.username?.[0]?.toUpperCase() || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                          ))}
+                        </div>
+                      )}
+                      
                       <Badge variant="secondary">
                         {circle.member_count} member{circle.member_count !== 1 ? 's' : ''}
                       </Badge>
