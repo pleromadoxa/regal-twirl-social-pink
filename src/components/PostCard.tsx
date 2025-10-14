@@ -26,6 +26,8 @@ import PollComponent from './PollComponent';
 import CollaborationManager from './CollaborationManager';
 import CollaboratorsDisplay from './CollaboratorsDisplay';
 import { useCollaboration } from '@/hooks/useCollaboration';
+import QuoteTweetDialog from './QuoteTweetDialog';
+import { usePosts } from '@/hooks/usePosts';
 
 interface PostCardProps {
   post: {
@@ -34,10 +36,12 @@ interface PostCardProps {
     image_urls?: string[];
     video_url?: string;
     created_at: string;
+    updated_at?: string;
     likes_count: number;
     retweets_count: number;
     replies_count: number;
     views_count: number;
+    trending_score?: number;
     user_id: string;
     profiles?: {
       id: string;
@@ -45,6 +49,7 @@ interface PostCardProps {
       display_name: string;
       avatar_url?: string;
       is_verified?: boolean;
+      verification_level?: string;
       premium_tier?: string;
     };
   };
@@ -87,10 +92,12 @@ const PostCard = ({
   const { isPostPinned, togglePin } = usePinnedPosts();
   const { verificationLevel } = useVerifiedStatus(post.profiles);
   const { getPostCollaborators } = useCollaboration();
+  const { createPost } = usePosts();
   const [showComments, setShowComments] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [showQuoteTweetDialog, setShowQuoteTweetDialog] = useState(false);
   
   const isOwnPost = user?.id === post.user_id;
   const hasBusinessPages = myPages && myPages.length > 0;
@@ -142,6 +149,23 @@ const PostCard = ({
       return;
     }
     if (onRetweet) onRetweet();
+  };
+
+  const handleQuoteTweet = async (content: string, quotedPostId: string) => {
+    try {
+      await createPost(content, [], 'personal', undefined, quotedPostId);
+      toast({
+        title: "Success",
+        description: "Quote tweet posted successfully"
+      });
+    } catch (error) {
+      console.error('Error creating quote tweet:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create quote tweet",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleImageClick = (index: number) => {
@@ -297,23 +321,38 @@ const PostCard = ({
                 <span>{post.replies_count}</span>
               </Button>
               
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRetweet}
-                disabled={isOwnPost}
-                className={`flex items-center space-x-2 ${
-                  isOwnPost 
-                    ? 'text-gray-400 cursor-not-allowed' 
-                    : isRetweeted 
-                    ? 'text-green-500 bg-green-50 dark:bg-green-900/20' 
-                    : 'text-gray-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
-                } transition-colors rounded-full px-3 py-1`}
-                title={isOwnPost ? "Cannot re-share your own post" : isRetweeted ? "Remove re-share" : "Re-share post"}
-              >
-                <Repeat2 className={`w-4 h-4 ${isRetweeted ? 'fill-current' : ''}`} />
-                <span>{post.retweets_count}</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isOwnPost}
+                    className={`flex items-center space-x-2 ${
+                      isOwnPost 
+                        ? 'text-gray-400 cursor-not-allowed' 
+                        : isRetweeted 
+                        ? 'text-green-500 bg-green-50 dark:bg-green-900/20' 
+                        : 'text-gray-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
+                    } transition-colors rounded-full px-3 py-1`}
+                    title={isOwnPost ? "Cannot re-share your own post" : isRetweeted ? "Remove re-share" : "Re-share post"}
+                  >
+                    <Repeat2 className="w-4 h-4" />
+                    <span>{post.retweets_count}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                {!isOwnPost && (
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={handleRetweet}>
+                      <Repeat2 className="w-4 h-4 mr-2" />
+                      {isRetweeted ? 'Undo Retweet' : 'Retweet'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowQuoteTweetDialog(true)}>
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Quote Tweet
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                )}
+              </DropdownMenu>
               
               <Button
                 variant="ghost"
@@ -392,6 +431,14 @@ const PostCard = ({
           initialIndex={selectedImageIndex}
         />
       )}
+
+      {/* Quote Tweet Dialog */}
+      <QuoteTweetDialog
+        post={post}
+        open={showQuoteTweetDialog}
+        onOpenChange={setShowQuoteTweetDialog}
+        onQuoteTweet={handleQuoteTweet}
+      />
     </Card>
   );
 };

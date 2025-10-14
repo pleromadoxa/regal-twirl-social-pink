@@ -2997,6 +2997,7 @@ export type Database = {
           image_urls: string[] | null
           likes_count: number | null
           posted_as_page: string | null
+          quoted_post_id: string | null
           replies_count: number | null
           retweets_count: number | null
           sponsored_post_id: string | null
@@ -3013,6 +3014,7 @@ export type Database = {
           image_urls?: string[] | null
           likes_count?: number | null
           posted_as_page?: string | null
+          quoted_post_id?: string | null
           replies_count?: number | null
           retweets_count?: number | null
           sponsored_post_id?: string | null
@@ -3029,6 +3031,7 @@ export type Database = {
           image_urls?: string[] | null
           likes_count?: number | null
           posted_as_page?: string | null
+          quoted_post_id?: string | null
           replies_count?: number | null
           retweets_count?: number | null
           sponsored_post_id?: string | null
@@ -3043,6 +3046,13 @@ export type Database = {
             columns: ["posted_as_page"]
             isOneToOne: false
             referencedRelation: "business_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_quoted_post_id_fkey"
+            columns: ["quoted_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
           {

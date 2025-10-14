@@ -18,9 +18,11 @@ export interface Post {
   audio_url?: string;
   posted_as_page?: string;
   sponsored_post_id?: string;
+  quoted_post_id?: string;
   user_liked?: boolean;
   user_retweeted?: boolean;
   user_pinned?: boolean;
+  quoted_post?: Post | null;
   profiles?: {
     id: string;
     username: string;
@@ -205,7 +207,8 @@ export const usePosts = () => {
     content: string, 
     imageUrls: string[] = [], 
     selectedAccount: 'personal' | string = 'personal',
-    audioUrl?: string
+    audioUrl?: string,
+    quotedPostId?: string
   ) => {
     if (!user) {
       toast({
@@ -217,12 +220,18 @@ export const usePosts = () => {
     }
 
     try {
+      // Play post sound effect
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSyAzvDbjjYIGWm98OOYTgwOUKvo862mWxsNNYnZ8cmCKwUuf8rx56JPC');
+      audio.volume = 0.3;
+      audio.play().catch(() => {}); // Ignore errors if audio fails
+
       const postData: any = {
         content,
         user_id: user.id,
         image_urls: imageUrls.length > 0 ? imageUrls : null,
         audio_url: audioUrl || null,
-        posted_as_page: selectedAccount !== 'personal' ? selectedAccount : null
+        posted_as_page: selectedAccount !== 'personal' ? selectedAccount : null,
+        quoted_post_id: quotedPostId || null
       };
 
       const { data, error } = await supabase

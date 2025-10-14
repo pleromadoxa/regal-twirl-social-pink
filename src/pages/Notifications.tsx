@@ -5,7 +5,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, Heart, MessageCircle, Repeat, UserPlus, User, PhoneMissed, Flame, AlertTriangle, Users, Check, X } from 'lucide-react';
+import { Bell, Heart, MessageCircle, Repeat, UserPlus, User, PhoneMissed, Flame, AlertTriangle, Users, Check, X, Quote } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useCollaboration } from '@/hooks/useCollaboration';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,8 @@ const Notifications = () => {
         return <MessageCircle className="w-5 h-5 text-blue-500" />;
       case 'retweet':
         return <Repeat className="w-5 h-5 text-green-500" />;
+      case 'quote_tweet':
+        return <Quote className="w-5 h-5 text-purple-500" />;
       case 'follow':
         return <UserPlus className="w-5 h-5 text-purple-500" />;
       case 'mention':

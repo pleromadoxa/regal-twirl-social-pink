@@ -11,7 +11,8 @@ import {
   Trash2, 
   MoreHorizontal,
   TrendingUp,
-  Megaphone
+  Megaphone,
+  Quote
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -35,6 +36,7 @@ interface PostActionsProps {
   userBookmarked: boolean;
   onLike: () => void;
   onRetweet: () => void;
+  onQuoteTweet?: () => void;
   onPin: () => void;
   onBookmark: () => void;
   onDelete: () => void;
@@ -57,6 +59,7 @@ const PostActions = ({
   userBookmarked,
   onLike,
   onRetweet,
+  onQuoteTweet,
   onPin,
   onBookmark,
   onDelete,
@@ -96,19 +99,34 @@ const PostActions = ({
         </div>
 
         <div className="flex items-center space-x-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onRetweet}
-            className={`transition-colors rounded-full p-2 ${
-              userRetweeted 
-                ? 'text-green-600 hover:text-green-700 bg-green-50 dark:bg-green-900/20' 
-                : 'text-slate-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
-            }`}
-          >
-            <Repeat2 className="w-4 h-4" />
-            <span className="ml-1 text-sm">{formatCount(retweetsCount)}</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`transition-colors rounded-full p-2 ${
+                  userRetweeted 
+                    ? 'text-green-600 hover:text-green-700 bg-green-50 dark:bg-green-900/20' 
+                    : 'text-slate-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+                }`}
+              >
+                <Repeat2 className="w-4 h-4" />
+                <span className="ml-1 text-sm">{formatCount(retweetsCount)}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={onRetweet}>
+                <Repeat2 className="w-4 h-4 mr-2" />
+                {userRetweeted ? 'Undo Retweet' : 'Retweet'}
+              </DropdownMenuItem>
+              {onQuoteTweet && (
+                <DropdownMenuItem onClick={onQuoteTweet}>
+                  <Quote className="w-4 h-4 mr-2" />
+                  Quote Tweet
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="flex items-center space-x-1">

@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Bell, User, Heart, Repeat, UserCheck, MessageCircle, PhoneMissed, Flame, AlertTriangle, Users, Check, X } from 'lucide-react';
+import { Bell, User, Heart, Repeat, UserCheck, MessageCircle, PhoneMissed, Flame, AlertTriangle, Users, Check, X, Quote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -32,6 +32,8 @@ const NotificationDropdown = () => {
         return <Heart className="w-4 h-4 text-red-500" />;
       case 'retweet':
         return <Repeat className="w-4 h-4 text-green-500" />;
+      case 'quote_tweet':
+        return <Quote className="w-4 h-4 text-purple-500" />;
       case 'follow':
         return <UserCheck className="w-4 h-4 text-blue-500" />;
       case 'reply':
