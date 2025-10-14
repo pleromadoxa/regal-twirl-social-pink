@@ -34,7 +34,7 @@ const AccountSwitcher = ({ selectedAccount, onAccountChange }: AccountSwitcherPr
   return (
     <div className="mb-4">
       <Select value={selectedAccount} onValueChange={onAccountChange}>
-        <SelectTrigger className="w-full border-purple-200 focus:border-purple-500 bg-white/80 dark:bg-slate-800/80">
+        <SelectTrigger className="w-full max-w-xs sm:max-w-sm md:max-w-md border-purple-200 focus:border-purple-500 bg-white/80 dark:bg-slate-800/80">
           <SelectValue placeholder="Select account to post as" />
         </SelectTrigger>
         <SelectContent>
