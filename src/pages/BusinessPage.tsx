@@ -112,7 +112,7 @@ const BusinessPage = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 dark:from-violet-950 dark:via-purple-950 dark:to-pink-950">
         <SidebarNav />
-        <div className="ml-80 flex items-center justify-center min-h-screen">
+        <div className={`${isMobile ? 'px-2 pb-20' : 'ml-80'} flex items-center justify-center min-h-screen`}>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
               Business Page Not Found
