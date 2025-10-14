@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { ExternalLink, MapPin, Globe, Phone, Mail, Users, Star, Share2, Copy } from 'lucide-react';
 import SidebarNav from '@/components/SidebarNav';
 import ProfessionalStorefront from '@/components/ProfessionalStorefront';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 interface BusinessPageData {
   id: string;
@@ -28,6 +30,7 @@ interface BusinessPageData {
 }
 
 const BusinessPage = () => {
+  const isMobile = useIsMobile();
   const { pageSlug, pageId } = useParams();
   const [businessPage, setBusinessPage] = useState<BusinessPageData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -263,8 +266,9 @@ const BusinessPage = () => {
             </CardContent>
           </Card>
         </div>
+        {isMobile && <MobileBottomNav />}
       </div>
     );
   };
   
-  export default BusinessPage;
+export default BusinessPage;

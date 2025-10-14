@@ -25,6 +25,8 @@ import SidebarNav from '@/components/SidebarNav';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 interface AnalyticsData {
   totalViews: number;
@@ -39,6 +41,7 @@ interface AnalyticsData {
 }
 
 const BusinessAnalytics = () => {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { myPages, loading } = useBusinessPages();
   const [selectedPageId, setSelectedPageId] = useState<string>('');
@@ -446,6 +449,7 @@ const BusinessAnalytics = () => {
           )}
         </div>
       </div>
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };

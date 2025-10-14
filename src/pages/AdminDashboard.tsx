@@ -29,6 +29,8 @@ import {
   CreditCard
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 interface DashboardStats {
   totalUsers: number;
@@ -50,6 +52,7 @@ interface ActivityItem {
 }
 
 const AdminDashboard = () => {
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
@@ -434,6 +437,7 @@ const AdminDashboard = () => {
           </Tabs>
         </div>
       </div>
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 };
