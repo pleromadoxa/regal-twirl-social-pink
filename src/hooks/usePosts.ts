@@ -233,6 +233,61 @@ export const usePosts = () => {
 
       if (error) throw error;
 
+      // Extract mentions from content and create notifications
+      const mentionRegex = /@([\w]+)/g;
+      const mentions = Array.from(content.matchAll(mentionRegex), m => m[1]);
+      
+      if (mentions.length > 0) {
+        // Get user IDs for mentioned usernames
+        const { data: mentionedUsers } = await supabase
+          .from('profiles')
+          .select('id, username, display_name')
+          .in('username', mentions);
+
+        if (mentionedUsers && mentionedUsers.length > 0) {
+          // Get current user's profile for notification message
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('display_name, username')
+            .eq('id', user.id)
+            .single();
+
+          const displayName = currentUserProfile?.display_name || currentUserProfile?.username || 'Someone';
+
+          // Create notifications and send emails for each mentioned user
+          for (const mentionedUser of mentionedUsers) {
+            // Skip if user mentions themselves
+            if (mentionedUser.id === user.id) continue;
+
+            // Create notification
+            await supabase
+              .from('notifications')
+              .insert({
+                user_id: mentionedUser.id,
+                type: 'mention',
+                message: `${displayName} mentioned you in a post`,
+                actor_id: user.id,
+                post_id: data.id
+              });
+
+            // Send email notification
+            try {
+              await supabase.functions.invoke('send-mention-notification', {
+                body: {
+                  to_user_id: mentionedUser.id,
+                  from_user_name: displayName,
+                  post_id: data.id,
+                  post_preview: content.substring(0, 100)
+                }
+              });
+            } catch (emailError) {
+              console.error('Error sending mention email:', emailError);
+              // Don't block post creation if email fails
+            }
+          }
+        }
+      }
+
       // Get the user's profile
       const { data: profileData } = await supabase
         .from('profiles')

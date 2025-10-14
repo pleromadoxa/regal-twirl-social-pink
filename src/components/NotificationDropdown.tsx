@@ -36,6 +36,8 @@ const NotificationDropdown = () => {
         return <UserCheck className="w-4 h-4 text-blue-500" />;
       case 'reply':
         return <MessageCircle className="w-4 h-4 text-purple-500" />;
+      case 'mention':
+        return <User className="w-4 h-4 text-blue-500" />;
       case 'message':
         return <MessageCircle className="w-4 h-4 text-blue-500" />;
       case 'missed_call':
@@ -64,9 +66,14 @@ const NotificationDropdown = () => {
     return notification.message || 'New notification';
   };
 
-  const handleNotificationClick = (notificationId: string) => {
-    console.log('Notification clicked:', notificationId);
-    markAsRead(notificationId);
+  const handleNotificationClick = (notification: any) => {
+    console.log('Notification clicked:', notification.id);
+    markAsRead(notification.id);
+    
+    // Navigate to post if notification has post_id
+    if (notification.post_id) {
+      window.location.href = `/home?post=${notification.post_id}`;
+    }
   };
 
   const handleCollaborationResponse = async (e: React.MouseEvent, inviteId: string, status: 'accepted' | 'declined') => {
@@ -153,7 +160,7 @@ const NotificationDropdown = () => {
             notifications.slice(0, 10).map((notification) => (
               <DropdownMenuItem
                 key={notification.id}
-                onClick={() => handleNotificationClick(notification.id)}
+                onClick={() => handleNotificationClick(notification)}
                 className={`p-3 cursor-pointer ${!notification.read ? 'bg-blue-50 dark:bg-blue-950' : ''}`}
               >
                 <div className="flex items-start gap-3 w-full">

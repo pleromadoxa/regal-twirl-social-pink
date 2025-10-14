@@ -27,6 +27,8 @@ const Notifications = () => {
         return <Repeat className="w-5 h-5 text-green-500" />;
       case 'follow':
         return <UserPlus className="w-5 h-5 text-purple-500" />;
+      case 'mention':
+        return <User className="w-5 h-5 text-blue-500" />;
       case 'missed_call':
         return <PhoneMissed className="w-5 h-5 text-red-500" />;
       case 'collaboration_invite':
@@ -156,7 +158,13 @@ const Notifications = () => {
                     className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${
                       !notification.read ? 'border-purple-200 dark:border-purple-700 bg-blue-50/50 dark:bg-blue-950/50' : ''
                     }`}
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={() => {
+                      markAsRead(notification.id);
+                      // Navigate to post if notification has post_id
+                      if (notification.post_id) {
+                        window.location.href = `/home?post=${notification.post_id}`;
+                      }
+                    }}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start space-x-3">
