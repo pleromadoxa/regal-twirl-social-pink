@@ -54,10 +54,29 @@ export const useMoodBoard = () => {
       // Insert new mood
       const { data, error } = await supabase.from('user_moods').insert({ ...mood, user_id: user.id } as any).select().single();
       if (error) throw error;
+      
+      // Create a post on the timeline with the mood data
+      const moodPost = {
+        content: `🎨 Updated mood board`,
+        user_id: user.id,
+        metadata: {
+          type: 'mood_board',
+          mood: mood.mood,
+          emoji: mood.emoji,
+          activity: mood.activity,
+          music_track: mood.music_track,
+          color_theme: mood.color_theme,
+          custom_message: mood.custom_message
+        }
+      };
+      
+      await supabase.from('posts').insert(moodPost);
+      
       toast({ title: "Mood updated!" });
       await fetchMood();
       return data;
     } catch (error: any) {
+      console.error('Error setting mood:', error);
       toast({ title: "Failed to set mood", variant: "destructive" });
     } finally {
       setLoading(false);

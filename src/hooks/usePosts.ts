@@ -23,6 +23,7 @@ export interface Post {
   user_retweeted?: boolean;
   user_pinned?: boolean;
   quoted_post?: Post | null;
+  metadata?: any;
   profiles?: {
     id: string;
     username: string;

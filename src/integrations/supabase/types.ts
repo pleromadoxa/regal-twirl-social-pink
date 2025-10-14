@@ -2996,6 +2996,7 @@ export type Database = {
           id: string
           image_urls: string[] | null
           likes_count: number | null
+          metadata: Json | null
           posted_as_page: string | null
           quoted_post_id: string | null
           replies_count: number | null
@@ -3013,6 +3014,7 @@ export type Database = {
           id?: string
           image_urls?: string[] | null
           likes_count?: number | null
+          metadata?: Json | null
           posted_as_page?: string | null
           quoted_post_id?: string | null
           replies_count?: number | null
@@ -3030,6 +3032,7 @@ export type Database = {
           id?: string
           image_urls?: string[] | null
           likes_count?: number | null
+          metadata?: Json | null
           posted_as_page?: string | null
           quoted_post_id?: string | null
           replies_count?: number | null

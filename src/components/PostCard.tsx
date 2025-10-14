@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Flag, Pin, Bookmark, Megaphone, Users } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Flag, Pin, Bookmark, Megaphone, Users, Activity, Music } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,6 +28,7 @@ import CollaboratorsDisplay from './CollaboratorsDisplay';
 import { useCollaboration } from '@/hooks/useCollaboration';
 import QuoteTweetDialog from './QuoteTweetDialog';
 import { usePosts } from '@/hooks/usePosts';
+import UserMoodDisplay from './UserMoodDisplay';
 
 interface PostCardProps {
   post: {
@@ -43,6 +44,7 @@ interface PostCardProps {
     views_count: number;
     trending_score?: number;
     user_id: string;
+    metadata?: any;
     profiles?: {
       id: string;
       username: string;
@@ -278,6 +280,53 @@ const PostCard = ({
             </div>
             
             <div className="mt-2">
+              {/* Mood Board Display */}
+              {post.metadata?.type === 'mood_board' && post.metadata.mood && (
+                <div className="mb-4">
+                  <div 
+                    className="relative p-4 rounded-xl overflow-hidden border-2 transition-all hover:shadow-lg duration-300"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${post.metadata.color_theme}20, ${post.metadata.color_theme}08)`,
+                      borderColor: `${post.metadata.color_theme}40`
+                    }}
+                  >
+                    {/* Animated gradient orb */}
+                    <div 
+                      className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-20 animate-float"
+                      style={{ background: post.metadata.color_theme }}
+                    />
+                    
+                    <div className="relative z-10">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <span className="text-2xl drop-shadow-sm">{post.metadata.emoji}</span>
+                        <span className="font-semibold text-base">{post.metadata.mood}</span>
+                      </div>
+                      
+                      {post.metadata.custom_message && (
+                        <p className="text-sm text-muted-foreground mb-3 bg-background/50 rounded-lg p-2 backdrop-blur-sm">
+                          {post.metadata.custom_message}
+                        </p>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {post.metadata.activity && (
+                          <Badge variant="secondary" className="text-xs bg-background/60 backdrop-blur-sm">
+                            <Activity className="w-3 h-3 mr-1" />
+                            {post.metadata.activity}
+                          </Badge>
+                        )}
+                        {post.metadata.music_track && (
+                          <Badge variant="secondary" className="text-xs bg-background/60 backdrop-blur-sm">
+                            <Music className="w-3 h-3 mr-1" />
+                            {post.metadata.music_track}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="text-gray-900 dark:text-gray-100">
                 <ThreadContent content={post.content} />
               </div>
