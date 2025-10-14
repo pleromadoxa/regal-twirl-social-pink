@@ -16,7 +16,7 @@ import { format } from 'date-fns';
 const MoodBoard = () => {
   const { myMood, loading, setMood, clearMood } = useMoodBoard();
   const [open, setOpen] = useState(false);
-  const [mood, setMoodValue] = useState('');
+  const [mood, setMoodValue] = useState('Happy');
   const [activity, setActivity] = useState('');
   const [musicTrack, setMusicTrack] = useState('');
   const [emoji, setEmoji] = useState('😊');
@@ -51,16 +51,18 @@ const MoodBoard = () => {
   ];
 
   const handleSetMood = async () => {
-    if (!mood.trim()) return;
+    if (!mood.trim()) {
+      return;
+    }
     
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     
     await setMood({
-      mood,
-      activity: activity || null,
-      music_track: musicTrack || null,
+      mood: mood.trim(),
+      activity: activity.trim() || null,
+      music_track: musicTrack.trim() || null,
       emoji: emoji,
-      custom_message: customMessage || null,
+      custom_message: customMessage.trim() || null,
       color_theme: colorTheme,
       expires_at: expiresAt
     });
@@ -192,11 +194,20 @@ const MoodBoard = () => {
                     
                     <Button 
                       onClick={handleSetMood} 
-                      disabled={loading || !mood} 
+                      disabled={loading} 
                       className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
                     >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Set Mood
+                      {loading ? (
+                        <>
+                          <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Setting...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Set Mood
+                        </>
+                      )}
                     </Button>
                   </div>
                 </DialogContent>
