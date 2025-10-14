@@ -28,6 +28,7 @@ import SimpleOrdersTab from '@/components/SimpleOrdersTab';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useState } from 'react';
+import UserMoodDisplay from '@/components/UserMoodDisplay';
 
 const Profile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -227,6 +228,11 @@ const Profile = () => {
                 {profile.bio && (
                   <p className={`${isMobile ? 'mt-3 text-sm' : 'mt-3'} text-gray-900 dark:text-gray-100`}>{profile.bio}</p>
                 )}
+
+                {/* User Mood Display */}
+                <div className="mt-4">
+                  <UserMoodDisplay userId={profile.id} />
+                </div>
 
                 {/* Profile Stats */}
                 <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'gap-6'} mt-4 text-sm`}>
