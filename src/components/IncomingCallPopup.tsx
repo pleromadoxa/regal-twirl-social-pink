@@ -67,7 +67,7 @@ const IncomingCallPopup = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
       <div className="bg-gradient-to-br from-purple-900 via-blue-900 to-black rounded-2xl p-8 text-white shadow-2xl border border-white/10 max-w-sm w-full mx-auto animate-in zoom-in-95">
         
         {/* Incoming call indicator */}
