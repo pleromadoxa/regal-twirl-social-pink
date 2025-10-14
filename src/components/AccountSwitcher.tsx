@@ -34,8 +34,8 @@ const AccountSwitcher = ({ selectedAccount, onAccountChange }: AccountSwitcherPr
   return (
     <div className="mb-4">
       <Select value={selectedAccount} onValueChange={onAccountChange}>
-        <SelectTrigger className="w-full max-w-[200px] sm:max-w-xs border-purple-200 focus:border-purple-500 bg-white/80 dark:bg-slate-800/80">
-          <SelectValue placeholder="Select account" />
+        <SelectTrigger className="w-full max-w-[160px] sm:max-w-xs border-purple-200 focus:border-purple-500 bg-white/80 dark:bg-slate-800/80">
+          <SelectValue placeholder="Account" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="personal">
