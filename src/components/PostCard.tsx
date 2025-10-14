@@ -222,34 +222,34 @@ const PostCard = ({
           </Link>
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Link to={`/profile/${post.profiles?.id}`} className="hover:underline">
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">
+                <Link to={`/profile/${post.profiles?.id}`} className="hover:underline shrink-0">
+                  <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100">
                  {post.profiles?.display_name || post.profiles?.username}
                    </span>
                  </Link>
                  <VerificationBadge 
                    level={verificationLevel} 
                    showText={false}
-                   className="ml-1"
+                   className="shrink-0"
                  />
                 {isPostPinned(post.id) && (
-                  <div title="Pinned Post">
-                    <Pin className="w-4 h-4 text-blue-600" />
+                  <div title="Pinned Post" className="shrink-0">
+                    <Pin className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                   </div>
                 )}
-                <span className="text-sm text-gray-500">
+                <span className="text-xs sm:text-sm text-gray-500 truncate">
                   @{post.profiles?.username}
                 </span>
-                <span className="text-sm text-gray-500">·</span>
-                <span className="text-sm text-gray-500">
+                <span className="text-xs sm:text-sm text-gray-500 shrink-0">·</span>
+                <span className="text-xs sm:text-sm text-gray-500 shrink-0">
                   {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                 </span>
                 {/* Sponsored Indicator */}
                 {isSponsored && (
                   <>
-                    <span className="text-sm text-gray-500">·</span>
+                    <span className="text-xs sm:text-sm text-gray-500 shrink-0">·</span>
                     <SponsoredIndicator sponsoredBy={sponsoredBy} />
                   </>
                 )}
@@ -257,7 +257,7 @@ const PostCard = ({
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="shrink-0">
                     <MoreHorizontal className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -420,14 +420,14 @@ const PostCard = ({
               )}
             </div>
             
-            <div className="mt-4 flex items-center justify-between max-w-md">
+            <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowComments(!showComments)}
-                className="flex items-center space-x-2 text-gray-500 hover:text-blue-500"
+                className="flex items-center space-x-1 sm:space-x-2 text-gray-500 hover:text-blue-500 text-xs sm:text-sm"
               >
-                <MessageCircle className="w-4 h-4" />
+                <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>{post.replies_count}</span>
               </Button>
               
@@ -437,16 +437,16 @@ const PostCard = ({
                     variant="ghost"
                     size="sm"
                     disabled={isOwnPost}
-                    className={`flex items-center space-x-2 ${
+                    className={`flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm ${
                       isOwnPost 
                         ? 'text-gray-400 cursor-not-allowed' 
                         : isRetweeted 
                         ? 'text-green-500 bg-green-50 dark:bg-green-900/20' 
                         : 'text-gray-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
-                    } transition-colors rounded-full px-3 py-1`}
+                    } transition-colors rounded-full px-2 sm:px-3 py-1`}
                     title={isOwnPost ? "Cannot re-share your own post" : isRetweeted ? "Remove re-share" : "Re-share post"}
                   >
-                    <Repeat2 className="w-4 h-4" />
+                    <Repeat2 className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span>{post.retweets_count}</span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -468,11 +468,11 @@ const PostCard = ({
                 variant="ghost"
                 size="sm"
                 onClick={onLike}
-                className={`flex items-center space-x-2 ${
+                className={`flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm ${
                   isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
                 }`}
               >
-                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                <Heart className={`w-3 h-3 sm:w-4 sm:h-4 ${isLiked ? 'fill-current' : ''}`} />
                 <span>{post.likes_count}</span>
               </Button>
               
@@ -480,9 +480,9 @@ const PostCard = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleShare}
-                className="flex items-center space-x-2 text-gray-500 hover:text-blue-500"
+                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-500 hover:text-blue-500"
               >
-                <Share className="w-4 h-4" />
+                <Share className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
               
                {/* Show boost button only for professional page posts */}
