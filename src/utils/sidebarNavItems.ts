@@ -54,6 +54,7 @@ export const getSidebarNavItems = ({
     { name: 'Chat', path: '/messages', icon: MessageCircle },
     { name: 'Circles', path: '/circles', icon: Users },
     { name: 'Explore', path: '/explore', icon: Search },
+    { name: 'Regal AI Engine', path: '/regal-ai', icon: Crown, accent: 'from-purple-400 to-pink-500' },
     { name: 'Events', path: '/events', icon: Calendar },
     { name: 'Collaboration', path: '/collaboration', icon: UserPlus },
     { name: 'Challenges', path: '/challenges', icon: Trophy },
