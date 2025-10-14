@@ -36,6 +36,8 @@ import CircleFeed from '@/components/CircleFeed';
 import CircleInvitationsDialog from '@/components/CircleInvitationsDialog';
 import CircleSettingsDialog from '@/components/CircleSettingsDialog';
 import CircleCallHistoryDialog from '@/components/CircleCallHistoryDialog';
+import { CircleEventsTab } from '@/components/CircleEventsTab';
+import { CirclePollsTab } from '@/components/CirclePollsTab';
 
 const Circles = () => {
   const { user } = useAuth();
@@ -412,9 +414,11 @@ const Circles = () => {
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="feed">Feed</TabsTrigger>
+              <TabsTrigger value="events">Events</TabsTrigger>
+              <TabsTrigger value="polls">Polls</TabsTrigger>
               <TabsTrigger value="members">Members</TabsTrigger>
             </TabsList>
 
@@ -467,6 +471,18 @@ const Circles = () => {
             <TabsContent value="feed">
               {selectedCircle && (
                 <CircleFeed circleId={selectedCircle.id} circleName={selectedCircle.name} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="events">
+              {selectedCircle && (
+                <CircleEventsTab circleId={selectedCircle.id} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="polls">
+              {selectedCircle && (
+                <CirclePollsTab circleId={selectedCircle.id} />
               )}
             </TabsContent>
 

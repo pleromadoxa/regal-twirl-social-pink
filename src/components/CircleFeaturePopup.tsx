@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Lock, MessageSquare, Phone, Image as ImageIcon, Calendar, Shield } from 'lucide-react';
+import { Users, Lock, MessageSquare, Phone, Image as ImageIcon, Calendar, Shield, BarChart3, FileText, Megaphone } from 'lucide-react';
 
 interface Feature {
   icon: React.ReactNode;
@@ -37,16 +37,28 @@ const CircleFeaturePopup = ({ open, onOpenChange, onCreateCircle }: CircleFeatur
       color: 'from-green-500 to-emerald-500'
     },
     {
-      icon: <ImageIcon className="w-6 h-6" />,
-      title: 'Media Sharing',
-      description: 'Share photos, videos, and files within your circle',
+      icon: <Calendar className="w-6 h-6" />,
+      title: 'Events Calendar',
+      description: 'Create and manage events with RSVP tracking',
+      color: 'from-yellow-500 to-amber-500'
+    },
+    {
+      icon: <BarChart3 className="w-6 h-6" />,
+      title: 'Polls & Voting',
+      description: 'Make group decisions with interactive polls',
+      color: 'from-pink-500 to-rose-500'
+    },
+    {
+      icon: <FileText className="w-6 h-6" />,
+      title: 'File Sharing',
+      description: 'Share documents, images, and files securely',
       color: 'from-orange-500 to-red-500'
     },
     {
-      icon: <Calendar className="w-6 h-6" />,
-      title: 'Events & Reminders',
-      description: 'Organize events and set reminders for your circle',
-      color: 'from-yellow-500 to-amber-500'
+      icon: <Megaphone className="w-6 h-6" />,
+      title: 'Announcements',
+      description: 'Pin important updates for all members to see',
+      color: 'from-cyan-500 to-blue-500'
     },
     {
       icon: <Shield className="w-6 h-6" />,
