@@ -62,51 +62,58 @@ const UserMoodDisplay = ({ userId }: UserMoodDisplayProps) => {
   const MoodIcon = getMoodIcon(mood.mood);
 
   return (
-    <div 
-      className="relative p-4 rounded-xl overflow-hidden border-2 transition-all hover:shadow-lg duration-300"
-      style={{ 
-        background: `linear-gradient(135deg, ${mood.color_theme}20, ${mood.color_theme}08)`,
-        borderColor: `${mood.color_theme}40`
-      }}
-    >
-      {/* Animated gradient orb */}
-      <div 
-        className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-20 animate-float"
-        style={{ background: mood.color_theme }}
-      />
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Sparkles className="w-4 h-4 text-primary" />
+        <span className="text-sm font-medium text-muted-foreground">Current Mood</span>
+      </div>
       
-      <div className="relative z-10">
-        <div className="flex items-center space-x-3 mb-3">
-          <div className="relative">
-            <div 
-              className="absolute inset-0 blur-lg opacity-40 animate-pulse"
-              style={{ background: mood.color_theme }}
-            />
-            <MoodIcon className="relative w-5 h-5" style={{ color: mood.color_theme }} />
+      <div 
+        className="relative p-4 rounded-xl overflow-hidden border-2 transition-all hover:shadow-lg duration-300"
+        style={{ 
+          background: `linear-gradient(135deg, ${mood.color_theme}20, ${mood.color_theme}08)`,
+          borderColor: `${mood.color_theme}40`
+        }}
+      >
+        {/* Animated gradient orb */}
+        <div 
+          className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-20 animate-float"
+          style={{ background: mood.color_theme }}
+        />
+        
+        <div className="relative z-10">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="relative">
+              <div 
+                className="absolute inset-0 blur-lg opacity-40 animate-pulse"
+                style={{ background: mood.color_theme }}
+              />
+              <MoodIcon className="relative w-5 h-5" style={{ color: mood.color_theme }} />
+            </div>
+            <span className="text-2xl drop-shadow-sm">{mood.emoji}</span>
+            <span className="font-semibold text-base">{mood.mood}</span>
           </div>
-          <span className="text-2xl drop-shadow-sm">{mood.emoji}</span>
-          <span className="font-semibold text-base">{mood.mood}</span>
-        </div>
-        
-        {mood.custom_message && (
-          <p className="text-sm text-muted-foreground mb-3 bg-background/50 rounded-lg p-2 backdrop-blur-sm">
-            {mood.custom_message}
-          </p>
-        )}
-        
-        <div className="flex flex-wrap gap-2">
-          {mood.activity && (
-            <Badge variant="secondary" className="text-xs bg-background/60 backdrop-blur-sm">
-              <Activity className="w-3 h-3 mr-1" />
-              {mood.activity}
-            </Badge>
+          
+          {mood.custom_message && (
+            <p className="text-sm text-muted-foreground mb-3 bg-background/50 rounded-lg p-2 backdrop-blur-sm">
+              {mood.custom_message}
+            </p>
           )}
-          {mood.music_track && (
-            <Badge variant="secondary" className="text-xs bg-background/60 backdrop-blur-sm">
-              <Music className="w-3 h-3 mr-1" />
-              {mood.music_track}
-            </Badge>
-          )}
+          
+          <div className="flex flex-wrap gap-2">
+            {mood.activity && (
+              <Badge variant="secondary" className="text-xs bg-background/60 backdrop-blur-sm">
+                <Activity className="w-3 h-3 mr-1" />
+                {mood.activity}
+              </Badge>
+            )}
+            {mood.music_track && (
+              <Badge variant="secondary" className="text-xs bg-background/60 backdrop-blur-sm">
+                <Music className="w-3 h-3 mr-1" />
+                {mood.music_track}
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
     </div>
