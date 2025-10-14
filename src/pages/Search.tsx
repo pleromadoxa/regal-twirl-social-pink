@@ -133,9 +133,9 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-      {!isMobile && <SidebarNav />}
+      <SidebarNav />
       
-      <main className={`flex-1 ${isMobile ? 'px-4 pb-20' : 'lg:mr-96'}`}>
+      <main className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'lg:mr-96'}`}>
         <div className="max-w-2xl mx-auto p-4">
           <div className="mb-6">
             <div className="relative">

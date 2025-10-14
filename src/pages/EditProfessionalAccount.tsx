@@ -126,8 +126,8 @@ const EditProfessionalAccount = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-        {!isMobile && <SidebarNav />}
-        <div className={`flex-1 ${isMobile ? '' : 'ml-80'} flex items-center justify-center`}>
+        <SidebarNav />
+        <div className={`flex-1 ${isMobile ? 'px-2' : 'ml-80'} flex items-center justify-center`}>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
         </div>
         {!isMobile && <RightSidebar />}
@@ -138,9 +138,9 @@ const EditProfessionalAccount = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      {!isMobile && <SidebarNav />}
+      <SidebarNav />
       
-      <div className={`flex-1 ${isMobile ? 'pb-20' : ''}`} style={isMobile ? {} : { marginLeft: '320px' }}>
+      <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : ''}`} style={isMobile ? {} : { marginLeft: '320px' }}>
         <main className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl">
           {/* Header */}
           <div className={`sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-purple-200 dark:border-purple-800 ${isMobile ? 'p-3' : 'p-6'} z-10`}>

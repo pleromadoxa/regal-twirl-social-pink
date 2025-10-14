@@ -185,9 +185,9 @@ const AIStudio = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
-      {!isMobile && <SidebarNav />}
+      <SidebarNav />
       
-      <div className={`flex-1 ${isMobile ? 'pb-20' : 'ml-80 mr-96 border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl`}>
+      <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'ml-80 mr-96 border-x border-purple-200 dark:border-purple-800'} bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl`}>
         {/* Header */}
         <div className={`sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl ${isMobile ? '' : 'border-b border-purple-200 dark:border-purple-800'} ${isMobile ? 'p-3' : 'p-6'} z-10`}>
           <div className={`flex ${isMobile ? 'flex-col gap-3' : 'items-center justify-between'}`}>
