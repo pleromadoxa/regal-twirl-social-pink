@@ -54,7 +54,22 @@ export const useFriendshipMilestones = () => {
     try {
       const { data, error } = await supabase.from('friendship_milestones').insert({ ...milestone, user_id: user.id } as any).select().single();
       if (error) throw error;
-      toast({ title: "Milestone created!" });
+      
+      // Create notification for the friend about the milestone
+      await supabase.from('notifications').insert({
+        user_id: milestone.friend_id,
+        type: 'milestone_created',
+        actor_id: user.id,
+        message: `${user.email?.split('@')[0]} created a milestone: ${milestone.title}`,
+        data: {
+          milestone_id: data.id,
+          milestone_type: milestone.milestone_type,
+          milestone_date: milestone.date,
+          is_recurring: milestone.is_recurring
+        }
+      });
+      
+      toast({ title: "Milestone created!", description: "Your friend has been notified" });
       await fetchMilestones();
       return data;
     } catch (error: any) {
