@@ -212,52 +212,93 @@ const FriendshipMilestones = () => {
                   return (
                     <Card 
                       key={milestone.id} 
-                      className="transition-all hover:shadow-lg duration-fast border-l-4 animate-fade-in"
-                      style={{ borderLeftColor: milestoneColors[milestone.milestone_type] }}
+                      className="group relative overflow-hidden transition-all hover:shadow-2xl hover:scale-[1.02] duration-300 animate-fade-in border-0 bg-gradient-to-br from-white via-white to-purple-50 dark:from-slate-800 dark:via-slate-800 dark:to-purple-950"
                     >
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div 
-                              className="w-10 h-10 rounded-full flex items-center justify-center"
-                              style={{ backgroundColor: `${milestoneColors[milestone.milestone_type]}20` }}
-                            >
-                              <Icon className="w-5 h-5" style={{ color: milestoneColors[milestone.milestone_type] }} />
+                      {/* Gradient overlay */}
+                      <div 
+                        className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-300"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${milestoneColors[milestone.milestone_type]}40 0%, transparent 100%)`
+                        }}
+                      />
+                      
+                      {/* Left accent bar */}
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1.5 group-hover:w-2 transition-all duration-300"
+                        style={{ backgroundColor: milestoneColors[milestone.milestone_type] }}
+                      />
+                      
+                      <CardHeader className="pb-3 relative">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start space-x-4 flex-1">
+                            {/* Icon with gradient background */}
+                            <div className="relative">
+                              <div 
+                                className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300"
+                                style={{ 
+                                  background: `linear-gradient(135deg, ${milestoneColors[milestone.milestone_type]}30, ${milestoneColors[milestone.milestone_type]}50)`,
+                                  border: `2px solid ${milestoneColors[milestone.milestone_type]}40`
+                                }}
+                              >
+                                <Icon className="w-7 h-7" style={{ color: milestoneColors[milestone.milestone_type] }} />
+                              </div>
+                              {/* Animated sparkle on today's milestones */}
+                              <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 animate-pulse shadow-lg" />
                             </div>
-                            <div className="flex-1">
-                              <CardTitle className="text-base">{milestone.title}</CardTitle>
-                              <div className="flex items-center space-x-2 mt-1">
-                                <Avatar className="w-6 h-6">
+                            
+                            <div className="flex-1 min-w-0">
+                              <CardTitle className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">
+                                {milestone.title}
+                              </CardTitle>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Avatar className="w-7 h-7 ring-2 ring-white dark:ring-slate-700 shadow-md">
                                   <AvatarImage src={milestone.profiles?.avatar_url} />
-                                  <AvatarFallback className="text-xs">
+                                  <AvatarFallback className="text-xs font-semibold">
                                     {milestone.profiles?.display_name?.[0]}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className="text-sm text-muted-foreground">
+                                <span className="text-sm font-medium text-muted-foreground">
                                   {milestone.profiles?.display_name || milestone.profiles?.username}
                                 </span>
+                                <Badge className="text-xs font-semibold animate-pulse bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
+                                  🎉 Today!
+                                </Badge>
+                                {milestone.is_recurring && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    🔄 Recurring
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          
+                          <div className="flex items-center gap-2">
                             {milestone.reminder_enabled ? (
-                              <Bell className="w-4 h-4 text-primary" />
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Bell className="w-4 h-4 text-primary animate-pulse" />
+                              </div>
                             ) : (
-                              <BellOff className="w-4 h-4 text-muted-foreground" />
+                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                                <BellOff className="w-4 h-4 text-muted-foreground" />
+                              </div>
                             )}
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => deleteMilestone(milestone.id)}
+                              className="hover:bg-destructive/10 hover:text-destructive"
                             >
-                              <Trash className="w-4 h-4 text-destructive" />
+                              <Trash className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
                       </CardHeader>
+                      
                       {milestone.description && (
-                        <CardContent className="pt-0">
-                          <p className="text-sm text-muted-foreground">{milestone.description}</p>
+                        <CardContent className="pt-0 relative">
+                          <div className="bg-accent/30 rounded-lg p-3 border border-accent">
+                            <p className="text-sm text-foreground/80 leading-relaxed">{milestone.description}</p>
+                          </div>
                         </CardContent>
                       )}
                     </Card>
@@ -275,20 +316,28 @@ const FriendshipMilestones = () => {
                   const status = getMilestoneStatus(milestone);
                   
                   return (
-                    <Card key={milestone.id} className="transition-all hover:shadow-lg duration-fast">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-3">
+                    <Card 
+                      key={milestone.id} 
+                      className="group relative overflow-hidden transition-all hover:shadow-xl hover:scale-[1.01] duration-300 border-l-4"
+                      style={{ borderLeftColor: milestoneColors[milestone.milestone_type] }}
+                    >
+                      <CardHeader className="pb-3 relative">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start space-x-3 flex-1">
                             <div 
-                              className="w-10 h-10 rounded-full flex items-center justify-center"
-                              style={{ backgroundColor: `${milestoneColors[milestone.milestone_type]}20` }}
+                              className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300"
+                              style={{ 
+                                background: `linear-gradient(135deg, ${milestoneColors[milestone.milestone_type]}20, ${milestoneColors[milestone.milestone_type]}40)`
+                              }}
                             >
-                              <Icon className="w-5 h-5" style={{ color: milestoneColors[milestone.milestone_type] }} />
+                              <Icon className="w-6 h-6" style={{ color: milestoneColors[milestone.milestone_type] }} />
                             </div>
-                            <div className="flex-1">
-                              <CardTitle className="text-base">{milestone.title}</CardTitle>
-                              <div className="flex items-center space-x-2 mt-1">
-                                <Avatar className="w-6 h-6">
+                            <div className="flex-1 min-w-0">
+                              <CardTitle className="text-base font-semibold mb-2 group-hover:text-primary transition-colors">
+                                {milestone.title}
+                              </CardTitle>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Avatar className="w-6 h-6 ring-2 ring-background shadow-sm">
                                   <AvatarImage src={milestone.profiles?.avatar_url} />
                                   <AvatarFallback className="text-xs">
                                     {milestone.profiles?.display_name?.[0]}
@@ -297,27 +346,34 @@ const FriendshipMilestones = () => {
                                 <span className="text-sm text-muted-foreground">
                                   {milestone.profiles?.display_name}
                                 </span>
-                                <Badge variant={status.variant} className="text-xs">
-                                  {format(new Date(milestone.date), 'MMM d, yyyy')}
+                                <Badge variant={status.variant} className="text-xs shadow-sm">
+                                  📅 {format(new Date(milestone.date), 'MMM d, yyyy')}
                                 </Badge>
                                 {milestone.is_recurring && (
-                                  <Badge variant="secondary" className="text-xs">Recurring</Badge>
+                                  <Badge variant="secondary" className="text-xs shadow-sm">
+                                    🔄 Recurring
+                                  </Badge>
                                 )}
                               </div>
                             </div>
                           </div>
+                          
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => deleteMilestone(milestone.id)}
+                            className="hover:bg-destructive/10 hover:text-destructive"
                           >
-                            <Trash className="w-4 h-4 text-destructive" />
+                            <Trash className="w-4 h-4" />
                           </Button>
                         </div>
                       </CardHeader>
+                      
                       {milestone.description && (
                         <CardContent className="pt-0">
-                          <p className="text-sm text-muted-foreground">{milestone.description}</p>
+                          <div className="bg-accent/20 rounded-lg p-3 border border-accent/50">
+                            <p className="text-sm text-muted-foreground leading-relaxed">{milestone.description}</p>
+                          </div>
                         </CardContent>
                       )}
                     </Card>
