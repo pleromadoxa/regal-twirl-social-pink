@@ -21,15 +21,19 @@ export const useOpenRouterAI = () => {
 
     setLoading(true);
     try {
+      console.log('Calling openrouter-ai function with:', { type, hasPrompt: !!prompt });
+      
       const { data, error } = await supabase.functions.invoke('openrouter-ai', {
         body: { prompt, type, model }
       });
+
+      console.log('Function response:', { data, error });
 
       if (error) {
         console.error('Error generating text:', error);
         toast({
           title: "Generation failed",
-          description: "Failed to generate text. Please try again.",
+          description: error.message || "Failed to generate text. Please try again.",
           variant: "destructive"
         });
         return null;

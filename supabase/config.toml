@@ -3,6 +3,9 @@ project_id = "cingbjinmazwnemmmtip"
 [functions.ai-assistant-chat]
 verify_jwt = false
 
+[functions.openrouter-ai]
+verify_jwt = false
+
 [functions.circle-call-signaling]
 verify_jwt = false
 
