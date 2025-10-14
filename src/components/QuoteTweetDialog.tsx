@@ -61,7 +61,7 @@ const QuoteTweetDialog = ({ post, open, onOpenChange, onQuoteTweet }: QuoteTweet
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Quote Tweet</DialogTitle>
+          <DialogTitle>ReQuote</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -126,7 +126,7 @@ const QuoteTweetDialog = ({ post, open, onOpenChange, onQuoteTweet }: QuoteTweet
               onClick={handleSubmit}
               disabled={!content.trim() || isPosting}
             >
-              {isPosting ? 'Posting...' : 'Quote Tweet'}
+              {isPosting ? 'Posting...' : 'ReQuote'}
             </Button>
           </div>
         </div>

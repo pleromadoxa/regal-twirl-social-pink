@@ -117,12 +117,12 @@ const PostActions = ({
             <DropdownMenuContent align="start">
               <DropdownMenuItem onClick={onRetweet}>
                 <Repeat2 className="w-4 h-4 mr-2" />
-                {userRetweeted ? 'Undo Retweet' : 'Retweet'}
+                {userRetweeted ? 'Undo Repost' : 'Repost'}
               </DropdownMenuItem>
               {onQuoteTweet && (
                 <DropdownMenuItem onClick={onQuoteTweet}>
                   <Quote className="w-4 h-4 mr-2" />
-                  Quote Tweet
+                  ReQuote
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>

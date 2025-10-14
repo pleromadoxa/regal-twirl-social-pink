@@ -344,11 +344,11 @@ const PostCard = ({
                   <DropdownMenuContent>
                     <DropdownMenuItem onClick={handleRetweet}>
                       <Repeat2 className="w-4 h-4 mr-2" />
-                      {isRetweeted ? 'Undo Retweet' : 'Retweet'}
+                      {isRetweeted ? 'Undo Repost' : 'Repost'}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowQuoteTweetDialog(true)}>
                       <MessageCircle className="w-4 h-4 mr-2" />
-                      Quote Tweet
+                      ReQuote
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 )}
