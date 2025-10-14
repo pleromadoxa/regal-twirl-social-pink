@@ -78,7 +78,7 @@ export const FinancialNewsFeed = () => {
             Financial News
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Latest market updates from Google News
+            Latest market updates from multiple sources
           </p>
         </div>
         <Button
@@ -168,7 +168,7 @@ export const FinancialNewsFeed = () => {
       {news.length > 0 && (
         <div className="text-center pt-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            News updates every 5 hours • Powered by Google News
+            Auto-updates every 5 hours • Powered by Google News & Yahoo Finance
           </p>
         </div>
       )}
