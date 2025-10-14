@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting comprehensive financial news fetch from multiple sources...');
+    console.log('Starting financial news fetch with timeout protection...');
     
     const allArticles: Array<{
       title: string;
@@ -28,60 +28,59 @@ serve(async (req) => {
     
     const parser = new DOMParser();
     
-    // Multiple news sources for better coverage
-    const newsSources = [
-      // Google News queries
-      {
-        type: 'google',
-        queries: [
-          'finance+stocks+market+trading',
-          'cryptocurrency+bitcoin+ethereum', 
-          'economy+federal+reserve+inflation',
-          'tech+stocks+nasdaq+sp500',
-          'forex+currency+exchange',
-          'commodities+gold+oil+prices',
-          'banking+finance+news',
-          'stock+market+dow+jones'
-        ]
-      },
-      // Yahoo Finance RSS
-      {
-        type: 'yahoo',
-        urls: [
-          'https://finance.yahoo.com/news/rssindex',
-          'https://finance.yahoo.com/topic/stock-market-news'
-        ]
-      }
-    ];
-    
-    // Fetch from Google News with multiple queries
-    for (const query of newsSources[0].queries) {
+    // Helper function to fetch with timeout
+    const fetchWithTimeout = async (url: string, timeoutMs = 5000) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      
       try {
-        const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=en-US&gl=US&ceid=US:en`;
-        console.log(`Fetching Google News: ${query}`);
-        
-        const response = await fetch(rssUrl, {
+        const response = await fetch(url, {
+          signal: controller.signal,
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           },
         });
+        clearTimeout(timeout);
+        return response;
+      } catch (error) {
+        clearTimeout(timeout);
+        throw error;
+      }
+    };
+    
+    // Google News queries
+    const googleQueries = [
+      'finance+stock+market',
+      'cryptocurrency+bitcoin',
+      'economy+inflation',
+      'tech+stocks',
+      'forex+trading',
+      'commodities+gold'
+    ];
+    
+    // Fetch from Google News in parallel with Promise.allSettled
+    const googlePromises = googleQueries.map(async (query) => {
+      try {
+        const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=en-US&gl=US&ceid=US:en`;
+        console.log(`Fetching: ${query}`);
+        
+        const response = await fetchWithTimeout(rssUrl);
         
         if (!response.ok) {
-          console.error(`HTTP error! status: ${response.status} for query: ${query}`);
-          continue;
+          console.error(`HTTP ${response.status} for ${query}`);
+          return [];
         }
         
         const xmlText = await response.text();
         const doc = parser.parseFromString(xmlText, "text/xml");
         
-        if (!doc) continue;
+        if (!doc) return [];
         
         const items = doc.querySelectorAll("item");
-        let itemCount = 0;
+        const articles = [];
         
-        for (const item of items) {
-          if (itemCount >= 4) break;
-          
+        for (let i = 0; i < Math.min(items.length, 3); i++) {
+          const item = items[i];
           const titleEl = item.querySelector("title");
           const linkEl = item.querySelector("link");
           const pubDateEl = item.querySelector("pubDate");
@@ -90,111 +89,66 @@ serve(async (req) => {
           if (titleEl && linkEl) {
             const title = titleEl.textContent?.trim() || '';
             const link = linkEl.textContent?.trim() || '';
-            const description = descriptionEl?.textContent?.trim() || title;
-            const pubDate = pubDateEl?.textContent?.trim() || new Date().toISOString();
             
-            if (title && !allArticles.some(article => article.title === title)) {
-              allArticles.push({
+            if (title) {
+              articles.push({
                 title,
                 link,
-                pubDate,
-                description: description.length > 250 ? description.substring(0, 250) + '...' : description,
+                pubDate: pubDateEl?.textContent?.trim() || new Date().toISOString(),
+                description: (descriptionEl?.textContent?.trim() || title).substring(0, 250),
                 source: 'Google News',
-                sentiment: determineSentiment(title + ' ' + description),
+                sentiment: determineSentiment(title),
                 category: determineCategory(query)
               });
-              itemCount++;
             }
           }
         }
-      } catch (queryError) {
-        console.error(`Error processing query ${query}:`, queryError);
-        continue;
-      }
-    }
-
-    // Try Yahoo Finance
-    for (const url of newsSources[1].urls) {
-      try {
-        console.log(`Fetching Yahoo Finance: ${url}`);
-        const response = await fetch(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          },
-        });
         
-        if (response.ok) {
-          const xmlText = await response.text();
-          const doc = parser.parseFromString(xmlText, "text/xml");
-          
-          if (doc) {
-            const items = doc.querySelectorAll("item");
-            let itemCount = 0;
-            
-            for (const item of items) {
-              if (itemCount >= 3) break;
-              
-              const titleEl = item.querySelector("title");
-              const linkEl = item.querySelector("link");
-              const pubDateEl = item.querySelector("pubDate");
-              const descriptionEl = item.querySelector("description");
-              
-              if (titleEl && linkEl) {
-                const title = titleEl.textContent?.trim() || '';
-                const link = linkEl.textContent?.trim() || '';
-                const description = descriptionEl?.textContent?.trim() || title;
-                const pubDate = pubDateEl?.textContent?.trim() || new Date().toISOString();
-                
-                if (title && !allArticles.some(article => article.title === title)) {
-                  allArticles.push({
-                    title,
-                    link,
-                    pubDate,
-                    description: description.length > 250 ? description.substring(0, 250) + '...' : description,
-                    source: 'Yahoo Finance',
-                    sentiment: determineSentiment(title + ' ' + description),
-                    category: 'finance'
-                  });
-                  itemCount++;
-                }
-              }
-            }
-          }
-        }
+        return articles;
       } catch (error) {
-        console.error(`Error fetching Yahoo Finance:`, error);
-        continue;
+        console.error(`Error with ${query}:`, error.message);
+        return [];
       }
-    }
+    });
 
-    // If we couldn't fetch any articles, return comprehensive fallback data
+    // Execute all fetches in parallel
+    const results = await Promise.allSettled(googlePromises);
+    
+    // Collect successful results
+    results.forEach(result => {
+      if (result.status === 'fulfilled' && result.value.length > 0) {
+        result.value.forEach(article => {
+          if (!allArticles.some(a => a.title === article.title)) {
+            allArticles.push(article);
+          }
+        });
+      }
+    });
+
+    console.log(`Fetched ${allArticles.length} articles`);
+
+    // If we couldn't fetch any articles, return fallback data
     if (allArticles.length === 0) {
-      console.log('No articles fetched, returning comprehensive fallback data');
+      console.log('Using fallback data');
       allArticles.push(...getFallbackArticles());
     }
 
-    // Sort by publication date (newest first) and limit to 20 articles
+    // Sort by date and limit to 20
     const sortedArticles = allArticles
       .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime())
       .slice(0, 20);
 
-    console.log(`Successfully returning ${sortedArticles.length} articles from multiple sources`);
-
     return new Response(JSON.stringify({ 
       articles: sortedArticles,
-      sources: ['Google News', 'Yahoo Finance'],
       timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Critical error fetching financial news:', error);
-    
-    // Always return fallback articles
-    const fallbackArticles = getFallbackArticles();
+    console.error('Critical error:', error);
     
     return new Response(JSON.stringify({ 
-      articles: fallbackArticles,
+      articles: getFallbackArticles(),
       error: 'Using fallback data',
       timestamp: new Date().toISOString()
     }), {
