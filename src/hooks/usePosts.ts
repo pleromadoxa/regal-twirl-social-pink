@@ -159,8 +159,63 @@ export const usePosts = () => {
         user_pinned: pinnedMap.get(post.id) || false
       }));
 
-      console.log('Posts with user data:', postsWithUserData.length);
-      setPosts(postsWithUserData);
+      // Fetch quoted posts for posts that have quoted_post_id
+      const quotedPostIds = postsData
+        .filter(post => post.quoted_post_id)
+        .map(post => post.quoted_post_id);
+      
+      let quotedPostsMap = new Map();
+      if (quotedPostIds.length > 0) {
+        const { data: quotedPostsData } = await supabase
+          .from('posts')
+          .select('*')
+          .in('id', quotedPostIds);
+
+        if (quotedPostsData) {
+          // Get profiles for quoted posts
+          const quotedUserIds = [...new Set(quotedPostsData.map(post => post.user_id))];
+          const { data: quotedProfilesData } = await supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url, is_verified, verification_level')
+            .in('id', quotedUserIds);
+
+          const quotedProfilesMap = new Map(quotedProfilesData?.map(profile => [profile.id, profile]) || []);
+
+          // Get business pages for quoted posts
+          const quotedPageIds = quotedPostsData
+            .filter(post => post.posted_as_page)
+            .map(post => post.posted_as_page);
+          
+          let quotedBusinessPagesData = [];
+          if (quotedPageIds.length > 0) {
+            const { data: pagesData } = await supabase
+              .from('business_pages')
+              .select('id, page_name, page_avatar_url, page_type, is_verified')
+              .in('id', quotedPageIds);
+            quotedBusinessPagesData = pagesData || [];
+          }
+
+          const quotedBusinessPagesMap = new Map(quotedBusinessPagesData.map(page => [page.id, page]));
+
+          // Create quoted posts with full data
+          quotedPostsData.forEach(quotedPost => {
+            quotedPostsMap.set(quotedPost.id, {
+              ...quotedPost,
+              profiles: quotedProfilesMap.get(quotedPost.user_id) || null,
+              business_pages: quotedPost.posted_as_page ? quotedBusinessPagesMap.get(quotedPost.posted_as_page) || null : null
+            });
+          });
+        }
+      }
+
+      // Add quoted post data to posts
+      const postsWithQuotedData = postsWithUserData.map(post => ({
+        ...post,
+        quoted_post: post.quoted_post_id ? quotedPostsMap.get(post.quoted_post_id) || null : null
+      }));
+
+      console.log('Posts with user data:', postsWithQuotedData.length);
+      setPosts(postsWithQuotedData);
     } catch (error) {
       console.error('Error fetching posts:', error);
       toast({

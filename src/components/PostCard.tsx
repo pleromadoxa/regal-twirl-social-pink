@@ -44,6 +44,23 @@ interface PostCardProps {
     views_count: number;
     trending_score?: number;
     user_id: string;
+    quoted_post?: {
+      id: string;
+      content: string;
+      image_urls?: string[];
+      created_at: string;
+      profiles?: {
+        id: string;
+        username: string;
+        display_name: string;
+        avatar_url?: string;
+        verification_level?: string;
+      };
+      business_pages?: {
+        page_name: string;
+        page_avatar_url?: string;
+      };
+    } | null;
     metadata?: any;
     profiles?: {
       id: string;
@@ -280,6 +297,50 @@ const PostCard = ({
             </div>
             
             <div className="mt-2">
+              {/* Quoted Post Display */}
+              {post.quoted_post && (
+                <div className="mb-3 p-3 border border-border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage 
+                        src={post.quoted_post.business_pages?.page_avatar_url || post.quoted_post.profiles?.avatar_url} 
+                      />
+                      <AvatarFallback>
+                        {(post.quoted_post.business_pages?.page_name || post.quoted_post.profiles?.display_name || 'U')[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-sm truncate">
+                          {post.quoted_post.business_pages?.page_name || post.quoted_post.profiles?.display_name || 'Unknown'}
+                        </span>
+                        <VerificationBadge level={post.quoted_post.profiles?.verification_level as any} />
+                        <span className="text-muted-foreground text-sm">
+                          @{post.quoted_post.profiles?.username || 'unknown'}
+                        </span>
+                        <span className="text-muted-foreground text-sm">·</span>
+                        <span className="text-muted-foreground text-sm">
+                          {formatDistanceToNow(new Date(post.quoted_post.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap break-words">{post.quoted_post.content}</p>
+                      {post.quoted_post.image_urls && post.quoted_post.image_urls.length > 0 && (
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          {post.quoted_post.image_urls.slice(0, 4).map((url, i) => (
+                            <img
+                              key={i}
+                              src={url}
+                              alt="Quoted post attachment"
+                              className="rounded-lg w-full h-32 object-cover"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Mood Board Display */}
               {post.metadata?.type === 'mood_board' && post.metadata.mood && (
                 <div className="mb-4">
