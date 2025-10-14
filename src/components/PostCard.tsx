@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Flag, Pin, Bookmark, Megaphone, Users, Activity, Music } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Flag, Pin, Bookmark, Megaphone, Users, Activity, Music, Quote } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -396,7 +396,7 @@ const PostCard = ({
                       {isRetweeted ? 'Undo Repost' : 'Repost'}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowQuoteTweetDialog(true)}>
-                      <MessageCircle className="w-4 h-4 mr-2" />
+                      <Quote className="w-4 h-4 mr-2" />
                       ReQuote
                     </DropdownMenuItem>
                   </DropdownMenuContent>
