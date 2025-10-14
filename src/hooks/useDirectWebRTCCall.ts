@@ -91,22 +91,28 @@ export const useDirectWebRTCCall = ({ conversationId, callType, onCallEnd }: Use
       switch (message.type) {
         case 'peer-joined':
           if (message.peerId && message.peerId !== user?.id) {
-            console.log('[DirectWebRTC] Peer joined, creating connection as initiator');
-            await createPeerConnection(message.peerId, true);
+            console.log('[DirectWebRTC] Peer joined:', message.peerId);
+            // Determine who should initiate based on user IDs to avoid race conditions
+            const shouldInitiate = user.id < message.peerId;
+            console.log('[DirectWebRTC] Should initiate:', shouldInitiate, '(my ID:', user.id, ', peer ID:', message.peerId, ')');
+            await createPeerConnection(message.peerId, shouldInitiate);
           }
           break;
 
         case 'offer':
           if (message.peerId && message.data) {
-            console.log('[DirectWebRTC] Received offer');
+            console.log('[DirectWebRTC] Received offer from:', message.peerId);
             
             if (!peerConnectionRef.current) {
+              console.log('[DirectWebRTC] Creating peer connection to handle offer');
               await createPeerConnection(message.peerId, false);
             }
 
+            console.log('[DirectWebRTC] Setting remote description and creating answer');
             await peerConnectionRef.current?.setRemoteDescription(message.data);
-            const answer = await peerConnectionRef.current?.createAnswer();
+            const answer = await peerConnectionRef.current?.createAnswer(); // createAnswer already sets local description
             
+            console.log('[DirectWebRTC] Sending answer to:', message.peerId);
             signalingClientRef.current?.sendMessage({
               type: 'answer',
               peerId: message.peerId,
@@ -117,8 +123,15 @@ export const useDirectWebRTCCall = ({ conversationId, callType, onCallEnd }: Use
 
         case 'answer':
           if (message.data) {
-            console.log('[DirectWebRTC] Received answer');
+            console.log('[DirectWebRTC] Received answer, setting remote description');
             await peerConnectionRef.current?.setRemoteDescription(message.data);
+            console.log('[DirectWebRTC] Answer processed, connection should establish');
+            
+            // Show success toast when answer is received
+            toast({
+              title: "Connecting...",
+              description: "Establishing secure connection"
+            });
           }
           break;
 
@@ -263,12 +276,34 @@ export const useDirectWebRTCCall = ({ conversationId, callType, onCallEnd }: Use
     }
   }, [callType]);
 
+  // Monitor connection state for toast notifications
+  useEffect(() => {
+    if (connectionState === 'connected') {
+      toast({
+        title: "Call Connected",
+        description: "You are now in a call",
+        duration: 3000
+      });
+    } else if (connectionState === 'failed') {
+      toast({
+        title: "Connection Failed",
+        description: "Unable to establish call connection",
+        variant: "destructive"
+      });
+    } else if (connectionState === 'disconnected') {
+      toast({
+        title: "Call Disconnected",
+        description: "The call has been disconnected"
+      });
+    }
+  }, [connectionState, toast]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       endCall();
     };
-  }, []);
+  }, [endCall]);
 
   return {
     isInCall,
