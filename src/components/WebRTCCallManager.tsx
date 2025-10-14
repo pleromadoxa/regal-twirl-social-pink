@@ -284,9 +284,44 @@ const WebRTCCallManager = () => {
       console.error('[WebRTCCallManager] Error sending accept notification:', error);
     }
     
+    // Find the conversation between caller and current user
+    let conversationId = incomingCall.caller_id; // fallback to caller_id
+    
+    if (callType !== 'group') {
+      try {
+        const { data: conversations } = await supabase
+          .from('conversations')
+          .select('id')
+          .or(`and(participant_1.eq.${user?.id},participant_2.eq.${incomingCall.caller_id}),and(participant_1.eq.${incomingCall.caller_id},participant_2.eq.${user?.id})`);
+        
+        if (conversations && conversations.length > 0) {
+          conversationId = conversations[0].id;
+          console.log('[WebRTCCallManager] Found conversation:', conversationId);
+        } else {
+          console.error('[WebRTCCallManager] No conversation found between users');
+          toast({
+            title: "Error",
+            description: "Could not find conversation",
+            variant: "destructive"
+          });
+          setIncomingCall(null);
+          return;
+        }
+      } catch (error) {
+        console.error('[WebRTCCallManager] Error finding conversation:', error);
+        toast({
+          title: "Error",
+          description: "Failed to find conversation",
+          variant: "destructive"
+        });
+        setIncomingCall(null);
+        return;
+      }
+    }
+    
     // Navigate using React Router instead of window.location.href to prevent page refresh
     const searchParams = new URLSearchParams({
-      conversation: incomingCall.caller_id,
+      conversation: conversationId,
       call: callType === 'group' ? 'audio' : callType,
       room: incomingCall.room_id
     });
