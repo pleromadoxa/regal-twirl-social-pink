@@ -51,15 +51,15 @@ export const getSidebarNavItems = ({
 }: GetSidebarNavItemsProps): NavItem[] => {
   const baseItems: NavItem[] = [
     { name: 'Home', path: '/home', icon: Home },
+    { name: 'Chat', path: '/messages', icon: MessageCircle },
+    { name: 'Circles', path: '/circles', icon: Users },
     { name: 'Explore', path: '/explore', icon: Search },
     { name: 'Events', path: '/events', icon: Calendar },
     { name: 'Collaboration', path: '/collaboration', icon: UserPlus },
-    { name: 'Circles', path: '/circles', icon: Users },
     { name: 'Challenges', path: '/challenges', icon: Trophy },
     { name: 'Time Capsules', path: '/time-capsules', icon: Lock },
     { name: 'Mood Boards', path: '/mood', icon: Palette },
     { name: 'Milestones', path: '/friendship-milestones', icon: Heart },
-    { name: 'Chat', path: '/messages', icon: MessageCircle },
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Reels', path: '/reels', icon: Play },
     { name: 'Music', path: '/music', icon: Headphones },
