@@ -208,7 +208,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex">
       <SidebarNav />
       
-      <div className="flex-1 px-4" style={{ marginLeft: '320px', marginRight: '384px' }}>
+      <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
         <div className="p-6">
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-4">
