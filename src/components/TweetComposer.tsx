@@ -577,13 +577,15 @@ const TweetComposer = () => {
                 <CharacterCounter text={tweetText} maxLength={maxLength} />
               )}
               
-              <InteractiveHoverButton
-                type="button"
-                disabled={isUploading || (isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() && selectedImages.length === 0 && selectedVideos.length === 0 && !selectedAudio) || tweetText.length > maxLength)}
-                onClick={handleTweetSubmit}
-                text={isUploading ? 'Posting...' : (isThreadMode ? 'Post Thread' : 'Post')}
-                className="w-auto px-8 py-3 text-lg scale-110"
-              />
+              <div className="mr-4">
+                <InteractiveHoverButton
+                  type="button"
+                  disabled={isUploading || (isThreadMode ? threadTweets.every(tweet => !tweet.trim()) : (!tweetText.trim() && selectedImages.length === 0 && selectedVideos.length === 0 && !selectedAudio) || tweetText.length > maxLength)}
+                  onClick={handleTweetSubmit}
+                  text={isUploading ? 'Posting...' : (isThreadMode ? 'Post Thread' : 'Post')}
+                  className="w-auto px-8 py-3 text-lg scale-110"
+                />
+              </div>
             </div>
           </div>
         </div>
