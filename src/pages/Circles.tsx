@@ -176,7 +176,7 @@ const Circles = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-gray-100 to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex relative">
-      {!isMobile && <SidebarNav />}
+      <SidebarNav />
       
       <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
         <main className={`w-full ${isMobile ? '' : 'max-w-2xl border-x border-border'} bg-background mx-auto`}>

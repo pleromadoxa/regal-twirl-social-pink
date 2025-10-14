@@ -95,7 +95,7 @@ const Notifications = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex relative">
-      {!isMobile && <SidebarNav />}
+      <SidebarNav />
       
       <div className={`flex-1 flex gap-8 ${isMobile ? 'px-4 pb-20' : 'pl-80 pr-[420px]'}`}>
         <main className="flex-1 border-x border-purple-200 dark:border-purple-800 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl max-w-3xl mx-auto">

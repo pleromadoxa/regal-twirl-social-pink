@@ -118,7 +118,7 @@ const Challenges = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50/40 via-pink-50/40 to-blue-50/40 dark:from-slate-900 dark:via-purple-900/30 dark:to-slate-900 flex relative">
-      {!isMobile && <SidebarNav />}
+      <SidebarNav />
       
       <div className={`flex-1 ${isMobile ? 'px-2 pb-20' : 'px-4'}`} style={isMobile ? {} : { marginLeft: '320px', marginRight: '384px' }}>
         <main className={`w-full ${isMobile ? '' : 'max-w-2xl border-x border-primary/10 dark:border-primary/20'} bg-background/40 dark:bg-background/40 backdrop-blur-2xl mx-auto shadow-2xl`}>

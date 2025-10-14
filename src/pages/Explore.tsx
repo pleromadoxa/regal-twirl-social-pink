@@ -84,7 +84,7 @@ const Explore = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex">
-      {!isMobile && <SidebarNav />}
+      <SidebarNav />
       
       <div className={`flex-1 ${isMobile ? 'px-4 pb-20' : 'ml-80 mr-96'} transition-all duration-300`}>
         <div className="max-w-4xl mx-auto p-4 lg:p-6">
