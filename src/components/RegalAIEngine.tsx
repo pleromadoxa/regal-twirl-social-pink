@@ -115,13 +115,10 @@ const RegalAIEngine = () => {
       const selectedServiceData = aiServices.find(s => s.id === selectedService);
       const systemPrompt = `You are ${selectedServiceData?.name}, ${selectedServiceData?.description}. Respond in a helpful, professional, and engaging manner that matches your role.`;
 
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
+      const { data, error } = await supabase.functions.invoke('ai-assistant-chat', {
         body: {
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages.map(m => ({ role: m.role, content: m.content })),
-            { role: 'user', content: input }
-          ]
+          message: input,
+          conversationHistory: messages.map(m => ({ role: m.role, content: m.content }))
         }
       });
 
