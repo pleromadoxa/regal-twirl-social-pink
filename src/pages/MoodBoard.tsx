@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Smile, Music, Activity, Sparkles, X } from 'lucide-react';
+import { Smile, Music, Activity, Sparkles, X, Heart, Brain, Zap, Sun, Moon, Coffee, Headphones } from 'lucide-react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -25,18 +25,18 @@ const MoodBoard = () => {
   const isMobile = useIsMobile();
 
   const moods = [
-    { emoji: '😊', label: 'Happy' },
-    { emoji: '😎', label: 'Cool' },
-    { emoji: '🤩', label: 'Excited' },
-    { emoji: '😌', label: 'Peaceful' },
-    { emoji: '🥳', label: 'Celebrating' },
-    { emoji: '💪', label: 'Motivated' },
-    { emoji: '🧘', label: 'Zen' },
-    { emoji: '🎨', label: 'Creative' },
-    { emoji: '📚', label: 'Focused' },
-    { emoji: '☕', label: 'Chill' },
-    { emoji: '🎵', label: 'Vibing' },
-    { emoji: '💼', label: 'Working' }
+    { emoji: '😊', label: 'Happy', icon: Heart },
+    { emoji: '😎', label: 'Cool', icon: Sun },
+    { emoji: '🤩', label: 'Excited', icon: Zap },
+    { emoji: '😌', label: 'Peaceful', icon: Moon },
+    { emoji: '🥳', label: 'Celebrating', icon: Sparkles },
+    { emoji: '💪', label: 'Motivated', icon: Zap },
+    { emoji: '🧘', label: 'Zen', icon: Brain },
+    { emoji: '🎨', label: 'Creative', icon: Sparkles },
+    { emoji: '📚', label: 'Focused', icon: Brain },
+    { emoji: '☕', label: 'Chill', icon: Coffee },
+    { emoji: '🎵', label: 'Vibing', icon: Headphones },
+    { emoji: '💼', label: 'Working', icon: Activity }
   ];
 
   const colors = [
@@ -95,43 +95,80 @@ const MoodBoard = () => {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Choose Your Mood</label>
-                      <div className="grid grid-cols-6 gap-2">
-                        {moods.map((m) => (
-                          <button
-                            key={m.label}
-                            onClick={() => {
-                              setEmoji(m.emoji);
-                              setMoodValue(m.label);
-                            }}
-                            className={`p-3 text-2xl rounded-lg transition-all hover:scale-110 ${
-                              emoji === m.emoji ? 'bg-primary/20 ring-2 ring-primary' : 'hover:bg-accent'
-                            }`}
-                            title={m.label}
-                          >
-                            {m.emoji}
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-4 gap-3">
+                        {moods.map((m) => {
+                          const IconComponent = m.icon;
+                          return (
+                            <button
+                              key={m.label}
+                              onClick={() => {
+                                setEmoji(m.emoji);
+                                setMoodValue(m.label);
+                              }}
+                              className={`group relative p-4 rounded-xl transition-all duration-300 hover:scale-105 ${
+                                emoji === m.emoji 
+                                  ? 'bg-gradient-to-br from-primary/20 to-primary/10 ring-2 ring-primary shadow-lg' 
+                                  : 'bg-gradient-to-br from-muted/50 to-muted/30 hover:from-accent/50 hover:to-accent/30'
+                              }`}
+                              title={m.label}
+                            >
+                              <div className="flex flex-col items-center gap-2">
+                                <div className="relative">
+                                  <div className={`absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-500/20 blur-xl transition-opacity ${
+                                    emoji === m.emoji ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                                  }`} />
+                                  <IconComponent className={`relative w-6 h-6 transition-colors ${
+                                    emoji === m.emoji ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
+                                  }`} />
+                                </div>
+                                <span className="text-2xl">{m.emoji}</span>
+                                <span className="text-xs font-medium">{m.label}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                     
-                    <Input 
-                      placeholder="What are you up to?" 
-                      value={activity} 
-                      onChange={(e) => setActivity(e.target.value)}
-                    />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-primary" />
+                        What are you up to?
+                      </label>
+                      <Input 
+                        placeholder="e.g., Working out, Coding, Reading..." 
+                        value={activity} 
+                        onChange={(e) => setActivity(e.target.value)}
+                        className="bg-gradient-to-r from-background to-muted/30"
+                      />
+                    </div>
                     
-                    <Input 
-                      placeholder="Listening to..." 
-                      value={musicTrack} 
-                      onChange={(e) => setMusicTrack(e.target.value)}
-                    />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-2">
+                        <Music className="w-4 h-4 text-primary" />
+                        Listening to...
+                      </label>
+                      <Input 
+                        placeholder="e.g., Chill Vibes, Lo-fi Hip Hop..." 
+                        value={musicTrack} 
+                        onChange={(e) => setMusicTrack(e.target.value)}
+                        className="bg-gradient-to-r from-background to-muted/30"
+                      />
+                    </div>
                     
-                    <Textarea
-                      placeholder="Add a custom message (optional)"
-                      value={customMessage}
-                      onChange={(e) => setCustomMessage(e.target.value)}
-                      rows={3}
-                    />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        Custom Message
+                      </label>
+                      <Textarea
+                        placeholder="Share what's on your mind..."
+                        value={customMessage}
+                        onChange={(e) => setCustomMessage(e.target.value)}
+                        rows={3}
+                        className="bg-gradient-to-r from-background to-muted/30"
+                      />
+                    </div>
                     
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Color Theme</label>
@@ -140,16 +177,25 @@ const MoodBoard = () => {
                           <button
                             key={c.value}
                             onClick={() => setColorTheme(c.value)}
-                            className={`p-4 rounded-lg transition-all ${
+                            className={`relative p-4 rounded-lg transition-all hover:scale-110 ${
                               colorTheme === c.value ? 'ring-2 ring-offset-2 ring-primary' : ''
                             }`}
                             style={{ backgroundColor: c.value }}
-                          />
+                          >
+                            {colorTheme === c.value && (
+                              <div className="absolute inset-0 bg-white/20 rounded-lg animate-pulse" />
+                            )}
+                          </button>
                         ))}
                       </div>
                     </div>
                     
-                    <Button onClick={handleSetMood} disabled={loading || !mood} className="w-full">
+                    <Button 
+                      onClick={handleSetMood} 
+                      disabled={loading || !mood} 
+                      className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
                       Set Mood
                     </Button>
                   </div>
@@ -165,20 +211,31 @@ const MoodBoard = () => {
           <div className="p-4">
             {myMood ? (
               <Card 
-                className="transition-all hover:shadow-lg duration-fast overflow-hidden"
+                className="relative transition-all hover:shadow-2xl duration-300 overflow-hidden border-2"
                 style={{ 
-                  background: `linear-gradient(135deg, ${myMood.color_theme}20, ${myMood.color_theme}10)`,
+                  background: `linear-gradient(135deg, ${myMood.color_theme}25, ${myMood.color_theme}10)`,
                   borderColor: myMood.color_theme
                 }}
               >
-                <CardHeader>
+                {/* Animated gradient orbs */}
+                <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-30 animate-float"
+                     style={{ background: myMood.color_theme }} />
+                <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full blur-3xl opacity-20 animate-float"
+                     style={{ background: myMood.color_theme, animationDelay: '1s' }} />
+                
+                <CardHeader className="relative z-10">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4">
-                      <span className="text-6xl">{myMood.emoji}</span>
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-purple-500/30 blur-2xl animate-pulse" />
+                        <span className="relative text-6xl drop-shadow-lg">{myMood.emoji}</span>
+                      </div>
                       <div>
-                        <CardTitle className="text-2xl">{myMood.mood}</CardTitle>
+                        <CardTitle className="text-2xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                          {myMood.mood}
+                        </CardTitle>
                         {myMood.custom_message && (
-                          <p className="text-muted-foreground mt-2">{myMood.custom_message}</p>
+                          <p className="text-muted-foreground mt-2 max-w-md">{myMood.custom_message}</p>
                         )}
                       </div>
                     </div>
@@ -187,40 +244,52 @@ const MoodBoard = () => {
                       size="icon"
                       onClick={() => clearMood()}
                       disabled={loading}
+                      className="hover:bg-destructive/10 hover:text-destructive"
                     >
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-3 relative z-10">
                   {myMood.activity && (
-                    <div className="flex items-center space-x-2">
-                      <Activity className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">{myMood.activity}</span>
+                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-background/50 backdrop-blur-sm">
+                      <div className="p-2 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20">
+                        <Activity className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="text-sm font-medium">{myMood.activity}</span>
                     </div>
                   )}
                   {myMood.music_track && (
-                    <div className="flex items-center space-x-2">
-                      <Music className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">🎵 {myMood.music_track}</span>
+                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-background/50 backdrop-blur-sm">
+                      <div className="p-2 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20">
+                        <Music className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="text-sm font-medium">🎵 {myMood.music_track}</span>
                     </div>
                   )}
-                  <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground">
+                  <div className="pt-2 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground flex items-center gap-2">
+                      <Sparkles className="w-3 h-3" />
                       Expires {format(new Date(myMood.expires_at), 'MMM d, h:mm a')}
                     </p>
                   </div>
                 </CardContent>
               </Card>
             ) : (
-              <Card>
+              <Card className="border-2 border-dashed">
                 <CardContent className="py-12 text-center">
-                  <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <div className="relative inline-block">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-500/20 blur-2xl animate-pulse" />
+                    <Sparkles className="relative w-12 h-12 text-primary mx-auto mb-4" />
+                  </div>
                   <h3 className="text-lg font-medium mb-2">No mood set</h3>
                   <p className="text-muted-foreground mb-4">
                     Share your current vibe with your friends
                   </p>
-                  <Button onClick={() => setOpen(true)}>
+                  <Button 
+                    onClick={() => setOpen(true)}
+                    className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+                  >
                     <Smile className="w-4 h-4 mr-2" />
                     Set Your Mood
                   </Button>
