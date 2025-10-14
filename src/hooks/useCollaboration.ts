@@ -58,26 +58,40 @@ export const useCollaboration = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      // First fetch the invites
+      const { data: invitesData, error: invitesError } = await supabase
         .from('collaboration_invites')
-        .select(`
-          *,
-          inviter_profile:profiles!inviter_id (
-            username,
-            display_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('invitee_id', user.id)
         .eq('status', 'pending')
         .gte('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setInvites((data || []).map((item: any) => ({
+      if (invitesError) throw invitesError;
+      
+      if (!invitesData || invitesData.length === 0) {
+        setInvites([]);
+        return;
+      }
+
+      // Then fetch profiles for all inviters
+      const inviterIds = invitesData.map(invite => invite.inviter_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', inviterIds);
+
+      if (profilesError) throw profilesError;
+
+      // Map profiles to invites
+      const profilesMap = new Map(
+        (profilesData || []).map(profile => [profile.id, profile])
+      );
+
+      setInvites(invitesData.map((item: any) => ({
         ...item,
         status: item.status as 'pending' | 'accepted' | 'declined' | 'cancelled',
-        inviter_profile: item.inviter_profile || {
+        inviter_profile: profilesMap.get(item.inviter_id) || {
           username: '',
           display_name: '',
           avatar_url: ''
