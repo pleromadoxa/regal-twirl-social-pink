@@ -115,51 +115,48 @@ export const usePosts = () => {
       const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
       const businessPagesMap = new Map(businessPagesData.map(page => [page.id, page]));
 
+      // Optimize: Fetch all user interactions in parallel instead of per-post
+      let likesMap = new Map();
+      let retweetsMap = new Map();
+      let pinnedMap = new Map();
+
+      if (user) {
+        const postIds = postsData.map(p => p.id);
+        
+        // Fetch all likes, retweets, and pinned posts in parallel
+        const [likesData, retweetsData, pinnedData] = await Promise.all([
+          supabase
+            .from('likes')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds),
+          supabase
+            .from('retweets')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds),
+          supabase
+            .from('pinned_posts')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds)
+        ]);
+
+        likesMap = new Map(likesData.data?.map(l => [l.post_id, true]) || []);
+        retweetsMap = new Map(retweetsData.data?.map(r => [r.post_id, true]) || []);
+        pinnedMap = new Map(pinnedData.data?.map(p => [p.post_id, true]) || []);
+      }
+
       // Add user interaction flags
-      const postsWithUserData = await Promise.all(postsData.map(async (post) => {
-        const basePost = {
-          ...post,
-          views_count: post.views_count || 0,
-          trending_score: post.trending_score || 0,
-          profiles: profilesMap.get(post.user_id) || null,
-          business_pages: post.posted_as_page ? businessPagesMap.get(post.posted_as_page) || null : null,
-          user_liked: false,
-          user_retweeted: false,
-          user_pinned: false
-        };
-
-        if (!user) return basePost;
-
-        // Check if user liked this post
-        const { data: likeData } = await supabase
-          .from('likes')
-          .select('id')
-          .eq('post_id', post.id)
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        // Check if user retweeted this post
-        const { data: retweetData } = await supabase
-          .from('retweets')
-          .select('id')
-          .eq('post_id', post.id)
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        // Check if user pinned this post
-        const { data: pinnedData } = await supabase
-          .from('pinned_posts')
-          .select('id')
-          .eq('post_id', post.id)
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        return {
-          ...basePost,
-          user_liked: !!likeData,
-          user_retweeted: !!retweetData,
-          user_pinned: !!pinnedData
-        };
+      const postsWithUserData = postsData.map((post) => ({
+        ...post,
+        views_count: post.views_count || 0,
+        trending_score: post.trending_score || 0,
+        profiles: profilesMap.get(post.user_id) || null,
+        business_pages: post.posted_as_page ? businessPagesMap.get(post.posted_as_page) || null : null,
+        user_liked: likesMap.get(post.id) || false,
+        user_retweeted: retweetsMap.get(post.id) || false,
+        user_pinned: pinnedMap.get(post.id) || false
       }));
 
       console.log('Posts with user data:', postsWithUserData.length);
