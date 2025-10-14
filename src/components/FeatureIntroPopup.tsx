@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Users, 
   Trophy, 
@@ -106,10 +107,14 @@ const FeatureIntroPopup = () => {
   const [open, setOpen] = useState(false);
   const [currentFeature, setCurrentFeature] = useState<Feature | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
-    checkAndShowFeature();
-  }, []);
+    // Only show popup if user is logged in
+    if (user) {
+      checkAndShowFeature();
+    }
+  }, [user]);
 
   const checkAndShowFeature = () => {
     const lastShownDate = localStorage.getItem('feature_intro_last_shown');
