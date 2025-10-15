@@ -38,6 +38,7 @@ import CircleSettingsDialog from '@/components/CircleSettingsDialog';
 import CircleCallHistoryDialog from '@/components/CircleCallHistoryDialog';
 import { CircleEventsTab } from '@/components/CircleEventsTab';
 import { CirclePollsTab } from '@/components/CirclePollsTab';
+import { CircleMessagesTab } from '@/components/CircleMessagesTab';
 
 const Circles = () => {
   const { user } = useAuth();
@@ -414,8 +415,9 @@ const Circles = () => {
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="messages">Messages</TabsTrigger>
               <TabsTrigger value="feed">Feed</TabsTrigger>
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="polls">Polls</TabsTrigger>
@@ -465,6 +467,12 @@ const Circles = () => {
                     </Button>
                   </CardContent>
                 </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="messages">
+              {selectedCircle && (
+                <CircleMessagesTab circleId={selectedCircle.id} />
               )}
             </TabsContent>
 

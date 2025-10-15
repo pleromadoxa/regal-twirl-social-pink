@@ -7,6 +7,7 @@ import IncomingCircleCallPopup from '@/components/IncomingCircleCallPopup';
 import { useNavigate } from 'react-router-dom';
 import { createMissedCallNotification } from '@/services/missedCallNotificationService';
 import { mediaPermissionManager } from '@/utils/mediaPermissionManager';
+import { callSoundManager } from '@/utils/callSoundManager';
 
 interface IncomingCall {
   id: string;
@@ -189,12 +190,8 @@ const WebRTCCallManager = () => {
             });
           }
           
+          callSoundManager.stopRinging();
           setIncomingCall(null);
-          
-          // Import and use the call sound manager
-          import('@/utils/callSoundManager').then(({ callSoundManager }) => {
-            callSoundManager.stopRinging();
-          });
         } else {
           console.log('[WebRTCCallManager] Ignoring call-ended (no room match or no incoming call)');
         }
@@ -217,17 +214,13 @@ const WebRTCCallManager = () => {
         console.log('[WebRTCCallManager] Declined payload:', JSON.stringify(payload, null, 2));
         const declinedData = payload.payload;
         
-        // Only clear popup if WE declined (not if someone else declined)
-        if (declinedData.declined_by === user?.id) {
-          console.log('[WebRTCCallManager] We declined the call - clearing popup');
-          setIncomingCall(null);
-          
-          // Import and use the call sound manager
-          import('@/utils/callSoundManager').then(({ callSoundManager }) => {
-            callSoundManager.stopRinging();
-          });
-        } else {
-          // Someone else declined - just show notification
+        // Clear popup and stop ringing for any decline
+        console.log('[WebRTCCallManager] Call declined - clearing popup');
+        callSoundManager.stopRinging();
+        setIncomingCall(null);
+        
+        if (declinedData.declined_by !== user?.id) {
+          // Someone else declined - show notification
           console.log('[WebRTCCallManager] Someone else declined - keeping popup if exists');
           const reason = declinedData.reason === 'busy' 
             ? 'is busy right now' 
