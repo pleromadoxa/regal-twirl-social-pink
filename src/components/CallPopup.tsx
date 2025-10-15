@@ -82,7 +82,7 @@ const CallPopup = ({
   };
 
   return (
-    <div className="fixed inset-x-4 top-4 sm:right-4 sm:left-auto w-auto sm:w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-purple-200 dark:border-purple-700 rounded-2xl shadow-2xl z-[100] overflow-hidden">
+    <div className="fixed inset-x-4 top-4 sm:right-4 sm:left-auto w-auto sm:w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-purple-200 dark:border-purple-700 rounded-2xl shadow-2xl z-[9998] overflow-hidden pointer-events-auto">
       <div className="p-4 sm:p-6 space-y-4">
         {/* User Info */}
         <div className="flex items-center gap-3">
