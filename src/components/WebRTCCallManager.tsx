@@ -186,6 +186,26 @@ const WebRTCCallManager = () => {
           });
         }
       })
+      .on('broadcast', { event: 'call-declined' }, (payload) => {
+        console.log('[WebRTCCallManager] Call declined:', payload);
+        const declinedData = payload.payload;
+        
+        // Show notification that call was declined
+        if (declinedData.declined_by !== user?.id) {
+          const reason = declinedData.reason === 'busy' 
+            ? 'is busy right now' 
+            : 'declined the call';
+          
+          toast({
+            title: "Call Declined",
+            description: `${declinedData.declined_by_name || 'User'} ${reason}`,
+            variant: "destructive",
+            duration: 5000
+          });
+        }
+        
+        setIncomingCall(null);
+      })
       .subscribe(async (status) => {
         console.log('[WebRTCCallManager] Channel subscription status:', status);
         if (status === 'SUBSCRIBED') {
@@ -340,6 +360,16 @@ const WebRTCCallManager = () => {
     
     if (incomingCall) {
       try {
+        // Send busy notification to the caller
+        console.log('[WebRTCCallManager] Sending busy notification to caller');
+        await supabase.functions.invoke('send-busy-notification', {
+          body: {
+            callerId: incomingCall.caller_id,
+            declinedBy: user?.id,
+            declinedByName: profile?.display_name || profile?.username || 'Unknown User'
+          }
+        });
+
         // Notify caller that call was declined via their channel
         const callerChannelName = `user-calls-${incomingCall.caller_id}`;
         const declineChannel = supabase.channel(`call-decline-${Date.now()}`);
@@ -355,7 +385,8 @@ const WebRTCCallManager = () => {
                   call_id: callId,
                   room_id: incomingCall.room_id,
                   declined_by: user?.id,
-                  declined_by_name: profile?.display_name || profile?.username || 'Unknown User'
+                  declined_by_name: profile?.display_name || profile?.username || 'Unknown User',
+                  reason: 'busy'
                 }
               });
 
@@ -368,7 +399,8 @@ const WebRTCCallManager = () => {
                   call_id: callId,
                   room_id: incomingCall.room_id,
                   declined_by: user?.id,
-                  declined_by_name: profile?.display_name || profile?.username || 'Unknown User'
+                  declined_by_name: profile?.display_name || profile?.username || 'Unknown User',
+                  reason: 'busy'
                 }
               });
 
@@ -389,6 +421,12 @@ const WebRTCCallManager = () => {
 
         // Cleanup any active media streams to prevent permission conflicts
         mediaPermissionManager.cleanupAllStreams();
+
+        // Show toast notification
+        toast({
+          title: "Call Declined",
+          description: `You declined the call from ${incomingCall.caller_profile?.display_name || 'Unknown User'}`,
+        });
 
       } catch (error) {
         console.error('[WebRTCCallManager] Error sending decline notification:', error);
