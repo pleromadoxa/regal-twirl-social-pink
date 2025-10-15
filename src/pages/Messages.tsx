@@ -325,7 +325,7 @@ const Messages = () => {
 
       {/* Middle Section - Messages List */}
       <div className={cn(
-        "w-full lg:w-80 xl:w-96 flex-shrink-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border-r border-purple-200/50 lg:ml-12",
+        "w-full lg:w-80 xl:w-96 flex-shrink-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border-r border-purple-200/50 lg:ml-12 z-10",
         selectedConversation && "hidden lg:flex"
       )}>
         <div className="flex flex-col h-full w-full">
@@ -333,7 +333,7 @@ const Messages = () => {
           <div className="p-6 border-b border-purple-200/50 flex-shrink-0">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Messages
+                Conversations
               </h1>
             </div>
 
