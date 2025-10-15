@@ -314,7 +314,6 @@ const Messages = () => {
           </div>
         </div>
       );
-    }
   };
 
   return (
@@ -454,67 +453,32 @@ const Messages = () => {
         <MobileBottomNav />
       </div>
 
-      {/* Join Group Dialog */}
-      <JoinGroupDialog 
-        isOpen={showJoinGroupDialog}
-        onClose={() => setShowJoinGroupDialog(false)}
-        onGroupJoined={() => {
-          setShowJoinGroupDialog(false);
-          messagesData.refetch();
-        }}
-      />
-
       {/* Active Call Components */}
       {activeCall && (
         <div className="fixed inset-0 z-50">
-          {(() => {
-            console.log('[Messages] Rendering active call:', activeCall.type, activeCall);
-            
-            if (activeCall.type === 'group') {
-              return (
-                <GroupCall
-                  roomId={activeCall.roomId || ''}
-                  callType={callType as 'audio' | 'video' || 'audio'}
-                  onCallEnd={() => {
-                    console.log('[Messages] Group call ended');
-                    setActiveCall(null);
-                    // Clear URL parameters
-                    setSearchParams({ conversation: selectedConversation || '' });
-                  }}
-                />
-              );
-            } else if (activeCall.type === 'audio') {
-              return (
-                <AudioCall
-                  conversationId={activeCall.conversationId}
-                  otherUserId={activeCall.otherUser?.id || ''}
-                  otherUserName={activeCall.otherUser?.display_name || activeCall.otherUser?.username || 'Unknown User'}
-                  otherUserAvatar={activeCall.otherUser?.avatar_url}
-                  onCallEnd={() => {
-                    console.log('[Messages] Audio call ended');
-                    setActiveCall(null);
-                    // Clear URL parameters
-                    setSearchParams({ conversation: selectedConversation || '' });
-                  }}
-                />
-              );
-            } else {
-              return (
-                <VideoCall
-                  conversationId={activeCall.conversationId}
-                  otherUserId={activeCall.otherUser?.id || ''}
-                  otherUserName={activeCall.otherUser?.display_name || activeCall.otherUser?.username || 'Unknown User'}
-                  otherUserAvatar={activeCall.otherUser?.avatar_url}
-                  onCallEnd={() => {
-                    console.log('[Messages] Video call ended');
-                    setActiveCall(null);
-                    // Clear URL parameters
-                    setSearchParams({ conversation: selectedConversation || '' });
-                  }}
-                />
-              );
-            }
-          })()}
+          {activeCall.type === 'audio' ? (
+            <AudioCall
+              conversationId={activeCall.conversationId}
+              otherUserId={activeCall.otherUser?.id || ''}
+              otherUserName={activeCall.otherUser?.display_name || activeCall.otherUser?.username || 'Unknown User'}
+              otherUserAvatar={activeCall.otherUser?.avatar_url}
+              onCallEnd={() => {
+                setActiveCall(null);
+                setSearchParams({ conversation: selectedConversation || '' });
+              }}
+            />
+          ) : (
+            <VideoCall
+              conversationId={activeCall.conversationId}
+              otherUserId={activeCall.otherUser?.id || ''}
+              otherUserName={activeCall.otherUser?.display_name || activeCall.otherUser?.username || 'Unknown User'}
+              otherUserAvatar={activeCall.otherUser?.avatar_url}
+              onCallEnd={() => {
+                setActiveCall(null);
+                setSearchParams({ conversation: selectedConversation || '' });
+              }}
+            />
+          )}
         </div>
       )}
 
