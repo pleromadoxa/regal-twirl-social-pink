@@ -106,10 +106,17 @@ export const useWebRTCCall = ({
     }
 
     try {
-      console.log('[useWebRTCCall] Initializing call for user:', user.id);
+      console.log('[useWebRTCCall] === TIMELINE: Starting call initialization ===');
+      console.log('[useWebRTCCall] Timestamp:', new Date().toISOString());
+      console.log('[useWebRTCCall] User:', user.id);
+      console.log('[useWebRTCCall] Call type:', callType);
+      console.log('[useWebRTCCall] Conversation:', conversationId);
+      console.log('[useWebRTCCall] Is incoming:', isIncoming);
+      
       isInitializingRef.current = true;
       updateCallState({ status: 'connecting', error: null });
 
+      console.log('[useWebRTCCall] === TIMELINE: Starting enhanced call service ===');
       // Start enhanced call service
       const enhancedCall = await enhancedCallService.startCall(
         callType,
@@ -121,17 +128,18 @@ export const useWebRTCCall = ({
           avatar_url: profile?.avatar_url
         }
       );
+      console.log('[useWebRTCCall] === TIMELINE: Enhanced call service started ===');
 
       updateCallState({ enhancedCall, participantCount: enhancedCall.participants.length });
 
       // Test connection first
-      console.log('[useWebRTCCall] Testing connection prerequisites...');
+      console.log('[useWebRTCCall] === TIMELINE: Testing connection prerequisites ===');
       
       // Initialize WebRTC service
       const { WebRTCService } = await import('@/services/webrtcService');
       webrtcServiceRef.current = new WebRTCService();
 
-      console.log('[useWebRTCCall] WebRTC service created successfully');
+      console.log('[useWebRTCCall] === TIMELINE: WebRTC service created ===');
 
       const service = webrtcServiceRef.current;
 
@@ -183,8 +191,10 @@ export const useWebRTCCall = ({
       });
 
       service.onConnectionStateChange((state) => {
+        console.log('[useWebRTCCall] === TIMELINE: Connection state changed to:', state, 'at', new Date().toISOString());
         updateCallState({ connectionState: state });
         if (state === 'connected') {
+          console.log('[useWebRTCCall] === TIMELINE: Call connected successfully ===');
           updateCallState({ status: 'connected', error: null });
           startDurationTimer();
           
@@ -241,22 +251,32 @@ export const useWebRTCCall = ({
       const browserInfo = getMobileBrowserInfo();
       const constraints = getMobileOptimizedConstraints(callType, browserInfo);
       
+      console.log('[useWebRTCCall] === TIMELINE: Initializing media ===');
       console.log('[useWebRTCCall] Using mobile-optimized constraints:', constraints, 'Browser info:', browserInfo);
 
       const localStream = await service.initializeMedia(constraints);
+      console.log('[useWebRTCCall] === TIMELINE: Media initialized successfully ===');
       
       // Initialize peer connection
+      console.log('[useWebRTCCall] === TIMELINE: Initializing peer connection ===');
       service.initializePeerConnection();
       await service.addLocalStream(localStream);
+      console.log('[useWebRTCCall] === TIMELINE: Local stream added ===');
 
       // Setup signaling
+      console.log('[useWebRTCCall] === TIMELINE: Setting up signaling for:', `call-${conversationId}`);
       service.setupSignaling(`call-${conversationId}`);
 
       if (!isIncoming) {
+        console.log('[useWebRTCCall] === TIMELINE: Creating offer for outgoing call ===');
         // Create offer for outgoing calls
         await service.createOffer();
+        console.log('[useWebRTCCall] === TIMELINE: Offer created ===');
+      } else {
+        console.log('[useWebRTCCall] === TIMELINE: Incoming call - waiting for offer ===');
       }
 
+      console.log('[useWebRTCCall] === TIMELINE: Call initialization complete ===');
       updateCallState({ status: 'connecting' });
       isInitializingRef.current = false;
 

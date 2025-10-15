@@ -67,8 +67,16 @@ const WebRTCCallManager = () => {
     
     console.log('[WebRTCCallManager] Listening on channel:', channelName);
     
-    channelRef.current = supabase
-      .channel(channelName)
+    // Retry subscription setup function
+    const setupChannelWithRetry = async (retryCount = 0, maxRetries = 3) => {
+      try {
+        channelRef.current = supabase
+          .channel(channelName, {
+            config: {
+              broadcast: { self: false },
+              presence: { key: user.id }
+            }
+          })
       .on('broadcast', { event: 'incoming-call' }, (payload) => {
         console.log('[WebRTCCallManager] Received incoming call:', payload);
         
@@ -212,41 +220,79 @@ const WebRTCCallManager = () => {
         
         setIncomingCall(null);
       })
-      .subscribe(async (status) => {
-        console.log('[WebRTCCallManager] Channel subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('[WebRTCCallManager] Successfully subscribed to channel:', channelName);
-          
-          // Test channel connection
-          try {
-            const testResult = await channelRef.current.send({
-              type: 'broadcast',
-              event: 'connection-test',
-              payload: { userId: user.id, timestamp: Date.now() }
-            });
-            console.log('[WebRTCCallManager] Channel test result:', testResult);
-          } catch (error) {
-            console.error('[WebRTCCallManager] Channel test failed:', error);
-          }
-          
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('[WebRTCCallManager] Channel error on:', channelName);
-          toast({
-            title: "Connection Error",
-            description: "Unable to establish real-time connection for calls",
-            variant: "destructive"
+          .subscribe(async (status) => {
+            console.log('[WebRTCCallManager] Channel subscription status:', status);
+            if (status === 'SUBSCRIBED') {
+              console.log('[WebRTCCallManager] Successfully subscribed to channel:', channelName);
+              
+              // Test channel connection
+              try {
+                const testResult = await channelRef.current.send({
+                  type: 'broadcast',
+                  event: 'connection-test',
+                  payload: { userId: user.id, timestamp: Date.now() }
+                });
+                console.log('[WebRTCCallManager] Channel test result:', testResult);
+              } catch (error) {
+                console.error('[WebRTCCallManager] Channel test failed:', error);
+              }
+              
+            } else if (status === 'CHANNEL_ERROR') {
+              console.error('[WebRTCCallManager] Channel error on:', channelName);
+              
+              // Retry on channel error
+              if (retryCount < maxRetries) {
+                console.log(`[WebRTCCallManager] Retrying channel subscription (${retryCount + 1}/${maxRetries})...`);
+                setTimeout(() => {
+                  if (channelRef.current) {
+                    channelRef.current.unsubscribe();
+                    supabase.removeChannel(channelRef.current);
+                    channelRef.current = null;
+                  }
+                  setupChannelWithRetry(retryCount + 1, maxRetries);
+                }, 1000 * (retryCount + 1)); // Exponential backoff
+              } else {
+                toast({
+                  title: "Connection Error",
+                  description: "Unable to establish real-time connection for calls. Please refresh the page.",
+                  variant: "destructive"
+                });
+              }
+            } else if (status === 'TIMED_OUT') {
+              console.error('[WebRTCCallManager] Channel subscription timed out:', channelName);
+              
+              // Retry on timeout
+              if (retryCount < maxRetries) {
+                console.log(`[WebRTCCallManager] Retrying after timeout (${retryCount + 1}/${maxRetries})...`);
+                setTimeout(() => {
+                  if (channelRef.current) {
+                    channelRef.current.unsubscribe();
+                    supabase.removeChannel(channelRef.current);
+                    channelRef.current = null;
+                  }
+                  setupChannelWithRetry(retryCount + 1, maxRetries);
+                }, 2000 * (retryCount + 1)); // Longer delay for timeouts
+              } else {
+                toast({
+                  title: "Connection Timeout",
+                  description: "Call connection timed out after multiple attempts. Please refresh the page.",
+                  variant: "destructive"
+                });
+              }
+            } else if (status === 'CLOSED') {
+              console.warn('[WebRTCCallManager] Channel closed:', channelName);
+            }
           });
-        } else if (status === 'TIMED_OUT') {
-          console.error('[WebRTCCallManager] Channel subscription timed out:', channelName);
-          toast({
-            title: "Connection Timeout",
-            description: "Call connection timed out. Please try again.",
-            variant: "destructive"
-          });
-        } else if (status === 'CLOSED') {
-          console.warn('[WebRTCCallManager] Channel closed:', channelName);
+      } catch (error) {
+        console.error('[WebRTCCallManager] Error setting up channel:', error);
+        if (retryCount < maxRetries) {
+          setTimeout(() => setupChannelWithRetry(retryCount + 1, maxRetries), 1000);
         }
-      });
+      }
+    };
+
+    // Start channel setup with retry logic
+    setupChannelWithRetry();
 
     return () => {
       console.log('[WebRTCCallManager] Cleaning up call manager');
@@ -267,6 +313,13 @@ const WebRTCCallManager = () => {
     if (!incomingCall) return;
     
     console.log('[WebRTCCallManager] Accepting call:', callId, callType);
+    console.log('[WebRTCCallManager] Call details:', {
+      callId,
+      callType,
+      roomId: incomingCall.room_id,
+      callerId: incomingCall.caller_id,
+      timestamp: new Date().toISOString()
+    });
     
     try {
       // Create a persistent broadcast channel for call signaling
@@ -276,46 +329,57 @@ const WebRTCCallManager = () => {
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error('Channel subscription timeout'));
-        }, 5000);
+        }, 8000); // 8 second timeout
         
         roomChannel.subscribe(async (status) => {
+          console.log('[WebRTCCallManager] Accept room channel status:', status);
+          
           if (status === 'SUBSCRIBED') {
             clearTimeout(timeout);
             
             // Broadcast to room that call was accepted
+            const acceptPayload = {
+              call_id: callId,
+              room_id: incomingCall.room_id,
+              accepted_by: user?.id,
+              accepted_by_name: profile?.display_name || profile?.username || 'Unknown User',
+              timestamp: Date.now()
+            };
+            
+            console.log('[WebRTCCallManager] Broadcasting call acceptance:', acceptPayload);
+            
             await roomChannel.send({
               type: 'broadcast',
               event: 'call-accepted',
-              payload: {
-                call_id: callId,
-                room_id: incomingCall.room_id,
-                accepted_by: user?.id,
-                accepted_by_name: profile?.display_name || profile?.username || 'Unknown User',
-                timestamp: Date.now()
-              }
+              payload: acceptPayload
             });
             
             console.log('[WebRTCCallManager] Call acceptance broadcasted to room');
             resolve();
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
             clearTimeout(timeout);
+            console.error('[WebRTCCallManager] Channel error during accept:', status);
             reject(new Error(`Channel error: ${status}`));
           }
         });
       });
-    } catch (error) {
-      console.error('[WebRTCCallManager] Error sending accept notification:', error);
-    }
     
     // Find the conversation between caller and current user
     let conversationId = incomingCall.caller_id; // fallback to caller_id
     
+    console.log('[WebRTCCallManager] Finding conversation for call acceptance');
+    
     if (callType !== 'group') {
       try {
-        const { data: conversations } = await supabase
+        const { data: conversations, error: convError } = await supabase
           .from('conversations')
           .select('id')
           .or(`and(participant_1.eq.${user?.id},participant_2.eq.${incomingCall.caller_id}),and(participant_1.eq.${incomingCall.caller_id},participant_2.eq.${user?.id})`);
+        
+        if (convError) {
+          console.error('[WebRTCCallManager] Error finding conversation:', convError);
+          throw convError;
+        }
         
         if (conversations && conversations.length > 0) {
           conversationId = conversations[0].id;
@@ -346,17 +410,39 @@ const WebRTCCallManager = () => {
     const searchParams = new URLSearchParams({
       conversation: conversationId,
       call: callType === 'group' ? 'audio' : callType,
-      room: incomingCall.room_id
+      room: incomingCall.room_id,
+      incoming: 'true', // Mark as incoming call
+      callId: callId
     });
     
     if (callType === 'group') {
       searchParams.set('type', 'group');
     }
     
-    navigate(`/messages?${searchParams.toString()}`);
+    const navigationUrl = `/messages?${searchParams.toString()}`;
+    console.log('[WebRTCCallManager] Navigating to:', navigationUrl);
+    console.log('[WebRTCCallManager] Timeline - Call accepted at:', new Date().toISOString());
     
+    navigate(navigationUrl);
+    
+    // Clear incoming call after navigation
     setIncomingCall(null);
-  };
+    
+    toast({
+      title: "Call Accepted",
+      description: "Connecting to call...",
+    });
+    
+  } catch (error) {
+    console.error('[WebRTCCallManager] Error accepting call:', error);
+    toast({
+      title: "Error",
+      description: "Failed to accept call. Please try again.",
+      variant: "destructive"
+    });
+    setIncomingCall(null);
+  }
+};
 
   const handleDeclineCall = async (callId: string) => {
     console.log('[WebRTCCallManager] Declining call:', callId);

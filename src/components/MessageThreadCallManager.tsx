@@ -139,8 +139,8 @@ const MessageThreadCallManager = ({
         // Subscribe to room channel for call responses (accepted/declined)
         await new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(() => {
-            reject(new Error('Channel subscription timeout'));
-          }, 5000);
+            reject(new Error('Channel subscription timeout after 10 seconds'));
+          }, 10000); // Increased timeout to 10 seconds
           
           roomChannel
             .on('broadcast', { event: 'call-accepted' }, (payload) => {
@@ -162,26 +162,36 @@ const MessageThreadCallManager = ({
               });
             })
             .subscribe(async (status) => {
+              console.log('[CallManager] Room channel subscription status:', status);
+              
               if (status === 'SUBSCRIBED') {
                 clearTimeout(timeout);
                 try {
                   // Send the call invitation on the recipient's channel
+                  console.log('[CallManager] Sending call invitation to recipient channel:', recipientChannelName);
                   const recipientChannel = supabase.channel(recipientChannelName);
-                  await recipientChannel.send({
+                  
+                  const sendResult = await recipientChannel.send({
                     type: 'broadcast',
                     event: 'incoming-call',
                     payload: callPayload
                   });
                   
+                  console.log('[CallManager] Call invitation send result:', sendResult);
                   console.log('[CallManager] Call invitation sent and room channel subscribed');
                   resolve();
                 } catch (err) {
                   console.error('[CallManager] Failed to send call invitation:', err);
                   reject(err);
                 }
-              } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              } else if (status === 'CHANNEL_ERROR') {
                 clearTimeout(timeout);
-                reject(new Error(`Channel failed: ${status}`));
+                console.error('[CallManager] Channel error:', status);
+                reject(new Error(`Channel error: ${status}`));
+              } else if (status === 'TIMED_OUT') {
+                clearTimeout(timeout);
+                console.error('[CallManager] Channel timed out:', status);
+                reject(new Error('Channel subscription timed out'));
               }
             });
         });
