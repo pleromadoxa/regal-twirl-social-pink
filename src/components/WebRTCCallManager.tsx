@@ -88,30 +88,27 @@ const WebRTCCallManager = () => {
           return;
         }
 
-        // Clear any existing incoming call first
-        setIncomingCall(null);
+        console.log('[WebRTCCallManager] Setting incoming call state');
         
-        // Use setTimeout to ensure state update happens in next tick
-        setTimeout(() => {
-          setIncomingCall({
-            id: callData.call_id || callData.room_id,
-            caller_id: callData.caller_id,
-            call_type: callData.call_type || 'audio',
-            room_id: callData.room_id,
-            caller_profile: callData.caller_profile || {
-              display_name: 'Unknown User',
-              username: 'unknown',
-              avatar_url: null
-            }
-          });
+        // Set incoming call immediately without setTimeout to prevent blinking
+        setIncomingCall({
+          id: callData.call_id || callData.room_id,
+          caller_id: callData.caller_id,
+          call_type: callData.call_type || 'audio',
+          room_id: callData.room_id,
+          caller_profile: callData.caller_profile || {
+            display_name: 'Unknown User',
+            username: 'unknown',
+            avatar_url: null
+          }
+        });
 
-          // Show notification
-          toast({
-            title: `Incoming ${callData.call_type || 'audio'} call`,
-            description: `${callData.caller_profile?.display_name || 'Unknown'} is calling you...`,
-            duration: 10000
-          });
-        }, 50);
+        // Show notification
+        toast({
+          title: `Incoming ${callData.call_type || 'audio'} call`,
+          description: `${callData.caller_profile?.display_name || 'Unknown'} is calling you...`,
+          duration: 10000
+        });
       })
       .on('broadcast', { event: 'incoming-group-call' }, (payload) => {
         console.log('[WebRTCCallManager] Received incoming group call:', payload);
@@ -185,7 +182,14 @@ const WebRTCCallManager = () => {
           });
         }
         
+        // Clear incoming call and stop ringing sound
+        console.log('[WebRTCCallManager] Clearing incoming call state');
         setIncomingCall(null);
+        
+        // Import and use the call sound manager
+        import('@/utils/callSoundManager').then(({ callSoundManager }) => {
+          callSoundManager.stopRinging();
+        });
       })
       .on('broadcast', { event: 'call-accepted' }, (payload) => {
         console.log('[WebRTCCallManager] Call accepted:', payload);
@@ -218,7 +222,14 @@ const WebRTCCallManager = () => {
           });
         }
         
+        // Clear incoming call and stop ringing sound
+        console.log('[WebRTCCallManager] Clearing incoming call state after decline');
         setIncomingCall(null);
+        
+        // Import and use the call sound manager
+        import('@/utils/callSoundManager').then(({ callSoundManager }) => {
+          callSoundManager.stopRinging();
+        });
       })
           .subscribe(async (status) => {
             console.log('[WebRTCCallManager] Channel subscription status:', status);

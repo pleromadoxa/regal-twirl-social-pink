@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Phone, PhoneOff, Video, Mic, Users, MapPin } from 'lucide-react';
-import { useCallSounds } from '@/hooks/useCallSounds';
+import { callSoundManager } from '@/utils/callSoundManager';
 import { useUserLocationContext } from '@/contexts/UserLocationContext';
 import { formatLocation } from '@/services/locationService';
 
@@ -25,8 +25,6 @@ const IncomingCallPopup = ({
   onAccept,
   onDecline
 }: IncomingCallPopupProps) => {
-  const { playRinging, stopRinging } = useCallSounds();
-  
   // Safely get location context
   let getUserLocation: ((userId: string) => any) | undefined;
   try {
@@ -41,28 +39,34 @@ const IncomingCallPopup = ({
     getUserLocation(callerId) : null;
 
   useEffect(() => {
+    console.log('[IncomingCallPopup] Component mounted, starting ringing sound');
+    
     // Start playing ringing sound when popup appears
-    playRinging();
+    callSoundManager.startRinging();
 
     // Auto-decline after 30 seconds
     const timer = setTimeout(() => {
-      stopRinging();
+      console.log('[IncomingCallPopup] Auto-declining after 30 seconds');
+      callSoundManager.stopRinging();
       onDecline();
     }, 30000);
 
     return () => {
+      console.log('[IncomingCallPopup] Component unmounting, stopping ringing sound');
       clearTimeout(timer);
-      stopRinging();
+      callSoundManager.stopRinging();
     };
-  }, [playRinging, stopRinging, onDecline]);
+  }, [onDecline]);
 
   const handleAccept = () => {
-    stopRinging();
+    console.log('[IncomingCallPopup] Call accepted, stopping ringing sound');
+    callSoundManager.stopRinging();
     onAccept();
   };
 
   const handleDecline = () => {
-    stopRinging();
+    console.log('[IncomingCallPopup] Call declined, stopping ringing sound');
+    callSoundManager.stopRinging();
     onDecline();
   };
 
