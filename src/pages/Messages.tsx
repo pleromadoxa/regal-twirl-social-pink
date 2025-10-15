@@ -342,7 +342,6 @@ const Messages = () => {
               {[
                 { id: 'all', label: 'All', icon: MessageCircle },
                 { id: 'calls', label: 'Calls', icon: PhoneCall },
-                { id: 'groups', label: 'Groups', icon: Users },
                 { id: 'unread', label: 'Unread', icon: Bell },
               ].map((tab) => (
                 <button

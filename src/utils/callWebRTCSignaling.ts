@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export interface CallSignalingMessage {
-  type: 'offer' | 'answer' | 'ice-candidate' | 'join' | 'leave' | 'peer-joined' | 'peer-left';
+  type: 'offer' | 'answer' | 'ice-candidate' | 'join' | 'leave' | 'peer-joined' | 'peer-left' | 'ping' | 'pong';
   conversationId: string;
   userId: string;
   peerId?: string;
@@ -71,6 +71,13 @@ export class CallWebRTCSignalingClient {
         this.ws.onmessage = (event) => {
           try {
             const message: CallSignalingMessage = JSON.parse(event.data);
+            
+            // Handle ping messages with pong response
+            if (message.type === 'ping') {
+              this.sendMessage({ type: 'pong' });
+              return;
+            }
+            
             console.log('[Call Signaling] Received message:', message.type, message);
             
             if (this.onMessageCallback) {

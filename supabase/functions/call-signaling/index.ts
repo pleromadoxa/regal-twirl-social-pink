@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 interface SignalingMessage {
-  type: 'offer' | 'answer' | 'ice-candidate' | 'join' | 'leave';
+  type: 'offer' | 'answer' | 'ice-candidate' | 'join' | 'leave' | 'ping' | 'pong';
   conversationId: string;
   userId: string;
   peerId?: string;
@@ -15,6 +15,31 @@ interface SignalingMessage {
 
 // Store active WebSocket connections per conversation
 const conversationConnections = new Map<string, Map<string, WebSocket>>();
+const heartbeatIntervals = new Map<string, number>();
+
+// Heartbeat to keep connections alive
+const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+
+const startHeartbeat = (socketId: string, socket: WebSocket) => {
+  const intervalId = setInterval(() => {
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: 'ping' }));
+    } else {
+      clearInterval(intervalId);
+      heartbeatIntervals.delete(socketId);
+    }
+  }, HEARTBEAT_INTERVAL);
+  
+  heartbeatIntervals.set(socketId, intervalId);
+};
+
+const stopHeartbeat = (socketId: string) => {
+  const intervalId = heartbeatIntervals.get(socketId);
+  if (intervalId) {
+    clearInterval(intervalId);
+    heartbeatIntervals.delete(socketId);
+  }
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -54,6 +79,10 @@ serve(async (req) => {
       
       const conversationUsers = conversationConnections.get(conversationId)!;
       conversationUsers.set(userId, socket);
+      
+      // Start heartbeat for this connection
+      const socketId = `${conversationId}-${userId}`;
+      startHeartbeat(socketId, socket);
 
       // Notify about existing peer
       const existingPeers = Array.from(conversationUsers.keys()).filter(id => id !== userId);
@@ -82,6 +111,12 @@ serve(async (req) => {
     socket.onmessage = (event) => {
       try {
         const message: SignalingMessage = JSON.parse(event.data);
+        
+        // Handle pong responses
+        if (message.type === 'pong') {
+          return;
+        }
+        
         console.log(`[Signaling] Message from ${userId}:`, message.type);
 
         const conversationUsers = conversationConnections.get(conversationId);
@@ -105,6 +140,10 @@ serve(async (req) => {
 
     socket.onclose = () => {
       console.log(`[Signaling] User ${userId} disconnected from conversation ${conversationId}`);
+      
+      // Stop heartbeat for this connection
+      const socketId = `${conversationId}-${userId}`;
+      stopHeartbeat(socketId);
       
       const conversationUsers = conversationConnections.get(conversationId);
       if (conversationUsers) {
