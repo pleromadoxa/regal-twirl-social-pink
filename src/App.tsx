@@ -48,7 +48,6 @@ const Pinned = lazy(() => import('@/pages/Pinned'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const BusinessManagement = lazy(() => import('@/pages/BusinessManagement'));
 const Support = lazy(() => import('@/pages/Support'));
-const JoinGroup = lazy(() => import('@/pages/JoinGroup'));
 const Events = lazy(() => import('@/pages/Events'));
 const Collaboration = lazy(() => import('@/pages/Collaboration'));
 const Circles = lazy(() => import('@/pages/Circles'));
@@ -87,7 +86,6 @@ function App() {
                       <Route path="/profile/:userId" element={<AuthWrapper><Profile /></AuthWrapper>} />
                       <Route path="/hashtag/:hashtag" element={<AuthWrapper><Hashtag /></AuthWrapper>} />
                       <Route path="/messages" element={<AuthWrapper><Messages /></AuthWrapper>} />
-                      <Route path="/join-group/:inviteCode" element={<AuthWrapper><JoinGroup /></AuthWrapper>} />
                       <Route path="/notifications" element={<AuthWrapper><Notifications /></AuthWrapper>} />
                       <Route path="/gallery" element={<AuthWrapper><Gallery /></AuthWrapper>} />
                       <Route path="/settings" element={<AuthWrapper><Settings /></AuthWrapper>} />

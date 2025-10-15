@@ -211,14 +211,8 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
           <MessageThreadHeader
             otherParticipant={otherParticipant}
             conversation={conversation}
-            groupConversation={groupConversation}
-            isGroupConversation={isGroupConversation}
             onAudioCall={() => initiateCall('audio')}
             onVideoCall={() => initiateCall('video')}
-            onGroupUpdated={() => {
-              // Refresh the group conversation data
-              window.location.reload(); // Simple refresh for now
-            }}
           />
 
           {/* Messages */}

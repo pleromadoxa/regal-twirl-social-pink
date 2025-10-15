@@ -6,12 +6,10 @@ import RightSidebar from '@/components/RightSidebar';
 import MessageThread from '@/components/MessageThread';
 import AudioCall from '@/components/AudioCall';
 import VideoCall from '@/components/VideoCall';
-import GroupCall from '@/components/GroupCall';
 import CallPopup from '@/components/CallPopup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { 
   MessageCircle, 
   Bell, 
@@ -32,20 +30,16 @@ import { useCallHistory } from '@/hooks/useCallHistory';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import MobileBottomNav from '@/components/MobileBottomNav';
-import { JoinGroupDialog } from '@/components/JoinGroupDialog';
 import PresenceIndicator from '@/components/PresenceIndicator';
 
 const Messages = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showJoinGroupDialog, setShowJoinGroupDialog] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeCall, setActiveCall] = useState<{
-    type: 'audio' | 'video' | 'group';
+    type: 'audio' | 'video';
     conversationId: string;
     otherUser?: any;
-    roomId?: string;
-    participants?: any[];
   } | null>(null);
   const [incomingCall, setIncomingCall] = useState<{
     type: 'audio' | 'video';
@@ -61,49 +55,36 @@ const Messages = () => {
 
   const selectedConversation = searchParams.get('conversation');
   const callType = searchParams.get('call') as 'audio' | 'video' | null;
-  const roomId = searchParams.get('room');
-  const isGroupCall = searchParams.get('type') === 'group';
   const { conversations, groupConversations, loading } = messagesData;
 
   // Auto-start call based on URL parameters
   useEffect(() => {
-    console.log('[Messages] URL params check:', { callType, selectedConversation, roomId, isGroupCall, activeCall: !!activeCall });
+    console.log('[Messages] URL params check:', { callType, selectedConversation, activeCall: !!activeCall });
     
     if (callType && selectedConversation && !activeCall) {
       console.log('[Messages] Auto-starting call...');
       
-      if (isGroupCall && roomId) {
-        // Start group call
-        console.log('[Messages] Starting group call with room:', roomId);
-        setActiveCall({
-          type: 'group',
-          conversationId: selectedConversation,
-          roomId: roomId,
-          participants: [] // Will be populated by the group call component
-        });
-      } else {
-        // Start regular call - find the other user
-        const conversation = conversations.find(c => c.id === selectedConversation);
-        console.log('[Messages] Found conversation for regular call:', !!conversation);
+      // Start regular call - find the other user
+      const conversation = conversations.find(c => c.id === selectedConversation);
+      console.log('[Messages] Found conversation for regular call:', !!conversation);
+      
+      if (conversation) {
+        const otherUser = conversation.participant_1 === user?.id 
+          ? conversation.participant_2_profile 
+          : conversation.participant_1_profile;
         
-        if (conversation) {
-          const otherUser = conversation.participant_1 === user?.id 
-            ? conversation.participant_2_profile 
-            : conversation.participant_1_profile;
-          
-          console.log('[Messages] Other user found:', !!otherUser);
-          
-          if (otherUser) {
-            setActiveCall({
-              type: callType as 'audio' | 'video',
-              conversationId: selectedConversation,
-              otherUser: otherUser
-            });
-          }
+        console.log('[Messages] Other user found:', !!otherUser);
+        
+        if (otherUser) {
+          setActiveCall({
+            type: callType as 'audio' | 'video',
+            conversationId: selectedConversation,
+            otherUser: otherUser
+          });
         }
       }
     }
-  }, [callType, selectedConversation, roomId, isGroupCall, activeCall, conversations, user?.id]);
+  }, [callType, selectedConversation, activeCall, conversations, user?.id]);
 
   // Filter conversations based on search and active tab
   const filteredConversations = conversations.filter(conversation => {
@@ -275,64 +256,21 @@ const Messages = () => {
       }
       return true;
     });
+  } else if (activeTab === 'groups') {
+    displayData = []; // No groups
   } else {
-    displayData = [
-      ...filteredConversations.map(conv => ({ ...conv, isGroup: false })),
-      ...filteredGroupConversations.map(group => ({ ...group, isGroup: true }))
-    ].sort((a, b) => {
-      const aTime = new Date(a.last_message_at || a.created_at).getTime();
-      const bTime = new Date(b.last_message_at || b.created_at).getTime();
-      return bTime - aTime;
-    });
+    displayData = filteredConversations.map(conv => ({ ...conv, isGroup: false }))
+      .sort((a, b) => {
+        const aTime = new Date(a.last_message_at || a.created_at).getTime();
+        const bTime = new Date(b.last_message_at || b.created_at).getTime();
+        return bTime - aTime;
+      });
   }
 
   const renderConversationItem = (conversation: any) => {
-    if (conversation.isGroup) {
-      return (
-        <div
-          key={conversation.id}
-          className={cn(
-            "p-4 cursor-pointer rounded-xl transition-all duration-200 bg-white/60 dark:bg-gray-800/60 border-l-4 border-blue-400 hover:bg-purple-50/80 dark:hover:bg-purple-900/20",
-            selectedConversation === conversation.id && 'bg-gradient-to-r from-purple-100/80 to-pink-100/40 shadow-sm'
-          )}
-          onClick={() => setSearchParams({ conversation: conversation.id })}
-        >
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <Hash className="w-6 h-6 text-white" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-400 rounded-full border-2 border-white flex items-center justify-center">
-                <span className="text-xs text-white font-bold">
-                  {conversation.member_count || 0}
-                </span>
-              </div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                  {conversation.name || 'Group Chat'}
-                </h3>
-                <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
-                  {conversation.last_message_at && 
-                    new Date(conversation.last_message_at).toLocaleDateString(undefined, { 
-                      month: 'short', 
-                      day: 'numeric' 
-                    })
-                  }
-                </span>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                {conversation.last_message?.content || 'No messages yet...'}
-              </p>
-            </div>
-          </div>
-        </div>
-      );
-    } else {
-      const otherUser = conversation.participant_1 === user?.id 
-        ? conversation.participant_2_profile 
-        : conversation.participant_1_profile;
+    const otherUser = conversation.participant_1 === user?.id 
+      ? conversation.participant_2_profile 
+      : conversation.participant_1_profile;
       
       return (
         <div
