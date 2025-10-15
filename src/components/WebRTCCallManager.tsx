@@ -78,7 +78,8 @@ const WebRTCCallManager = () => {
             }
           })
       .on('broadcast', { event: 'incoming-call' }, (payload) => {
-        console.log('[WebRTCCallManager] Received incoming call:', payload);
+        console.log('[WebRTCCallManager] ===== INCOMING CALL EVENT RECEIVED =====');
+        console.log('[WebRTCCallManager] Full payload:', JSON.stringify(payload, null, 2));
         
         const callData = payload.payload;
         
@@ -88,10 +89,7 @@ const WebRTCCallManager = () => {
           return;
         }
 
-        console.log('[WebRTCCallManager] Setting incoming call state');
-        
-        // Set incoming call immediately without setTimeout to prevent blinking
-        setIncomingCall({
+        const newIncomingCall = {
           id: callData.call_id || callData.room_id,
           caller_id: callData.caller_id,
           call_type: callData.call_type || 'audio',
@@ -101,7 +99,11 @@ const WebRTCCallManager = () => {
             username: 'unknown',
             avatar_url: null
           }
-        });
+        };
+        
+        console.log('[WebRTCCallManager] ===== SETTING INCOMING CALL STATE =====');
+        console.log('[WebRTCCallManager] Incoming call object:', newIncomingCall);
+        setIncomingCall(newIncomingCall);
 
         // Show notification
         toast({
@@ -170,26 +172,32 @@ const WebRTCCallManager = () => {
         });
       })
       .on('broadcast', { event: 'call-ended' }, (payload) => {
-        console.log('[WebRTCCallManager] Call ended:', payload);
+        console.log('[WebRTCCallManager] ===== CALL ENDED EVENT =====');
+        console.log('[WebRTCCallManager] Ended payload:', JSON.stringify(payload, null, 2));
         const endedData = payload.payload;
         
-        // Show notification that call ended
-        if (endedData.ended_by !== user?.id) {
-          toast({
-            title: "Call ended",
-            description: `Call ended by ${endedData.ended_by_name || 'other party'}`,
-            variant: "default"
+        // Only clear popup if this event is for the current incoming call
+        if (incomingCall && endedData.room_id === incomingCall.room_id) {
+          console.log('[WebRTCCallManager] Clearing incoming call (room match)');
+          
+          // Show notification that call ended
+          if (endedData.ended_by !== user?.id) {
+            toast({
+              title: "Call ended",
+              description: `Call ended by ${endedData.ended_by_name || 'other party'}`,
+              variant: "default"
+            });
+          }
+          
+          setIncomingCall(null);
+          
+          // Import and use the call sound manager
+          import('@/utils/callSoundManager').then(({ callSoundManager }) => {
+            callSoundManager.stopRinging();
           });
+        } else {
+          console.log('[WebRTCCallManager] Ignoring call-ended (no room match or no incoming call)');
         }
-        
-        // Clear incoming call and stop ringing sound
-        console.log('[WebRTCCallManager] Clearing incoming call state');
-        setIncomingCall(null);
-        
-        // Import and use the call sound manager
-        import('@/utils/callSoundManager').then(({ callSoundManager }) => {
-          callSoundManager.stopRinging();
-        });
       })
       .on('broadcast', { event: 'call-accepted' }, (payload) => {
         console.log('[WebRTCCallManager] Call accepted:', payload);
@@ -205,11 +213,22 @@ const WebRTCCallManager = () => {
         }
       })
       .on('broadcast', { event: 'call-declined' }, (payload) => {
-        console.log('[WebRTCCallManager] Call declined:', payload);
+        console.log('[WebRTCCallManager] ===== CALL DECLINED EVENT =====');
+        console.log('[WebRTCCallManager] Declined payload:', JSON.stringify(payload, null, 2));
         const declinedData = payload.payload;
         
-        // Show notification that call was declined
-        if (declinedData.declined_by !== user?.id) {
+        // Only clear popup if WE declined (not if someone else declined)
+        if (declinedData.declined_by === user?.id) {
+          console.log('[WebRTCCallManager] We declined the call - clearing popup');
+          setIncomingCall(null);
+          
+          // Import and use the call sound manager
+          import('@/utils/callSoundManager').then(({ callSoundManager }) => {
+            callSoundManager.stopRinging();
+          });
+        } else {
+          // Someone else declined - just show notification
+          console.log('[WebRTCCallManager] Someone else declined - keeping popup if exists');
           const reason = declinedData.reason === 'busy' 
             ? 'is busy right now' 
             : 'declined the call';
@@ -221,15 +240,6 @@ const WebRTCCallManager = () => {
             duration: 5000
           });
         }
-        
-        // Clear incoming call and stop ringing sound
-        console.log('[WebRTCCallManager] Clearing incoming call state after decline');
-        setIncomingCall(null);
-        
-        // Import and use the call sound manager
-        import('@/utils/callSoundManager').then(({ callSoundManager }) => {
-          callSoundManager.stopRinging();
-        });
       })
           .subscribe(async (status) => {
             console.log('[WebRTCCallManager] Channel subscription status:', status);
@@ -585,20 +595,31 @@ const WebRTCCallManager = () => {
     setIncomingCircleCall(null);
   };
 
-  if (!incomingCall && !incomingCircleCall) return null;
+  console.log('[WebRTCCallManager] Render - incomingCall:', incomingCall);
+  console.log('[WebRTCCallManager] Render - incomingCircleCall:', incomingCircleCall);
+  
+  if (!incomingCall && !incomingCircleCall) {
+    console.log('[WebRTCCallManager] No incoming calls - returning null');
+    return null;
+  }
 
   return (
     <>
       {incomingCall && (
-        <IncomingCallPopup
-          callId={incomingCall.id}
-          callerName={incomingCall.caller_profile?.display_name || incomingCall.caller_profile?.username || 'Unknown User'}
-          callerAvatar={incomingCall.caller_profile?.avatar_url}
-          callType={incomingCall.call_type}
-          callerId={incomingCall.caller_id}
-          onAccept={() => handleAcceptCall(incomingCall.id, incomingCall.call_type)}
-          onDecline={() => handleDeclineCall(incomingCall.id)}
-        />
+        <>
+          <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999, background: 'red', color: 'white', padding: '10px' }}>
+            DEBUG: Popup should be visible
+          </div>
+          <IncomingCallPopup
+            callId={incomingCall.id}
+            callerName={incomingCall.caller_profile?.display_name || incomingCall.caller_profile?.username || 'Unknown User'}
+            callerAvatar={incomingCall.caller_profile?.avatar_url}
+            callType={incomingCall.call_type}
+            callerId={incomingCall.caller_id}
+            onAccept={() => handleAcceptCall(incomingCall.id, incomingCall.call_type)}
+            onDecline={() => handleDeclineCall(incomingCall.id)}
+          />
+        </>
       )}
       
       {incomingCircleCall && (
