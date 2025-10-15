@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import Feature3DVisual from './Feature3DVisual';
 import { 
   Users, 
   Trophy, 
@@ -190,6 +191,8 @@ const FeatureIntroPopup = () => {
             {currentFeature.description}
           </DialogDescription>
         </DialogHeader>
+
+        <Feature3DVisual featureId={currentFeature.id} color={currentFeature.color} />
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
