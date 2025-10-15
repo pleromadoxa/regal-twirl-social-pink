@@ -116,7 +116,8 @@ const MessageThreadCallManager = ({
         console.log('[CallManager] Created call:', call);
         console.log('[CallManager] Sending call to recipient:', otherParticipant.id);
         
-        // Broadcast call invitation to the other participant's dedicated channel
+        // Create a persistent room channel for this call
+        const roomChannel = supabase.channel(`call-room-${call.room_id}`);
         const recipientChannelName = `user-calls-${otherParticipant.id}`;
         
         const callPayload = {
@@ -135,16 +136,36 @@ const MessageThreadCallManager = ({
         console.log('[CallManager] Sending call payload:', callPayload);
         console.log('[CallManager] Target channel:', recipientChannelName);
         
-        // Create a temporary channel to send the call invitation
-        const callChannel = supabase.channel(`call-invite-${call.id}-${Date.now()}`);
-        
-        // Subscribe first, then send
+        // Subscribe to room channel for call responses (accepted/declined)
         await new Promise<void>((resolve, reject) => {
-          callChannel
+          const timeout = setTimeout(() => {
+            reject(new Error('Channel subscription timeout'));
+          }, 5000);
+          
+          roomChannel
+            .on('broadcast', { event: 'call-accepted' }, (payload) => {
+              console.log('[CallManager] Call accepted by recipient:', payload);
+              toast({
+                title: "Call Accepted",
+                description: `${payload.payload.accepted_by_name} answered the call`,
+              });
+            })
+            .on('broadcast', { event: 'call-declined' }, (payload) => {
+              console.log('[CallManager] Call declined by recipient:', payload);
+              const reason = payload.payload.reason === 'busy' 
+                ? 'is busy right now' 
+                : 'declined the call';
+              toast({
+                title: "Call Declined",
+                description: `${payload.payload.declined_by_name} ${reason}`,
+                variant: "destructive"
+              });
+            })
             .subscribe(async (status) => {
               if (status === 'SUBSCRIBED') {
+                clearTimeout(timeout);
                 try {
-                  // Now send the call invitation on the recipient's channel
+                  // Send the call invitation on the recipient's channel
                   const recipientChannel = supabase.channel(recipientChannelName);
                   await recipientChannel.send({
                     type: 'broadcast',
@@ -152,20 +173,18 @@ const MessageThreadCallManager = ({
                     payload: callPayload
                   });
                   
-                  console.log('[CallManager] Call invitation sent successfully');
+                  console.log('[CallManager] Call invitation sent and room channel subscribed');
                   resolve();
                 } catch (err) {
                   console.error('[CallManager] Failed to send call invitation:', err);
                   reject(err);
                 }
               } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                clearTimeout(timeout);
                 reject(new Error(`Channel failed: ${status}`));
               }
             });
         });
-
-        // Subscribe to channel to listen for call responses
-        // Note: No need to subscribe to send messages
         
         // Start the call on our end
         onCallStart(callType);
