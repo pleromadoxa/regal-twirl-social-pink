@@ -9,11 +9,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStreakEmoji } from '@/services/streakService';
 import PresenceIndicator from './PresenceIndicator';
 import { useUserPresence } from '@/contexts/UserPresenceContext';
+import { formatDistanceToNow } from 'date-fns';
 
 interface ConversationCharacter extends Character {
   userId?: string;
@@ -49,6 +52,7 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
   } = messagesData;
   
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [expandedCharacterId, setExpandedCharacterId] = useState<string | null>(null);
   const [characters, setCharacters] = useState<ConversationCharacter[]>([
     { emoji: "💬", name: "Messages", online: false },
     { emoji: "👤", name: "Recent", online: true, backgroundColor: "bg-blue-300", gradientColors: "#93c5fd, #dbeafe" },
@@ -56,6 +60,11 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
     { emoji: "⭐", name: "Favorites", online: false, backgroundColor: "bg-yellow-300", gradientColors: "#fde047, #fefce8" },
     { emoji: "📋", name: "Menu", online: false },
   ]);
+
+  // Calculate total unread messages
+  const unreadCount = messages.filter(msg => 
+    !msg.read_at && msg.recipient_id === user?.id
+  ).length;
 
   // Update characters based on recent conversations
   useEffect(() => {
@@ -183,9 +192,12 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
   const handleCharacterSelect = (character: ConversationCharacter, characterIndex: number) => {
     console.log('Character selected:', character.name);
     
-    // If it's a conversation, select it
+    // If it's a conversation, select it and expand
     if (character.id) {
       setSelectedConversation(character.id as string);
+      setExpandedCharacterId(character.id as string);
+    } else {
+      setExpandedCharacterId(null);
     }
   };
 
@@ -210,6 +222,7 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="relative"
             >
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -224,6 +237,13 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
                   <p>Open Chat</p>
                 </TooltipContent>
               </Tooltip>
+              {unreadCount > 0 && (
+                <Badge 
+                  className="absolute -top-1 -right-1 h-6 w-6 flex items-center justify-center p-0 bg-red-500 text-white rounded-full animate-pulse"
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -257,9 +277,65 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
                 </Tooltip>
               </div>
 
-              {/* Enhanced MessageDock with Presence */}
+              {/* Enhanced MessageDock with Presence and Messages */}
               <div className="relative">
-                <MessageDock 
+                {/* Recent Messages Display */}
+                {expandedCharacterId && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute bottom-full mb-2 left-0 right-0 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border border-border overflow-hidden"
+                    style={{ maxWidth: '400px' }}
+                  >
+                    <div className="p-3 border-b border-border flex items-center justify-between">
+                      <h4 className="font-semibold text-sm">Recent Messages</h4>
+                      <Badge variant="secondary" className="text-xs">
+                        {messages.length}
+                      </Badge>
+                    </div>
+                    <ScrollArea className="h-48">
+                      <div className="p-2 space-y-2">
+                        {messages.length > 0 ? (
+                          messages.slice(-5).reverse().map((msg) => (
+                            <div 
+                              key={msg.id} 
+                              className={`p-2 rounded-lg text-sm ${
+                                msg.sender_id === user?.id 
+                                  ? 'bg-primary/10 ml-8' 
+                                  : 'bg-muted mr-8'
+                              }`}
+                            >
+                              <div className="flex items-start gap-2">
+                                <Avatar className="w-6 h-6">
+                                  <AvatarImage src={msg.sender_profile?.avatar_url} />
+                                  <AvatarFallback className="text-xs">
+                                    {msg.sender_profile?.display_name?.[0] || '?'}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs text-muted-foreground font-medium">
+                                    {msg.sender_id === user?.id ? 'You' : msg.sender_profile?.display_name}
+                                  </p>
+                                  <p className="text-xs break-words">{msg.content}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-center text-muted-foreground text-sm py-4">
+                            No messages yet
+                          </p>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </motion.div>
+                )}
+                
+                <MessageDock
                   characters={characters.map(char => ({
                     ...char,
                     // Add hover card content for conversations
