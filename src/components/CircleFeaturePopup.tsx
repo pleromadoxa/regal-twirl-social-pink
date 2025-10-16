@@ -2,6 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Users, Lock, MessageSquare, Phone, Image as ImageIcon, Calendar, Shield, BarChart3, FileText, Megaphone } from 'lucide-react';
+import Feature3DVisual from '@/components/Feature3DVisual';
+import { motion } from 'framer-motion';
 
 interface Feature {
   icon: React.ReactNode;
@@ -88,52 +90,56 @@ const CircleFeaturePopup = ({ open, onOpenChange, onCreateCircle }: CircleFeatur
           </p>
         </DialogHeader>
 
-        {/* 3D Hero Section */}
-        <div className="relative h-48 rounded-xl overflow-hidden mb-8 bg-gradient-to-br from-primary/10 via-secondary/10 to-primary/10">
-          {/* Animated Background */}
-          <div className="absolute inset-0">
-            <div className="absolute top-10 left-10 w-32 h-32 bg-primary/30 rounded-full blur-3xl animate-float" />
-            <div className="absolute top-20 right-20 w-40 h-40 bg-secondary/30 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-            <div className="absolute bottom-10 left-1/2 w-36 h-36 bg-accent/30 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-          </div>
+        {/* 3D Hero Section with Feature3DVisual */}
+        <motion.div 
+          className="relative h-64 rounded-xl overflow-hidden mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Feature3DVisual 
+            featureId="circles" 
+            color="from-primary via-secondary to-accent"
+          />
           
-          {/* 3D Circle Illustration */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative">
-              {/* Orbiting Avatars */}
-              {[0, 1, 2, 3, 4].map((index) => (
-                <div
-                  key={index}
-                  className="absolute w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary shadow-lg flex items-center justify-center text-white font-bold animate-orbit"
-                  style={{
-                    transform: `rotate(${index * 72}deg) translateX(80px) rotate(-${index * 72}deg)`,
-                    animationDelay: `${index * 0.2}s`
-                  }}
-                >
-                  <Users className="w-6 h-6" />
-                </div>
-              ))}
-              
-              {/* Center Circle */}
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary via-secondary to-accent shadow-2xl flex items-center justify-center animate-pulse">
-                <Users className="w-10 h-10 text-white" />
-              </div>
-            </div>
+          {/* Overlay Content */}
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-background/80 via-background/20 to-transparent">
+            <motion.div 
+              className="text-center space-y-2"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                Your Private Community
+              </h3>
+              <p className="text-muted-foreground">Connect, share, and grow together</p>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {features.map((feature, index) => (
-            <div
+            <motion.div
               key={index}
-              className="group p-4 rounded-lg border-2 border-border hover:border-primary/50 bg-gradient-to-br from-card to-card/80 hover:shadow-lg transition-all duration-300 cursor-pointer"
-              style={{ animationDelay: `${index * 100}ms` }}
+              className="group p-4 rounded-lg border-2 border-border hover:border-primary/50 bg-gradient-to-br from-card to-card/80 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.4 }}
+              whileHover={{ scale: 1.03, y: -5 }}
             >
-              <div className="flex items-start gap-3">
-                <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.color} flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform`}>
+              {/* Hover Gradient Background */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
+              
+              <div className="flex items-start gap-3 relative z-10">
+                <motion.div 
+                  className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.color} flex items-center justify-center text-white shadow-md`}
+                  whileHover={{ rotate: 360, scale: 1.1 }}
+                  transition={{ duration: 0.6 }}
+                >
                   {feature.icon}
-                </div>
+                </motion.div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
                     {feature.title}
@@ -143,7 +149,7 @@ const CircleFeaturePopup = ({ open, onOpenChange, onCreateCircle }: CircleFeatur
                   </p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 

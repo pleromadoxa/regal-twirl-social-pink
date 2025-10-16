@@ -39,6 +39,9 @@ import CircleCallHistoryDialog from '@/components/CircleCallHistoryDialog';
 import { CircleEventsTab } from '@/components/CircleEventsTab';
 import { CirclePollsTab } from '@/components/CirclePollsTab';
 import { CircleMessagesTab } from '@/components/CircleMessagesTab';
+import EnhancedCircleCard from '@/components/EnhancedCircleCard';
+import CircleFeaturePopup from '@/components/CircleFeaturePopup';
+import { motion } from 'framer-motion';
 
 const Circles = () => {
   const { user } = useAuth();
@@ -72,7 +75,17 @@ const Circles = () => {
   const [isPrivate, setIsPrivate] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [circleMembersPreview, setCircleMembersPreview] = useState<Record<string, CircleMember[]>>({});
+  const [showFeaturePopup, setShowFeaturePopup] = useState(false);
   const isMobile = useIsMobile();
+
+  // Show feature popup on first visit
+  useEffect(() => {
+    const hasSeenCirclesFeature = localStorage.getItem('hasSeenCirclesFeature');
+    if (!hasSeenCirclesFeature && circles.length === 0) {
+      setShowFeaturePopup(true);
+      localStorage.setItem('hasSeenCirclesFeature', 'true');
+    }
+  }, [circles.length]);
 
   // Fetch member previews for all circles
   useEffect(() => {
@@ -277,109 +290,53 @@ const Circles = () => {
           {/* Circles List */}
           <div className="p-4 space-y-4">
             {circles.length === 0 ? (
-              <Card className="border-2 border-dashed border-border bg-muted/30">
-                <CardContent className="py-12 text-center">
-                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No circles yet</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Create circles to organize your friends and share content selectively
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              circles.map((circle) => (
-                <Card key={circle.id} className="transition-all hover:shadow-lg duration-fast cursor-pointer bg-card border hover:border-muted-foreground/30 shadow-sm hover:scale-[1.01]" onClick={() => handleViewCircle(circle)} style={{ borderLeftColor: circle.color, borderLeftWidth: '4px' }}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="w-12 h-12">
-                          <AvatarImage src={circle.avatar_url} />
-                          <AvatarFallback 
-                            className="text-white relative"
-                            style={{ backgroundColor: circle.color }}
-                          >
-                            <Users className="w-6 h-6" />
-                            {circle.is_private && (
-                              <Lock className="w-3 h-3 text-white absolute -top-1 -right-1 bg-slate-800 rounded-full p-0.5" />
-                            )}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <CardTitle>{circle.name}</CardTitle>
-                            {circle.is_private ? (
-                              <Lock className="w-3 h-3 text-muted-foreground" />
-                            ) : (
-                              <Globe className="w-3 h-3 text-muted-foreground" />
-                            )}
-                          </div>
-                          {circle.description && (
-                            <p className="text-sm text-muted-foreground mt-1">{circle.description}</p>
-                          )}
-                          <Badge variant="outline" className="mt-1">
-                            {circle.category}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSettingsCircle(circle);
-                          }}
-                        >
-                          <SettingsIcon className="w-4 h-4" />
-                        </Button>
-                        {circle.member_count > 0 && (
-                          <CircleCallButton 
-                            circleId={circle.id} 
-                            circleName={circle.name}
-                          />
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCircleToDelete(circle);
-                            setDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center space-x-3">
-                      {/* Stacked Member Avatars */}
-                      {circleMembersPreview[circle.id] && circleMembersPreview[circle.id].length > 0 && (
-                        <div className="flex -space-x-2">
-                          {circleMembersPreview[circle.id].map((member, index) => (
-                            <Avatar 
-                              key={member.id} 
-                              className="w-8 h-8 border-2 border-background"
-                              style={{ zIndex: 5 - index }}
-                            >
-                              <AvatarImage src={member.profiles.avatar_url} />
-                              <AvatarFallback className="text-xs">
-                                {member.profiles.display_name?.[0]?.toUpperCase() || 
-                                 member.profiles.username?.[0]?.toUpperCase() || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                          ))}
-                        </div>
-                      )}
-                      
-                      <Badge variant="secondary">
-                        {circle.member_count} member{circle.member_count !== 1 ? 's' : ''}
-                      </Badge>
-                    </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4 }}
+              >
+                <Card className="border-2 border-dashed border-border bg-gradient-to-br from-muted/30 to-muted/20">
+                  <CardContent className="py-12 text-center">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.4 }}
+                    >
+                      <Users className="w-16 h-16 text-primary mx-auto mb-4" />
+                      <h3 className="text-xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                        No circles yet
+                      </h3>
+                      <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                        Create circles to organize your friends and share content selectively
+                      </p>
+                      <Button 
+                        onClick={() => setOpen(true)}
+                        className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+                      >
+                        <PlusCircle className="w-4 h-4 mr-2" />
+                        Create Your First Circle
+                      </Button>
+                    </motion.div>
                   </CardContent>
                 </Card>
-              ))
+              </motion.div>
+            ) : (
+              <div className="space-y-4">
+                {circles.map((circle, index) => (
+                  <EnhancedCircleCard
+                    key={circle.id}
+                    circle={circle}
+                    members={circleMembersPreview[circle.id] || []}
+                    onView={() => handleViewCircle(circle)}
+                    onSettings={() => setSettingsCircle(circle)}
+                    onDelete={() => {
+                      setCircleToDelete(circle);
+                      setDeleteDialogOpen(true);
+                    }}
+                    CircleCallButton={CircleCallButton}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </main>
@@ -602,6 +559,13 @@ const Circles = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Circle Feature Popup */}
+      <CircleFeaturePopup
+        open={showFeaturePopup}
+        onOpenChange={setShowFeaturePopup}
+        onCreateCircle={() => setOpen(true)}
+      />
       
       {!isMobile && <RightSidebar />}
       {isMobile && <MobileBottomNav />}

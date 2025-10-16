@@ -2,8 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Lock, Globe, MessageSquare, SettingsIcon, Trash } from 'lucide-react';
+import { Users, Lock, Globe, MessageSquare, SettingsIcon, Trash, Sparkles } from 'lucide-react';
 import { Circle, CircleMember } from '@/hooks/useCircles';
+import { motion } from 'framer-motion';
 
 interface EnhancedCircleCardProps {
   circle: Circle;
@@ -23,10 +24,16 @@ const EnhancedCircleCard = ({
   CircleCallButton 
 }: EnhancedCircleCardProps) => {
   return (
-    <Card 
-      className="group relative transition-all hover:shadow-2xl duration-300 cursor-pointer bg-gradient-to-br from-card via-card/98 to-card/95 border-2 hover:border-primary/50 shadow-lg hover:scale-[1.02] overflow-hidden" 
-      onClick={onView}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      whileHover={{ scale: 1.02, y: -4 }}
     >
+      <Card 
+        className="group relative transition-all hover:shadow-2xl duration-300 cursor-pointer bg-gradient-to-br from-card via-card/98 to-card/95 border-2 hover:border-primary/50 shadow-lg overflow-hidden" 
+        onClick={onView}
+      >
       {/* Animated Top Border */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       
@@ -177,7 +184,18 @@ const EnhancedCircleCard = ({
           background: `linear-gradient(90deg, transparent, ${circle.color}, transparent)`
         }}
       />
+      
+      {/* Sparkle Effect on Hover */}
+      <motion.div
+        className="absolute top-4 right-4 opacity-0 group-hover:opacity-100"
+        initial={{ scale: 0, rotate: 0 }}
+        whileHover={{ scale: 1, rotate: 180 }}
+        transition={{ duration: 0.4 }}
+      >
+        <Sparkles className="w-5 h-5 text-primary" />
+      </motion.div>
     </Card>
+    </motion.div>
   );
 };
 
