@@ -11,7 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, X } from 'lucide-react';
+import { MessageCircle, X, Minus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStreakEmoji } from '@/services/streakService';
 import PresenceIndicator from './PresenceIndicator';
@@ -213,7 +213,11 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
 
   return (
     <TooltipProvider>
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+      <div className={`fixed z-50 transition-all duration-300 ${
+        isCollapsed 
+          ? 'bottom-6 right-6' 
+          : 'bottom-6 left-1/2 transform -translate-x-1/2'
+      }`}>
         {/* Toggle Button */}
         <AnimatePresence>
           {isCollapsed && (
@@ -258,12 +262,30 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
               className="relative z-30"
             >
-              {/* Close Button */}
-              <div className="absolute -top-2 -right-2 z-40">
+              {/* Action Buttons */}
+              <div className="absolute -top-2 -right-2 z-40 flex gap-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       onClick={() => setIsCollapsed(true)}
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full w-8 h-8 bg-white/90 hover:bg-white shadow-md"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p>Minimize Chat</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => {
+                        setIsCollapsed(true);
+                        setExpandedCharacterId(null);
+                      }}
                       variant="ghost"
                       size="icon"
                       className="rounded-full w-8 h-8 bg-white/90 hover:bg-white shadow-md"
