@@ -227,15 +227,21 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
 
     setLoading(true);
     try {
+      const messageData: any = {
+        circle_id: circleId,
+        sender_id: user?.id,
+        content: newMessage.trim(),
+        message_type: 'text',
+      };
+
+      // Only include reply_to_id if replying to a message
+      if (replyingTo) {
+        messageData.reply_to_id = replyingTo.id;
+      }
+
       const { error } = await supabase
         .from('circle_messages')
-        .insert({
-          circle_id: circleId,
-          sender_id: user?.id,
-          content: newMessage.trim(),
-          message_type: 'text',
-          reply_to_id: replyingTo?.id,
-        });
+        .insert(messageData);
 
       if (error) throw error;
 
@@ -322,16 +328,22 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
         .getPublicUrl(fileName);
 
       // Send message with file
+      const fileMessageData: any = {
+        circle_id: circleId,
+        sender_id: user?.id,
+        content: type === 'image' ? '📷 Image' : `📎 ${file.name}`,
+        message_type: type,
+        file_url: publicUrl,
+      };
+
+      // Only include reply_to_id if replying to a message
+      if (replyingTo) {
+        fileMessageData.reply_to_id = replyingTo.id;
+      }
+
       const { error } = await supabase
         .from('circle_messages')
-        .insert({
-          circle_id: circleId,
-          sender_id: user?.id,
-          content: type === 'image' ? '📷 Image' : `📎 ${file.name}`,
-          message_type: type,
-          file_url: publicUrl,
-          reply_to_id: replyingTo?.id,
-        });
+        .insert(fileMessageData);
 
       if (error) throw error;
       
