@@ -20,10 +20,20 @@ interface CircleMessage {
   created_at: string;
   message_type: 'text' | 'image' | 'file';
   file_url?: string;
+  reply_to_id?: string;
+  reply_to?: CircleMessage;
   profiles: {
     username: string;
     display_name: string;
     avatar_url: string;
+  };
+}
+
+interface TypingUser {
+  user_id: string;
+  profiles?: {
+    username: string;
+    display_name: string;
   };
 }
 
@@ -39,18 +49,35 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
+  const [replyingTo, setReplyingTo] = useState<CircleMessage | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<any>(null);
+  const typingChannelRef = useRef<any>(null);
+  const presenceChannelRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchMessages();
     subscribeToMessages();
+    subscribeToTypingIndicators();
+    subscribeToPresence();
 
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+      }
+      if (typingChannelRef.current) {
+        supabase.removeChannel(typingChannelRef.current);
+      }
+      if (presenceChannelRef.current) {
+        supabase.removeChannel(presenceChannelRef.current);
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
       }
     };
   }, [circleId]);
@@ -65,7 +92,14 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
         .from('circle_messages')
         .select(`
           *,
-          profiles!circle_messages_sender_id_fkey(username, display_name, avatar_url)
+          profiles!circle_messages_sender_id_fkey(username, display_name, avatar_url),
+          reply_to:circle_messages!reply_to_id(
+            id,
+            content,
+            message_type,
+            sender_id,
+            profiles!circle_messages_sender_id_fkey(username, display_name, avatar_url)
+          )
         `)
         .eq('circle_id', circleId)
         .order('created_at', { ascending: true });
@@ -94,12 +128,19 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
           filter: `circle_id=eq.${circleId}`,
         },
         async (payload) => {
-          // Fetch the complete message with profile data
+          // Fetch the complete message with profile and reply data
           const { data } = await supabase
             .from('circle_messages')
             .select(`
               *,
-              profiles!circle_messages_sender_id_fkey(username, display_name, avatar_url)
+              profiles!circle_messages_sender_id_fkey(username, display_name, avatar_url),
+              reply_to:circle_messages!reply_to_id(
+                id,
+                content,
+                message_type,
+                sender_id,
+                profiles!circle_messages_sender_id_fkey(username, display_name, avatar_url)
+              )
             `)
             .eq('id', payload.new.id)
             .single();
@@ -110,6 +151,67 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
         }
       )
       .subscribe();
+  };
+
+  const subscribeToTypingIndicators = () => {
+    typingChannelRef.current = supabase
+      .channel(`circle-typing-${circleId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'circle_typing_indicators',
+          filter: `circle_id=eq.${circleId}`,
+        },
+        async () => {
+          // Fetch current typing users
+          const { data } = await supabase
+            .from('circle_typing_indicators')
+            .select(`
+              user_id,
+              profiles!circle_typing_indicators_user_id_fkey(username, display_name)
+            `)
+            .eq('circle_id', circleId)
+            .neq('user_id', user?.id)
+            .gte('updated_at', new Date(Date.now() - 10000).toISOString());
+
+          if (data) {
+            setTypingUsers(data as any);
+          }
+        }
+      )
+      .subscribe();
+  };
+
+  const subscribeToPresence = () => {
+    presenceChannelRef.current = supabase
+      .channel(`circle-presence-${circleId}`, {
+        config: { presence: { key: user?.id } },
+      })
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannelRef.current?.presenceState();
+        const online = new Set<string>();
+        
+        Object.keys(state || {}).forEach((key) => {
+          const presences = state[key];
+          presences.forEach((presence: any) => {
+            if (presence.user_id) {
+              online.add(presence.user_id);
+            }
+          });
+        });
+        
+        setOnlineUsers(online);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannelRef.current?.track({
+            user_id: user?.id,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
   };
 
   const scrollToBottom = () => {
@@ -132,11 +234,14 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
           sender_id: user?.id,
           content: newMessage.trim(),
           message_type: 'text',
+          reply_to_id: replyingTo?.id,
         });
 
       if (error) throw error;
 
       setNewMessage('');
+      setReplyingTo(null);
+      await removeTypingIndicator();
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -147,6 +252,35 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTyping = async () => {
+    // Update typing indicator
+    await supabase
+      .from('circle_typing_indicators')
+      .upsert({
+        circle_id: circleId,
+        user_id: user?.id,
+        updated_at: new Date().toISOString(),
+      });
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Remove typing indicator after 3 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(async () => {
+      await removeTypingIndicator();
+    }, 3000);
+  };
+
+  const removeTypingIndicator = async () => {
+    await supabase
+      .from('circle_typing_indicators')
+      .delete()
+      .eq('circle_id', circleId)
+      .eq('user_id', user?.id);
   };
 
   const formatMessageTime = (timestamp: string) => {
@@ -196,9 +330,12 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
           content: type === 'image' ? '📷 Image' : `📎 ${file.name}`,
           message_type: type,
           file_url: publicUrl,
+          reply_to_id: replyingTo?.id,
         });
 
       if (error) throw error;
+      
+      setReplyingTo(null);
 
       toast({
         title: 'Success',
@@ -240,15 +377,20 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
               return (
                 <div
                   key={message.id}
-                  className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}
+                  className={`flex gap-3 group ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}
                 >
-                  <Avatar className="w-8 h-8 flex-shrink-0">
-                    <AvatarImage src={message.profiles?.avatar_url} />
-                    <AvatarFallback className="text-xs">
-                      {message.profiles?.display_name?.[0]?.toUpperCase() || 
-                       message.profiles?.username?.[0]?.toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarImage src={message.profiles?.avatar_url} />
+                      <AvatarFallback className="text-xs">
+                        {message.profiles?.display_name?.[0]?.toUpperCase() || 
+                         message.profiles?.username?.[0]?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    {onlineUsers.has(message.sender_id) && (
+                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
+                    )}
+                  </div>
                   
                   <div className={`flex flex-col gap-1 max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
                     <div className="flex items-center gap-2">
@@ -260,13 +402,28 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
                       </span>
                     </div>
                     
-                    <div
-                      className={`rounded-2xl px-4 py-2 ${
-                        isOwnMessage
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
-                    >
+                    {/* Reply Preview */}
+                    {message.reply_to && (
+                      <div className="text-xs bg-muted/50 rounded-lg px-3 py-2 mb-1 border-l-2 border-primary max-w-full">
+                        <div className="font-medium text-primary mb-0.5">
+                          Replying to {message.reply_to.profiles?.display_name || message.reply_to.profiles?.username}
+                        </div>
+                        <div className="text-muted-foreground truncate">
+                          {message.reply_to.message_type === 'image' ? '📷 Image' : 
+                           message.reply_to.message_type === 'file' ? '📎 File' :
+                           message.reply_to.content}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="relative group">
+                      <div
+                        className={`rounded-2xl px-4 py-2 ${
+                          isOwnMessage
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
                       {message.message_type === 'image' && message.file_url ? (
                         <div className="space-y-2">
                           <img 
@@ -303,17 +460,71 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
                           {message.content}
                         </p>
                       )}
+                      </div>
+                      
+                      {/* Reply Button */}
+                      {!isOwnMessage && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute -bottom-6 left-0 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                          onClick={() => setReplyingTo(message)}
+                        >
+                          Reply
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
               );
             })
           )}
+          
+          {/* Typing Indicators */}
+          {typingUsers.length > 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <span>
+                {typingUsers.length === 1 
+                  ? `${typingUsers[0].profiles?.display_name || typingUsers[0].profiles?.username} is typing...`
+                  : `${typingUsers.length} people are typing...`}
+              </span>
+            </div>
+          )}
         </div>
       </ScrollArea>
 
       {/* Message Input */}
       <form onSubmit={handleSendMessage} className="p-4 border-t">
+        {/* Reply Preview */}
+        {replyingTo && (
+          <div className="mb-2 flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 border-l-2 border-primary">
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-medium text-primary mb-0.5">
+                Replying to {replyingTo.profiles?.display_name || replyingTo.profiles?.username}
+              </div>
+              <div className="text-xs text-muted-foreground truncate">
+                {replyingTo.message_type === 'image' ? '📷 Image' : 
+                 replyingTo.message_type === 'file' ? '📎 File' :
+                 replyingTo.content}
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 flex-shrink-0"
+              onClick={() => setReplyingTo(null)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+        
         {uploading && (
           <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -393,7 +604,10 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
           
           <Input
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              handleTyping();
+            }}
             placeholder="Type a message..."
             className="flex-1"
             disabled={loading || uploading}

@@ -1372,6 +1372,7 @@ export type Database = {
           file_url: string | null
           id: string
           message_type: string
+          reply_to_id: string | null
           sender_id: string
           updated_at: string
         }
@@ -1382,6 +1383,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           message_type?: string
+          reply_to_id?: string | null
           sender_id: string
           updated_at?: string
         }
@@ -1392,6 +1394,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           message_type?: string
+          reply_to_id?: string | null
           sender_id?: string
           updated_at?: string
         }
@@ -1401,6 +1404,13 @@ export type Database = {
             columns: ["circle_id"]
             isOneToOne: false
             referencedRelation: "user_circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "circle_messages"
             referencedColumns: ["id"]
           },
           {
@@ -1627,6 +1637,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "circle_posts_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "user_circles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_typing_indicators: {
+        Row: {
+          circle_id: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          circle_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          circle_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_typing_indicators_circle_id_fkey"
             columns: ["circle_id"]
             isOneToOne: false
             referencedRelation: "user_circles"
@@ -4347,6 +4386,10 @@ export type Database = {
         Returns: number
       }
       cleanup_expired_stories: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_typing_indicators: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
