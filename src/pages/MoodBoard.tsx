@@ -93,15 +93,15 @@ const MoodBoard = () => {
                     Set Mood
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-h-[80vh] sm:max-w-[500px]">
+                <DialogContent className={`${isMobile ? 'max-h-[85vh] p-4' : 'max-h-[80vh]'} sm:max-w-[500px]`}>
                   <DialogHeader>
-                    <DialogTitle className="text-lg">Set Your Current Vibe</DialogTitle>
+                    <DialogTitle className={isMobile ? 'text-base' : 'text-lg'}>Set Your Current Vibe</DialogTitle>
                   </DialogHeader>
-                  <ScrollArea className="max-h-[60vh] pr-4">
-                  <div className="space-y-3">
+                  <ScrollArea className={`${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} pr-4`}>
+                  <div className={isMobile ? 'space-y-2' : 'space-y-3'}>
                     <div className="space-y-2">
                       <label className="text-xs font-medium">Choose Your Mood</label>
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className={`grid grid-cols-4 ${isMobile ? 'gap-1.5' : 'gap-2'}`}>
                         {moods.map((m) => {
                           const IconComponent = m.icon;
                           return (
@@ -111,7 +111,7 @@ const MoodBoard = () => {
                                 setEmoji(m.emoji);
                                 setMoodValue(m.label);
                               }}
-                              className={`group relative p-2 rounded-lg transition-all duration-300 hover:scale-105 ${
+                              className={`group relative ${isMobile ? 'p-1.5' : 'p-2'} rounded-lg transition-all duration-300 hover:scale-105 ${
                                 emoji === m.emoji 
                                   ? 'bg-gradient-to-br from-primary/20 to-primary/10 ring-2 ring-primary shadow-lg' 
                                   : 'bg-gradient-to-br from-muted/50 to-muted/30 hover:from-accent/50 hover:to-accent/30'
@@ -123,11 +123,11 @@ const MoodBoard = () => {
                                   <div className={`absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-500/20 blur-lg transition-opacity ${
                                     emoji === m.emoji ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
                                   }`} />
-                                  <IconComponent className={`relative w-4 h-4 transition-colors ${
+                                  <IconComponent className={`relative ${isMobile ? 'w-3 h-3' : 'w-4 h-4'} transition-colors ${
                                     emoji === m.emoji ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
                                   }`} />
                                 </div>
-                                <span className="text-lg">{m.emoji}</span>
+                                <span className={isMobile ? 'text-base' : 'text-lg'}>{m.emoji}</span>
                                 <span className="text-[10px] font-medium leading-tight text-center">{m.label}</span>
                               </div>
                             </button>
@@ -163,27 +163,27 @@ const MoodBoard = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <label className="text-sm font-medium flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-primary" />
+                      <label className="text-xs font-medium flex items-center gap-2">
+                        <Sparkles className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-primary`} />
                         Custom Message
                       </label>
                       <Textarea
                         placeholder="Share what's on your mind..."
                         value={customMessage}
                         onChange={(e) => setCustomMessage(e.target.value)}
-                        rows={3}
+                        rows={isMobile ? 2 : 3}
                         className="bg-gradient-to-r from-background to-muted/30"
                       />
                     </div>
                     
                     <div className="space-y-2">
                       <label className="text-xs font-medium">Color Theme</label>
-                      <div className="grid grid-cols-8 gap-1.5">
+                      <div className={`grid grid-cols-8 ${isMobile ? 'gap-1' : 'gap-1.5'}`}>
                         {colors.map((c) => (
                           <button
                             key={c.value}
                             onClick={() => setColorTheme(c.value)}
-                            className={`relative p-3 rounded-md transition-all hover:scale-110 ${
+                            className={`relative ${isMobile ? 'p-2' : 'p-3'} rounded-md transition-all hover:scale-110 ${
                               colorTheme === c.value ? 'ring-2 ring-offset-1 ring-primary' : ''
                             }`}
                             style={{ backgroundColor: c.value }}
