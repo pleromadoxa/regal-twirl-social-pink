@@ -415,7 +415,7 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
                     </div>
                     
                     {/* Reply Preview */}
-                    {message.reply_to && message.reply_to.id && (
+                    {message.reply_to_id && message.reply_to && message.reply_to.id && (
                       <div className="text-xs bg-muted/50 rounded-lg px-3 py-2 mb-1 border-l-2 border-primary max-w-full">
                         <div className="font-medium text-primary mb-0.5">
                           Replying to {message.reply_to.profiles?.display_name || message.reply_to.profiles?.username}
