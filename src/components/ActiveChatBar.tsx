@@ -205,6 +205,16 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
     console.log('Chat bar expanded:', isExpanded);
   };
 
+  const handleMinimize = () => {
+    // If messages are expanded, close them first
+    if (expandedCharacterId) {
+      setExpandedCharacterId(null);
+    } else {
+      // Otherwise, collapse the entire bar
+      setIsCollapsed(true);
+    }
+  };
+
   // Don't show on auth or landing pages
   const currentPath = window.location.pathname;
   if (currentPath === '/auth' || currentPath === '/') {
@@ -262,12 +272,12 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
               className="relative z-30"
             >
-              {/* Action Buttons */}
-              <div className="absolute -top-2 -right-2 z-40 flex gap-1">
+              {/* Minimize Button */}
+              <div className="absolute -top-2 -right-2 z-40">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      onClick={() => setIsCollapsed(true)}
+                      onClick={handleMinimize}
                       variant="ghost"
                       size="icon"
                       className="rounded-full w-8 h-8 bg-white/90 hover:bg-white shadow-md"
@@ -276,25 +286,7 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="left">
-                    <p>Minimize Chat</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => {
-                        setIsCollapsed(true);
-                        setExpandedCharacterId(null);
-                      }}
-                      variant="ghost"
-                      size="icon"
-                      className="rounded-full w-8 h-8 bg-white/90 hover:bg-white shadow-md"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left">
-                    <p>Close Chat</p>
+                    <p>{expandedCharacterId ? 'Close Messages' : 'Minimize Chat'}</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
