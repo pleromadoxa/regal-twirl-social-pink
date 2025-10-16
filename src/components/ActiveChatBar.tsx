@@ -102,63 +102,79 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
     }
 
     try {
-      // If it's a conversation character (has ID), send message directly
-      if (character.id) {
-        console.log('Sending message to conversation:', character.id);
+      // If it's a conversation character (has ID and userId), send message directly
+      if (character.id && character.userId) {
+        console.log('Sending message to user:', character.userId, 'in conversation:', character.id);
         
-        // First check if this conversation is already selected
-        if (selectedConversation !== character.id) {
-          setSelectedConversation(character.id as string);
-          // Wait a bit longer for the conversation to be properly selected
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
+        // Select the conversation first
+        setSelectedConversation(character.id as string);
         
-        // Then send the message
+        // Wait for state update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Send the message
         await sendMessage(message);
         
         toast({
-          title: "Message sent",
-          description: `Message sent to ${character.name}`,
+          title: "Message sent! ✓",
+          description: `Sent to ${character.displayName || character.username || character.name}`,
         });
-      } else {
-        // Handle special actions based on character name
-        switch (character.name) {
-          case "Messages":
+        
+        return;
+      }
+      
+      // Handle special actions based on character name
+      switch (character.name) {
+        case "Messages":
+          navigate('/messages');
+          toast({
+            title: "Opening Messages",
+            description: "Redirecting to messages page...",
+          });
+          break;
+        case "Recent":
+          if (conversations.length > 0) {
+            setSelectedConversation(conversations[0].id);
             navigate('/messages');
-            break;
-          case "Recent":
-            if (conversations.length > 0) {
-              setSelectedConversation(conversations[0].id);
-              navigate('/messages');
-            }
-            break;
-          case "Active":
-            // Find most recent active conversation
-            const activeConv = conversations.find(conv => conv.last_message_at);
-            if (activeConv) {
-              setSelectedConversation(activeConv.id);
-              navigate('/messages');
-            }
-            break;
-          case "Menu":
-            // Show menu options for messages page
+          } else {
             toast({
-              title: "Messages Menu",
-              description: "New group, Settings, Help & Support available",
+              title: "No recent conversations",
+              description: "Start a new conversation to get started",
             });
-            break;
-          default:
+          }
+          break;
+        case "Active":
+          // Find most recent active conversation
+          const activeConv = conversations.find(conv => conv.last_message_at);
+          if (activeConv) {
+            setSelectedConversation(activeConv.id);
+            navigate('/messages');
+          } else {
             toast({
-              title: "Feature coming soon",
-              description: `${character.name} functionality will be available soon.`,
+              title: "No active conversations",
+              description: "Start chatting to see active conversations",
             });
-        }
+          }
+          break;
+        case "Menu":
+          // Show menu options for messages page
+          toast({
+            title: "Messages Menu",
+            description: "Opening menu options...",
+          });
+          navigate('/messages');
+          break;
+        default:
+          toast({
+            title: "Feature coming soon",
+            description: `${character.name} functionality will be available soon.`,
+          });
       }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
-        title: "Error sending message",
-        description: "Please try again later.",
+        title: "Failed to send message",
+        description: error instanceof Error ? error.message : "Please try again later.",
         variant: "destructive"
       });
     }
