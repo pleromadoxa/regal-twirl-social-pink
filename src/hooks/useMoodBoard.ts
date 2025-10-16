@@ -57,7 +57,7 @@ export const useMoodBoard = () => {
       
       // Create a post on the timeline with the mood data
       const moodPost = {
-        content: `🎨 Updated mood board`,
+        content: `✨ Updated mood board`,
         user_id: user.id,
         metadata: {
           type: 'mood_board',
