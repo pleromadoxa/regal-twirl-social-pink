@@ -105,6 +105,7 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
+      console.log('Fetched messages:', data);
       setMessages((data || []) as any);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -385,6 +386,7 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
           ) : (
             messages.map((message) => {
               const isOwnMessage = message.sender_id === user?.id;
+              console.log('Rendering message:', message.id, 'reply_to_id:', message.reply_to_id, 'reply_to:', message.reply_to);
               
               return (
                 <div
@@ -415,7 +417,7 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
                     </div>
                     
                     {/* Reply Preview */}
-                    {message.reply_to_id && message.reply_to && message.reply_to.id && (
+                    {message.reply_to_id && message.reply_to && (
                       <div className="text-xs bg-muted/50 rounded-lg px-3 py-2 mb-1 border-l-2 border-primary max-w-full">
                         <div className="font-medium text-primary mb-0.5">
                           Replying to {message.reply_to.profiles?.display_name || message.reply_to.profiles?.username}
