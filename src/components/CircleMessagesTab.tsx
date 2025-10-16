@@ -6,8 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Image, File, Smile, MoreVertical } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Send, Image as ImageIcon, File as FileIcon, Smile, Loader2, X, Download } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
 
 interface CircleMessage {
   id: string;
@@ -34,8 +37,12 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
   const [messages, setMessages] = useState<CircleMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchMessages();
@@ -146,6 +153,77 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
     return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   };
 
+  const handleEmojiSelect = (emoji: any) => {
+    setNewMessage((prev) => prev + emoji.native);
+    setEmojiPickerOpen(false);
+  };
+
+  const handleFileUpload = async (file: File, type: 'image' | 'file') => {
+    if (!file) return;
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'Error',
+        description: 'File size must be less than 10MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${circleId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const bucket = type === 'image' ? 'circle-images' : 'circle-images';
+
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      // Send message with file
+      const { error } = await supabase
+        .from('circle_messages')
+        .insert({
+          circle_id: circleId,
+          sender_id: user?.id,
+          content: type === 'image' ? '📷 Image' : `📎 ${file.name}`,
+          message_type: type,
+          file_url: publicUrl,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: `${type === 'image' ? 'Image' : 'File'} uploaded successfully`,
+      });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to upload file',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleImageClick = () => {
+    imageInputRef.current?.click();
+  };
+
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="flex flex-col h-[600px] bg-background rounded-lg border">
       {/* Messages Area */}
@@ -189,9 +267,42 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
                           : 'bg-muted'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap break-words">
-                        {message.content}
-                      </p>
+                      {message.message_type === 'image' && message.file_url ? (
+                        <div className="space-y-2">
+                          <img 
+                            src={message.file_url} 
+                            alt="Shared image" 
+                            className="max-w-sm rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => window.open(message.file_url, '_blank')}
+                          />
+                          {message.content && message.content !== '📷 Image' && (
+                            <p className="text-sm whitespace-pre-wrap break-words">
+                              {message.content}
+                            </p>
+                          )}
+                        </div>
+                      ) : message.message_type === 'file' && message.file_url ? (
+                        <div className="flex items-center gap-2">
+                          <FileIcon className="w-5 h-5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm whitespace-pre-wrap break-words truncate">
+                              {message.content}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="flex-shrink-0 h-8 w-8"
+                            onClick={() => window.open(message.file_url, '_blank')}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap break-words">
+                          {message.content}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -203,14 +314,47 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
 
       {/* Message Input */}
       <form onSubmit={handleSendMessage} className="p-4 border-t">
+        {uploading && (
+          <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Uploading...</span>
+          </div>
+        )}
+        
         <div className="flex items-center gap-2">
+          {/* Hidden file inputs */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileUpload(file, 'image');
+              e.target.value = '';
+            }}
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileUpload(file, 'file');
+              e.target.value = '';
+            }}
+          />
+          
           <Button
             type="button"
             variant="ghost"
             size="icon"
             className="flex-shrink-0"
+            onClick={handleImageClick}
+            disabled={uploading}
+            title="Upload image"
           >
-            <Image className="w-5 h-5" />
+            <ImageIcon className="w-5 h-5" />
           </Button>
           
           <Button
@@ -218,34 +362,60 @@ export const CircleMessagesTab = ({ circleId }: CircleMessagesTabProps) => {
             variant="ghost"
             size="icon"
             className="flex-shrink-0"
+            onClick={handleFileClick}
+            disabled={uploading}
+            title="Upload file"
           >
-            <File className="w-5 h-5" />
+            <FileIcon className="w-5 h-5" />
           </Button>
           
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="flex-shrink-0"
-          >
-            <Smile className="w-5 h-5" />
-          </Button>
+          <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="flex-shrink-0"
+                title="Add emoji"
+              >
+                <Smile className="w-5 h-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0 border-0" align="start">
+              <Picker 
+                data={data} 
+                onEmojiSelect={handleEmojiSelect}
+                theme="auto"
+                previewPosition="none"
+              />
+            </PopoverContent>
+          </Popover>
           
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type a message..."
             className="flex-1"
-            disabled={loading}
+            disabled={loading || uploading}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage(e);
+              }
+            }}
           />
           
           <Button
             type="submit"
             size="icon"
-            disabled={!newMessage.trim() || loading}
+            disabled={!newMessage.trim() || loading || uploading}
             className="flex-shrink-0"
           >
-            <Send className="w-5 h-5" />
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
           </Button>
         </div>
       </form>
