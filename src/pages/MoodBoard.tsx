@@ -6,12 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Smile, Music, Activity, Sparkles, X, Heart, Brain, Zap, Sun, Moon, Coffee, Headphones } from 'lucide-react';
+import { Smile, Music, Activity, Sparkles, X, Heart, Brain, Zap, Sun, Moon, Coffee, Headphones, Cross, Users } from 'lucide-react';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { format } from 'date-fns';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const MoodBoard = () => {
   const { myMood, loading, setMood, clearMood } = useMoodBoard();
@@ -36,7 +37,9 @@ const MoodBoard = () => {
     { emoji: '📚', label: 'Focused', icon: Brain },
     { emoji: '☕', label: 'Chill', icon: Coffee },
     { emoji: '🎵', label: 'Vibing', icon: Headphones },
-    { emoji: '💼', label: 'Working', icon: Activity }
+    { emoji: '💼', label: 'Working', icon: Activity },
+    { emoji: '✝️', label: 'Soul Winning', icon: Cross },
+    { emoji: '🙏', label: 'Worship', icon: Users }
   ];
 
   const colors = [
@@ -90,10 +93,11 @@ const MoodBoard = () => {
                     Set Mood
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-h-[90vh]">
                   <DialogHeader>
                     <DialogTitle>Set Your Current Vibe</DialogTitle>
                   </DialogHeader>
+                  <ScrollArea className="max-h-[calc(90vh-8rem)] pr-4">
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Choose Your Mood</label>
@@ -210,6 +214,7 @@ const MoodBoard = () => {
                       )}
                     </Button>
                   </div>
+                  </ScrollArea>
                 </DialogContent>
               </Dialog>
             </div>
