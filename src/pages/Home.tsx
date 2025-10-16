@@ -9,6 +9,8 @@ import { StoriesBar } from '@/components/StoriesBar';
 import HomeFeedNav from '@/components/HomeFeedNav';
 import ThreadUI from '@/components/ThreadUI';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import ActiveChatBar from '@/components/ActiveChatBar';
+import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 
@@ -19,6 +21,7 @@ const Home = () => {
   const [feedFilter, setFeedFilter] = useState<'all' | 'professional' | 'trending'>('all');
   const [showFeed, setShowFeed] = useState(true);
   const isMobile = useIsMobile();
+  const messagesData = useEnhancedMessages();
 
   // Test Supabase connection on mount
   useEffect(() => {
@@ -174,6 +177,9 @@ const Home = () => {
           </main>
         </div>
       </div>
+
+      {/* Active Chat Bar - Desktop & Tablet Only */}
+      {!isMobile && user && <ActiveChatBar messagesData={messagesData} />}
 
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden">

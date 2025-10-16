@@ -185,7 +185,7 @@ export const ActiveChatBar = ({ messagesData }: ActiveChatBarProps) => {
 
   return (
     <TooltipProvider>
-      <div className="fixed bottom-6 right-12 z-50" style={{ marginLeft: '340px' }}>
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
         {/* Toggle Button */}
         <AnimatePresence>
           {isCollapsed && (
