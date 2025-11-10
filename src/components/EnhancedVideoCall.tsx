@@ -121,7 +121,7 @@ const EnhancedVideoCall = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col z-50 overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col z-[100] overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
         <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-info/10 rounded-full blur-3xl animate-pulse animation-delay-1000" />

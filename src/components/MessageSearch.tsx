@@ -49,13 +49,18 @@ export const MessageSearch = ({ onStartConversation, messagesData }: MessageSear
       return;
     }
 
+    if (!user?.id) {
+      console.error('User ID is not available');
+      return;
+    }
+
     setIsSearching(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url')
         .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
-        .neq('id', user?.id)
+        .neq('id', user.id)
         .limit(10);
 
       if (error) {

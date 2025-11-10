@@ -3,12 +3,14 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnhancedMessages } from '@/hooks/useEnhancedMessages';
 import { useToast } from '@/hooks/use-toast';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { uploadMessageAttachment, createMessageAttachment } from '@/services/messageAttachmentService';
 import MessageThreadHeader from './MessageThreadHeader';
 import MessageThreadMessages from './MessageThreadMessages';
 import MessageThreadInput from './MessageThreadInput';
 import MessageThreadCallManager from './MessageThreadCallManager';
 import MessageReplyPreview from './MessageReplyPreview';
+import { TypingIndicator } from './TypingIndicator';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -49,6 +51,12 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
         ? conversation.participant_2_profile 
         : conversation.participant_1_profile)
     : null;
+
+  // Typing indicator
+  const { typingUsers, sendTypingIndicator } = useTypingIndicator(
+    conversationId,
+    otherParticipant?.id
+  );
 
   // Guard: If conversationId is not present or invalid, don't render input
   const isConversationIdValid = !!conversationId;
@@ -226,6 +234,13 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
             messagesData={messagesData}
           />
 
+          {/* Typing Indicator */}
+          {typingUsers.length > 0 && (
+            <div className="px-4 py-2">
+              <TypingIndicator conversationId={conversationId} />
+            </div>
+          )}
+
           {/* Reply Preview */}
           {replyToMessageId && (
             <MessageReplyPreview
@@ -238,6 +253,7 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
           <MessageThreadInput
             onSendMessage={handleSendMessage}
             disabled={false}
+            onTyping={(isTyping) => sendTypingIndicator(isTyping)}
           />
         </div>
       )}

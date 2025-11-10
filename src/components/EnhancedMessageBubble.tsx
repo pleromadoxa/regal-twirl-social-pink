@@ -7,6 +7,7 @@ import MessageEditForm from './MessageEditForm';
 import MessageContent from './MessageContent';
 import MessageReactions from './MessageReactions';
 import MessageReplyIndicator from './MessageReplyIndicator';
+import { ReadReceiptIndicator } from './ReadReceiptIndicator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -347,9 +348,18 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
 
             {/* WhatsApp/Instagram style timestamp - only shown when showTimestamp is true */}
             {showTimestamp && (
-              <div className={`text-xs text-gray-400 px-2 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-                {formatTimestamp(message.created_at)}
-                {message.edited_at && ' • edited'}
+              <div className={`flex items-center gap-1 text-xs text-gray-400 px-2 mt-1 ${isOwn ? 'text-right justify-end' : 'text-left'}`}>
+                <span>
+                  {formatTimestamp(message.created_at)}
+                  {message.edited_at && ' • edited'}
+                </span>
+                {isOwn && (
+                  <ReadReceiptIndicator
+                    isRead={!!message.read_at}
+                    isSent={true}
+                    className="ml-1"
+                  />
+                )}
               </div>
             )}
           </>

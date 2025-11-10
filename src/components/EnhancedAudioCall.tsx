@@ -110,7 +110,7 @@ const EnhancedAudioCall = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black flex items-center justify-center text-white z-50 overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black flex items-center justify-center text-white z-[100] overflow-hidden">
       <audio ref={audioRef} autoPlay />
       
       <div className="absolute inset-0 overflow-hidden pointer-events-none">

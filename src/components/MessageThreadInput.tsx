@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Smile } from 'lucide-react';
@@ -11,15 +11,52 @@ import AnimatedEmoji, { EmojiRain } from './AnimatedEmoji';
 interface MessageThreadInputProps {
   onSendMessage: (content: string, attachments: File[], location?: {lat: number; lng: number; address: string}) => void;
   disabled?: boolean;
+  onTyping?: (isTyping: boolean) => void;
 }
 
-const MessageThreadInput = ({ onSendMessage, disabled = false }: MessageThreadInputProps) => {
+const MessageThreadInput = ({ onSendMessage, disabled = false, onTyping }: MessageThreadInputProps) => {
   const [newMessage, setNewMessage] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [sharedLocation, setSharedLocation] = useState<{lat: number; lng: number; address: string} | null>(null);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [uploadedTypes, setUploadedTypes] = useState<string[]>([]);
   const [showEmojiRain, setShowEmojiRain] = useState<string | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // Send typing indicator
+    if (onTyping) {
+      if (value.trim()) {
+        onTyping(true);
+        
+        // Clear previous timeout
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+        
+        // Stop typing after 2 seconds of inactivity
+        typingTimeoutRef.current = setTimeout(() => {
+          onTyping(false);
+        }, 2000);
+      } else {
+        onTyping(false);
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+      }
+    }
+  };
 
   const handleEmojiSelect = (emoji: string) => {
     setNewMessage(prev => prev + emoji);
@@ -33,6 +70,14 @@ const MessageThreadInput = ({ onSendMessage, disabled = false }: MessageThreadIn
 
   const handleSendMessage = () => {
     if (!newMessage.trim() && attachments.length === 0 && !sharedLocation) return;
+    
+    // Stop typing indicator when sending
+    if (onTyping) {
+      onTyping(false);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    }
     
     onSendMessage(newMessage.trim(), attachments, sharedLocation || undefined);
     
@@ -96,7 +141,7 @@ const MessageThreadInput = ({ onSendMessage, disabled = false }: MessageThreadIn
           </EnhancedEmojiPicker>
           <Input
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
             className="flex-1 rounded-full bg-slate-100 dark:bg-slate-800 border-0 text-sm sm:text-base min-w-0 focus:ring-2 focus:ring-purple-500"
