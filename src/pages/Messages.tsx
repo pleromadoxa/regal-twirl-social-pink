@@ -338,20 +338,18 @@ const Messages = () => {
               </h1>
               <MessageSearch 
                 messagesData={messagesData}
-                onStartConversation={(userId) => {
-                  // Find or wait for the conversation to be created
-                  const checkConversation = setInterval(() => {
-                    const conversation = conversations.find(c => 
-                      c.participant_1 === userId || c.participant_2 === userId
-                    );
-                    if (conversation) {
-                      setSearchParams({ conversation: conversation.id });
-                      clearInterval(checkConversation);
-                    }
-                  }, 200);
+                onStartConversation={async (userId) => {
+                  // The conversation is already selected in the hook
+                  // Just need to wait a moment for state to update
+                  await new Promise(resolve => setTimeout(resolve, 300));
                   
-                  // Cleanup after 5 seconds
-                  setTimeout(() => clearInterval(checkConversation), 5000);
+                  const conversation = conversations.find(c => 
+                    c.participant_1 === userId || c.participant_2 === userId
+                  );
+                  
+                  if (conversation) {
+                    setSearchParams({ conversation: conversation.id });
+                  }
                 }}
               />
             </div>

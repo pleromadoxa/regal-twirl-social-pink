@@ -97,16 +97,19 @@ export const MessageSearch = ({ onStartConversation, messagesData }: MessageSear
     }
 
     try {
-      await startDirectConversation(userId);
-      onStartConversation(userId);
-      setIsDialogOpen(false);
-      setSearchTerm('');
-      setSearchResults([]);
+      const conversationId = await startDirectConversation(userId);
       
-      toast({
-        title: "Conversation started",
-        description: "You can now start messaging"
-      });
+      if (conversationId) {
+        onStartConversation(userId);
+        setIsDialogOpen(false);
+        setSearchTerm('');
+        setSearchResults([]);
+        
+        toast({
+          title: "Conversation started",
+          description: "You can now start messaging"
+        });
+      }
     } catch (error) {
       console.error('Error starting conversation:', error);
       toast({

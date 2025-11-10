@@ -211,12 +211,13 @@ export const useEnhancedMessages = () => {
   };
 
   const startDirectConversation = async (userId: string) => {
-    if (!user || userId === user.id) return;
+    if (!user || userId === user.id) return null;
 
     try {
       const conversation = await createConversation(user.id, userId);
       await fetchConversationsData();
       setSelectedConversation(conversation.id);
+      return conversation.id; // Return the conversation ID
     } catch (error) {
       console.error('Error starting conversation:', error);
       toast({
@@ -224,6 +225,7 @@ export const useEnhancedMessages = () => {
         description: "Please try again later.",
         variant: "destructive"
       });
+      return null;
     }
   };
 
