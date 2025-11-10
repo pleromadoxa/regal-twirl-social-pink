@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import SidebarNav from '@/components/SidebarNav';
 import RightSidebar from '@/components/RightSidebar';
 import MessageThread from '@/components/MessageThread';
+import MessageSearch from '@/components/MessageSearch';
 import AudioCall from '@/components/AudioCall';
 import VideoCall from '@/components/VideoCall';
 import CallPopup from '@/components/CallPopup';
@@ -335,6 +336,24 @@ const Messages = () => {
               <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Conversations
               </h1>
+              <MessageSearch 
+                messagesData={messagesData}
+                onStartConversation={(userId) => {
+                  // Find or wait for the conversation to be created
+                  const checkConversation = setInterval(() => {
+                    const conversation = conversations.find(c => 
+                      c.participant_1 === userId || c.participant_2 === userId
+                    );
+                    if (conversation) {
+                      setSearchParams({ conversation: conversation.id });
+                      clearInterval(checkConversation);
+                    }
+                  }, 200);
+                  
+                  // Cleanup after 5 seconds
+                  setTimeout(() => clearInterval(checkConversation), 5000);
+                }}
+              />
             </div>
 
             {/* Tabs */}
