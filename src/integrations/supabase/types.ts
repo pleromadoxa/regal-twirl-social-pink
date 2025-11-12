@@ -3036,7 +3036,7 @@ export type Database = {
       post_views: {
         Row: {
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           post_id: string
           user_agent: string | null
           viewed_at: string
@@ -3044,7 +3044,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           post_id: string
           user_agent?: string | null
           viewed_at?: string
@@ -3052,7 +3052,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           post_id?: string
           user_agent?: string | null
           viewed_at?: string
@@ -4385,18 +4385,13 @@ export type Database = {
         }
         Returns: number
       }
-      cleanup_expired_stories: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
+      can_add_circle_members: {
+        Args: { _circle_id: string; _user_id: string }
+        Returns: boolean
       }
-      cleanup_old_typing_indicators: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_stale_presence: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_stories: { Args: never; Returns: undefined }
+      cleanup_old_typing_indicators: { Args: never; Returns: undefined }
+      cleanup_stale_presence: { Args: never; Returns: undefined }
       create_notification: {
         Args: {
           actor_id?: string
@@ -4407,30 +4402,12 @@ export type Database = {
         }
         Returns: undefined
       }
-      delete_expired_messages: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      generate_invite_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_order_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_business_page_url: {
-        Args: { page_id: string }
-        Returns: string
-      }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      has_role: {
-        Args: { _role: string; _user_id: string }
-        Returns: boolean
-      }
+      delete_expired_messages: { Args: never; Returns: undefined }
+      generate_invite_code: { Args: never; Returns: string }
+      generate_order_number: { Args: never; Returns: string }
+      get_business_page_url: { Args: { page_id: string }; Returns: string }
+      get_current_user_role: { Args: never; Returns: string }
+      has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       is_circle_member: {
         Args: { _circle_id: string; _user_id: string }
         Returns: boolean
@@ -4443,10 +4420,7 @@ export type Database = {
         Args: { group_id: string; user_id: string }
         Returns: boolean
       }
-      update_trending_scores: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      update_trending_scores: { Args: never; Returns: undefined }
       update_user_presence: {
         Args: { p_is_online: boolean; p_user_id: string }
         Returns: undefined
