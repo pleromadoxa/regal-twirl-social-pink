@@ -22,7 +22,7 @@ export function ChatBubble({
   return (
     <div
       className={cn(
-        "flex items-start gap-1 sm:gap-2 mb-2 sm:mb-4 px-2 sm:px-0",
+        "flex items-start gap-2 sm:gap-3 mb-3 sm:mb-5 px-2 sm:px-0",
         variant === "sent" && "flex-row-reverse",
         className,
       )}
@@ -48,10 +48,10 @@ export function ChatBubbleMessage({
   return (
     <div
       className={cn(
-        "rounded-2xl p-2 sm:p-3 max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg break-words", // Responsive sizing
+        "rounded-2xl p-4 sm:p-4 md:p-5 max-w-[340px] sm:max-w-md md:max-w-xl lg:max-w-2xl break-words text-sm sm:text-base shadow-sm",
         variant === "sent" 
-          ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white ml-auto" 
-          : "bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600",
+          ? "bg-primary text-primary-foreground ml-auto" 
+          : "bg-card text-card-foreground border border-border",
         className
       )}
     >
@@ -78,9 +78,9 @@ export function ChatBubbleAvatar({
   className,
 }: ChatBubbleAvatarProps) {
   return (
-    <Avatar className={cn("h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0", className)}>
+    <Avatar className={cn("h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0", className)}>
       {src && <AvatarImage src={src} />}
-      <AvatarFallback className="text-xs">{fallback}</AvatarFallback>
+      <AvatarFallback className="text-sm">{fallback}</AvatarFallback>
     </Avatar>
   )
 }
