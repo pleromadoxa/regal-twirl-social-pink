@@ -50,7 +50,7 @@ export function ChatBubbleMessage({
       className={cn(
         "rounded-2xl p-4 sm:p-4 md:p-5 max-w-[340px] sm:max-w-md md:max-w-xl lg:max-w-2xl break-words text-sm sm:text-base shadow-sm",
         variant === "sent" 
-          ? "bg-primary text-primary-foreground ml-auto" 
+          ? "bg-purple-600 dark:bg-purple-700 text-white ml-auto" 
           : "bg-card text-card-foreground border border-border",
         className
       )}
