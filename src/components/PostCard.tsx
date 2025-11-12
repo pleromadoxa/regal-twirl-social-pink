@@ -44,6 +44,7 @@ interface PostCardProps {
     views_count: number;
     trending_score?: number;
     user_id: string;
+    posted_as_page?: string;
     quoted_post?: {
       id: string;
       content: string;
@@ -71,6 +72,13 @@ interface PostCardProps {
       verification_level?: string;
       premium_tier?: string;
     };
+    business_pages?: {
+      id: string;
+      page_name: string;
+      page_avatar_url?: string;
+      page_type: string;
+      is_verified: boolean;
+    } | null;
   };
   isLiked?: boolean;
   isRetweeted?: boolean;
@@ -121,8 +129,20 @@ const PostCard = ({
   const isOwnPost = user?.id === post.user_id;
   const hasBusinessPages = myPages && myPages.length > 0;
   
+  // Determine if post was made by a business page
+  const isBusinessPagePost = !!post.business_pages;
+  const displayName = isBusinessPagePost 
+    ? post.business_pages?.page_name 
+    : (post.profiles?.display_name || post.profiles?.username);
+  const displayAvatar = isBusinessPagePost 
+    ? post.business_pages?.page_avatar_url 
+    : post.profiles?.avatar_url;
+  const displayUsername = isBusinessPagePost 
+    ? `${post.business_pages?.page_type} page` 
+    : `@${post.profiles?.username}`;
+  
   // Only show promote button for posts from professional pages
-  const isProfessionalPost = post.profiles?.premium_tier === 'professional';
+  const isProfessionalPost = post.profiles?.premium_tier === 'professional' || isBusinessPagePost;
 
   const handlePin = async () => {
     await togglePin(post.id);
@@ -212,11 +232,11 @@ const PostCard = ({
         />
         
         <div className="flex items-start space-x-3">
-          <Link to={`/profile/${post.profiles?.id}`}>
+          <Link to={isBusinessPagePost ? `/business/${post.business_pages?.id}` : `/profile/${post.profiles?.id}`}>
             <Avatar className="w-12 h-12">
-              <AvatarImage src={post.profiles?.avatar_url} />
+              <AvatarImage src={displayAvatar} />
               <AvatarFallback>
-                {post.profiles?.display_name?.[0] || post.profiles?.username?.[0] || 'U'}
+                {displayName?.[0] || 'U'}
               </AvatarFallback>
             </Avatar>
           </Link>
@@ -224,23 +244,32 @@ const PostCard = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">
-                <Link to={`/profile/${post.profiles?.id}`} className="hover:underline shrink-0">
+                <Link to={isBusinessPagePost ? `/business/${post.business_pages?.id}` : `/profile/${post.profiles?.id}`} className="hover:underline shrink-0">
                   <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100">
-                 {post.profiles?.display_name || post.profiles?.username}
-                   </span>
-                 </Link>
-                 <VerificationBadge 
-                   level={verificationLevel} 
-                   showText={false}
-                   className="shrink-0"
-                 />
+                    {displayName}
+                  </span>
+                </Link>
+                {isBusinessPagePost && post.business_pages?.is_verified && (
+                  <VerificationBadge 
+                    level="verified" 
+                    showText={false}
+                    className="shrink-0"
+                  />
+                )}
+                {!isBusinessPagePost && (
+                  <VerificationBadge 
+                    level={verificationLevel} 
+                    showText={false}
+                    className="shrink-0"
+                  />
+                )}
                 {isPostPinned(post.id) && (
                   <div title="Pinned Post" className="shrink-0">
                     <Pin className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                   </div>
                 )}
                 <span className="text-xs sm:text-sm text-gray-500 truncate">
-                  @{post.profiles?.username}
+                  {displayUsername}
                 </span>
                 <span className="text-xs sm:text-sm text-gray-500 shrink-0">·</span>
                 <span className="text-xs sm:text-sm text-gray-500 shrink-0">
