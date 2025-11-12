@@ -56,7 +56,30 @@ const Messages = () => {
 
   const selectedConversation = searchParams.get('conversation');
   const callType = searchParams.get('call') as 'audio' | 'video' | null;
+  const userToMessage = searchParams.get('user');
   const { conversations, groupConversations, loading } = messagesData;
+
+  // Handle initiating a conversation with a specific user from URL
+  useEffect(() => {
+    if (userToMessage && !loading && user) {
+      console.log('[Messages] Initiating conversation with user:', userToMessage);
+      
+      // Start conversation with the user
+      messagesData.startDirectConversation(userToMessage).then(() => {
+        // Remove the user parameter from URL after initiating
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('user');
+        setSearchParams(newParams);
+      }).catch(error => {
+        console.error('[Messages] Error starting conversation:', error);
+        toast({
+          title: "Error",
+          description: "Failed to start conversation",
+          variant: "destructive"
+        });
+      });
+    }
+  }, [userToMessage, loading, user, messagesData.startDirectConversation]);
 
   // Auto-start call based on URL parameters
   useEffect(() => {

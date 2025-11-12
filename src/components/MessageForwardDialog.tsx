@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -84,6 +84,7 @@ export const MessageForwardDialog = ({ messageContent, isOpen, onClose, messages
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Forward Message</DialogTitle>
+          <DialogDescription>Select conversations to forward this message to</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="p-3 bg-muted rounded-lg">

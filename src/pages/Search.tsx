@@ -222,7 +222,13 @@ const Search = () => {
                 </TabsContent>
                 
                 <TabsContent value="users" className="space-y-4">
-                  <UserSearch searchQuery={searchQuery} />
+                  <UserSearch 
+                    searchQuery={searchQuery}
+                    showMessageButton={true}
+                    onStartConversation={(userId) => {
+                      navigate(`/messages?user=${userId}`);
+                    }}
+                  />
                 </TabsContent>
               </Tabs>
             </div>

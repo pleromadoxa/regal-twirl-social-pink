@@ -103,30 +103,6 @@ const Landing = () => {
             />
           </div>
 
-          {/* Features - Responsive Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 max-w-5xl mx-auto mb-6 sm:mb-8 md:mb-10 text-center w-full px-2 sm:px-4">
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/20 shadow-2xl group hover:bg-white/15 transition-all duration-300 hover:scale-105">
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full mx-auto mb-2 sm:mb-3 group-hover:scale-125 transition-transform"></div>
-              <Users className="w-6 h-6 sm:w-7 sm:h-7 mx-auto mb-2 sm:mb-3 text-purple-300" />
-              <h3 className="text-sm sm:text-base font-semibold mb-1 sm:mb-2">Faith Community</h3>
-              <p className="text-white/70 text-xs sm:text-sm">Connect with believers worldwide in fellowship</p>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/20 shadow-2xl group hover:bg-white/15 transition-all duration-300 hover:scale-105">
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-pink-400 to-red-400 rounded-full mx-auto mb-2 sm:mb-3 group-hover:scale-125 transition-transform"></div>
-              <Zap className="w-6 h-6 sm:w-7 sm:h-7 mx-auto mb-2 sm:mb-3 text-pink-300" />
-              <h3 className="text-sm sm:text-base font-semibold mb-1 sm:mb-2">Share Your Testimony</h3>
-              <p className="text-white/70 text-xs sm:text-sm">Inspire others with your faith journey</p>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/20 shadow-2xl group hover:bg-white/15 transition-all duration-300 hover:scale-105 sm:col-span-2 lg:col-span-1">
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full mx-auto mb-2 sm:mb-3 group-hover:scale-125 transition-transform"></div>
-              <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 mx-auto mb-2 sm:mb-3 text-blue-300" />
-              <h3 className="text-sm sm:text-base font-semibold mb-1 sm:mb-2">Biblical Resources</h3>
-              <p className="text-white/70 text-xs sm:text-sm">Access devotions, prayers, and scripture</p>
-            </div>
-          </div>
-
           {/* Stats - Responsive */}
           <div className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 text-center flex-shrink-0 mb-8">
             <div className="group">

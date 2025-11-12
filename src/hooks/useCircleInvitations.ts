@@ -31,7 +31,11 @@ export const useCircleInvitations = () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) {
+        setInvitations([]);
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('circle_invitations')

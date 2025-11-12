@@ -21,9 +21,10 @@ interface UserProfile {
 interface UserSearchProps {
   searchQuery: string;
   showMessageButton?: boolean;
+  onStartConversation?: (userId: string) => void;
 }
 
-const UserSearch = ({ searchQuery, showMessageButton = false }: UserSearchProps) => {
+const UserSearch = ({ searchQuery, showMessageButton = false, onStartConversation }: UserSearchProps) => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
@@ -122,8 +123,13 @@ const UserSearch = ({ searchQuery, showMessageButton = false }: UserSearchProps)
                     View
                   </Button>
                 </Link>
-                {user?.id !== profile.id && showMessageButton && (
-                  <Button variant="outline" size="sm" className="w-full">
+                {user?.id !== profile.id && showMessageButton && onStartConversation && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => onStartConversation(profile.id)}
+                  >
                     <MessageCircle className="w-4 h-4 mr-1" />
                     Message
                   </Button>
