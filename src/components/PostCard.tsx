@@ -27,6 +27,7 @@ import CollaborationManager from './CollaborationManager';
 import CollaboratorsDisplay from './CollaboratorsDisplay';
 import { useCollaboration } from '@/hooks/useCollaboration';
 import QuoteTweetDialog from './QuoteTweetDialog';
+import RepostDialog from './RepostDialog';
 import { usePosts } from '@/hooks/usePosts';
 import UserMoodDisplay from './UserMoodDisplay';
 
@@ -125,6 +126,7 @@ const PostCard = ({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [collaborators, setCollaborators] = useState<any[]>([]);
   const [showQuoteTweetDialog, setShowQuoteTweetDialog] = useState(false);
+  const [showRepostDialog, setShowRepostDialog] = useState(false);
   
   const isOwnPost = user?.id === post.user_id;
   const hasBusinessPages = myPages && myPages.length > 0;
@@ -187,7 +189,31 @@ const PostCard = ({
       });
       return;
     }
-    if (onRetweet) onRetweet();
+    setShowRepostDialog(true);
+  };
+
+  const handleRepostSubmit = async (content: string, type: 'repost' | 'quote') => {
+    try {
+      if (type === 'repost') {
+        // Create a repost with no additional content
+        await createPost('', [], 'personal', undefined, post.id);
+      } else {
+        // Create a quote with the user's content
+        await createPost(content, [], 'personal', undefined, post.id);
+      }
+      toast({
+        title: "Success",
+        description: type === 'repost' ? "Post reposted successfully" : "Quote posted successfully"
+      });
+      setShowRepostDialog(false);
+    } catch (error) {
+      console.error('Error reposting:', error);
+      toast({
+        title: "Error",
+        description: "Failed to repost",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleQuoteTweet = async (content: string, quotedPostId: string) => {
@@ -577,6 +603,14 @@ const PostCard = ({
         open={showQuoteTweetDialog}
         onOpenChange={setShowQuoteTweetDialog}
         onQuoteTweet={handleQuoteTweet}
+      />
+
+      {/* Repost Dialog */}
+      <RepostDialog
+        isOpen={showRepostDialog}
+        onClose={() => setShowRepostDialog(false)}
+        onRepost={handleRepostSubmit}
+        originalPost={post}
       />
     </Card>
   );
