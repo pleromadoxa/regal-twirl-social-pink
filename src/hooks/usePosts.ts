@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -42,20 +42,51 @@ export interface Post {
   } | null;
 }
 
+// Simple cache to prevent duplicate requests
+const postsCache = new Map<string, { data: Post[], timestamp: number }>();
+const CACHE_DURATION = 30000; // 30 seconds
+
 export const usePosts = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const fetchingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const fetchPosts = async (sortBy: 'recent' | 'trending' | 'professional' = 'recent') => {
+  const fetchPosts = useCallback(async (sortBy: 'recent' | 'trending' | 'professional' = 'recent') => {
+    // Check cache first
+    const cacheKey = `${sortBy}_${user?.id || 'anon'}`;
+    const cached = postsCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      console.log('Using cached posts');
+      setPosts(cached.data);
+      setLoading(false);
+      return;
+    }
+
+    // Prevent duplicate simultaneous fetches
+    if (fetchingRef.current) {
+      console.log('Fetch already in progress, skipping');
+      return;
+    }
+
+    fetchingRef.current = true;
+
+    // Cancel any pending requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     try {
       console.log('Fetching posts with filter:', sortBy);
       
-      // Build the query with proper sorting and filtering
+      // Build the query with proper sorting and filtering - limit to 50 posts
       let query = supabase
         .from('posts')
-        .select('*');
+        .select('*')
+        .limit(50);
 
       // Filter by professional accounts if requested
       if (sortBy === 'professional') {
@@ -76,44 +107,44 @@ export const usePosts = () => {
 
       console.log('Posts fetched:', postsData?.length || 0);
 
-      if (!postsData) {
+      if (!postsData || postsData.length === 0) {
         setPosts([]);
+        setLoading(false);
+        fetchingRef.current = false;
         return;
       }
 
-      // Get profiles for all unique user_ids
+      // Get unique user IDs and page IDs
       const userIds = [...new Set(postsData.map(post => post.user_id))];
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url, is_verified, verification_level, premium_tier')
-        .in('id', userIds);
+      const pageIds = [...new Set(postsData
+        .filter(post => post.posted_as_page)
+        .map(post => post.posted_as_page!))];
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
+      // Fetch profiles and business pages in parallel
+      const [profilesResult, businessPagesResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, is_verified, verification_level, premium_tier')
+          .in('id', userIds),
+        pageIds.length > 0
+          ? supabase
+              .from('business_pages')
+              .select('id, page_name, page_avatar_url, page_type, is_verified')
+              .in('id', pageIds)
+          : Promise.resolve({ data: [], error: null })
+      ]);
+
+      if (profilesResult.error) {
+        console.error('Error fetching profiles:', profilesResult.error);
       }
 
-      // Get business pages for posts that have posted_as_page
-      const pageIds = postsData
-        .filter(post => post.posted_as_page)
-        .map(post => post.posted_as_page);
-      
-      let businessPagesData = [];
-      if (pageIds.length > 0) {
-        const { data: pagesData, error: pagesError } = await supabase
-          .from('business_pages')
-          .select('id, page_name, page_avatar_url, page_type, is_verified')
-          .in('id', pageIds);
-        
-        if (pagesError) {
-          console.error('Error fetching business pages:', pagesError);
-        } else {
-          businessPagesData = pagesData || [];
-        }
+      if (businessPagesResult.error) {
+        console.error('Error fetching business pages:', businessPagesResult.error);
       }
 
       // Create lookup maps
-      const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
-      const businessPagesMap = new Map(businessPagesData.map(page => [page.id, page]));
+      const profilesMap = new Map<string, any>(profilesResult.data?.map(profile => [profile.id, profile] as [string, any]) || []);
+      const businessPagesMap = new Map<string, any>(businessPagesResult.data?.map(page => [page.id, page] as [string, any]) || []);
 
       // Optimize: Fetch all user interactions in parallel instead of per-post
       let likesMap = new Map();
@@ -148,15 +179,16 @@ export const usePosts = () => {
       }
 
       // Add user interaction flags
-      const postsWithUserData = postsData.map((post) => ({
+      const postsWithUserData: Post[] = postsData.map((post): Post => ({
         ...post,
         views_count: post.views_count || 0,
         trending_score: post.trending_score || 0,
         profiles: profilesMap.get(post.user_id) || null,
-        business_pages: post.posted_as_page ? businessPagesMap.get(post.posted_as_page) || null : null,
+        business_pages: post.posted_as_page ? (businessPagesMap.get(post.posted_as_page) || null) : null,
         user_liked: likesMap.get(post.id) || false,
         user_retweeted: retweetsMap.get(post.id) || false,
-        user_pinned: pinnedMap.get(post.id) || false
+        user_pinned: pinnedMap.get(post.id) || false,
+        quoted_post: null
       }));
 
       // Fetch quoted posts for posts that have quoted_post_id
@@ -209,14 +241,25 @@ export const usePosts = () => {
       }
 
       // Add quoted post data to posts
-      const postsWithQuotedData = postsWithUserData.map(post => ({
+      const postsWithQuotedData: Post[] = postsWithUserData.map(post => ({
         ...post,
-        quoted_post: post.quoted_post_id ? quotedPostsMap.get(post.quoted_post_id) || null : null
+        quoted_post: post.quoted_post_id ? (quotedPostsMap.get(post.quoted_post_id) || null) : null
       }));
 
       console.log('Posts with user data:', postsWithQuotedData.length);
       setPosts(postsWithQuotedData);
-    } catch (error) {
+
+      // Cache the results
+      postsCache.set(cacheKey, { 
+        data: postsWithQuotedData, 
+        timestamp: Date.now() 
+      });
+    } catch (error: any) {
+      // Ignore aborted requests
+      if (error?.name === 'AbortError') {
+        console.log('Request aborted');
+        return;
+      }
       console.error('Error fetching posts:', error);
       toast({
         title: "Error fetching posts",
@@ -225,8 +268,9 @@ export const usePosts = () => {
       });
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
-  };
+  }, [user, toast]);
 
   const trackPostView = async (postId: string) => {
     try {
