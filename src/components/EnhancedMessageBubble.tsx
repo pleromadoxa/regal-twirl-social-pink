@@ -196,7 +196,7 @@ const EnhancedMessageBubble = ({ message, isOwn, currentUserId, onDelete, showUs
                 <div className={`
                   px-5 py-3 rounded-2xl max-w-full word-wrap shadow-sm text-base
                   ${isOwn 
-                    ? 'bg-blue-500 text-white rounded-br-sm' 
+                    ? 'bg-purple-600 dark:bg-purple-700 text-white rounded-br-sm' 
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-sm'
                   }
                 `}>
