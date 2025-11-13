@@ -111,9 +111,12 @@ const Home = () => {
                 
                 <TabsContent value="discussions" className="mt-0">
                   <div className="p-6 text-center">
-                    <h2 className="text-xl font-semibold mb-4 bg-gradient-primary bg-clip-text text-transparent">
+                    <h2 className="text-xl font-semibold mb-2 bg-gradient-primary bg-clip-text text-transparent">
                       Community Discussions
                     </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Join meaningful conversations with the community. Share ideas, ask questions, and connect with others.
+                    </p>
                     <ThreadUI />
                   </div>
                 </TabsContent>
@@ -167,9 +170,12 @@ const Home = () => {
               
               <TabsContent value="discussions" className="mt-0">
                 <div className="p-6 text-center">
-                  <h2 className="text-xl font-semibold mb-4 bg-gradient-primary bg-clip-text text-transparent">
+                  <h2 className="text-xl font-semibold mb-2 bg-gradient-primary bg-clip-text text-transparent">
                     Community Discussions
                   </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Join meaningful conversations with the community. Share ideas, ask questions, and connect with others.
+                  </p>
                   <ThreadUI />
                 </div>
               </TabsContent>

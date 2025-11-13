@@ -49,7 +49,7 @@ export const useBusinessPages = () => {
 
     // Prevent multiple simultaneous fetches and limit frequency
     const now = Date.now();
-    if (fetchingRef.current || (now - lastFetchTimeRef.current < 5000)) {
+    if (fetchingRef.current || (now - lastFetchTimeRef.current < 30000)) {
       return;
     }
 

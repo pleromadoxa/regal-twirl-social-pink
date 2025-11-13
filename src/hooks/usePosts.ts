@@ -410,7 +410,22 @@ export const usePosts = () => {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
 
-      if (post.user_liked) {
+      const wasLiked = post.user_liked;
+      
+      // Optimistically update UI first
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === postId 
+            ? { 
+                ...p, 
+                user_liked: !wasLiked,
+                likes_count: Math.max(0, wasLiked ? p.likes_count - 1 : p.likes_count + 1)
+              }
+            : p
+        )
+      );
+
+      if (wasLiked) {
         // Unlike
         await supabase
           .from('likes')
@@ -424,23 +439,21 @@ export const usePosts = () => {
           .insert({ post_id: postId, user_id: user.id });
       }
 
-      // Update local state
-      setPosts(prevPosts => 
-        prevPosts.map(p => 
-          p.id === postId 
-            ? { 
-                ...p, 
-                user_liked: !p.user_liked,
-                likes_count: p.user_liked ? p.likes_count - 1 : p.likes_count + 1
-              }
-            : p
-        )
-      );
-
       // Update trending scores
       await supabase.rpc('update_trending_scores');
     } catch (error) {
       console.error('Error toggling like:', error);
+      // Revert on error
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        setPosts(prevPosts => 
+          prevPosts.map(p => 
+            p.id === postId 
+              ? { ...p, user_liked: !p.user_liked, likes_count: p.user_liked ? p.likes_count + 1 : p.likes_count - 1 }
+              : p
+          )
+        );
+      }
       toast({
         title: "Error",
         description: "Failed to update like",
@@ -456,7 +469,22 @@ export const usePosts = () => {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
 
-      if (post.user_retweeted) {
+      const wasRetweeted = post.user_retweeted;
+      
+      // Optimistically update UI first
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === postId 
+            ? { 
+                ...p, 
+                user_retweeted: !wasRetweeted,
+                retweets_count: Math.max(0, wasRetweeted ? p.retweets_count - 1 : p.retweets_count + 1)
+              }
+            : p
+        )
+      );
+
+      if (wasRetweeted) {
         // Un-retweet
         await supabase
           .from('retweets')
@@ -470,23 +498,21 @@ export const usePosts = () => {
           .insert({ post_id: postId, user_id: user.id });
       }
 
-      // Update local state
-      setPosts(prevPosts => 
-        prevPosts.map(p => 
-          p.id === postId 
-            ? { 
-                ...p, 
-                user_retweeted: !p.user_retweeted,
-                retweets_count: p.user_retweeted ? p.retweets_count - 1 : p.retweets_count + 1
-              }
-            : p
-        )
-      );
-
       // Update trending scores
       await supabase.rpc('update_trending_scores');
     } catch (error) {
       console.error('Error toggling retweet:', error);
+      // Revert on error
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        setPosts(prevPosts => 
+          prevPosts.map(p => 
+            p.id === postId 
+              ? { ...p, user_retweeted: !p.user_retweeted, retweets_count: p.user_retweeted ? p.retweets_count + 1 : p.retweets_count - 1 }
+              : p
+          )
+        );
+      }
       toast({
         title: "Error",
         description: "Failed to update retweet",

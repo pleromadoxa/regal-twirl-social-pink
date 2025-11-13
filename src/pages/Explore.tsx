@@ -308,11 +308,51 @@ const Explore = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    <Video className="w-12 h-12 mx-auto mb-4" />
-                    <p>Video content discovery coming soon!</p>
-                    <p className="text-sm">Check out our Reels section for video content</p>
-                  </div>
+                  {loading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className="aspect-video bg-purple-200 dark:bg-purple-700 rounded-lg animate-pulse"></div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {trendingPosts
+                        .filter(post => post.video_url)
+                        .slice(0, 8)
+                        .map((post) => (
+                          <div key={post.id} className="aspect-video rounded-lg overflow-hidden group cursor-pointer relative">
+                            <video
+                              src={post.video_url}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              muted
+                              loop
+                              onMouseEnter={(e) => e.currentTarget.play()}
+                              onMouseLeave={(e) => e.currentTarget.pause()}
+                            />
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-white text-sm font-medium">
+                                  @{post.profiles?.username}
+                                </span>
+                                <Badge variant="outline" className="text-xs bg-white/20 text-white border-white/30">
+                                  {post.likes_count} likes
+                                </Badge>
+                              </div>
+                              <p className="text-white text-xs line-clamp-2">
+                                {post.content}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      {trendingPosts.filter(post => post.video_url).length === 0 && (
+                        <div className="col-span-2 text-center py-8 text-gray-500 dark:text-gray-400">
+                          <Video className="w-12 h-12 mx-auto mb-4" />
+                          <p>No trending videos at the moment</p>
+                          <p className="text-sm">Check out our Reels section for video content</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
