@@ -4,14 +4,24 @@ import { Button } from '@/components/ui/button';
 import { MessageAttachment, getMessageAttachments } from '@/services/attachmentService';
 
 interface MessageAttachmentsProps {
-  messageId: string;
+  messageId?: string;
+  attachments?: MessageAttachment[];
 }
 
-const MessageAttachments = ({ messageId }: MessageAttachmentsProps) => {
-  const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
+const MessageAttachments = ({ messageId, attachments: providedAttachments }: MessageAttachmentsProps) => {
+  const [attachments, setAttachments] = useState<MessageAttachment[]>(providedAttachments || []);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
 
   useEffect(() => {
+    // If attachments are provided as prop, use them
+    if (providedAttachments) {
+      setAttachments(providedAttachments);
+      return;
+    }
+
+    // Otherwise fetch them (backward compatibility)
+    if (!messageId) return;
+    
     const fetchAttachments = async () => {
       try {
         const messageAttachments = await getMessageAttachments(messageId);
@@ -22,7 +32,7 @@ const MessageAttachments = ({ messageId }: MessageAttachmentsProps) => {
     };
 
     fetchAttachments();
-  }, [messageId]);
+  }, [messageId, providedAttachments]);
 
   const toggleAudioPlayback = (attachmentId: string, audioUrl: string) => {
     if (playingAudio === attachmentId) {

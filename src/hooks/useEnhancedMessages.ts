@@ -120,12 +120,25 @@ export const useEnhancedMessages = () => {
         .select('id, username, display_name, avatar_url')
         .in('id', senderIds);
 
+      // Fetch attachments for all messages
+      const messageIds = messagesData?.map(m => m.id) || [];
+      const { data: attachmentsData } = await supabase
+        .from('message_attachments')
+        .select('*')
+        .in('message_id', messageIds);
+
       const transformedMessages: Message[] = (messagesData || []).map(msg => {
         const senderProfile = profiles?.find(p => p.id === msg.sender_id);
+        const messageAttachments = (attachmentsData?.filter(a => a.message_id === msg.id) || []).map(att => ({
+          ...att,
+          attachment_type: att.attachment_type as 'image' | 'video' | 'audio' | 'document'
+        }));
+        
         return {
           ...msg,
           message_type: (msg.message_type as 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'missed_call') || 'text',
-          sender_profile: senderProfile
+          sender_profile: senderProfile,
+          attachments: messageAttachments
         };
       });
 
@@ -135,8 +148,18 @@ export const useEnhancedMessages = () => {
     }
   };
 
-  const sendMessage = async (content: string, messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'missed_call' = 'text', metadata: any = {}) => {
-    if (!user || !selectedConversation || !content.trim()) {
+  const sendMessage = async (
+    content: string, 
+    messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'missed_call' = 'text', 
+    metadata: any = {},
+    attachments: File[] = []
+  ) => {
+    if (!user || !selectedConversation) {
+      return;
+    }
+
+    // Allow sending if there's content or attachments
+    if (!content.trim() && attachments.length === 0) {
       return;
     }
 
@@ -148,26 +171,73 @@ export const useEnhancedMessages = () => {
         ? conversation.participant_2 
         : conversation.participant_1;
 
-      const { data, error } = await supabase
+      // Create the message first
+      const { data: messageData, error: messageError } = await supabase
         .from('messages')
         .insert({
           sender_id: user.id,
           recipient_id: recipientId,
-          content: content.trim(),
+          content: content.trim() || 'Sent an attachment',
           message_type: messageType,
           metadata: Object.keys(metadata).length > 0 ? metadata : null
         })
         .select()
         .single();
 
-      if (error) {
-        console.error('Error sending message:', error);
+      if (messageError) {
+        console.error('Error sending message:', messageError);
         toast({
           title: "Error sending message",
-          description: error.message,
+          description: messageError.message,
           variant: "destructive"
         });
         return;
+      }
+
+      // Upload attachments if any
+      if (attachments.length > 0) {
+        for (const file of attachments) {
+          try {
+            // Upload file to storage
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}/${Date.now()}-${Math.random()}.${fileExt}`;
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('message-attachments')
+              .upload(fileName, file);
+
+            if (uploadError) {
+              console.error('Error uploading file:', uploadError);
+              continue;
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+              .from('message-attachments')
+              .getPublicUrl(uploadData.path);
+
+            // Determine attachment type
+            let attachmentType: 'image' | 'video' | 'audio' | 'document' = 'document';
+            if (file.type.startsWith('image/')) attachmentType = 'image';
+            else if (file.type.startsWith('video/')) attachmentType = 'video';
+            else if (file.type.startsWith('audio/')) attachmentType = 'audio';
+
+            // Create attachment record
+            await supabase
+              .from('message_attachments')
+              .insert({
+                message_id: messageData.id,
+                file_name: file.name,
+                file_type: file.type,
+                file_size: file.size,
+                file_url: publicUrl,
+                attachment_type: attachmentType
+              });
+
+          } catch (error) {
+            console.error('Error processing attachment:', error);
+          }
+        }
       }
 
       // Update conversation last_message_at
@@ -182,10 +252,10 @@ export const useEnhancedMessages = () => {
 
       toast({
         title: "Message sent",
-        description: "Your message has been sent successfully."
+        description: attachments.length > 0 ? "Message and attachments sent successfully." : "Your message has been sent successfully."
       });
 
-      return data;
+      return messageData;
     } catch (error) {
       console.error('Error in sendMessage:', error);
       toast({
