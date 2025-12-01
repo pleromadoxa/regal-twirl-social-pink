@@ -2140,6 +2140,54 @@ export type Database = {
         }
         Relationships: []
       }
+      files: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_deleted: boolean | null
+          locked_at: string | null
+          locked_by: string | null
+          name: string
+          parent_id: string | null
+          shared: boolean | null
+          size: string
+          starred: boolean | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          locked_at?: string | null
+          locked_by?: string | null
+          name: string
+          parent_id?: string | null
+          shared?: boolean | null
+          size: string
+          starred?: boolean | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          locked_at?: string | null
+          locked_by?: string | null
+          name?: string
+          parent_id?: string | null
+          shared?: boolean | null
+          size?: string
+          starred?: boolean | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string | null

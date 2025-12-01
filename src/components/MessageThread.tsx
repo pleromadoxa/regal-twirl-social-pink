@@ -117,41 +117,11 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
         metadata = { ...metadata, location: sharedLocation };
       }
 
-      // Send the message first
-      const message = await sendMessage(messageContent, messageType, metadata);
+      // Send the message with attachments
+      const message = await sendMessage(messageContent, messageType, metadata, attachments);
       
       if (!message) {
         throw new Error('Failed to send message');
-      }
-      
-      // Handle file attachments
-      if (attachments.length > 0) {
-        for (const file of attachments) {
-          try {
-            const fileUrl = await uploadMessageAttachment(file, user.id);
-            
-            let attachmentType: 'image' | 'video' | 'audio' | 'document' = 'document';
-            if (file.type.startsWith('image/')) attachmentType = 'image';
-            else if (file.type.startsWith('video/')) attachmentType = 'video';
-            else if (file.type.startsWith('audio/')) attachmentType = 'audio';
-
-            await createMessageAttachment(
-              message.id,
-              file.name,
-              file.type,
-              file.size,
-              fileUrl,
-              attachmentType
-            );
-          } catch (error) {
-            console.error('Error uploading attachment:', error);
-            toast({
-              title: "Attachment upload failed",
-              description: `Failed to upload ${file.name}`,
-              variant: "destructive"
-            });
-          }
-        }
       }
 
       // Clear reply state after sending
