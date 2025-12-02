@@ -75,3 +75,86 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
     throw error;
   }
 };
+
+// Send email notification via edge function
+export const sendNotificationEmail = async (
+  userId: string,
+  notificationType: string,
+  data?: Record<string, any>
+): Promise<void> => {
+  try {
+    const { error } = await supabase.functions.invoke('send-notification-email', {
+      body: {
+        user_id: userId,
+        notification_type: notificationType,
+        data: data || {},
+      },
+    });
+
+    if (error) {
+      console.error('Error sending notification email:', error);
+    }
+  } catch (err) {
+    console.error('Failed to send notification email:', err);
+  }
+};
+
+// Map notification types to email types
+const emailNotificationTypes: Record<string, string> = {
+  follow: 'new_follower',
+  like: 'post_liked',
+  reply: 'post_reply',
+  mention: 'mention',
+  retweet: 'post_liked',
+  quote_tweet: 'post_reply',
+};
+
+// Create notification and optionally send email
+export const createNotificationWithEmail = async (
+  userId: string,
+  type: string,
+  actorId: string,
+  postId: string | null,
+  message: string,
+  actorData?: { name?: string; username?: string }
+): Promise<void> => {
+  // Create in-app notification
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      user_id: userId,
+      type,
+      actor_id: actorId,
+      post_id: postId,
+      message,
+    });
+
+  if (error) {
+    console.error('Error creating notification:', error);
+    return;
+  }
+
+  // Send email notification for relevant types
+  const emailType = emailNotificationTypes[type];
+  if (emailType) {
+    const emailData: Record<string, any> = {
+      post_id: postId,
+    };
+
+    if (actorData?.name) {
+      if (type === 'follow') {
+        emailData.follower_name = actorData.name;
+        emailData.follower_username = actorData.username;
+      } else if (type === 'like' || type === 'retweet') {
+        emailData.liker_name = actorData.name;
+      } else if (type === 'reply' || type === 'quote_tweet') {
+        emailData.replier_name = actorData.name;
+      } else if (type === 'mention') {
+        emailData.mentioner_name = actorData.name;
+      }
+    }
+
+    // Fire and forget - don't block on email sending
+    sendNotificationEmail(userId, emailType, emailData);
+  }
+};

@@ -2033,6 +2033,30 @@ export type Database = {
         }
         Relationships: []
       }
+      email_notifications_log: {
+        Row: {
+          id: string
+          metadata: Json | null
+          notification_type: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          metadata?: Json | null
+          notification_type: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          metadata?: Json | null
+          notification_type?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       enhanced_user_presence: {
         Row: {
           is_typing_in_conversation: string | null
@@ -3334,6 +3358,8 @@ export type Database = {
           country: string | null
           created_at: string | null
           display_name: string | null
+          email: string | null
+          email_notifications_enabled: boolean | null
           followers_count: number | null
           following_count: number | null
           id: string
@@ -3361,6 +3387,8 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           display_name?: string | null
+          email?: string | null
+          email_notifications_enabled?: boolean | null
           followers_count?: number | null
           following_count?: number | null
           id: string
@@ -3388,6 +3416,8 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           display_name?: string | null
+          email?: string | null
+          email_notifications_enabled?: boolean | null
           followers_count?: number | null
           following_count?: number | null
           id?: string

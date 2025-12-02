@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.call-signaling]
 verify_jwt = false
+
+[functions.send-notification-email]
+verify_jwt = false
+
+[functions.check-unread-messages]
+verify_jwt = false
