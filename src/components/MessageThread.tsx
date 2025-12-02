@@ -34,7 +34,8 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
     markAsRead, 
     conversations, 
     groupConversations,
-    setSelectedConversation 
+    setSelectedConversation,
+    deleteConversation
   } = messagesData;
   const [localMessages, setLocalMessages] = useState(messages);
   const [replyToMessageId, setReplyToMessageId] = useState<string | null>(null);
@@ -143,6 +144,13 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
     }
   };
 
+  const handleDeleteChat = async () => {
+    if (conversationId && deleteConversation) {
+      return await deleteConversation(conversationId);
+    }
+    return false;
+  };
+
   const handleDeleteMessage = (messageId: string) => {
     setLocalMessages(prev => prev.filter(msg => msg.id !== messageId));
   };
@@ -191,6 +199,7 @@ export const MessageThread = ({ conversationId, messagesData, onCallStart }: Mes
             conversation={conversation}
             onAudioCall={() => initiateCall('audio')}
             onVideoCall={() => initiateCall('video')}
+            onDeleteChat={handleDeleteChat}
           />
 
           {/* Messages */}

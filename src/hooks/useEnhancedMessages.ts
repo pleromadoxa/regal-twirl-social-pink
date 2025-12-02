@@ -309,6 +309,127 @@ export const useEnhancedMessages = () => {
     }
   }, [selectedConversation, user?.id]); // Only depend on user ID, not entire user object
 
+  const deleteConversation = async (conversationId: string) => {
+    if (!user) return false;
+
+    try {
+      // First delete all messages in this conversation
+      const conversation = conversations.find(c => c.id === conversationId);
+      if (!conversation) return false;
+
+      const otherParticipant = conversation.participant_1 === user.id 
+        ? conversation.participant_2 
+        : conversation.participant_1;
+
+      // Delete messages between the two participants
+      await supabase
+        .from('messages')
+        .delete()
+        .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherParticipant}),and(sender_id.eq.${otherParticipant},recipient_id.eq.${user.id})`);
+
+      // Delete the conversation
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId);
+
+      if (error) throw error;
+
+      // Update local state
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      if (selectedConversation === conversationId) {
+        setSelectedConversation(null);
+      }
+      setMessages([]);
+
+      toast({
+        title: "Chat deleted",
+        description: "The conversation has been deleted"
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete conversation",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const editMessage = async (messageId: string, newContent: string) => {
+    if (!user || !newContent.trim()) return false;
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .update({ 
+          content: newContent.trim(),
+          edited_at: new Date().toISOString()
+        })
+        .eq('id', messageId)
+        .eq('sender_id', user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, content: newContent.trim(), edited_at: new Date().toISOString() }
+          : msg
+      ));
+
+      toast({
+        title: "Message edited",
+        description: "Your message has been updated"
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error editing message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to edit message",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('sender_id', user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+
+      toast({
+        title: "Message deleted",
+        description: "Your message has been retracted"
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete message",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   return {
     conversations,
     groupConversations: [], // Return empty array for compatibility
@@ -320,6 +441,9 @@ export const useEnhancedMessages = () => {
     markAsRead,
     refetch: fetchConversationsData,
     startDirectConversation,
-    createGroupConversation: async () => {} // Empty function for compatibility
+    createGroupConversation: async () => {}, // Empty function for compatibility
+    deleteConversation,
+    editMessage,
+    deleteMessage
   };
 };
