@@ -14,10 +14,10 @@ export const useBlockMute = () => {
     try {
       setLoading(true);
       const { error } = await supabase
-        .from('user_blocks')
+        .from('blocked_users')
         .insert({
-          blocker_id: user.id,
-          blocked_id: userId
+          user_id: user.id,
+          blocked_user_id: userId
         });
 
       if (error) throw error;
@@ -46,10 +46,10 @@ export const useBlockMute = () => {
     try {
       setLoading(true);
       const { error } = await supabase
-        .from('user_blocks')
+        .from('blocked_users')
         .delete()
-        .eq('blocker_id', user.id)
-        .eq('blocked_id', userId);
+        .eq('user_id', user.id)
+        .eq('blocked_user_id', userId);
 
       if (error) throw error;
 
@@ -71,16 +71,39 @@ export const useBlockMute = () => {
     }
   };
 
-  const muteUser = async (userId: string) => {
+  const muteUser = async (userId: string, duration?: string) => {
     if (!user) return false;
 
     try {
       setLoading(true);
+      
+      // Calculate muted_until based on duration
+      let muted_until = null;
+      if (duration && duration !== 'permanent') {
+        const now = new Date();
+        switch (duration) {
+          case '1h':
+            muted_until = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+            break;
+          case '24h':
+            muted_until = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+            break;
+          case '7d':
+            muted_until = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+          case '30d':
+            muted_until = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+        }
+      }
+
       const { error } = await supabase
-        .from('user_mutes')
+        .from('muted_users')
         .insert({
-          muter_id: user.id,
-          muted_id: userId
+          user_id: user.id,
+          muted_user_id: userId,
+          mute_duration: duration || 'permanent',
+          muted_until
         });
 
       if (error) throw error;
@@ -109,10 +132,10 @@ export const useBlockMute = () => {
     try {
       setLoading(true);
       const { error } = await supabase
-        .from('user_mutes')
+        .from('muted_users')
         .delete()
-        .eq('muter_id', user.id)
-        .eq('muted_id', userId);
+        .eq('user_id', user.id)
+        .eq('muted_user_id', userId);
 
       if (error) throw error;
 
@@ -139,11 +162,11 @@ export const useBlockMute = () => {
 
     try {
       const { data } = await supabase
-        .from('user_blocks')
+        .from('blocked_users')
         .select('id')
-        .eq('blocker_id', user.id)
-        .eq('blocked_id', userId)
-        .single();
+        .eq('user_id', user.id)
+        .eq('blocked_user_id', userId)
+        .maybeSingle();
 
       return !!data;
     } catch (error) {
@@ -156,11 +179,11 @@ export const useBlockMute = () => {
 
     try {
       const { data } = await supabase
-        .from('user_mutes')
+        .from('muted_users')
         .select('id')
-        .eq('muter_id', user.id)
-        .eq('muted_id', userId)
-        .single();
+        .eq('user_id', user.id)
+        .eq('muted_user_id', userId)
+        .maybeSingle();
 
       return !!data;
     } catch (error) {

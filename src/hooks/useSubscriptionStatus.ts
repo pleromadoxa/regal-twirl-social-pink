@@ -25,11 +25,16 @@ export const useSubscriptionStatus = (isAdmin: boolean, setProfile: (profile: an
     
     try {
       // Check subscription status from subscribers table
-      const { data: subscription } = await supabase
+      const { data: subscription, error: subError } = await supabase
         .from('subscribers')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
+      // Handle not found gracefully
+      if (subError && subError.code !== 'PGRST116') {
+        console.error('Error fetching subscription:', subError);
+      }
 
       if (subscription && subscription.subscribed) {
         const now = new Date();

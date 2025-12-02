@@ -27,7 +27,7 @@ export const useAI = () => {
         .from('profiles')
         .select('ai_generations_used, ai_generations_limit, premium_tier')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profile && profile.ai_generations_used >= profile.ai_generations_limit) {
         toast({

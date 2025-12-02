@@ -74,7 +74,7 @@ export const useMessages = () => {
         .from('conversations')
         .select('id')
         .or(`and(participant_1.eq.${user.id},participant_2.eq.${recipientId}),and(participant_1.eq.${recipientId},participant_2.eq.${user.id})`)
-        .single();
+        .maybeSingle();
 
       let conversationId = existingConv?.id;
 

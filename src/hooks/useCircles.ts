@@ -282,9 +282,11 @@ export const useCircles = () => {
         .select('role, can_add_members')
         .eq('circle_id', circleId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error || !data) {
+        return false;
+      }
       
       return data.role === 'admin' || data.can_add_members === true;
     } catch (error) {
