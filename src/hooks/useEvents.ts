@@ -57,7 +57,7 @@ export const useEvents = () => {
               .select('status')
               .eq('event_id', event.id)
               .eq('user_id', user.id)
-              .single();
+              .maybeSingle();
 
             return {
               ...event,

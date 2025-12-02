@@ -125,7 +125,7 @@ export const usePinnedPosts = () => {
         .select('id')
         .eq('user_id', user.id)
         .eq('post_id', postId)
-        .single();
+        .maybeSingle();
 
       if (existingPin) {
         // Unpin the post

@@ -70,7 +70,7 @@ export const usePolls = () => {
         .select('id, option_index')
         .eq('poll_id', pollId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (existingVote) {
         // Update existing vote
@@ -118,9 +118,9 @@ export const usePolls = () => {
         .from('post_polls')
         .select('*')
         .eq('post_id', postId)
-        .single();
+        .maybeSingle();
 
-      if (error) return null;
+      if (error || !poll) return null;
 
       // Get vote counts for each option
       const { data: votes } = await supabase
@@ -143,7 +143,7 @@ export const usePolls = () => {
           .select('option_index')
           .eq('poll_id', poll.id)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
         
         userVote = userVoteData?.option_index;
       }

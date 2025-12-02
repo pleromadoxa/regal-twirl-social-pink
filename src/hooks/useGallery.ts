@@ -154,7 +154,7 @@ export const useGallery = (userId?: string) => {
         .from('gallery_items')
         .select('file_url, user_id')
         .eq('id', itemId)
-        .single();
+        .maybeSingle();
 
       if (!item || item.user_id !== user.id) {
         toast({

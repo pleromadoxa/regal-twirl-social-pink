@@ -37,9 +37,9 @@ export const useFollow = () => {
         .select('id')
         .eq('follower_id', user.id)
         .eq('following_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         throw checkError;
       }
 
@@ -125,9 +125,9 @@ export const useFollow = () => {
         .select('id')
         .eq('follower_id', user.id)
         .eq('following_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error checking follow status:', error);
         return false;
       }

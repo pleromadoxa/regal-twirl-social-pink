@@ -119,12 +119,22 @@ export const useBookmarks = () => {
 
     try {
       // Check if post is already bookmarked
-      const { data: existingBookmark } = await supabase
+      const { data: existingBookmark, error: checkError } = await supabase
         .from('bookmarks')
         .select('id')
         .eq('user_id', user.id)
         .eq('post_id', postId)
-        .single();
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking bookmark:', checkError);
+        toast({
+          title: "Error",
+          description: "Failed to check bookmark status",
+          variant: "destructive"
+        });
+        return;
+      }
 
       if (existingBookmark) {
         // Remove bookmark
