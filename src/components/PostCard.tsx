@@ -16,7 +16,7 @@ import BoostPostWidget from './BoostPostWidget';
 import RetweetIndicator from './RetweetIndicator';
 import SponsoredIndicator from './SponsoredIndicator';
 import VerificationBadge from './VerificationBadge';
-import PostComments from './PostComments';
+import InlinePostComments from './InlinePostComments';
 import { useBusinessPages } from '@/hooks/useBusinessPages';
 import { usePinnedPosts } from '@/hooks/usePinnedPosts';
 import ThreadContent from './ThreadContent';
@@ -580,11 +580,10 @@ const PostCard = ({
         </div>
       </CardContent>
       
-      {/* Comments Modal */}
-      <PostComments 
+      {/* Inline Comments */}
+      <InlinePostComments 
         postId={post.id}
         isOpen={showComments}
-        onClose={() => setShowComments(false)}
       />
       
       {/* Image Viewer Modal */}

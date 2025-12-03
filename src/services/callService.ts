@@ -57,11 +57,15 @@ export const joinCall = async (callId: string, userId: string): Promise<void> =>
     .from('active_calls')
     .select('participants')
     .eq('id', callId)
-    .single();
+    .maybeSingle();
 
   if (fetchError) {
     console.error('Error fetching call:', fetchError);
     throw fetchError;
+  }
+
+  if (!currentCall) {
+    throw new Error('Call not found');
   }
 
   const currentParticipants = Array.isArray(currentCall.participants) 

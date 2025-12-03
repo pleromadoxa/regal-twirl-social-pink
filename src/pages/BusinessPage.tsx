@@ -46,7 +46,7 @@ const BusinessPage = () => {
           .from('business_pages')
           .select('*')
           .eq('id', pageId)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
         setBusinessPage(data);

@@ -18,7 +18,7 @@ export const createMissedCallNotification = async (data: MissedCallData) => {
       .from('profiles')
       .select('display_name, username')
       .eq('id', data.callerId)
-      .single();
+      .maybeSingle();
 
     const callerName = callerProfile?.display_name || callerProfile?.username || 'Unknown User';
 
@@ -31,7 +31,7 @@ export const createMissedCallNotification = async (data: MissedCallData) => {
         .from('conversations')
         .select('id')
         .or(`and(participant_1.eq.${data.callerId},participant_2.eq.${data.receiverId}),and(participant_1.eq.${data.receiverId},participant_2.eq.${data.callerId})`)
-        .single();
+        .maybeSingle();
 
       if (existingConv) {
         conversationId = existingConv.id;

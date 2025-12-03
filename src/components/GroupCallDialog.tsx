@@ -56,7 +56,7 @@ const GroupCallDialog = ({ groupId, participants, callType = 'audio' }: GroupCal
         .from('profiles')
         .select('display_name, username, avatar_url')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
       // Broadcast to all participants
       const broadcastPromises = participants.map(participant => {
