@@ -94,9 +94,10 @@ class EnhancedCallService {
         .from('active_calls')
         .select('participants, room_id, call_type, caller_id, created_at')
         .eq('id', callId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
+      if (!currentCall) throw new Error('Call not found');
 
       const currentParticipants = Array.isArray(currentCall.participants) 
         ? currentCall.participants 

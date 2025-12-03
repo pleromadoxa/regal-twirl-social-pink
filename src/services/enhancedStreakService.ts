@@ -16,7 +16,7 @@ export const checkAndUpdateStreak = async (conversationId: string): Promise<Enha
       .from('conversations')
       .select('*')
       .eq('id', conversationId)
-      .single();
+      .maybeSingle();
 
     if (error || !conversation) {
       console.error('Error fetching conversation:', error);

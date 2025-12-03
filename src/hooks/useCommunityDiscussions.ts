@@ -173,7 +173,7 @@ export const useCommunityDiscussions = () => {
 
         setDiscussions(prev => prev.map(d => 
           d.id === discussionId 
-            ? { ...d, is_liked: false, likes_count: d.likes_count - 1 }
+            ? { ...d, is_liked: false, likes_count: Math.max(0, d.likes_count - 1) }
             : d
         ));
       } else {

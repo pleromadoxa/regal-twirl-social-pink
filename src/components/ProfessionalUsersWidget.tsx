@@ -101,7 +101,7 @@ const ProfessionalUsersWidget = () => {
       setProfessionalAccounts(prev => 
         prev.map(p => 
           p.id === pageId 
-            ? { ...p, user_following: !p.user_following, followers_count: p.user_following ? p.followers_count - 1 : p.followers_count + 1 }
+            ? { ...p, user_following: !p.user_following, followers_count: Math.max(0, p.user_following ? p.followers_count - 1 : p.followers_count + 1) }
             : p
         )
       );

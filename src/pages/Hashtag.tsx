@@ -176,7 +176,7 @@ const Hashtag = () => {
           return {
             ...p,
             user_liked: !p.user_liked,
-            likes_count: p.user_liked ? p.likes_count - 1 : p.likes_count + 1
+            likes_count: Math.max(0, p.user_liked ? p.likes_count - 1 : p.likes_count + 1)
           };
         }
         return p;
@@ -211,7 +211,7 @@ const Hashtag = () => {
           return {
             ...p,
             user_retweeted: !p.user_retweeted,
-            retweets_count: p.user_retweeted ? p.retweets_count - 1 : p.retweets_count + 1
+            retweets_count: Math.max(0, p.user_retweeted ? p.retweets_count - 1 : p.retweets_count + 1)
           };
         }
         return p;

@@ -45,7 +45,7 @@ export const useReels = () => {
         ? { 
             ...r, 
             user_liked: !wasLiked,
-            likes_count: wasLiked ? r.likes_count - 1 : r.likes_count + 1
+            likes_count: Math.max(0, wasLiked ? r.likes_count - 1 : r.likes_count + 1)
           }
         : r
     ));
@@ -60,7 +60,7 @@ export const useReels = () => {
           ? { 
               ...r, 
               user_liked: wasLiked,
-              likes_count: wasLiked ? r.likes_count + 1 : r.likes_count - 1
+              likes_count: Math.max(0, wasLiked ? r.likes_count + 1 : r.likes_count - 1)
             }
           : r
       ));

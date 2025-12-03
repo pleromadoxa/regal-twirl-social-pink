@@ -85,6 +85,22 @@ export const createMissedCallNotification = async (data: MissedCallData) => {
 
     console.log('[MissedCallService] Missed call notification created successfully');
     
+    // Send missed call email notification
+    try {
+      await supabase.functions.invoke('send-missed-call-email', {
+        body: {
+          recipient_id: data.receiverId,
+          caller_id: data.callerId,
+          caller_name: callerName,
+          call_type: data.callType
+        }
+      });
+      console.log('[MissedCallService] Missed call email sent successfully');
+    } catch (emailError) {
+      console.error('[MissedCallService] Error sending missed call email:', emailError);
+      // Don't block if email fails
+    }
+    
   } catch (error) {
     console.error('[MissedCallService] Error creating missed call notification:', error);
   }

@@ -28,6 +28,7 @@ import CollaboratorsDisplay from './CollaboratorsDisplay';
 import { useCollaboration } from '@/hooks/useCollaboration';
 import QuoteTweetDialog from './QuoteTweetDialog';
 import RepostDialog from './RepostDialog';
+import SharePostDialog from './SharePostDialog';
 import { usePosts } from '@/hooks/usePosts';
 import UserMoodDisplay from './UserMoodDisplay';
 
@@ -531,14 +532,19 @@ const PostCard = ({
                 <span>{post.likes_count}</span>
               </Button>
               
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleShare}
-                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-500 hover:text-blue-500"
-              >
-                <Share className="w-3 h-3 sm:w-4 sm:h-4" />
-              </Button>
+              <SharePostDialog 
+                postId={post.id} 
+                postContent={post.content}
+                trigger={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-500 hover:text-blue-500"
+                  >
+                    <Share className="w-3 h-3 sm:w-4 sm:h-4" />
+                  </Button>
+                }
+              />
               
                {/* Show boost button only for professional page posts */}
                {isProfessionalPost && hasBusinessPages && (
