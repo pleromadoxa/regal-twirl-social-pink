@@ -175,6 +175,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (data.user?.id) {
         await createProfile(data.user.id, username, displayName);
+        
+        // Send welcome email
+        try {
+          await supabase.functions.invoke('send-welcome-email', {
+            body: {
+              email: email.trim(),
+              displayName,
+              username
+            }
+          });
+        } catch (emailError) {
+          console.error('Error sending welcome email:', emailError);
+          // Don't block signup if email fails
+        }
       }
 
       return { error: null };

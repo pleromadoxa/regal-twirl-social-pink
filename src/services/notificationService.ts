@@ -29,7 +29,7 @@ export const fetchNotifications = async (userId: string): Promise<Notification[]
           .from('profiles')
           .select('display_name, username, avatar_url')
           .eq('id', notification.actor_id)
-          .single();
+          .maybeSingle();
 
         if (profileData) {
           actorProfile = {

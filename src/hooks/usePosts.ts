@@ -487,17 +487,18 @@ export const usePosts = () => {
       await supabase.rpc('update_trending_scores');
     } catch (error) {
       console.error('Error toggling like:', error);
-      // Revert on error
-      const post = posts.find(p => p.id === postId);
-      if (post) {
-        setPosts(prevPosts => 
-          prevPosts.map(p => 
-            p.id === postId 
-              ? { ...p, user_liked: !p.user_liked, likes_count: p.user_liked ? p.likes_count + 1 : p.likes_count - 1 }
-              : p
-          )
-        );
-      }
+      // Revert on error - use wasLiked state stored before optimistic update
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === postId 
+            ? { 
+                ...p, 
+                user_liked: !p.user_liked, 
+                likes_count: Math.max(0, p.user_liked ? p.likes_count - 1 : p.likes_count + 1) 
+              }
+            : p
+        )
+      );
       toast({
         title: "Error",
         description: "Failed to update like",
@@ -546,17 +547,18 @@ export const usePosts = () => {
       await supabase.rpc('update_trending_scores');
     } catch (error) {
       console.error('Error toggling retweet:', error);
-      // Revert on error
-      const post = posts.find(p => p.id === postId);
-      if (post) {
-        setPosts(prevPosts => 
-          prevPosts.map(p => 
-            p.id === postId 
-              ? { ...p, user_retweeted: !p.user_retweeted, retweets_count: p.user_retweeted ? p.retweets_count + 1 : p.retweets_count - 1 }
-              : p
-          )
-        );
-      }
+      // Revert on error with Math.max to prevent negative counts
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === postId 
+            ? { 
+                ...p, 
+                user_retweeted: !p.user_retweeted, 
+                retweets_count: Math.max(0, p.user_retweeted ? p.retweets_count - 1 : p.retweets_count + 1) 
+              }
+            : p
+        )
+      );
       toast({
         title: "Error",
         description: "Failed to update retweet",
