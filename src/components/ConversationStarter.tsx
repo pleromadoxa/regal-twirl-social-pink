@@ -47,7 +47,7 @@ const ConversationStarter = () => {
         .from('conversations')
         .select('id')
         .or(`and(participant_1.eq.${user?.id},participant_2.eq.${userId}),and(participant_1.eq.${userId},participant_2.eq.${user?.id})`)
-        .single();
+        .maybeSingle();
 
       if (existingConv) {
         toast({

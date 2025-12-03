@@ -38,7 +38,7 @@ const RightSidebar = () => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       // Check if user is admin (pleromadoxa@gmail.com)
       const isUserAdmin = user.email === 'pleromadoxa@gmail.com' || profile?.username === 'pleromadoxa';

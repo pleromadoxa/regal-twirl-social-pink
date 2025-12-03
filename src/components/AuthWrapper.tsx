@@ -29,7 +29,7 @@ const AuthWrapper = ({ children }: AuthWrapperProps) => {
         .from('profiles')
         .select('account_status, status_reason, status_until')
         .eq('id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching user profile:', error);

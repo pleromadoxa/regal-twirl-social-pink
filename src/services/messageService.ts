@@ -69,7 +69,7 @@ export const sendMessage = async (
     .from('conversations')
     .select('id')
     .or(`and(participant_1.eq.${senderId},participant_2.eq.${recipientId}),and(participant_1.eq.${recipientId},participant_2.eq.${senderId})`)
-    .single();
+    .maybeSingle();
 
   if (conversation) {
     // Update streak count for this conversation using enhanced service
@@ -81,7 +81,7 @@ export const sendMessage = async (
     .from('profiles')
     .select('id, username, display_name, avatar_url')
     .eq('id', senderId)
-    .single();
+    .maybeSingle();
 
   return {
     ...newMessage,
@@ -136,7 +136,7 @@ export const subscribeToMessages = (
           .from('profiles')
           .select('id, username, display_name, avatar_url')
           .eq('id', payload.new.sender_id)
-          .single();
+          .maybeSingle();
 
         const messageWithProfile = {
           ...payload.new,

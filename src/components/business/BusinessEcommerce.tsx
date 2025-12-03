@@ -187,7 +187,7 @@ const BusinessEcommerce = ({ businessPage }: BusinessEcommerceProps) => {
         .from('profiles')
         .select('id')
         .eq('id', order.customer_email)
-        .single();
+        .maybeSingle();
 
       if (customerData) {
         await supabase

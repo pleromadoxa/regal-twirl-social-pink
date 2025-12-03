@@ -40,7 +40,7 @@ export const useSidebarProfile = () => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
       // Set profile with proper admin tier handling
       const profileData = {

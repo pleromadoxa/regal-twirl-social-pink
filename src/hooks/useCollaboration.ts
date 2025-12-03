@@ -332,9 +332,10 @@ export const useCollaboration = () => {
         .from('collaborative_drafts')
         .select('collaborators')
         .eq('id', draftId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
+      if (!draft) throw new Error('Draft not found');
 
       const currentCollaborators = Array.isArray(draft.collaborators) ? draft.collaborators : [];
       if (currentCollaborators.includes(userId)) return true; // Already added
