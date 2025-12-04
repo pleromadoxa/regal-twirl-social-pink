@@ -33,9 +33,9 @@ export const useMoodBoard = () => {
         .gte('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       setMyMoodState((data as any) || null);
     } catch (error: any) {
       console.error('Error fetching mood:', error);

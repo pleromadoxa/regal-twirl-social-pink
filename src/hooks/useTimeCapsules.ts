@@ -40,7 +40,7 @@ export const useTimeCapsules = () => {
   const createCapsule = async (capsule: Partial<TimeCapsule>) => {
     if (!user) return;
     try {
-      const { data, error } = await supabase.from('time_capsules').insert({ ...capsule, creator_id: user.id } as any).select().single();
+      const { data, error } = await supabase.from('time_capsules').insert({ ...capsule, creator_id: user.id } as any).select().maybeSingle();
       if (error) throw error;
       toast({ title: "Time capsule created!" });
       await fetchCapsules();
