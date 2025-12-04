@@ -56,6 +56,8 @@ const CircleCallWebRTC = lazy(() => import('@/pages/CircleCallWebRTC'));
 const Challenges = lazy(() => import('@/pages/Challenges'));
 const BusinessPage = lazy(() => import('@/pages/BusinessPage'));
 const RegalAIEnginePage = lazy(() => import('@/pages/RegalAIEngine'));
+const Marketplace = lazy(() => import('@/pages/Marketplace'));
+const LiveStreaming = lazy(() => import('@/pages/LiveStreaming'));
 
 const queryClient = new QueryClient();
 
@@ -122,6 +124,8 @@ function App() {
                       <Route path="/settings/muted-users" element={<AuthWrapper><MutedUsers /></AuthWrapper>} />
                       <Route path="/friendship-milestones" element={<AuthWrapper><FriendshipMilestones /></AuthWrapper>} />
                       <Route path="/regal-ai" element={<AuthWrapper><RegalAIEnginePage /></AuthWrapper>} />
+                      <Route path="/marketplace" element={<AuthWrapper><Marketplace /></AuthWrapper>} />
+                      <Route path="/live" element={<AuthWrapper><LiveStreaming /></AuthWrapper>} />
                     </Routes>
                   </Suspense>
                   <Toaster />

@@ -16,7 +16,8 @@ import {
   Trophy,
   Sparkles,
   Play,
-  Gamepad2
+  Radio,
+  ShoppingBag
 } from 'lucide-react';
 
 interface NavItem {
@@ -50,12 +51,14 @@ export const getSidebarNavItems = ({
     { name: 'Circles', path: '/circles', icon: Users },
     { name: 'Explore', path: '/explore', icon: Search },
     { name: 'Regal AI', path: '/regal-ai', icon: Crown, accent: 'from-purple-400 to-pink-500' },
-    { name: 'Create', path: '/mood', icon: Sparkles }, // Merged: Mood Boards, Time Capsules, Milestones
+    { name: 'Create', path: '/mood', icon: Sparkles }, // Mood Boards, Time Capsules, Milestones
     { name: 'Reels', path: '/reels', icon: Play },
+    { name: 'Live', path: '/live', icon: Radio, accent: 'from-red-500 to-pink-500' },
     { name: 'Events', path: '/events', icon: Calendar },
     { name: 'Challenges', path: '/challenges', icon: Trophy },
+    { name: 'Marketplace', path: '/marketplace', icon: ShoppingBag },
     { name: 'Notifications', path: '/notifications', icon: Bell },
-    { name: 'Entertainment', path: '/music', icon: Headphones }, // Merged: Music & Games
+    { name: 'Music', path: '/music', icon: Headphones },
   ];
 
   const premiumItems: NavItem[] = [];

@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 
 interface User {
@@ -7,6 +6,7 @@ interface User {
   is_verified?: boolean;
   followers_count?: number;
   premium_tier?: string;
+  verification_level?: string;
 }
 
 export type VerificationLevel = 'verified' | 'vip' | 'business' | 'professional' | null;
@@ -18,6 +18,11 @@ export const useVerifiedStatus = (user: User | null | undefined) => {
     // Special case for VIP user
     if (user.email === 'pleromadoxa@gmail.com' || user.username === 'pleromadoxa') {
       return 'vip';
+    }
+    
+    // Use database verification_level if set
+    if (user.verification_level && user.verification_level !== 'none') {
+      return user.verification_level as VerificationLevel;
     }
     
     // Business verification (for business accounts)
@@ -41,9 +46,10 @@ export const useVerifiedStatus = (user: User | null | undefined) => {
     }
     
     return null;
-  }, [user?.username, user?.email, user?.is_verified, user?.followers_count, user?.premium_tier]);
+  }, [user?.username, user?.email, user?.is_verified, user?.followers_count, user?.premium_tier, user?.verification_level]);
 
   const isVerified = verificationLevel !== null;
 
   return { isVerified, verificationLevel };
 };
+

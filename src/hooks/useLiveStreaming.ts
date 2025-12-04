@@ -1,0 +1,210 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+
+export interface LiveStream {
+  id: string;
+  streamer_id: string;
+  title: string;
+  description: string | null;
+  stream_key: string | null;
+  stream_url: string | null;
+  thumbnail_url: string | null;
+  status: 'offline' | 'live' | 'ended';
+  viewer_count: number;
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string;
+  streamer?: {
+    username: string;
+    display_name: string;
+    avatar_url: string;
+  };
+}
+
+export const useLiveStreaming = () => {
+  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
+  const [myStream, setMyStream] = useState<LiveStream | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const generateStreamKey = () => {
+    return `stream_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+  };
+
+  const fetchLiveStreams = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('live_streams')
+        .select('*')
+        .eq('status', 'live')
+        .order('viewer_count', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch streamer profiles
+      if (data && data.length > 0) {
+        const streamerIds = [...new Set(data.map(s => s.streamer_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', streamerIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const streamsWithProfiles = data.map(stream => ({
+          ...stream,
+          streamer: profileMap.get(stream.streamer_id)
+        }));
+
+        setLiveStreams(streamsWithProfiles as LiveStream[]);
+      } else {
+        setLiveStreams([]);
+      }
+    } catch (error) {
+      console.error('Error fetching live streams:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMyStream = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('live_streams')
+        .select('*')
+        .eq('streamer_id', user.id)
+        .neq('status', 'ended')
+        .maybeSingle();
+
+      if (error) throw error;
+      setMyStream(data as LiveStream | null);
+    } catch (error) {
+      console.error('Error fetching my stream:', error);
+    }
+  };
+
+  const startStream = async (title: string, description?: string) => {
+    if (!user) return null;
+
+    try {
+      const streamKey = generateStreamKey();
+      
+      const { data, error } = await supabase
+        .from('live_streams')
+        .insert({
+          streamer_id: user.id,
+          title,
+          description,
+          stream_key: streamKey,
+          status: 'live',
+          started_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "You're live!",
+        description: "Your stream has started"
+      });
+
+      setMyStream(data as LiveStream);
+      await fetchLiveStreams();
+      return data;
+    } catch (error) {
+      console.error('Error starting stream:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start stream",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
+  const endStream = async () => {
+    if (!user || !myStream) return;
+
+    try {
+      const { error } = await supabase
+        .from('live_streams')
+        .update({
+          status: 'ended',
+          ended_at: new Date().toISOString()
+        })
+        .eq('id', myStream.id)
+        .eq('streamer_id', user.id);
+
+      if (error) throw error;
+
+      toast({ title: "Stream ended" });
+      setMyStream(null);
+      await fetchLiveStreams();
+    } catch (error) {
+      console.error('Error ending stream:', error);
+      toast({
+        title: "Error",
+        description: "Failed to end stream",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateViewerCount = async (streamId: string, increment: boolean) => {
+    try {
+      const { data: stream } = await supabase
+        .from('live_streams')
+        .select('viewer_count')
+        .eq('id', streamId)
+        .single();
+
+      if (stream) {
+        await supabase
+          .from('live_streams')
+          .update({
+            viewer_count: Math.max(0, (stream.viewer_count || 0) + (increment ? 1 : -1))
+          })
+          .eq('id', streamId);
+      }
+    } catch (error) {
+      console.error('Error updating viewer count:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveStreams();
+    fetchMyStream();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('live-streams')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'live_streams'
+      }, () => {
+        fetchLiveStreams();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  return {
+    liveStreams,
+    myStream,
+    loading,
+    startStream,
+    endStream,
+    updateViewerCount,
+    refetch: fetchLiveStreams
+  };
+};
