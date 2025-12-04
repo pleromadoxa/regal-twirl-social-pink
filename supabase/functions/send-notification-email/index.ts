@@ -159,9 +159,9 @@ const handler = async (req: Request): Promise<Response> => {
       .from("profiles")
       .select("email, display_name, username")
       .eq("id", user_id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile?.email) {
+    if (!profile?.email) {
       // Try to get email from auth.users
       const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(user_id);
       

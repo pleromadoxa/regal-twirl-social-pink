@@ -67,9 +67,11 @@ const getRandomFeatures = (count: number = 3) => {
 };
 
 interface WelcomeEmailRequest {
-  email: string;
+  email?: string;
   displayName?: string;
   username?: string;
+  user_email?: string;
+  display_name?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -78,9 +80,23 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, displayName, username }: WelcomeEmailRequest = await req.json();
+    const body: WelcomeEmailRequest = await req.json();
+    
+    // Support both camelCase and snake_case parameter names
+    const email = body.email || body.user_email;
+    const displayName = body.displayName || body.display_name;
+    const username = body.username;
 
     console.log(`Sending welcome email to ${email}`);
+    console.log(`Request body:`, JSON.stringify(body));
+
+    if (!email) {
+      console.error('No email provided in request');
+      return new Response(
+        JSON.stringify({ error: "Email is required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     const selectedFeatures = getRandomFeatures(3);
     const baseUrl = "https://regalnetwork.app";
