@@ -16,8 +16,12 @@ export interface MarketplaceListing {
   location: string | null;
   status: 'active' | 'sold' | 'pending' | 'inactive';
   views_count: number;
+  favorites_count?: number;
+  is_featured?: boolean;
   created_at: string;
+  updated_at?: string;
   seller?: {
+    id?: string;
     username: string;
     display_name: string;
     avatar_url: string;
@@ -31,24 +35,41 @@ export const useMarketplace = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchListings = async (category?: string, searchTerm?: string) => {
+  const fetchListings = async (category?: string, searchTerm?: string, sortBy?: string) => {
     try {
       setLoading(true);
       let query = supabase
         .from('marketplace_listings')
         .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .eq('status', 'active');
 
-      if (category) {
+      if (category && category !== 'all') {
         query = query.eq('category', category);
       }
 
       if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,location.ilike.%${searchTerm}%`);
       }
 
-      const { data, error } = await query;
+      // Apply sorting
+      switch (sortBy) {
+        case 'price_low':
+          query = query.order('price', { ascending: true });
+          break;
+        case 'price_high':
+          query = query.order('price', { ascending: false });
+          break;
+        case 'oldest':
+          query = query.order('created_at', { ascending: true });
+          break;
+        case 'popular':
+          query = query.order('views_count', { ascending: false });
+          break;
+        default:
+          query = query.order('created_at', { ascending: false });
+      }
+
+      const { data, error } = await query.limit(100);
 
       if (error) throw error;
 
@@ -60,7 +81,7 @@ export const useMarketplace = () => {
           .select('id, username, display_name, avatar_url')
           .in('id', sellerIds);
 
-        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const profileMap = new Map(profiles?.map(p => [p.id, { ...p, id: p.id }]) || []);
         const listingsWithSellers = data.map(listing => ({
           ...listing,
           seller: profileMap.get(listing.seller_id)
