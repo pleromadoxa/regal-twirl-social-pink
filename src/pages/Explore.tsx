@@ -220,9 +220,13 @@ const Explore = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                    <div className="space-y-4">
                         {trendingPosts.slice(0, 5).map((post) => (
-                          <div key={post.id} className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
+                          <div 
+                            key={post.id} 
+                            className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
+                            onClick={() => window.location.href = `/profile/${post.profiles?.username}`}
+                          >
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-sm font-medium text-purple-600">
                                 @{post.profiles?.username}

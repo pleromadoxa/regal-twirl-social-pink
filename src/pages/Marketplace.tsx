@@ -12,7 +12,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useMarketplace, MarketplaceListing } from '@/hooks/useMarketplace';
 import { useAuth } from '@/contexts/AuthContext';
 import SidebarNav from '@/components/SidebarNav';
-import TopNavigation from '@/components/TopNavigation';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
@@ -159,11 +158,10 @@ const Marketplace = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {!isMobile && <SidebarNav />}
-      <TopNavigation />
+    <div className="min-h-screen bg-background flex">
+      <SidebarNav />
       
-      <main className={`${isMobile ? 'pt-16 pb-20' : 'ml-80 pt-4'} px-4`}>
+      <main className={`flex-1 ${isMobile ? 'px-4 pb-20' : 'ml-80'} p-4 lg:p-6`}>
         <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex justify-between items-center">
             <div>
