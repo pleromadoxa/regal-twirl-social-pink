@@ -25,6 +25,7 @@ export interface LiveStream {
 
 export const useLiveStreaming = () => {
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
+  const [streamHistory, setStreamHistory] = useState<LiveStream[]>([]);
   const [myStream, setMyStream] = useState<LiveStream | null>(null);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
@@ -70,6 +71,39 @@ export const useLiveStreaming = () => {
     }
   };
 
+  const fetchStreamHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('live_streams')
+        .select('*')
+        .eq('status', 'ended')
+        .order('ended_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const streamerIds = [...new Set(data.map(s => s.streamer_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', streamerIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const streamsWithProfiles = data.map(stream => ({
+          ...stream,
+          streamer: profileMap.get(stream.streamer_id)
+        }));
+
+        setStreamHistory(streamsWithProfiles as LiveStream[]);
+      } else {
+        setStreamHistory([]);
+      }
+    } catch (error) {
+      console.error('Error fetching stream history:', error);
+    }
+  };
+
   const fetchMyStream = async () => {
     if (!user) return;
 
@@ -78,7 +112,7 @@ export const useLiveStreaming = () => {
         .from('live_streams')
         .select('*')
         .eq('streamer_id', user.id)
-        .neq('status', 'ended')
+        .eq('status', 'live')
         .maybeSingle();
 
       if (error) throw error;
@@ -179,6 +213,7 @@ export const useLiveStreaming = () => {
       toast({ title: "Stream ended" });
       setMyStream(null);
       await fetchLiveStreams();
+      await fetchStreamHistory();
     } catch (error) {
       console.error('Error ending stream:', error);
       toast({
@@ -212,6 +247,7 @@ export const useLiveStreaming = () => {
 
   useEffect(() => {
     fetchLiveStreams();
+    fetchStreamHistory();
     fetchMyStream();
 
     // Set up real-time subscription
@@ -223,6 +259,7 @@ export const useLiveStreaming = () => {
         table: 'live_streams'
       }, () => {
         fetchLiveStreams();
+        fetchStreamHistory();
       })
       .subscribe();
 
@@ -233,6 +270,7 @@ export const useLiveStreaming = () => {
 
   return {
     liveStreams,
+    streamHistory,
     myStream,
     loading,
     startStream,
