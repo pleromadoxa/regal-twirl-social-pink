@@ -109,9 +109,42 @@ export const useLiveStreaming = () => {
 
       if (error) throw error;
 
+      // Create a timeline post announcing the stream
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name, username')
+        .eq('id', user.id)
+        .single();
+
+      const displayName = profile?.display_name || profile?.username || 'Someone';
+      
+      await supabase
+        .from('posts')
+        .insert({
+          user_id: user.id,
+          content: `🔴 I'm now live streaming: "${title}"\n\nJoin me now! #live #streaming`,
+        });
+
+      // Notify all followers
+      const { data: followers } = await supabase
+        .from('follows')
+        .select('follower_id')
+        .eq('following_id', user.id);
+
+      if (followers && followers.length > 0) {
+        const notifications = followers.map(f => ({
+          user_id: f.follower_id,
+          actor_id: user.id,
+          type: 'live_stream',
+          message: `${displayName} started a live stream: "${title}"`
+        }));
+
+        await supabase.from('notifications').insert(notifications);
+      }
+
       toast({
         title: "You're live!",
-        description: "Your stream has started"
+        description: "Your stream has started and followers have been notified"
       });
 
       setMyStream(data as LiveStream);
