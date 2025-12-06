@@ -55,6 +55,7 @@ const LiveStreaming = () => {
   const [viewingStream, setViewingStream] = useState<LiveStream | null>(null);
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{ user: string; message: string; timestamp: Date }>>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
   
   // Device & Quality settings
   const [videoDevices, setVideoDevices] = useState<MediaDevice[]>([]);
@@ -74,10 +75,12 @@ const LiveStreaming = () => {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewerVideoRef = useRef<HTMLVideoElement>(null);
+  const liveVideoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
 
   const qualitySettings = {
     '480p': { width: 854, height: 480, frameRate: 30 },
@@ -259,9 +262,14 @@ const LiveStreaming = () => {
     
     const result = await startStream(streamTitle, streamDescription);
     if (result) {
+      setIsStreaming(true);
       setStreamTitle('');
       setStreamDescription('');
       setDialogOpen(false);
+      
+      // Set up broadcast channel to share stream with viewers
+      broadcastChannelRef.current = new BroadcastChannel(`stream-${result.id}`);
+      
       durationIntervalRef.current = setInterval(() => {
         setStreamDuration(prev => prev + 1);
       }, 1000);
@@ -271,12 +279,39 @@ const LiveStreaming = () => {
 
   // Handle stream end
   const handleEndStream = async () => {
+    setIsStreaming(false);
     stopPreview();
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.close();
+      broadcastChannelRef.current = null;
+    }
     await endStream();
     setStreamDuration(0);
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
     }
+  };
+
+  // Join stream as viewer
+  const joinStreamAsViewer = async (stream: LiveStream) => {
+    setViewingStream(stream);
+    updateViewerCount(stream.id, true);
+    
+    // For same-origin viewing, we can use BroadcastChannel
+    // In production, you'd use a signaling server for WebRTC
+    const bc = new BroadcastChannel(`stream-${stream.id}`);
+    bc.onmessage = (event) => {
+      // Handle stream data
+      console.log('Received stream data:', event.data);
+    };
+  };
+
+  // Leave stream as viewer
+  const leaveStream = () => {
+    if (viewingStream) {
+      updateViewerCount(viewingStream.id, false);
+    }
+    setViewingStream(null);
   };
 
   // Format duration
@@ -300,75 +335,97 @@ const LiveStreaming = () => {
     else stopPreview();
   }, [dialogOpen]);
 
+  // Update live video element when streaming starts
+  useEffect(() => {
+    if (isStreaming && streamRef.current && liveVideoRef.current) {
+      liveVideoRef.current.srcObject = isScreenSharing && screenStreamRef.current 
+        ? screenStreamRef.current 
+        : streamRef.current;
+    }
+  }, [isStreaming, isScreenSharing]);
+
   useEffect(() => {
     return () => {
       if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop());
       if (screenStreamRef.current) screenStreamRef.current.getTracks().forEach(track => track.stop());
       if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
+      if (broadcastChannelRef.current) broadcastChannelRef.current.close();
     };
   }, []);
 
-  const StreamCard = ({ stream }: { stream: LiveStream }) => (
-    <Card 
-      className="group overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border-border/50"
-      onClick={() => setViewingStream(stream)}
-    >
-      <div className="relative">
-        {stream.thumbnail_url ? (
-          <img src={stream.thumbnail_url} alt={stream.title} className="w-full aspect-video object-cover" />
-        ) : (
-          <div className="w-full aspect-video bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center">
-            <Video className="w-20 h-20 text-white/30" />
-          </div>
-        )}
-        
-        <Badge className="absolute top-3 left-3 bg-red-600 text-white animate-pulse">
-          <Radio className="w-3 h-3 mr-1" />
-          LIVE
-        </Badge>
-        
-        <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
-          <div className="flex items-center gap-2 bg-black/70 text-white px-3 py-1.5 rounded-full text-sm">
-            <Eye className="w-4 h-4" />
-            {stream.viewer_count.toLocaleString()}
-          </div>
-          <div className="flex items-center gap-2 bg-black/70 text-white px-3 py-1.5 rounded-full text-sm">
-            <Clock className="w-4 h-4" />
-            Live
-          </div>
-        </div>
-        
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Button size="lg" className="bg-red-600 hover:bg-red-700">
-            <Play className="w-5 h-5 mr-2" />
-            Watch Now
-          </Button>
-        </div>
-      </div>
-      
-      <CardContent className="p-4">
-        <h3 className="font-semibold line-clamp-2 mb-3 group-hover:text-red-500 transition-colors">
-          {stream.title}
-        </h3>
-        
-        {stream.streamer && (
-          <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10 ring-2 ring-red-500 ring-offset-2 ring-offset-background">
-              <AvatarImage src={stream.streamer.avatar_url} />
-              <AvatarFallback>{stream.streamer.display_name?.[0]}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium flex items-center gap-1">
-                {stream.streamer.display_name}
-                <Crown className="w-4 h-4 text-amber-500" />
-              </p>
-              <p className="text-sm text-muted-foreground">@{stream.streamer.username}</p>
+  const StreamCard = ({ stream }: { stream: LiveStream }) => {
+    const isOwnStream = user?.id === stream.streamer_id;
+    
+    return (
+      <Card 
+        className="group overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border-border/50"
+        onClick={() => !isOwnStream && joinStreamAsViewer(stream)}
+      >
+        <div className="relative">
+          {stream.thumbnail_url ? (
+            <img src={stream.thumbnail_url} alt={stream.title} className="w-full aspect-video object-cover" />
+          ) : (
+            <div className="w-full aspect-video bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center">
+              <Video className="w-20 h-20 text-white/30" />
+            </div>
+          )}
+          
+          <Badge className="absolute top-3 left-3 bg-red-600 text-white animate-pulse">
+            <Radio className="w-3 h-3 mr-1" />
+            LIVE
+          </Badge>
+          
+          {isOwnStream && (
+            <Badge className="absolute top-3 right-3 bg-purple-600 text-white">
+              Your Stream
+            </Badge>
+          )}
+          
+          <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
+            <div className="flex items-center gap-2 bg-black/70 text-white px-3 py-1.5 rounded-full text-sm">
+              <Eye className="w-4 h-4" />
+              {stream.viewer_count.toLocaleString()}
+            </div>
+            <div className="flex items-center gap-2 bg-black/70 text-white px-3 py-1.5 rounded-full text-sm">
+              <Clock className="w-4 h-4" />
+              Live
             </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+          
+          {!isOwnStream && (
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <Button size="lg" className="bg-red-600 hover:bg-red-700">
+                <Play className="w-5 h-5 mr-2" />
+                Watch Now
+              </Button>
+            </div>
+          )}
+        </div>
+        
+        <CardContent className="p-4">
+          <h3 className="font-semibold line-clamp-2 mb-3 group-hover:text-red-500 transition-colors">
+            {stream.title}
+          </h3>
+          
+          {stream.streamer && (
+            <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10 ring-2 ring-red-500 ring-offset-2 ring-offset-background">
+                <AvatarImage src={stream.streamer.avatar_url} />
+                <AvatarFallback>{stream.streamer.display_name?.[0]}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium flex items-center gap-1">
+                  {stream.streamer.display_name}
+                  <Crown className="w-4 h-4 text-amber-500" />
+                </p>
+                <p className="text-sm text-muted-foreground">@{stream.streamer.username}</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -636,32 +693,72 @@ const LiveStreaming = () => {
             </Card>
           </div>
 
-          {/* Current Stream Banner */}
-          {myStream && (
+          {/* Current Stream Banner with Live Video */}
+          {myStream && isStreaming && (
             <Card className="bg-gradient-to-r from-red-500/10 via-pink-500/10 to-purple-500/10 border-red-500/30 overflow-hidden">
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
-                    <div>
-                      <h3 className="text-xl font-bold">You are live!</h3>
-                      <p className="text-muted-foreground">{myStream.title}</p>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Live Video Preview */}
+                  <div className="relative bg-black rounded-xl overflow-hidden aspect-video">
+                    <video
+                      ref={liveVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-3 left-3">
+                      <Badge className="bg-red-600 text-white animate-pulse">
+                        <Radio className="w-3 h-3 mr-1" />
+                        LIVE
+                      </Badge>
+                    </div>
+                    <div className="absolute top-3 right-3">
+                      <Badge variant="secondary" className="bg-black/50">
+                        {streamStats.resolution} @ {Math.round(streamStats.fps)}fps
+                      </Badge>
+                    </div>
+                    {/* Live Controls */}
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/70 rounded-full px-4 py-2">
+                      <Button size="icon" variant={isMuted ? 'destructive' : 'ghost'} className="h-8 w-8 rounded-full" onClick={toggleMute}>
+                        {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-white" />}
+                      </Button>
+                      <Button size="icon" variant={isVideoOff ? 'destructive' : 'ghost'} className="h-8 w-8 rounded-full" onClick={toggleVideo}>
+                        {isVideoOff ? <VideoOff className="w-4 h-4" /> : <Camera className="w-4 h-4 text-white" />}
+                      </Button>
+                      <Button size="icon" variant={isScreenSharing ? 'default' : 'ghost'} className="h-8 w-8 rounded-full" onClick={toggleScreenShare}>
+                        {isScreenSharing ? <ScreenShareOff className="w-4 h-4" /> : <ScreenShare className="w-4 h-4 text-white" />}
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center gap-2 bg-background/50 rounded-full px-4 py-2">
-                      <Eye className="w-4 h-4 text-red-500" />
-                      <span className="font-semibold">{myStream.viewer_count.toLocaleString()}</span>
-                      <span className="text-muted-foreground text-sm">viewers</span>
+                  
+                  {/* Stream Info */}
+                  <div className="flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
+                        <h3 className="text-xl font-bold">You are live!</h3>
+                      </div>
+                      <p className="text-lg font-medium mb-2">{myStream.title}</p>
+                      {myStream.description && (
+                        <p className="text-muted-foreground text-sm">{myStream.description}</p>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2 bg-background/50 rounded-full px-4 py-2">
-                      <Clock className="w-4 h-4 text-amber-500" />
-                      <span className="font-mono font-semibold">{formatDuration(streamDuration)}</span>
+                    <div className="flex flex-wrap items-center gap-4 mt-4">
+                      <div className="flex items-center gap-2 bg-background/50 rounded-full px-4 py-2">
+                        <Eye className="w-4 h-4 text-red-500" />
+                        <span className="font-semibold">{myStream.viewer_count.toLocaleString()}</span>
+                        <span className="text-muted-foreground text-sm">viewers</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-background/50 rounded-full px-4 py-2">
+                        <Clock className="w-4 h-4 text-amber-500" />
+                        <span className="font-mono font-semibold">{formatDuration(streamDuration)}</span>
+                      </div>
+                      <Button variant="destructive" onClick={handleEndStream}>
+                        <StopCircle className="w-4 h-4 mr-2" />
+                        End Stream
+                      </Button>
                     </div>
-                    <Button variant="destructive" onClick={handleEndStream}>
-                      <StopCircle className="w-4 h-4 mr-2" />
-                      End Stream
-                    </Button>
                   </div>
                 </div>
               </CardContent>

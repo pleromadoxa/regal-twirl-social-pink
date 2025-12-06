@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserPlus, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { useVerifiedStatus } from '@/hooks/useVerifiedStatus';
 import VerificationBadge from './VerificationBadge';
+import FollowButton from './FollowButton';
 
 interface User {
   id: string;
@@ -20,7 +20,7 @@ interface User {
   premium_tier?: string;
 }
 
-const UserSuggestionItem = ({ user, onFollow }: { user: User; onFollow: (userId: string) => void }) => {
+const UserSuggestionItem = ({ user, onFollowChange }: { user: User; onFollowChange: (userId: string) => void }) => {
   const { verificationLevel } = useVerifiedStatus(user);
   
   return (
@@ -47,22 +47,19 @@ const UserSuggestionItem = ({ user, onFollow }: { user: User; onFollow: (userId:
           <p className="text-xs text-gray-400">{user.followers_count} followers</p>
         </div>
       </Link>
-      <Button
+      <FollowButton 
+        userId={user.id}
+        initialFollowing={false}
         size="sm"
-        variant="outline"
-        onClick={() => onFollow(user.id)}
         className="text-xs px-3 py-1 h-8 flex-shrink-0"
-      >
-        <UserPlus className="w-3 h-3 mr-1" />
-        Follow
-      </Button>
+        onFollowChange={() => onFollowChange(user.id)}
+      />
     </div>
   );
 };
 
 const WhoToFollow = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -72,18 +69,25 @@ const WhoToFollow = () => {
     try {
       setLoading(true);
       
-      // Fetch random users excluding current user and those already followed
+      // Fetch users excluding current user and those already followed
+      const { data: followingIds } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', user.id);
+
+      const excludeIds = [user.id, ...(followingIds?.map(f => f.following_id) || [])];
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url, followers_count, is_verified, premium_tier')
-        .neq('id', user.id)
+        .not('id', 'in', `(${excludeIds.join(',')})`)
         .not('username', 'is', null)
-        .limit(5);
+        .limit(10);
 
       if (error) throw error;
 
-      // Shuffle the results to make them more random
-      const shuffled = data?.sort(() => 0.5 - Math.random()) || [];
+      // Shuffle and take first 5
+      const shuffled = data?.sort(() => 0.5 - Math.random()).slice(0, 5) || [];
       setUsers(shuffled);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -96,45 +100,9 @@ const WhoToFollow = () => {
     fetchRandomUsers();
   }, [fetchRandomUsers]);
 
-  const handleFollow = async (userId: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('follows')
-        .insert({
-          follower_id: user.id,
-          following_id: userId
-        });
-
-      if (error) throw error;
-
-      // Update the follower count locally for immediate feedback
-      setUsers(prev => prev.map(u => 
-        u.id === userId 
-          ? { ...u, followers_count: u.followers_count + 1 }
-          : u
-      ).filter(u => u.id !== userId)); // Also remove from suggestions
-      
-      toast({
-        title: "Success",
-        description: "Successfully followed user"
-      });
-    } catch (error: any) {
-      if (error.code === '23505') {
-        toast({
-          title: "Already following",
-          description: "You're already following this user",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to follow user",
-          variant: "destructive"
-        });
-      }
-    }
+  const handleFollowChange = (userId: string) => {
+    // Remove user from suggestions after following
+    setUsers(prev => prev.filter(u => u.id !== userId));
   };
 
   if (!user) return null;
@@ -167,7 +135,7 @@ const WhoToFollow = () => {
               <UserSuggestionItem
                 key={suggestedUser.id}
                 user={suggestedUser}
-                onFollow={handleFollow}
+                onFollowChange={handleFollowChange}
               />
             ))}
             <Button

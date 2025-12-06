@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { User, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import FollowButton from './FollowButton';
 
 interface UserProfile {
   id: string;
@@ -123,6 +123,7 @@ const UserSearch = ({ searchQuery, showMessageButton = false, onStartConversatio
                     View
                   </Button>
                 </Link>
+                <FollowButton userId={profile.id} size="sm" className="w-full" />
                 {user?.id !== profile.id && showMessageButton && onStartConversation && (
                   <Button 
                     variant="outline" 
